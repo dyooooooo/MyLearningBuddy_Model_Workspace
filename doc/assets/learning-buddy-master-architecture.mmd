@@ -1,0 +1,36 @@
+flowchart TB
+  subgraph R6 ["⑥ 持续感知环"]
+    direction LR
+    P[拍照]
+    V[视频]
+    Vo[语音]
+    ACT["学习活动: 过程/试卷/方法"]
+    PER["个人情况: 状态/习惯/兴趣"]
+    P & V & Vo --> ACT & PER
+  end
+
+  subgraph FLOW ["场景五主链 + 伴学行动"]
+    direction LR
+    G1["① 诊断"]
+    G2["② 规划"]
+    G3["③ 多Agent治理"]
+    G4["④ 风控"]
+    G5["⑤ 伴学行动"]
+    G1 --> G2 --> G3 --> G4 --> G5
+  end
+
+  subgraph BASE ["记忆与知识底座"]
+    Ap["A+ 个性化知识库"]
+    A["A 资产与画像"]
+    B["B 学习记忆"]
+    C1["C1 LLM"]
+    C2["C2 工具API"]
+    A & B --> Ap
+  end
+
+  R6 --> C2
+  C2 --> A & B
+  Ap -->|Memory Drive| G1 & G2
+  B -->|Memory Drive| G3
+  C1 --> G3
+  G5 --> R6

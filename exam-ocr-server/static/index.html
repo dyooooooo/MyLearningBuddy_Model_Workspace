@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>伴学 Pipeline · C2 Gateway</title>
+  <link rel="stylesheet" href="/test/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">伴学</span>
+      <div>
+        <h1>伴学 Pipeline 测试台</h1>
+        <p class="subtitle">网关核心 · 薄客户端 · Learning Buddy</p>
+      </div>
+    </div>
+    <div class="status" id="healthStatus">
+      <span class="dot"></span>
+      <span class="label">检查中…</span>
+    </div>
+  </header>
+
+  <div class="session-bar">
+    <span class="session-label" id="sessionIdLabel">未创建会话</span>
+    <div class="session-actions">
+      <button type="button" id="btnNewSession" class="btn ghost sm">新建会话</button>
+      <button type="button" id="btnFinalize" class="btn ghost sm" disabled>定稿当前页</button>
+      <button type="button" id="btnEndSession" class="btn ghost sm" disabled>结束会话</button>
+      <button type="button" id="btnExport" class="btn ghost sm" disabled>导出 JSON</button>
+    </div>
+  </div>
+
+  <main class="layout companion-layout">
+    <section class="panel controls">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*,.heic,.heif" hidden />
+        <div class="dropzone-inner">
+          <p class="drop-title">拖入帧图片</p>
+          <p class="drop-hint">JPG / PNG / WebP</p>
+        </div>
+      </div>
+      <button type="button" id="btnAddFrame" class="btn primary" disabled>加帧 → OCR → 合并</button>
+
+      <div class="panel-head compact">
+        <h2>Timeline</h2>
+      </div>
+      <div class="timeline" id="timeline">
+        <p class="timeline-empty">创建会话后加帧</p>
+      </div>
+
+      <div class="panel-head compact">
+        <h2>事件</h2>
+      </div>
+      <div class="event-log" id="eventLog"></div>
+    </section>
+
+    <section class="panel preview">
+      <div class="panel-head">
+        <h2>原图预览</h2>
+        <span class="frame-meta" id="frameMeta" hidden></span>
+        <div class="legend">
+          <span class="chip print">印刷</span>
+          <span class="chip handwriting">手写</span>
+        </div>
+      </div>
+      <div class="canvas-wrap" id="canvasWrap">
+        <p class="placeholder">上传图片后在此显示</p>
+        <div class="preview-stage" id="previewStage" hidden>
+          <img id="previewImg" alt="" />
+          <canvas id="overlay" hidden></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel results">
+      <div class="panel-head">
+        <h2 id="mergedTitle">当前页合并结果</h2>
+        <div class="side-tabs" id="sideTabs">
+          <button type="button" class="tab active" data-tab="merged">合并</button>
+          <button type="button" class="tab" data-tab="frame">本帧</button>
+          <button type="button" class="tab" data-tab="homework">作业库</button>
+          <button type="button" class="tab" data-tab="mastery">A⁺ demo</button>
+        </div>
+        <span class="question-count" id="questionCount" hidden></span>
+      </div>
+      <div class="result-body" id="resultBody">
+        <p class="placeholder">新建会话并加帧</p>
+      </div>
+      <div class="side-list" id="sideList" hidden></div>
+    </section>
+  </main>
+
+  <details class="lab-panel">
+    <summary>单帧 OCR 实验室（调试 <code>POST /api/v1/ocr/page</code>）</summary>
+    <div class="lab-inner">
+      <div class="dropzone lab-drop" id="labDropzone">
+        <input type="file" id="labFileInput" accept="image/*,.heic,.heif" hidden />
+        <p class="drop-title">选图</p>
+      </div>
+      <button type="button" id="labRunBtn" class="btn primary sm" disabled>单帧识别</button>
+      <div class="lab-preview-wrap">
+        <div class="preview-stage" id="labPreviewStage" hidden>
+          <img id="labPreview" alt="" />
+          <canvas id="labOverlay" hidden></canvas>
+        </div>
+      </div>
+      <div id="labResult" class="lab-result"></div>
+    </div>
+  </details>
+
+  <footer class="footer">
+    <span>API: <code>POST /api/v1/companion/sessions/{id}/frames</code></span>
+    <span id="modelInfo"></span>
+  </footer>
+
+  <script src="/test/app.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+# DGX Spark playbooks — extracted from build.nvidia.com/spark + NVIDIA/dgx-spark-playbooks
+# Refresh: tools/fetch-spark-playbooks-index.sh
+# Last synced: 2026-06-11
+
+hub:
+  en: https://build.nvidia.com/spark
+  cn: https://developer.nvidia.cn/build-spark
+  cn_markdown: https://developer.nvidia.cn/build-spark.md
+  github: https://github.com/NVIDIA/dgx-spark-playbooks
+  api_keys: https://build.nvidia.com/settings/api-keys
+  dgx_docs: https://docs.nvidia.com/dgx/dgx-spark/
+  forum: https://forums.developer.nvidia.com/c/accelerated-computing/dgx-spark-gb10
+  support_cn: https://www.nvidia.cn/support/dgx-spark/
+
+quick_start:
+  - slug: connect-to-your-spark
+    title: Set Up Local Network Access / NVIDIA Sync
+    cn_path: /build-spark/connect
+    duration: null
+  - slug: dgx-dashboard
+    title: DGX Dashboard + JupyterLab
+    cn_path: /build-spark/dgx-dashboard
+    duration: null
+  - slug: vscode
+    title: VS Code (local or remote)
+    cn_path: /build-spark/vs-code
+    duration: 10m
+  - slug: connect-two-sparks
+    title: Connect Two Sparks (inference + fine-tune)
+    cn_path: /build-spark/connect-two-sparks
+    duration: null
+
+featured:
+  - slug: hermes-agent
+    title: Hermes Agent with local models
+    duration: 30m
+    tags: [agent]
+  - slug: open-webui
+    title: Open WebUI + Ollama chat
+    duration: 15m
+    tags: [ui, ollama]
+  - slug: comfy-ui
+    title: Comfy UI image generation
+    duration: 45m
+    tags: [ui, image]
+  - slug: nemoclaw
+    title: NemoClaw + Ollama + Telegram
+    duration: 30m
+    tags: [agent, openshell, ollama]
+    install: curl -fsSL https://www.nvidia.com/nemoclaw.sh | bash
+  - slug: openshell
+    title: OpenShell sandbox for long-running agents
+    duration: 30m
+    tags: [agent, openshell]
+  - slug: openclaw
+    title: OpenClaw with LM Studio or Ollama
+    duration: 30m
+    tags: [agent]
+  - slug: nemo-fine-tune
+    title: Fine-tune with NeMo
+    duration: 1h
+    tags: [training, nemo]
+
+playbooks:
+  setup_connect:
+    - { slug: connect-to-your-spark, title: Local network access / NVIDIA Sync }
+    - { slug: tailscale, title: Tailscale on Spark }
+    - { slug: register-to-brev, title: Register Spark to Brev }
+    - { slug: dgx-dashboard, title: DGX Dashboard }
+    - { slug: vscode, title: VS Code }
+    - { slug: vibe-coding, title: Vibe Coding in VS Code }
+
+  clustering:
+    - { slug: connect-two-sparks, title: Connect two Sparks }
+    - { slug: connect-three-sparks, title: Connect three Sparks (ring) }
+    - { slug: multi-sparks-through-switch, title: Multiple Sparks via switch }
+    - { slug: nccl, title: NCCL for two Sparks }
+
+  inference:
+    - { slug: vllm, title: vLLM inference }
+    - { slug: sglang, title: SGLang inference }
+    - { slug: trt-llm, title: TensorRT-LLM inference }
+    - { slug: nim-llm, title: NIM on Spark }
+    - { slug: ollama, title: Ollama }
+    - { slug: open-webui, title: Open WebUI + Ollama }
+    - { slug: llama-cpp, title: llama.cpp }
+    - { slug: lm-studio, title: LM Studio }
+    - { slug: nemotron, title: Nemotron-3-Nano + llama.cpp }
+    - { slug: multi-modal-inference, title: Multi-modal inference }
+    - { slug: speculative-decoding, title: Speculative decoding }
+    - { slug: live-vlm-webui, title: Live VLM WebUI }
+
+  training_finetune:
+    - { slug: nemo-fine-tune, title: NeMo fine-tuning }
+    - { slug: pytorch-fine-tune, title: PyTorch fine-tuning }
+    - { slug: llama-factory, title: LLaMA Factory }
+    - { slug: flux-finetuning, title: FLUX.1 Dreambooth LoRA }
+    - { slug: unsloth, title: Unsloth }
+    - { slug: nvfp4-quantization, title: NVFP4 quantization }
+
+  agents:
+    - { slug: nemoclaw, title: NemoClaw + local LLM }
+    - { slug: nemoclaw-applications, title: NemoClaw example agents }
+    - { slug: openclaw, title: OpenClaw }
+    - { slug: openshell, title: OpenShell secure agents }
+    - { slug: hermes-agent, title: Hermes Agent }
+    - { slug: cli-coding-agent, title: CLI coding agent }
+    - { slug: multi-agent-chatbot, title: Multi-agent chatbot }
+    - { slug: vss, title: Video search & summarization agent }
+
+  data_science:
+    - { slug: cuda-x-data-science, title: CUDA-X (cuML, cuDF) }
+    - { slug: jax, title: Optimized JAX }
+    - { slug: cutile-kernels, title: cuTile kernels }
+    - { slug: single-cell, title: Single-cell RNA sequencing }
+    - { slug: portfolio-optimization, title: Portfolio optimization }
+    - { slug: txt2kg, title: Text to knowledge graph }
+
+  robotics_vision:
+    - { slug: isaac, title: Isaac Sim + Isaac Lab }
+    - { slug: comfy-ui, title: Comfy UI }
+    - { slug: reachy-photo-booth, title: Spark & Reachy photo booth }
+
+  workbench_rag:
+    - { slug: rag-ai-workbench, title: RAG app in AI Workbench }

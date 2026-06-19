@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 1000">
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="1360" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="55%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#eef2ff"/>
+    </linearGradient>
+
+    <linearGradient id="ringBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#e0e7ff"/>
+    </linearGradient>
+
+    <linearGradient id="baseBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+
+    <linearGradient id="aPlusBar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+
+    <linearGradient id="pipeRail" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="18%" stop-color="#ecfeff"/>
+      <stop offset="38%" stop-color="#f0fdf4"/>
+      <stop offset="58%" stop-color="#eef2ff"/>
+      <stop offset="78%" stop-color="#fef2f2"/>
+      <stop offset="100%" stop-color="#faf5ff"/>
+    </linearGradient>
+
+    <filter id="cardShadow" x="-8%" y="-8%" width="116%" height="124%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <marker id="arrowSlate" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <path d="M0,0 L9,3.5 L0,7 Z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <path d="M0,0 L9,3.5 L0,7 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <path d="M0,0 L9,3.5 L0,7 Z" fill="#059669"/>
+    </marker>
+    <marker id="arrowViolet" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <path d="M0,0 L9,3.5 L0,7 Z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <style>
+    text { font-family: "Noto Sans CJK SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
+    .title { font-size: 27px; font-weight: 700; fill: #0f172a; letter-spacing: 0.3px; }
+    .subtitle { font-size: 13.5px; fill: #64748b; }
+    .layerTag { font-size: 11px; font-weight: 700; fill: #94a3b8; letter-spacing: 1.2px; }
+    .sectionTitle { font-size: 15px; font-weight: 700; }
+    .cardTitle { font-size: 13px; font-weight: 700; }
+    .cardBody { font-size: 11.5px; fill: #475569; }
+    .cardHint { font-size: 10px; fill: #64748b; }
+    .stepLabel { font-size: 12.5px; font-weight: 700; }
+    .stepHint { font-size: 10px; }
+    .barTitle { font-size: 12.5px; font-weight: 700; fill: #f8fafc; }
+    .barFlow { font-size: 11.5px; fill: #cbd5e1; font-family: "Cascadia Mono", "Consolas", monospace; }
+    .legendTitle { font-size: 12px; font-weight: 700; fill: #0f172a; }
+    .legendItem { font-size: 11px; fill: #475569; }
+    .pill { font-size: 10px; font-weight: 600; }
+  </style>
+
+  <!-- Page -->
+  <rect width="1360" height="1000" fill="url(#pageBg)"/>
+  <rect x="0" y="0" width="1360" height="4" fill="url(#aPlusBar)"/>
+
+  <!-- Header -->
+  <text x="680" y="46" text-anchor="middle" class="title">Learning Buddy &#183; &#20276;&#23398;&#22411;&#25945;&#23398;&#35760;&#24518;&#26234;&#33021;&#20307;</text>
+  <text x="680" y="72" text-anchor="middle" class="subtitle">&#22330;&#26223;&#20116;&#39592;&#26550; + &#25345;&#32493;&#24863;&#30693;&#29615; + A+ &#20010;&#24615;&#21270;&#30693;&#35782;&#24211; &#183; &#20010;&#20307;&#24046;&#24322;&#39537;&#21160;</text>
+
+  <!-- Layer rail -->
+  <text x="28" y="128" class="layerTag" transform="rotate(-90 28 128)">&#24863;&#30693;&#29615;</text>
+  <text x="28" y="368" class="layerTag" transform="rotate(-90 28 368)">&#20915;&#31574;&#38142;</text>
+  <text x="28" y="610" class="layerTag" transform="rotate(-90 28 610)">&#30693;&#35782;&#24213;&#24231;</text>
+
+  <!-- ? Perception ring -->
+  <g filter="url(#cardShadow)">
+    <rect x="56" y="96" width="1248" height="188" rx="16" fill="url(#ringBg)" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="10 6"/>
+    <rect x="56" y="96" width="1248" height="36" rx="16" fill="#3b82f6" opacity="0.12"/>
+    <circle cx="88" cy="114" r="14" fill="#2563eb"/>
+    <text x="88" y="119" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">&#9317;</text>
+    <text x="112" y="119" class="sectionTitle" fill="#1e40af">&#25345;&#32493;&#24863;&#30693;&#19982;&#20276;&#23398;&#36755;&#20837;&#29615;</text>
+    <text x="1120" y="119" text-anchor="end" class="cardHint" fill="#3b82f6">&#25293;&#29031; &#183; &#35270;&#39057; &#183; &#35821;&#38899; &#183; &#34892;&#20026;&#26102;&#24207;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="80" y="144" width="580" height="124" rx="12" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2"/>
+    <rect x="80" y="144" width="580" height="32" rx="12" fill="#dbeafe" opacity="0.55"/>
+    <text x="370" y="165" text-anchor="middle" class="cardTitle" fill="#1d4ed8">&#23398;&#20064;&#27963;&#21160;&#19982;&#20869;&#23481;</text>
+    <circle cx="104" cy="190" r="3" fill="#60a5fa"/>
+    <text x="116" y="194" class="cardBody">(a) &#20889;&#20316;&#19994;&#36807;&#31243;&#19982;&#20869;&#23481;</text>
+    <circle cx="104" cy="214" r="3" fill="#60a5fa"/>
+    <text x="116" y="218" class="cardBody">(b) &#20316;&#19994;&#12289;&#35797;&#21367;&#21450;&#33609;&#31295;&#65288;M0 &#20027;&#36335;&#24452;&#65289;</text>
+    <circle cx="104" cy="238" r="3" fill="#60a5fa"/>
+    <text x="116" y="242" class="cardBody">(c) &#35299;&#39064;&#20855;&#20307;&#26041;&#27861;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="700" y="144" width="580" height="124" rx="12" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.2"/>
+    <rect x="700" y="144" width="580" height="32" rx="12" fill="#dbeafe" opacity="0.55"/>
+    <text x="990" y="165" text-anchor="middle" class="cardTitle" fill="#1d4ed8">&#23398;&#29983;&#20010;&#20154;&#24773;&#20917;</text>
+    <circle cx="724" cy="190" r="3" fill="#60a5fa"/>
+    <text x="736" y="194" class="cardBody">(a) &#23454;&#26102;&#29366;&#24577;</text>
+    <circle cx="724" cy="214" r="3" fill="#60a5fa"/>
+    <text x="736" y="218" class="cardBody">(b) &#23398;&#20064;&#20064;&#24815;&#19982;&#26041;&#27861;</text>
+    <circle cx="724" cy="238" r="3" fill="#60a5fa"/>
+    <text x="736" y="242" class="cardBody">(c) &#20010;&#20154;&#20852;&#36259;</text>
+  </g>
+
+  <!-- Down arrow from ring to base / pipeline -->
+  <path d="M680 284 L680 318" fill="none" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arrowBlue)"/>
+  <rect x="618" y="292" width="124" height="20" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+  <text x="680" y="306" text-anchor="middle" class="pill" fill="#1d4ed8">&#25345;&#32493;&#20889;&#20837;</text>
+
+  <!-- Pipeline rail background -->
+  <rect x="56" y="318" width="1248" height="118" rx="14" fill="url(#pipeRail)" opacity="0.65" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- Pipeline cards -->
+  <g filter="url(#cardShadow)">
+    <rect x="72" y="336" width="168" height="82" rx="11" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <rect x="72" y="336" width="168" height="26" rx="11" fill="#ffedd5"/>
+    <text x="156" y="354" text-anchor="middle" class="stepLabel" fill="#9a3412">&#20010;&#20307;&#35785;&#27714;</text>
+    <text x="156" y="378" text-anchor="middle" class="stepHint" fill="#7c2d12">&#21738;&#37324;&#21487;&#25552;&#21319;&#65311;</text>
+    <text x="156" y="396" text-anchor="middle" class="stepHint" fill="#7c2d12">&#23450;&#21046;&#35745;&#21010;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="262" y="336" width="148" height="82" rx="11" fill="#ffffff" stroke="#22d3ee" stroke-width="1.5"/>
+    <circle cx="286" cy="352" r="11" fill="#06b6d4"/>
+    <text x="286" y="356" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">&#9312;</text>
+    <text x="336" y="362" text-anchor="middle" class="stepLabel" fill="#0e7490">&#30446;&#26631;&#35786;&#26029;</text>
+    <text x="336" y="384" text-anchor="middle" class="stepHint" fill="#155e75">&#35835; A+ &#19982; B</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="432" y="336" width="148" height="82" rx="11" fill="#ffffff" stroke="#4ade80" stroke-width="1.5"/>
+    <circle cx="456" cy="352" r="11" fill="#22c55e"/>
+    <text x="456" y="356" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">&#9313;</text>
+    <text x="506" y="362" text-anchor="middle" class="stepLabel" fill="#166534">&#31574;&#30053;&#35268;&#21010;</text>
+    <text x="506" y="384" text-anchor="middle" class="stepHint" fill="#15803d">&#33410;&#22863; &#183; &#38590;&#24230;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="602" y="328" width="176" height="98" rx="11" fill="#ffffff" stroke="#818cf8" stroke-width="2"/>
+    <circle cx="626" cy="344" r="11" fill="#6366f1"/>
+    <text x="626" y="348" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">&#9314;</text>
+    <text x="690" y="354" text-anchor="middle" class="stepLabel" fill="#3730a3">&#22810;&#26234;&#33021;&#20307;&#27835;&#29702;</text>
+    <text x="690" y="374" text-anchor="middle" class="stepHint" fill="#4338ca">&#25945;&#23398; &#183; &#35780;&#27979; &#183; &#35268;&#21010;</text>
+    <text x="690" y="392" text-anchor="middle" class="stepHint" fill="#4338ca">&#35266;&#23519;&#30011;&#20687; &#183; &#20154;&#31867;&#30417;&#30563;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="800" y="336" width="148" height="82" rx="11" fill="#ffffff" stroke="#f87171" stroke-width="1.5"/>
+    <circle cx="824" cy="352" r="11" fill="#ef4444"/>
+    <text x="824" y="356" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">&#9315;</text>
+    <text x="874" y="362" text-anchor="middle" class="stepLabel" fill="#991b1b">&#39118;&#25511;&#26657;&#39564;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="970" y="336" width="148" height="82" rx="11" fill="#ffffff" stroke="#c084fc" stroke-width="1.5"/>
+    <circle cx="994" cy="352" r="11" fill="#a855f7"/>
+    <text x="994" y="356" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">&#9316;</text>
+    <text x="1044" y="362" text-anchor="middle" class="stepLabel" fill="#6b21a8">&#20276;&#23398;&#34892;&#21160;</text>
+    <text x="1044" y="384" text-anchor="middle" class="stepHint" fill="#7e22ce">&#35762;&#35299; &#183; &#25512;&#39064; &#183; &#36319;&#36394;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="1140" y="328" width="148" height="98" rx="11" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect x="1140" y="328" width="148" height="28" rx="11" fill="#f1f5f9"/>
+    <text x="1214" y="347" text-anchor="middle" class="stepLabel" fill="#334155">&#25345;&#32493;&#20135;&#20986;</text>
+    <text x="1214" y="372" text-anchor="middle" class="stepHint" fill="#64748b">&#20010;&#24615;&#21270;&#35762;&#35299;</text>
+    <text x="1214" y="390" text-anchor="middle" class="stepHint" fill="#64748b">&#23450;&#21046;&#32451;&#20064;&#36335;&#24452;</text>
+    <text x="1214" y="408" text-anchor="middle" class="stepHint" fill="#64748b">&#25928;&#26524;&#38543;&#26102;&#38388;&#25552;&#21319;</text>
+  </g>
+
+  <!-- Pipeline arrows -->
+  <line x1="240" y1="377" x2="258" y2="377" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="410" y1="377" x2="428" y2="377" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="580" y1="377" x2="598" y2="377" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="778" y1="377" x2="796" y2="377" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="948" y1="377" x2="966" y2="377" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+  <line x1="1118" y1="377" x2="1136" y2="377" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrowSlate)"/>
+
+  <!-- Companion loop -->
+  <path d="M1044 336 C1044 250 920 210 680 210 C440 210 316 250 316 336" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#arrowViolet)"/>
+  <rect x="612" y="196" width="136" height="22" rx="11" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="680" y="211" text-anchor="middle" class="pill" fill="#6d28d9">&#20276;&#23398;&#38381;&#29615;</text>
+
+  <!-- Knowledge base -->
+  <g filter="url(#cardShadow)">
+    <rect x="56" y="458" width="1248" height="318" rx="16" fill="url(#baseBg)" stroke="#cbd5e1" stroke-width="1.5"/>
+    <rect x="56" y="458" width="1248" height="34" rx="16" fill="#334155" opacity="0.06"/>
+    <text x="680" y="484" text-anchor="middle" class="sectionTitle" fill="#334155">&#35760;&#24518;&#19982;&#30693;&#35782;&#24213;&#24231;</text>
+  </g>
+
+  <!-- A+ centerpiece -->
+  <g filter="url(#softGlow)">
+    <rect x="380" y="502" width="600" height="54" rx="12" fill="url(#aPlusBar)"/>
+    <text x="680" y="526" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">A+ &#20010;&#24615;&#21270;&#30693;&#35782;&#24211;</text>
+    <text x="680" y="544" text-anchor="middle" fill="#e0e7ff" font-size="10.5">&#33021;&#21147;&#36793;&#30028; &#183; &#24369;&#24378;&#39033; &#183; &#25484;&#25569;&#24230; &#183; &#20852;&#36259;&#26435;&#37325;</text>
+  </g>
+
+  <!-- A / B -->
+  <g filter="url(#cardShadow)">
+    <rect x="80" y="576" width="560" height="78" rx="11" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect x="80" y="576" width="6" height="78" rx="3" fill="#64748b"/>
+    <text x="360" y="602" text-anchor="middle" class="cardTitle" fill="#0f172a">A &#23398;&#20064;&#36164;&#20135;&#19982;&#20010;&#20307;&#30011;&#20687;&#23618;</text>
+    <text x="360" y="624" text-anchor="middle" class="cardHint">&#36890;&#29992;&#20869;&#23481;&#24211; &#183; &#21382;&#21490;&#35760;&#24405; &#183; &#20064;&#24895;&#30011;&#20687; &#183; &#21521;&#37327;&#26816;&#32034;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="720" y="576" width="560" height="78" rx="11" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect x="720" y="576" width="6" height="78" rx="3" fill="#64748b"/>
+    <text x="1000" y="602" text-anchor="middle" class="cardTitle" fill="#0f172a">B &#23398;&#20064;&#35760;&#24518;&#31995;&#32479;</text>
+    <text x="1000" y="624" text-anchor="middle" class="cardHint">&#30701;&#26399;&#29366;&#24577; &#183; &#38271;&#26399;&#33021;&#21147; &#183; &#38169;&#39064;&#27169;&#24335; &#183; &#26041;&#27861;&#27169;&#24335;</text>
+  </g>
+
+  <!-- C1 / C2 -->
+  <g filter="url(#cardShadow)">
+    <rect x="80" y="672" width="560" height="78" rx="11" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect x="80" y="672" width="6" height="78" rx="3" fill="#6366f1"/>
+    <text x="360" y="698" text-anchor="middle" class="cardTitle" fill="#0f172a">C1 LLM &#25512;&#29702;&#26680;&#24515;</text>
+    <text x="360" y="720" text-anchor="middle" class="cardHint">&#35762;&#35299; &#183; &#31034;&#20363; &#183; &#21453;&#39304;&#29702;&#35299;</text>
+  </g>
+
+  <g filter="url(#cardShadow)">
+    <rect x="720" y="672" width="560" height="78" rx="11" fill="#fffbeb" stroke="#fbbf24" stroke-width="1.8"/>
+    <rect x="720" y="672" width="6" height="78" rx="3" fill="#f59e0b"/>
+    <text x="1000" y="698" text-anchor="middle" class="cardTitle" fill="#92400e">C2 &#25945;&#23398;&#24037;&#20855; / API</text>
+    <text x="1000" y="720" text-anchor="middle" class="cardHint" fill="#a16207">OCR &#183; ASR &#183; &#20999;&#39064; &#183; &#35780;&#27979; &#183; &#25512;&#33616; &#65288;exam-ocr M0&#65289;</text>
+  </g>
+
+  <!-- Aggregate arrows to A+ -->
+  <path d="M360 576 L520 556" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <path d="M1000 576 L840 556" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <rect x="612" y="548" width="136" height="20" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+  <text x="680" y="562" text-anchor="middle" class="pill" fill="#1d4ed8">&#32858;&#21512;&#34701;&#21512;</text>
+
+  <!-- Memory Drive -->
+  <path d="M520 502 C300 460 336 410 336 377" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrowGreen)"/>
+  <path d="M840 502 C1060 460 874 410 874 377" fill="none" stroke="#059669" stroke-width="2.2" marker-end="url(#arrowGreen)"/>
+  <rect x="248" y="432" width="132" height="24" rx="12" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.2"/>
+  <text x="314" y="448" text-anchor="middle" class="pill" fill="#047857">Memory Drive</text>
+
+  <!-- Ring to C2 connection hint -->
+  <path d="M990 268 L990 420 L1000 672" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.45"/>
+
+  <!-- Main chain bar -->
+  <rect x="56" y="800" width="1248" height="58" rx="12" fill="#0f172a"/>
+  <text x="680" y="824" text-anchor="middle" class="barTitle">&#21807;&#19968;&#20027;&#38142;</text>
+  <text x="680" y="844" text-anchor="middle" class="barFlow">&#9317; &#8594; C2 &#8594; A/B &#8594; A+ &#8594; &#9312; &#8594; &#9313; &#8594; &#9314; &#8594; &#9315; &#8594; &#9316; &#8594; &#9317;</text>
+
+  <!-- Legend -->
+  <g filter="url(#cardShadow)">
+    <rect x="56" y="876" width="1248" height="100" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="84" y="902" class="legendTitle">&#22270;&#20363;</text>
+    <line x1="84" y1="910" x2="180" y2="910" stroke="#e2e8f0" stroke-width="1"/>
+
+    <rect x="84" y="924" width="10" height="10" rx="3" fill="#f59e0b"/>
+    <text x="102" y="933" class="legendItem">C2 M0 &#8212; exam-ocr + :8000 + &#24179;&#26495; OCR</text>
+
+    <rect x="84" y="948" width="10" height="10" rx="3" fill="#3b82f6"/>
+    <text x="102" y="957" class="legendItem">&#9317; M0 &#8212; &#25293;&#29031; + companion-pipeline Phase 0</text>
+
+    <rect x="520" y="924" width="10" height="10" rx="3" fill="#94a3b8"/>
+    <text x="538" y="933" class="legendItem">A+ / &#9312;&#8211;&#9314; / Buddy API &#8212; M1&#8211;M4</text>
+
+    <rect x="520" y="948" width="10" height="10" rx="3" fill="#059669"/>
+    <text x="538" y="957" class="legendItem">Memory Drive &#8212; B/A+ &#21464;&#21270;&#35302;&#21457;&#37325;&#31639;</text>
+
+    <rect x="980" y="924" width="10" height="10" rx="3" fill="#7c3aed"/>
+    <text x="998" y="933" class="legendItem">&#20276;&#23398;&#38381;&#29615; &#8212; &#9316; &#8594; &#9317;</text>
+
+    <rect x="980" y="948" width="10" height="10" rx="3" fill="#2563eb"/>
+    <text x="998" y="957" class="legendItem">&#25345;&#32493;&#20889;&#20837; &#8212; &#9317; &#8594; C2 &#8594; A/B</text>
+  </g>
+</svg>

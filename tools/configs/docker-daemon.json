@@ -1,0 +1,13 @@
+{
+    "runtimes": {
+        "nvidia": {
+            "args": [],
+            "path": "nvidia-container-runtime"
+        }
+    },
+    "registry-mirrors": [
+        "https://docker.m.daocloud.io",
+        "https://docker.1ms.run",
+        "https://docker.xuanyuan.me"
+    ]
+}

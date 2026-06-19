@@ -1,0 +1,17 @@
+# Temporary backup directories
+configs/backups/
+configs/reports/
+
+# Python bytecode
+__pycache__/
+
+# User-specific configuration
+config.json
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
