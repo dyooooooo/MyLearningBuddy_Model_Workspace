@@ -89,7 +89,7 @@ tools/setup-china-mirrors-system.sh
 
 ## Workspace Layout
 
-**Cursor 工作区根目录**：`~/MyLearningBuddy_Model_Workspace/`（2026-06 起；`~/workspace` 为同名符号链接；`~/doc`、`~/tools`、`~/AGENTS.md` 指向此目录）。
+**Cursor 工作区根目录**：`~/MyLearningBuddy_Model_Workspace/`（2026-06 起；`~/doc`、`~/tools`、`~/AGENTS.md` 指向此目录）。
 
 ```
 ~/MyLearningBuddy_Model_Workspace/   # Cursor 工作区 & git 根

@@ -1,6 +1,6 @@
 # Learning Buddy — 现状汇总与未来规划
 
-> **Cursor 工作区（2026-06）**：本仓库根目录为 `~/MyLearningBuddy_Model_Workspace/`（`~/workspace` 为兼容符号链接）。Cursor 规则与 Skill 仍在用户级 `~/.cursor/`（非本 git 仓库内）。
+> **Cursor 工作区（2026-06）**：本仓库根目录为 `~/MyLearningBuddy_Model_Workspace/`。Cursor 规则与 Skill 仍在用户级 `~/.cursor/`（非本 git 仓库内）。
 >
 > **Cursor 规则**：本规划已摘要为 [`.cursor/rules/learning-buddy.mdc`](../../.cursor/rules/learning-buddy.mdc)（`alwaysApply: true`）及 [`.cursor/skills/learning-buddy/`](../../.cursor/skills/learning-buddy/SKILL.md)。改本文须同步规则、Skill 及 WSL 源稿与其他副本。
 >

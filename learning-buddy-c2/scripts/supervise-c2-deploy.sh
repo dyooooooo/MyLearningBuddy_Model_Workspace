@@ -2,7 +2,7 @@
 # Supervise model download, vLLM image pull, and stack startup. Restarts dead workers.
 set -euo pipefail
 
-COMPOSE_DIR="${COMPOSE_DIR:-$HOME/workspace/learning-buddy-c2}"
+COMPOSE_DIR="${COMPOSE_DIR:-$HOME/MyLearningBuddy_Model_Workspace/learning-buddy-c2}"
 MODEL_DIR="${MODELS_HOST_PATH:-$HOME/opt/models}/Qwen3.6-35B-A3B-NVFP4"
 VENV_PY="${MODEL_VENV_PY:-$HOME/opt/models/.venv/bin/python}"
 DOWNLOAD_LOG="${MODEL_DOWNLOAD_LOG:-$HOME/opt/models/download.log}"

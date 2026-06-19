@@ -31,11 +31,6 @@ if [[ ! -e "$HOME/$WORKSPACE_DIR/models" ]]; then
   ln -s ../opt/models "$HOME/$WORKSPACE_DIR/models"
 fi
 
-# backward-compat symlink ~/workspace -> workspace dir
-if [[ ! -e "$HOME/workspace" ]]; then
-  ln -sfn "$HOME/$WORKSPACE_DIR" "$HOME/workspace"
-fi
-
 if [[ ! -f "$HOME/.bashrc.d/dgx-spark-env.sh" ]] && [[ -f "$(dirname "$0")/env.example" ]]; then
   mkdir -p "$HOME/.bashrc.d"
   cp "$(dirname "$0")/env.example" "$HOME/.bashrc.d/dgx-spark-env.sh"
