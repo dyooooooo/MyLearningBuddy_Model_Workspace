@@ -1,6 +1,6 @@
 # Cursor 对话记录索引
 
-> **工作区**：`~/workspace/`（Cursor 根目录）· transcript 目录：`~/.cursor/projects/home-mylearningbuddy-workspace/agent-transcripts/`
+> **工作区**：`~/MyLearningBuddy_Model_Workspace/`（Cursor 根目录；`~/workspace` 为兼容符号链接）· transcript 目录：`~/.cursor/projects/home-mylearningbuddy-workspace/agent-transcripts/`（重开文件夹后 slug 可能变化）
 >
 > 2026-06 自 `home-mylearningbuddy`（旧根目录 `~/`）迁入 15 条历史对话。
 

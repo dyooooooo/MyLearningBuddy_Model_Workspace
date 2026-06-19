@@ -9,7 +9,7 @@ todos:
     content: hfd.sh 预下载 nvidia/Qwen3.6-35B-A3B-NVFP4 到 /opt/models
     status: completed
   - id: rsync-server
-    content: WSL rsync exam-ocr-server 到 ~/workspace/exam-ocr-server 并盘点配置/API
+    content: WSL rsync exam-ocr-server 到 ~/MyLearningBuddy_Model_Workspace/exam-ocr-server 并盘点配置/API
     status: completed
   - id: refactor-gateway
     content: 改造 exam-ocr-server：移除 8765/三引擎，新增 vLLM Vision 客户端与三 capability
@@ -21,7 +21,7 @@ todos:
     content: 编写 c2-gateway Dockerfile + compose：8000、内网连 vllm-qwen36-35b
     status: completed
   - id: compose-deploy
-    content: 创建 ~/workspace/learning-buddy-c2/docker-compose.yml 并按序启动两容器
+    content: 创建 ~/MyLearningBuddy_Model_Workspace/learning-buddy-c2/docker-compose.yml 并按序启动两容器
     status: completed
   - id: acceptance-cutover
     content: health/smoke/平板链路验收；停 Windows/WSL C2；平板改 192.168.3.200:8000
@@ -98,14 +98,14 @@ chmod +x hfd.sh
 ## 阶段 2 — 同步 exam-ocr-server 源码（WSL → Spark）
 
 **源**：WSL `/mnt/d/01_coding/LearningStack/exam-ocr-server`  
-**目标**：Spark `~/workspace/exam-ocr-server`
+**目标**：Spark `~/MyLearningBuddy_Model_Workspace/exam-ocr-server`
 
 在 **WSL** 执行（排除 build 产物）：
 
 ```bash
 rsync -avz --exclude '.gradle' --exclude 'build' --exclude 'node_modules' \
   /mnt/d/01_coding/LearningStack/exam-ocr-server/ \
-  mylearningbuddy@192.168.3.200:~/workspace/exam-ocr-server/
+  mylearningbuddy@192.168.3.200:~/MyLearningBuddy_Model_Workspace/exam-ocr-server/
 ```
 
 同步后在 Spark 盘点（Agent 第一步只读）：
@@ -119,7 +119,7 @@ rsync -avz --exclude '.gradle' --exclude 'build' --exclude 'node_modules' \
 
 ## 阶段 3 — 改造 exam-ocr-server → C2 Gateway（代码）
 
-在 `~/workspace/exam-ocr-server` 内改造（**不新建 exam-ocr Hub 仓库**）：
+在 `~/MyLearningBuddy_Model_Workspace/exam-ocr-server` 内改造（**不新建 exam-ocr Hub 仓库**）：
 
 ### 3.1 删除 / 禁用
 
@@ -147,7 +147,7 @@ rsync -avz --exclude '.gradle' --exclude 'build' --exclude 'node_modules' \
 
 ### 3.4 新增 Dockerfile
 
-路径建议：`~/workspace/exam-ocr-server/Dockerfile`（或 `deploy/Dockerfile`）
+路径建议：`~/MyLearningBuddy_Model_Workspace/exam-ocr-server/Dockerfile`（或 `deploy/Dockerfile`）
 
 - 基础镜像优先 `nvcr.io` 或 slim + 国内 apt/pip 源
 - `ENV PIP_INDEX_URL=...`（若含 Python 脚本）
@@ -160,8 +160,8 @@ rsync -avz --exclude '.gradle' --exclude 'build' --exclude 'node_modules' \
 
 新建部署编排（建议放在 Spark 工作区，与产品文档并列）：
 
-`~/workspace/learning-buddy-c2/docker-compose.yml`  
-`~/workspace/learning-buddy-c2/.env.example`
+`~/MyLearningBuddy_Model_Workspace/learning-buddy-c2/docker-compose.yml`  
+`~/MyLearningBuddy_Model_Workspace/learning-buddy-c2/.env.example`
 
 ```yaml
 # 结构要点（实施时补全 command / build context）
@@ -185,7 +185,7 @@ services:
 
   c2-gateway:
     container_name: c2-gateway
-    build: ~/workspace/exam-ocr-server
+    build: ~/MyLearningBuddy_Model_Workspace/exam-ocr-server
     networks: [learning_buddy_c2]
     depends_on: [vllm]
     ports: ["8000:8000"]

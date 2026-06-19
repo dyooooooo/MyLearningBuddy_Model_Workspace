@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SPARK_HOST="${SPARK_HOST:-mylearningbuddy@192.168.3.200}"
-WORKSPACE="${WORKSPACE:-workspace}"
+WORKSPACE="${WORKSPACE:-MyLearningBuddy_Model_Workspace}"
 DEST="${DEST:-~/${WORKSPACE}/doc/assets}"
 SRC_CANDIDATES=(
   "/mnt/d/01_coding/LearningStack/MyLearningBuddy/docs/architecture/assets"

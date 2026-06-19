@@ -89,10 +89,10 @@ tools/setup-china-mirrors-system.sh
 
 ## Workspace Layout
 
-**Cursor 工作区根目录**：`~/workspace/`（2026-06 起；`~/doc`、`~/tools`、`~/AGENTS.md` 为指向此处的符号链接，兼容旧路径）。
+**Cursor 工作区根目录**：`~/MyLearningBuddy_Model_Workspace/`（2026-06 起；`~/workspace` 为同名符号链接；`~/doc`、`~/tools`、`~/AGENTS.md` 指向此目录）。
 
 ```
-~/workspace/                 # Cursor 工作区 & git 根
+~/MyLearningBuddy_Model_Workspace/   # Cursor 工作区 & git 根
   AGENTS.md                  # 本文件
   doc/                       # 产品文档、架构图、plans
   tools/                     # DGX 运维脚本（镜像、健康检查、MCP）

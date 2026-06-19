@@ -41,7 +41,7 @@ http://192.168.3.200:8000/test/
 ## Deploy
 
 ```bash
-cd ~/workspace/learning-buddy-c2
+cd ~/MyLearningBuddy_Model_Workspace/learning-buddy-c2
 ```
 
 ```bash

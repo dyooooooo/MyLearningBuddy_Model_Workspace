@@ -37,7 +37,7 @@ Then set `MODELS_HOST_PATH=/opt/models` in `.env`.
 ## Quick start
 
 ```bash
-cd ~/workspace/learning-buddy-c2
+cd ~/MyLearningBuddy_Model_Workspace/learning-buddy-c2
 ```
 
 ```bash

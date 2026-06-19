@@ -22,11 +22,18 @@ if ! groups "$USER" | grep -q docker; then
   echo "Run: newgrp docker"
 fi
 
-mkdir -p "$HOME/workspace"/{doc,agents,notebooks,scripts,configs,tools}
+WORKSPACE_DIR="${WORKSPACE_DIR:-MyLearningBuddy_Model_Workspace}"
+
+mkdir -p "$HOME/$WORKSPACE_DIR"/{doc,agents,notebooks,scripts,configs,tools}
 
 # models/ is a symlink to ~/opt/models — create only if missing
-if [[ ! -e "$HOME/workspace/models" ]]; then
-  ln -s ../opt/models "$HOME/workspace/models"
+if [[ ! -e "$HOME/$WORKSPACE_DIR/models" ]]; then
+  ln -s ../opt/models "$HOME/$WORKSPACE_DIR/models"
+fi
+
+# backward-compat symlink ~/workspace -> workspace dir
+if [[ ! -e "$HOME/workspace" ]]; then
+  ln -sfn "$HOME/$WORKSPACE_DIR" "$HOME/workspace"
 fi
 
 if [[ ! -f "$HOME/.bashrc.d/dgx-spark-env.sh" ]] && [[ -f "$(dirname "$0")/env.example" ]]; then

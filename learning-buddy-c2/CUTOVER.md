@@ -24,13 +24,13 @@ http://192.168.3.200:8000
 ```bash
 rsync -avz --exclude '.gradle' --exclude 'build' --exclude 'node_modules' \
   /mnt/d/01_coding/LearningStack/exam-ocr-server/ \
-  mylearningbuddy@192.168.3.200:~/workspace/exam-ocr-server/
+  mylearningbuddy@192.168.3.200:~/MyLearningBuddy_Model_Workspace/exam-ocr-server/
 ```
 
 在 **Spark** 重建网关：
 
 ```bash
-cd ~/workspace/learning-buddy-c2
+cd ~/MyLearningBuddy_Model_Workspace/learning-buddy-c2
 ```
 
 ```bash
@@ -46,7 +46,7 @@ docker compose up -d c2-gateway
 ## 4. 运维
 
 ```bash
-cd ~/workspace/learning-buddy-c2
+cd ~/MyLearningBuddy_Model_Workspace/learning-buddy-c2
 ```
 
 ```bash

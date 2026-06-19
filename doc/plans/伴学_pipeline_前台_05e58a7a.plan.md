@@ -218,7 +218,7 @@ environment:
 ### 4.2 构建与启动
 
 ```bash
-cd ~/workspace/learning-buddy-c2
+cd ~/MyLearningBuddy_Model_Workspace/learning-buddy-c2
 ```
 
 ```bash
