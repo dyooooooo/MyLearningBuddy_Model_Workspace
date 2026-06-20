@@ -1,4 +1,187 @@
 services:
+  postgres:
+    container_name: lb-postgres
+    image: postgres:16-alpine
+    networks:
+      - learning_buddy_c2
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-buddy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-buddy}
+      POSTGRES_DB: ${POSTGRES_DB:-buddy}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-buddy} -d ${POSTGRES_DB:-buddy}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    container_name: lb-redis
+    image: redis:7-alpine
+    networks:
+      - learning_buddy_c2
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  etcd:
+    container_name: lb-etcd
+    image: quay.io/coreos/etcd:v3.5.5
+    networks:
+      - learning_buddy_c2
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command:
+      - etcd
+      - -advertise-client-urls=http://127.0.0.1:2379
+      - -listen-client-urls=http://0.0.0.0:2379
+    restart: unless-stopped
+
+  milvus:
+    container_name: lb-milvus
+    image: milvusdb/milvus:v2.4.15
+    networks:
+      - learning_buddy_c2
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MINIO_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - milvus-data:/var/lib/milvus
+    depends_on:
+      etcd:
+        condition: service_started
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:9091/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+
+  qdrant:
+    profiles: ["qdrant-fallback"]
+    container_name: lb-qdrant
+    image: qdrant/qdrant:v1.12.5
+    networks:
+      - learning_buddy_c2
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
+
+  clash-relay:
+    profiles: ["nemo"]
+    container_name: clash-relay
+    image: alpine/socat
+    network_mode: host
+    command: TCP-LISTEN:17897,bind=0.0.0.0,fork,reuseaddr TCP:${CLASH_HOST:-127.0.0.1}:7897
+    restart: unless-stopped
+
+  nvcr-cache:
+    profiles: ["nemo"]
+    container_name: nvcr-cache
+    image: registry:2
+    network_mode: host
+    environment:
+      HTTP_PROXY: ${HTTP_PROXY:-http://127.0.0.1:7897}
+      HTTPS_PROXY: ${HTTPS_PROXY:-http://127.0.0.1:7897}
+    volumes:
+      - nvcr-cache-data:/var/lib/registry
+      - ${HOME}/.cache/nim/registry-config.yml:/etc/docker/registry/config.yml:ro
+    restart: unless-stopped
+
+  nemo-embed:
+    profiles: ["nemo"]
+    container_name: nemo-embed
+    image: ${NIM_EMBED_IMAGE:-nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2:1.5.0}
+    networks:
+      - learning_buddy_c2
+    depends_on:
+      clash-relay:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    gpus: all
+    shm_size: "16gb"
+    ports:
+      - "127.0.0.1:8010:8000"
+    volumes:
+      - ${HOME}/.cache/nim:/opt/nim/.cache
+    environment:
+      NGC_API_KEY: ${NGC_API_KEY:-}
+      HTTP_PROXY: ${NEMO_HTTP_PROXY:-http://host.docker.internal:17897}
+      HTTPS_PROXY: ${NEMO_HTTPS_PROXY:-http://host.docker.internal:17897}
+      NO_PROXY: ${NEMO_NO_PROXY:-localhost,127.0.0.1,nemo-embed,nemo-rerank}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8000/v1/models"]
+      interval: 30s
+      timeout: 15s
+      retries: 12
+      start_period: 300s
+    restart: unless-stopped
+
+  nemo-rerank:
+    profiles: ["nemo"]
+    container_name: nemo-rerank
+    image: ${NIM_RERANK_IMAGE:-nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:1.5.0}
+    networks:
+      - learning_buddy_c2
+    depends_on:
+      clash-relay:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    gpus: all
+    shm_size: "16gb"
+    ports:
+      - "127.0.0.1:8011:8000"
+    volumes:
+      - ${HOME}/.cache/nim:/opt/nim/.cache
+    environment:
+      NGC_API_KEY: ${NGC_API_KEY:-}
+      HTTP_PROXY: ${NEMO_HTTP_PROXY:-http://host.docker.internal:17897}
+      HTTPS_PROXY: ${NEMO_HTTPS_PROXY:-http://host.docker.internal:17897}
+      NO_PROXY: ${NEMO_NO_PROXY:-localhost,127.0.0.1,nemo-embed,nemo-rerank}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8000/v1/models"]
+      interval: 30s
+      timeout: 15s
+      retries: 12
+      start_period: 300s
+    restart: unless-stopped
+
+  minio:
+    container_name: lb-minio
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    networks:
+      - learning_buddy_c2
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
   vllm:
     container_name: vllm-qwen36-35b
     image: ghcr.io/spark-arena/dgx-vllm-eugr-nightly:latest
@@ -46,7 +229,7 @@ services:
       - --max-num-batched-tokens
       - "8192"
       - --gpu-memory-utilization
-      - "0.55"
+      - "0.5"
       - --enable-prefix-caching
       - --speculative-config
       - '{"method":"mtp","num_speculative_tokens":3,"moe_backend":"triton"}'
@@ -61,6 +244,116 @@ services:
       retries: 10
       start_period: 600s
 
+  buddy-api:
+    container_name: buddy-api
+    build:
+      context: ../learning-buddy-api
+      dockerfile: Dockerfile
+    networks:
+      - learning_buddy_c2
+    gpus: all
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
+        condition: service_started
+    ports:
+      - "8100:8100"
+    volumes:
+      - buddy-data:/data/buddy
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+    environment:
+      BUDDY_DATA_DIR: /data/buddy
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://buddy:buddy@postgres:5432/buddy}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      VECTOR_BACKEND: ${VECTOR_BACKEND:-milvus}
+      MILVUS_URI: ${MILVUS_URI:-http://milvus:19530}
+      MILVUS_COLLECTION: ${MILVUS_COLLECTION:-lb_corpus}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      NEMO_EMBED_URL: ${NEMO_EMBED_URL:-http://nemo-embed:8000/v1}
+      NEMO_RERANK_URL: ${NEMO_RERANK_URL:-http://nemo-rerank:8000/v1}
+      NEMO_EMBED_ENABLED: ${NEMO_EMBED_ENABLED:-false}
+      NEMO_RERANK_ENABLED: ${NEMO_RERANK_ENABLED:-false}
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+      EMBED_MODEL: ${EMBED_MODEL:-BAAI/bge-small-zh-v1.5}
+      EMBED_DEVICE: ${EMBED_DEVICE:-cuda}
+      RERANK_MODEL: ${RERANK_MODEL:-BAAI/bge-reranker-v2-m3}
+      EMBED_DIM: ${EMBED_DIM:-512}
+      RAG_TOP_K: ${RAG_TOP_K:-30}
+      RAG_RERANK_TOP_K: ${RAG_RERANK_TOP_K:-5}
+      KP_SCORE_THRESHOLD: ${KP_SCORE_THRESHOLD:-0.55}
+      RAG_HYBRID_ALPHA: ${RAG_HYBRID_ALPHA:-0.7}
+      GRAPH_ENABLED: ${GRAPH_ENABLED:-true}
+      MAX_STUDENTS: ${MAX_STUDENTS:-5}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-admin}
+      API_TOKEN: ${API_TOKEN:-change-me-api}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://vllm-qwen36-35b:8088/v1}
+      VLLM_MODEL: ${VLLM_MODEL:-qwen36-35b-nvfp4}
+      VLLM_MAX_CONCURRENT: ${VLLM_MAX_CONCURRENT:-2}
+      VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
+      EVAL_FALLBACK_RULES: ${EVAL_FALLBACK_RULES:-true}
+      EVAL_AGENT_ENABLED: ${EVAL_AGENT_ENABLED:-true}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8100/api/v1/system/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 8
+      start_period: 300s
+
+  buddy-worker:
+    container_name: buddy-worker
+    build:
+      context: ../learning-buddy-api
+      dockerfile: Dockerfile
+    networks:
+      - learning_buddy_c2
+    gpus: all
+    depends_on:
+      buddy-api:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
+        condition: service_started
+    volumes:
+      - buddy-data:/data/buddy
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+    environment:
+      BUDDY_DATA_DIR: /data/buddy
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://buddy:buddy@postgres:5432/buddy}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      VECTOR_BACKEND: ${VECTOR_BACKEND:-milvus}
+      MILVUS_URI: ${MILVUS_URI:-http://milvus:19530}
+      MILVUS_COLLECTION: ${MILVUS_COLLECTION:-lb_corpus}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      NEMO_EMBED_URL: ${NEMO_EMBED_URL:-http://nemo-embed:8000/v1}
+      NEMO_RERANK_URL: ${NEMO_RERANK_URL:-http://nemo-rerank:8000/v1}
+      NEMO_EMBED_ENABLED: ${NEMO_EMBED_ENABLED:-false}
+      NEMO_RERANK_ENABLED: ${NEMO_RERANK_ENABLED:-false}
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+      EMBED_MODEL: ${EMBED_MODEL:-BAAI/bge-small-zh-v1.5}
+      EMBED_DEVICE: ${EMBED_DEVICE:-cuda}
+      RERANK_MODEL: ${RERANK_MODEL:-BAAI/bge-reranker-v2-m3}
+      EMBED_DIM: ${EMBED_DIM:-512}
+      RAG_TOP_K: ${RAG_TOP_K:-30}
+      RAG_RERANK_TOP_K: ${RAG_RERANK_TOP_K:-5}
+      GRAPH_ENABLED: ${GRAPH_ENABLED:-true}
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-http://vllm-qwen36-35b:8088/v1}
+      VLLM_MODEL: ${VLLM_MODEL:-qwen36-35b-nvfp4}
+      VLLM_MAX_CONCURRENT: ${VLLM_MAX_CONCURRENT:-2}
+      VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
+      EVAL_FALLBACK_RULES: ${EVAL_FALLBACK_RULES:-true}
+      EVAL_AGENT_ENABLED: ${EVAL_AGENT_ENABLED:-true}
+    command: ["python", "-m", "app.jobs.worker"]
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+
   c2-gateway:
     container_name: c2-gateway
     build:
@@ -71,14 +364,30 @@ services:
     depends_on:
       vllm:
         condition: service_started
+      buddy-api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
     ports:
       - "8000:8000"
-    volumes:
-      - companion-data:/data/companion
     environment:
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://vllm-qwen36-35b:8088/v1}
       VLLM_MODEL: ${VLLM_MODEL:-qwen36-35b-nvfp4}
-      COMPANION_DATA_DIR: /data/companion
+      VLLM_MAX_CONCURRENT: ${VLLM_MAX_CONCURRENT:-2}
+      VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      BUDDY_API_URL: ${BUDDY_API_URL:-http://buddy-api:8100}
+      BUDDY_API_TOKEN: ${API_TOKEN:-change-me-api}
+      BUDDY_ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-admin}
+      REFINE_ENABLED: ${REFINE_ENABLED:-true}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-companion-frames}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-86400}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:8000/api/v1/system/health"]
@@ -93,4 +402,9 @@ networks:
     driver: bridge
 
 volumes:
-  companion-data:
+  postgres-data:
+  milvus-data:
+  qdrant-data:
+  minio-data:
+  buddy-data:
+  nvcr-cache-data:

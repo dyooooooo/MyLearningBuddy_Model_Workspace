@@ -1,0 +1,4 @@
+{"print_text": "解不等式 x²-5x+6>0", "handwriting": "x<2 或 x>3", "expected_is_wrong": false, "kp_id": "math.hs.inequality.quadratic"}
+{"print_text": "解不等式 x²-5x+6>0", "handwriting": "x<2 或 x>3", "expected_is_wrong": false, "note": "solver"}
+{"print_text": "不等式 (3x-1)/(x+1) > 0 的解集为", "handwriting": "x<-1", "expected_is_wrong": true, "kp_id": "math.hs.inequality.rational"}
+{"print_text": "已知全集 U=(-∞, 1)，集合 A=(-1, 1)，则 A 的补集为", "handwriting": "(-∞,-1]", "expected_is_wrong": false, "kp_id": "math.hs.sets.complement"}

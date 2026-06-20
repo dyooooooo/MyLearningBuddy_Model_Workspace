@@ -1,0 +1,65 @@
+{"id": "qb:math:hs:sets.complement:001", "kp_id": "math.hs.sets.complement", "stem": "已知全集 U=(-∞, 1)，集合 A=(-1, 1)，则 A 的补集为", "source": "sample-exam", "difficulty": "medium", "answer": "(-∞,-1]", "expected_dwell_sec": 120, "question_type": "set-complement", "summary": "区间全集下求补集", "tags": ["grade_band:hs", "question_type:set-complement"], "links": {"primary_kp": "math.hs.sets.complement", "methods": ["method:hs:sets:complement-interval"], "shortcuts": ["sc:hs:sets:complement-interval"], "section_id": "sec:pep-a:math:hs:ch3:sets"}}
+{"id": "qb:math:hs:sets.interval:001", "kp_id": "math.hs.sets.interval", "stem": "设全集 U=R，A={x|x<2}，求 A 的补集", "source": "textbook", "difficulty": "easy", "answer": "[2,+∞)", "expected_dwell_sec": 90, "question_type": "set-complement", "links": {"primary_kp": "math.hs.sets.interval", "methods": ["method:hs:sets:complement-interval"]}}
+{"id": "qb:math:hs:sets.complement:002", "kp_id": "math.hs.sets.complement", "stem": "已知 U=(-∞,+∞)，A=(-2,3]，求 ∁U A", "source": "textbook", "difficulty": "medium", "answer": "(-∞,-2]∪[3,+∞)", "expected_dwell_sec": 150, "links": {"primary_kp": "math.hs.sets.complement", "methods": ["method:hs:sets:complement-interval"]}}
+{"kp_id": "math.hs.functions.power", "stem": "若幂函数 y=f(x) 的图像经过点 (³√3, 3)，则 f(2) 的值为", "source": "sample-exam", "difficulty": "medium"}
+{"kp_id": "math.hs.functions.power", "stem": "幂函数 f(x)=x^α 过点 (2,4)，求 α", "source": "textbook", "difficulty": "easy"}
+{"kp_id": "math.hs.functions.power", "stem": "已知幂函数图像过 (1,2)，求 f(4)", "source": "textbook", "difficulty": "medium"}
+{"kp_id": "math.hs.inequality.rational", "stem": "不等式 (3x-1)/(x+1) > 0 的解集为", "source": "sample-exam", "difficulty": "medium"}
+{"kp_id": "math.hs.inequality.rational", "stem": "解分式不等式 (x-2)/(x+3) ≥ 0", "source": "textbook", "difficulty": "medium"}
+{"kp_id": "math.hs.inequality.rational", "stem": "求 (2x+1)/(x-1) < 0 的解集", "source": "textbook", "difficulty": "hard"}
+{"kp_id": "math.hs.functions.piecewise", "stem": "已知 f(x) = { x+3, x<-1; x², x≥-1，则 f(-2) 与 f(1) 的值", "source": "sample-exam", "difficulty": "medium"}
+{"kp_id": "math.hs.functions.piecewise", "stem": "分段函数求 f(0) 其中 x<0 时为 2x+1", "source": "textbook", "difficulty": "easy"}
+{"kp_id": "math.hs.functions.piecewise", "stem": "设分段函数在 x=0 处连续求参数", "source": "textbook", "difficulty": "hard"}
+{"kp_id": "math.hs.trigonometry.ratio", "stem": "已知角 α 的终边过点 P(1, 2)，求 sinα cosα", "source": "sample-exam", "difficulty": "medium"}
+{"kp_id": "math.hs.trigonometry.induction", "stem": "已知角 α 终边过 P(1,2)，求 sin(π/2+α) cot(π-α)", "source": "sample-exam", "difficulty": "hard"}
+{"kp_id": "math.hs.trigonometry.induction", "stem": "化简 sin(π+α) 与 cos(π/2-α)", "source": "textbook", "difficulty": "medium"}
+{"kp_id": "math.hs.trigonometry.ratio", "stem": "角 α 终边过 (3,4) 求 tanα", "source": "textbook", "difficulty": "easy"}
+{"kp_id": "math.hs.sequence.arithmetic", "stem": "等差数列 {a_n} 中 a_1=2, d=3, 求 a_10", "source": "textbook", "difficulty": "easy"}
+{"kp_id": "math.hs.sequence.arithmetic", "stem": "等差数列前 n 项和 S_n 的最值问题", "source": "textbook", "difficulty": "hard"}
+{"kp_id": "math.hs.calculus.extreme", "stem": "设 x₁, x₂, x₃ > 0 且 x₁ ≠ x₂, f(x)=x+2/x, g(x)=3x, 若 f(x₁)=f(x₂)=g(x₃), 求 f(x₁+x₂)+g(x₃) 的取值范围", "source": "sample-exam", "difficulty": "hard"}
+{"kp_id": "math.hs.functions.rational", "stem": "函数 f(x)=x+2/x 在 x>0 时的最小值", "source": "textbook", "difficulty": "medium"}
+{"kp_id": "math.hs.functions.symmetry", "stem": "已知 f(x₁)=f(x₂) 且 x₁≠x₂ 求 x₁+x₂", "source": "textbook", "difficulty": "hard"}
+{"kp_id": "math.hs.calculus.extreme", "stem": "利用导数求函数在区间上的最大值", "source": "textbook", "difficulty": "medium"}
+{"kp_id": "math.hs.equation.log.domain", "stem": "设 a∈R，若 {x | lg(x²+2x) - lg(ax-1) = 0} ≠ ∅，则 a 的取值范围", "source": "sample-exam", "difficulty": "hard"}
+{"kp_id": "math.hs.equation.log", "stem": "解方程 lg(x+1) + lg(x-1) = 1", "source": "textbook", "difficulty": "medium"}
+{"kp_id": "math.hs.equation.log.domain", "stem": "求 lg(2x-1) 的定义域", "source": "textbook", "difficulty": "easy"}
+{"kp_id": "math.hs.sets.complement", "stem": "U=R, A=[0,2], 求 A 在 U 中的补集", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.inequality.quadratic", "stem": "解不等式 x²-5x+6>0", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.inequality.quadratic", "stem": "一元二次不等式 ax²+bx+c>0 恒成立求 a", "source": "practice", "difficulty": "hard"}
+{"kp_id": "math.hs.functions.value", "stem": "已知 f(x)=2x-1 求 f(3)", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.functions.piecewise", "stem": "分段函数 f(x) 在 x=-1 处求极限", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.trigonometry.ratio", "stem": "sinα+cosα 的化简已知 tanα=2", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.trigonometry.induction", "stem": "求 cos(3π/2+α) 的值", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.functions.power", "stem": "比较幂函数 2^0.3 与 0.3^2 大小", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.inequality.rational", "stem": "(x²-1)/(x-2)≥0 解集", "source": "practice", "difficulty": "hard"}
+{"kp_id": "math.hs.calculus.basic", "stem": "求 f(x)=x³ 在 x=1 处导数", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.calculus.extreme", "stem": "f(x)=x³-3x 的极值点", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.equation.log", "stem": "lg x + lg(x-3) = 1", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.sets.interval", "stem": "用区间表示 {x|x≤1 或 x>5}", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.algebra.fraction", "stem": "化简 (x²-4)/(x+2)", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.functions.rational", "stem": "y=(x²+1)/x 的最小值 x>0", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.functions.symmetry", "stem": "f(x)=x² 满足 f(x₁)=f(x₂) 则 x₁+x₂=0", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.sequence", "stem": "数列 a_n=1/n 的极限", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.probability", "stem": "掷两枚骰子点数之和为7的概率", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.geometry.analytic", "stem": "求过 (1,2) 且斜率为 3 的直线方程", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.sets.complement", "stem": "∁U(A∩B) 与 ∁U A ∪ ∁U B 的关系", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.inequality.rational", "stem": "解 (x+1)(x-2)/(x-3) > 0", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.trigonometry.induction", "stem": "sin(π/2+α)=cosα 的应用", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.functions.piecewise", "stem": "已知 f(x)={|x|,x<0; x²,x≥0} 求 f(-3)+f(2)", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.equation.log.domain", "stem": "lg(x²-1) 有意义时 x 的范围", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.calculus.extreme", "stem": "闭区间 [0,3] 上 f(x)=x²-2x 的最大值", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.functions.power", "stem": "幂函数 y=x^{-1} 图像特征", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.sets.complement", "stem": "A=(-∞,0)∪(2,+∞) 在 R 中补集", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.inequality.quadratic", "stem": "(x-1)(x+2)<0 解集", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.trigonometry.ratio", "stem": "已知 sinα=3/5 求 cosα", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.functions.rational", "stem": "f(x)=x+1/x 在 (0,+∞) 最小值", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.equation.log", "stem": "log₂(x-1)=3 求 x", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.sequence.arithmetic", "stem": "等差数列 a_5+a_6=20 求 a_1+d", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.calculus.basic", "stem": "f(x)=sin x 的导数", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.functions.value", "stem": "f(x)=lg x 求 f(100)", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.inequality.rational", "stem": "分式不等式 (x-1)/(x+2)≤0", "source": "practice", "difficulty": "medium"}
+{"kp_id": "math.hs.trigonometry.induction", "stem": "cot(π/2+α) 化简", "source": "sample-exam", "difficulty": "hard"}
+{"kp_id": "math.hs.functions.piecewise", "stem": "分段函数 x² x≥-1 求 f(-2)", "source": "sample-exam", "difficulty": "medium"}
+{"kp_id": "math.hs.sets.interval", "stem": "区间 (-1,1) 与 [0,2] 的交集", "source": "practice", "difficulty": "easy"}
+{"kp_id": "math.hs.calculus.extreme", "stem": "f(x₁)=f(x₂) 时 x₁+x₂ 与对称轴", "source": "sample-exam", "difficulty": "hard"}
+{"kp_id": "math.hs.equation.log.domain", "stem": "lg(ax-1) 真数大于0 求 a", "source": "sample-exam", "difficulty": "hard"}

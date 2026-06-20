@@ -1,0 +1,16 @@
+{
+  "name": "learning-buddy-test-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "gen:types": "openapi-typescript http://127.0.0.1:8100/openapi.json -o src/api/buddy.d.ts && openapi-typescript http://127.0.0.1:8000/openapi.json -o src/api/gateway.d.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

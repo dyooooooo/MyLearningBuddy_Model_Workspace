@@ -12,6 +12,7 @@ from app.config import settings
 from app.routes import router
 from app.companion.routes import router as companion_router
 from app.vllm_client import vllm_client
+from app.buddy_client import aclose as buddy_aclose
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 
@@ -22,6 +23,7 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 async def lifespan(_app: FastAPI):
     yield
     await vllm_client.aclose()
+    await buddy_aclose()
 
 
 app = FastAPI(

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>伴学 Pipeline · C2 Gateway</title>
-  <link rel="stylesheet" href="/test/app.css" />
+  <link rel="stylesheet" href="/test/app.css?v=20260625" />
 </head>
 <body>
   <header class="topbar">
@@ -12,7 +12,7 @@
       <span class="brand-mark">伴学</span>
       <div>
         <h1>伴学 Pipeline 测试台</h1>
-        <p class="subtitle">网关核心 · 薄客户端 · Learning Buddy</p>
+        <p class="subtitle">浏览器模拟平板伴学 · OCR → 合并 → 定稿 → A⁺ · Learning Buddy M1</p>
       </div>
     </div>
     <div class="status" id="healthStatus">
@@ -22,50 +22,105 @@
   </header>
 
   <div class="session-bar">
-    <span class="session-label" id="sessionIdLabel">未创建会话</span>
+    <div class="session-info">
+      <span class="session-label" id="sessionIdLabel">未创建会话</span>
+      <span class="session-hint">一次「会话」= 一次伴学过程（可含多页作业）</span>
+    </div>
     <div class="session-actions">
-      <button type="button" id="btnNewSession" class="btn ghost sm">新建会话</button>
-      <button type="button" id="btnFinalize" class="btn ghost sm" disabled>定稿当前页</button>
-      <button type="button" id="btnEndSession" class="btn ghost sm" disabled>结束会话</button>
-      <button type="button" id="btnExport" class="btn ghost sm" disabled>导出 JSON</button>
+      <label class="student-picker" title="小写字母开头，3–32 位（a-z、0-9、_、-）。输入 Bowen 会自动转为 bowen">
+        学生 ID
+        <input
+          type="text"
+          id="studentIdInput"
+          list="studentIdList"
+          value="student-01"
+          maxlength="32"
+          spellcheck="false"
+          placeholder="bowen 或 student-01"
+          autocomplete="off"
+        />
+        <datalist id="studentIdList"></datalist>
+      </label>
+      <div class="student-banner" id="studentBanner" hidden role="status"></div>
+      <button type="button" id="btnNewSession" class="btn ghost sm" title="清空状态，开始新的伴学测试">新建会话</button>
+      <button type="button" id="btnExport" class="btn ghost sm" disabled title="下载会话+作业+掌握度 JSON">导出 JSON</button>
     </div>
   </div>
 
+  <div class="toast-host" id="toastHost" aria-live="polite"></div>
+
   <main class="layout companion-layout">
     <section class="panel controls">
+      <nav class="workflow-steps" id="workflowSteps" aria-label="操作流程">
+        <div class="step" data-step="1"><span class="step-num">1</span><span>批量选图</span></div>
+        <div class="step-arrow">→</div>
+        <div class="step" data-step="2"><span class="step-num">2</span><span>顺序加帧</span></div>
+        <div class="step-arrow">→</div>
+        <div class="step" data-step="3"><span class="step-num">3</span><span>查看合并</span></div>
+        <div class="step-arrow">→</div>
+        <div class="step" data-step="4"><span class="step-num">4</span><span>定稿入库</span></div>
+      </nav>
+
+      <div class="panel-head compact">
+        <h2>图片队列</h2>
+        <label class="inline-check">
+          <input type="checkbox" id="hideDoneQueue" checked />
+          隐藏已完成
+        </label>
+      </div>
+      <p class="panel-hint">可一次拖入多张，自动标记为第 1、2、3… 张（标签可改）</p>
+
       <div class="dropzone" id="dropzone">
-        <input type="file" id="fileInput" accept="image/*,.heic,.heif" hidden />
+        <input type="file" id="fileInput" accept="image/*,.heic,.heif" multiple hidden />
         <div class="dropzone-inner">
-          <p class="drop-title">拖入帧图片</p>
-          <p class="drop-hint">JPG / PNG / WebP</p>
+          <p class="drop-title">拖入或点击选择图片</p>
+          <p class="drop-hint">支持多选 · JPG / PNG / WebP / HEIC</p>
         </div>
       </div>
-      <button type="button" id="btnAddFrame" class="btn primary" disabled>加帧 → OCR → 合并</button>
 
-      <div class="panel-head compact">
-        <h2>Timeline</h2>
-      </div>
-      <div class="timeline" id="timeline">
-        <p class="timeline-empty">创建会话后加帧</p>
+      <div class="batch-progress" id="batchProgress" hidden>
+        <div class="batch-progress-label" id="batchProgressLabel">批量处理 0/0</div>
+        <div class="batch-progress-track"><div class="batch-progress-fill" id="batchProgressFill"></div></div>
       </div>
 
-      <div class="panel-head compact">
-        <h2>事件</h2>
+      <ul class="batch-queue" id="batchQueue" aria-label="待处理图片队列"></ul>
+
+      <div class="batch-actions">
+        <button type="button" id="btnProcessOne" class="btn primary sm" disabled>处理选中</button>
+        <button type="button" id="btnProcessAll" class="btn secondary sm" disabled>顺序处理全部</button>
+        <button type="button" id="btnProcessBatch" class="btn ghost sm" disabled title="服务端错叉流水线，多张更快">批量加速</button>
+        <button type="button" id="btnCancelBatch" class="btn ghost sm" hidden>停止批量</button>
+        <button type="button" id="btnClearQueue" class="btn ghost sm" disabled>清空待处理</button>
       </div>
-      <div class="event-log" id="eventLog"></div>
+
+      <details class="timeline-panel" id="timelinePanel">
+        <summary>帧调度与流水线耗时（调试）</summary>
+        <div class="timeline" id="timeline">
+          <p class="timeline-empty">加帧后显示</p>
+        </div>
+      </details>
+
+      <details class="events-panel">
+        <summary>事件日志（调试）</summary>
+        <div class="event-log" id="eventLog"></div>
+      </details>
     </section>
 
     <section class="panel preview">
-      <div class="panel-head">
+      <div class="panel-head preview-head">
         <h2>原图预览</h2>
         <span class="frame-meta" id="frameMeta" hidden></span>
-        <div class="legend">
+        <div class="preview-tools">
+          <label class="inline-check overlay-toggle" title="仅在「本帧」Tab 下显示当前帧 OCR 框">
+            <input type="checkbox" id="showOverlay" />
+            显示识别框
+          </label>
           <span class="chip print">印刷</span>
           <span class="chip handwriting">手写</span>
         </div>
       </div>
       <div class="canvas-wrap" id="canvasWrap">
-        <p class="placeholder">上传图片后在此显示</p>
+        <p class="placeholder">从队列选图或点击 Timeline 帧</p>
         <div class="preview-stage" id="previewStage" hidden>
           <img id="previewImg" alt="" />
           <canvas id="overlay" hidden></canvas>
@@ -74,13 +129,22 @@
     </section>
 
     <section class="panel results">
-      <div class="panel-head">
-        <h2 id="mergedTitle">当前页合并结果</h2>
+      <div class="processing-banner" id="processingBanner" hidden>
+        <span class="spinner sm-spinner"></span>
+        <span id="processingBannerText">识别合并中…</span>
+      </div>
+      <div class="panel-head results-head">
+        <div class="results-title-wrap">
+          <h2 id="mergedTitle">当前页合并结果</h2>
+          <p class="tab-help" id="tabHelp">同一页多帧 OCR 累积合并后的最终内容</p>
+        </div>
         <div class="side-tabs" id="sideTabs">
           <button type="button" class="tab active" data-tab="merged">合并</button>
           <button type="button" class="tab" data-tab="frame">本帧</button>
           <button type="button" class="tab" data-tab="homework">作业库</button>
-          <button type="button" class="tab" data-tab="mastery">A⁺ demo</button>
+          <button type="button" class="tab" data-tab="wrongbook">错题本</button>
+          <button type="button" class="tab" data-tab="mastery">A⁺</button>
+          <button type="button" class="tab" data-tab="agentruns">Agent</button>
         </div>
         <span class="question-count" id="questionCount" hidden></span>
       </div>
@@ -90,6 +154,12 @@
       <div class="side-list" id="sideList" hidden></div>
     </section>
   </main>
+
+  <div class="action-dock" id="actionDock">
+    <p class="dock-hint" id="dockHint">加帧完成后，将当前页写入作业库</p>
+    <button type="button" id="btnFinalizeDock" class="btn primary sm" disabled>定稿当前页</button>
+    <button type="button" id="btnEndSessionDock" class="btn secondary sm" disabled>结束会话</button>
+  </div>
 
   <details class="lab-panel">
     <summary>单帧 OCR 实验室（调试 <code>POST /api/v1/ocr/page</code>）</summary>
@@ -114,6 +184,7 @@
     <span id="modelInfo"></span>
   </footer>
 
-  <script src="/test/app.js" type="module"></script>
+  <script type="module" src="/test/vite/main.js"></script>
+  <script src="/test/app.js?v=20260625" type="module"></script>
 </body>
 </html>

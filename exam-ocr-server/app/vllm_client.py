@@ -2,10 +2,13 @@ import base64
 import json
 import logging
 import re
+from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
+from fastapi import HTTPException
 
+from app.clients.redis_client import acquire_vllm_slot, release_vllm_slot
 from app.config import settings
 from app.image_utils import jpeg_size
 from app.prompts import PAGE_ANALYZE_PROMPT
@@ -23,8 +26,14 @@ def _norm_bbox(bbox: list[Any], img_w: int, img_h: int) -> list[float]:
         return []
     x1, y1, x2, y2 = (float(bbox[i]) for i in range(4))
     if max(abs(x1), abs(y1), abs(x2), abs(y2)) > 1.0:
-        return [x1 / img_w, y1 / img_h, x2 / img_w, y2 / img_h]
-    return [x1, y1, x2, y2]
+        x1, y1, x2, y2 = x1 / img_w, y1 / img_h, x2 / img_w, y2 / img_h
+    lo = max(0.0, min(x1, x2))
+    hi = min(1.0, max(x1, x2))
+    lo_y = max(0.0, min(y1, y2))
+    hi_y = min(1.0, max(y1, y2))
+    if hi - lo < 0.002 or hi_y - lo_y < 0.002:
+        return []
+    return [lo, lo_y, hi, hi_y]
 
 
 def _pick_bbox(obj: dict[str, Any]) -> list[Any]:
@@ -148,6 +157,19 @@ class VllmVisionClient:
             await self._client.aclose()
             self._client = None
 
+    @asynccontextmanager
+    async def _limited(self):
+        if not acquire_vllm_slot():
+            raise HTTPException(
+                status_code=503,
+                detail="vLLM busy; retry later",
+                headers={"Retry-After": "5"},
+            )
+        try:
+            yield
+        finally:
+            release_vllm_slot()
+
     async def ping(self) -> bool:
         try:
             client = self._get_client()
@@ -179,11 +201,12 @@ class VllmVisionClient:
                 }
             ],
             "max_tokens": max_tokens,
-            "temperature": 0.1,
+            "temperature": settings.vllm_temperature,
             "chat_template_kwargs": {"enable_thinking": False},
         }
         client = self._get_client()
-        resp = await client.post(f"{self.base_url}/chat/completions", json=payload)
+        async with self._limited():
+            resp = await client.post(f"{self.base_url}/chat/completions", json=payload)
         resp.raise_for_status()
         data = resp.json()
         return data["choices"][0]["message"]["content"]
@@ -225,6 +248,25 @@ class VllmVisionClient:
             n_q,
         )
         return PageAnalyzeResult(parts=parts, raw=raw)
+
+    async def _text_completion(self, prompt: str, max_tokens: int = 4096) -> str:
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "temperature": settings.vllm_temperature,
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
+        client = self._get_client()
+        async with self._limited():
+            resp = await client.post(f"{self.base_url}/chat/completions", json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+
+    async def refine_parts_json(self, prompt: str) -> dict:
+        content = await self._text_completion(prompt, max_tokens=4096)
+        return _extract_json(content)
 
 
 vllm_client = VllmVisionClient()

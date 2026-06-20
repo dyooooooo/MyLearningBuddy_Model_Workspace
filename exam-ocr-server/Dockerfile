@@ -1,3 +1,10 @@
+FROM node:20-alpine AS web
+
+WORKDIR /fe
+COPY frontend/ ./
+RUN npm install
+RUN npm run build
+
 FROM python:3.12-slim-bookworm
 
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
@@ -15,6 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 COPY static ./static
+COPY scripts ./scripts
+COPY tests ./tests
+COPY --from=web /fe/dist ./static/vite
 
 EXPOSE 8000
 

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900">
+  <style>
+    text { font-family: "Noto Sans SC", sans-serif; }
+    .t { font-size: 22px; font-weight: 700; fill: #0f172a; }
+    .sub { font-size: 12px; fill: #64748b; }
+    .name { font-size: 13px; font-weight: 700; fill: #0f172a; }
+    .layer { font-size: 9px; font-weight: 700; fill: #fff; }
+    .desc { font-size: 10.5px; fill: #475569; }
+  </style>
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="g4" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+    <linearGradient id="g6" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#0891b2"/></linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="#f8fafc"/>
+  <text x="40" y="40" class="t">&#25216;&#26415;&#26632;&#36895;&#26597;</text>
+  <text x="40" y="62" class="sub">&#19968;&#21477;&#35805; + &#22312;&#26412;&#39033;&#30446;&#37324;&#24178;&#20160;&#20040;</text>
+  <text x="60" y="95" font-size="11" font-weight="700" fill="#94a3b8">&#22522;&#30784;&#35774;&#26045;</text>
+  <text x="420" y="95" font-size="11" font-weight="700" fill="#94a3b8">&#25968;&#25454;&#19982;&#26803;&#32034;</text>
+  <text x="780" y="95" font-size="11" font-weight="700" fill="#94a3b8">AI / &#32534;&#25490;</text>
+  <g transform="translate(40,110)">
+    <rect width="340" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g6)"/><rect y="12" width="340" height="10" fill="url(#g6)"/>
+    <text x="16" y="16" class="layer">Docker</text>
+    <text x="16" y="40" class="name">docker-compose</text>
+    <text x="16" y="58" class="desc">&#19977;&#23481;&#22120; :8000 / :8100&#65292;&#25968;&#25454;&#21367;&#25345;&#20037;&#21270;</text>
+    <text x="16" y="74" class="desc">&#31867;&#27604;&#65306;&#27599;&#20010;&#26381;&#21153;&#19968;&#20010;&#29420;&#31435;&#36827;&#31243;</text>
+  </g>
+  <g transform="translate(400,110)">
+    <rect width="340" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g1)"/><rect y="12" width="340" height="10" fill="url(#g1)"/>
+    <text x="16" y="16" class="layer">SQLite</text>
+    <text x="16" y="40" class="name">buddy.db</text>
+    <text x="16" y="58" class="desc">&#23384;&#20316;&#19994;&#12289;&#39064;&#30446;&#12289;&#20107;&#20214;&#12289;&#25484;&#25569;&#24230;</text>
+    <text x="16" y="74" class="desc">&#31867;&#27604;&#65306;&#21333;&#25991;&#20214;&#25968;&#25454;&#24211;</text>
+  </g>
+  <g transform="translate(760,110)">
+    <rect width="400" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="400" height="22" rx="10" fill="url(#g3)"/><rect y="12" width="400" height="10" fill="url(#g3)"/>
+    <text x="16" y="16" class="layer">vLLM</text>
+    <text x="16" y="40" class="name">GPU LLM &#26381;&#21153;</text>
+    <text x="16" y="58" class="desc">&#30475;&#35797;&#21367;&#22270; OCR &#65292;&#36755;&#20986;&#21360;&#21047;+&#25163;&#20889;&#25991;&#26412;</text>
+    <text x="16" y="74" class="desc">&#31867;&#27604;&#65306;OpenAI &#26684;&#24335;&#27169;&#22411; API &#26381;&#21153;&#22120;</text>
+  </g>
+  <g transform="translate(40,210)">
+    <rect width="340" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g6)"/><rect y="12" width="340" height="10" fill="url(#g6)"/>
+    <text x="16" y="16" class="layer">FastAPI</text>
+    <text x="16" y="40" class="name">Python REST</text>
+    <text x="16" y="58" class="desc">Buddy :8100 &#21644; gateway :8000 &#30340; HTTP API</text>
+  </g>
+  <g transform="translate(400,210)">
+    <rect width="340" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g1)"/><rect y="12" width="340" height="10" fill="url(#g1)"/>
+    <text x="16" y="16" class="layer">Chroma</text>
+    <text x="16" y="40" class="name">&#21521;&#37327;&#24211;</text>
+    <text x="16" y="58" class="desc">&#25353;&#35821;&#20041;&#30456;&#20284;&#24230;&#26597;&#32771;&#32434;/&#39064;&#24211;</text>
+    <text x="16" y="74" class="desc">&#31867;&#27604;&#65306;&#25353;&#24847;&#24605;&#25628;&#65292;&#19981;&#26159;&#20851;&#38190;&#23383;</text>
+  </g>
+  <g transform="translate(760,210)">
+    <rect width="400" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="400" height="22" rx="10" fill="url(#g3)"/><rect y="12" width="400" height="10" fill="url(#g3)"/>
+    <text x="16" y="16" class="layer">Qwen3-VL</text>
+    <text x="16" y="40" class="name">&#22810;&#27169;&#24577;&#27169;&#22411;</text>
+    <text x="16" y="58" class="desc">&#21516;&#26102;&#29702;&#35299;&#22270;&#29255;&#21644;&#25991;&#23383;</text>
+  </g>
+  <g transform="translate(40,310)">
+    <rect width="340" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g4)"/><rect y="12" width="340" height="10" fill="url(#g4)"/>
+    <text x="16" y="16" class="layer">Pydantic</text>
+    <text x="16" y="40" class="name">Schema &#26657;&#39564;</text>
+    <text x="16" y="58" class="desc">API &#35831;&#27714;/&#21709;&#24212;&#25968;&#25454;&#32467;&#26500;&#33258;&#21160;&#26816;&#26597;</text>
+  </g>
+  <g transform="translate(400,310)">
+    <rect width="340" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g1)"/><rect y="12" width="340" height="10" fill="url(#g1)"/>
+    <text x="16" y="16" class="layer">Embedding</text>
+    <text x="16" y="40" class="name">bge-small-zh</text>
+    <text x="16" y="58" class="desc">&#20013;&#25991;&#21477;&#23376;&#8594;384&#32500;&#21521;&#37327;&#65292;CPU &#36816;&#34892;</text>
+  </g>
+  <g transform="translate(760,310)">
+    <rect width="400" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="400" height="22" rx="10" fill="url(#g2)"/><rect y="12" width="400" height="10" fill="url(#g2)"/>
+    <text x="16" y="16" class="layer">LangGraph (M3)</text>
+    <text x="16" y="40" class="name">&#29366;&#24577;&#22270;&#32534;&#25490;</text>
+    <text x="16" y="58" class="desc">&#22810;&#27493; AI &#27969;&#31243;&#65306;&#33410;&#28857;=&#27493;&#39588;&#65292;&#36793;=&#36339;&#36716;</text>
+    <text x="16" y="74" class="desc">&#31867;&#27604;&#65306;&#27969;&#31243;&#22270;&#24341;&#25806;&#65292;&#27599;&#27493;&#21487;&#35843; LLM</text>
+  </g>
+  <g transform="translate(40,410)">
+    <rect width="340" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g4)"/><rect y="12" width="340" height="10" fill="url(#g4)"/>
+    <text x="16" y="16" class="layer">TypeScript</text>
+    <text x="16" y="40" class="name">/test/ &#38745;&#24577;&#39029;</text>
+    <text x="16" y="58" class="desc">&#27983;&#35272;&#22120;&#35843;&#35797; UI&#65292;&#27169;&#25311; Android &#9317;&#9315;</text>
+  </g>
+  <g transform="translate(400,410)">
+    <rect width="340" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g1)"/><rect y="12" width="340" height="10" fill="url(#g1)"/>
+    <text x="16" y="16" class="layer">RAG</text>
+    <text x="16" y="40" class="name">&#26803;&#32034;&#22686;&#24378;</text>
+    <text x="16" y="58" class="desc">&#20808;&#26597; Chroma &#20877;&#20915;&#31574;&#65307;&#29616;&#29992;&#20110; kp &#25171;&#26631;</text>
+    <text x="16" y="74" class="desc">&#31867;&#27604;&#65306;&#24320;&#21367;&#32771;&#35797;</text>
+  </g>
+  <g transform="translate(760,410)">
+    <rect width="400" height="80" rx="10" fill="#fff" stroke="#e2e8f0"/>
+    <rect width="340" height="22" rx="10" fill="url(#g2)"/><rect y="12" width="400" height="10" fill="url(#g2)"/>
+    <text x="16" y="16" class="layer">Agent (M3+)</text>
+    <text x="16" y="40" class="name">&#35266;&#23519; Agent</text>
+    <text x="16" y="58" class="desc">&#21482;&#20889; A+/B&#65292;&#19981;&#23545;&#23398;&#29983;&#35828;&#35805;</text>
+    <text x="16" y="74" class="desc">&#19982;&#25945;&#23398; Agent &#20998;&#31163;</text>
+  </g>
+  <rect x="40" y="520" width="1120" height="340" rx="14" fill="#fff" stroke="#cbd5e1"/>
+  <text x="60" y="552" font-size="15" font-weight="700" fill="#0f172a">Learning Buddy &#20998;&#23618;&#31526;&#21495;</text>
+  <text x="60" y="584" font-size="11" fill="#475569"><tspan font-weight="700" fill="#0891b2">&#9317; &#24863;&#30693;</tspan> &#8212; &#25293;&#29031;&#12289;&#21152;&#24103;&#12289;Session</text>
+  <text x="60" y="608" font-size="11" fill="#475569"><tspan font-weight="700" fill="#16a34a">C2</tspan> &#8212; OCR&#12289;&#20999;&#39064;&#12289;&#23450;&#31295;&#65307;gateway + vLLM</text>
+  <text x="60" y="632" font-size="11" fill="#475569"><tspan font-weight="700" fill="#0284c7">A</tspan> &#8212; &#20316;&#19994;&#12289;&#39064;&#30446;&#23454;&#20307;</text>
+  <text x="60" y="656" font-size="11" fill="#475569"><tspan font-weight="700" fill="#db2777">B</tspan> &#8212; &#23450;&#31295;&#12289;&#25171;&#26631;&#12289;&#26631;&#38169;&#31561;&#20107;&#20214;</text>
+  <text x="60" y="680" font-size="11" fill="#475569"><tspan font-weight="700" fill="#7c3aed">A+</tspan> &#8212; &#25353; kp &#32858;&#21512;&#30340;&#25484;&#25569;&#35270;&#22270; + &#35777;&#25454;</text>
+  <text x="60" y="704" font-size="11" fill="#475569"><tspan font-weight="700" fill="#2563eb">C1</tspan> &#8212; LLM &#25512;&#29702;&#65307;vLLM &#25215;&#36733;</text>
+  <text x="60" y="728" font-size="11" fill="#475569"><tspan font-weight="700" fill="#6d28d9">&#9314;</tspan> &#8212; LangGraph &#32534;&#25490;&#65307;M3 &#36215;&#27493;</text>
+  <text x="60" y="752" font-size="11" fill="#475569"><tspan font-weight="700" fill="#d97706">Memory Drive</tspan> &#8212; A+/B &#39537;&#21160;&#35786;&#26029;&#35268;&#21010;&#65307;M4+</text>
+  <text x="60" y="776" font-size="11" fill="#475569"><tspan font-weight="700" fill="#64748b">ocr_refine</tspan> &#8212; M2&#65306;RAG/&#35268;&#21017;&#20108;&#27425;&#26657;&#23545; OCR</text>
+  <text x="60" y="800" font-size="11" fill="#475569"><tspan font-weight="700" fill="#64748b">Room</tspan> &#8212; Android &#26412;&#22320;&#24211;&#65307;&#26242;&#32531;</text>
+  <text x="40" y="880" class="sub">doc/assets/tech-stack-glossary.svg</text>

@@ -1,0 +1,12 @@
+{
+  "nodes": [
+    {
+      "id": "tb:pep-a:math:hs:vol1",
+      "label": "人教A版 高中数学 必修第一册",
+      "summary": "高中数学必修一：集合、函数、指数对数",
+      "text": "人教A版高中数学必修第一册",
+      "tags": ["grade_band:hs", "subject:math", "textbook_edition:pep-a"],
+      "links": {"subject": "math", "grade_band": "hs"}
+    }
+  ]
+}

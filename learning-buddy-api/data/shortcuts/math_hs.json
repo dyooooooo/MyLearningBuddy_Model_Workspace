@@ -1,0 +1,28 @@
+{
+  "nodes": [
+    {
+      "id": "sc:hs:frac-ineq:zero-points",
+      "label": "分式不等式零点速记",
+      "summary": "分式>0 等价于分子分母同号；零点为分子分母根",
+      "formula": "(P/Q)>0 ⇔ P·Q>0（Q≠0）",
+      "when_to_use": "分式不等式标准题型",
+      "kp_id": "math.hs.inequality.rational",
+      "expected_dwell_sec": 120,
+      "tags": ["grade_band:hs", "fluency_tier:fast"],
+      "links": {
+        "derived_from_kp": ["math.hs.inequality.rational"],
+        "derived_from_chunk": ["chunk:pep-a:sets:complement-def"]
+      }
+    },
+    {
+      "id": "sc:hs:sets:complement-interval",
+      "label": "区间补集口诀",
+      "summary": "开区间补集仍开；闭端点互换",
+      "formula": "∁U(a,b) = (-∞,a]∪[b,+∞) 当 U=R",
+      "kp_id": "math.hs.sets.complement",
+      "expected_dwell_sec": 90,
+      "tags": ["grade_band:hs"],
+      "links": {"derived_from_kp": ["math.hs.sets.complement", "math.hs.sets.interval"]}
+    }
+  ]
+}

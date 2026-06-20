@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    {
+      "id": "method:hs:frac-ineq:sign-chart",
+      "label": "分式不等式穿根法",
+      "summary": "分式不等式：移项通分→找零点→穿根求解集",
+      "text": "1. 移项通分 2. 找分子分母零点 3. 标轴穿根 4. 写解集",
+      "kp_id": "math.hs.inequality.rational",
+      "question_type": "frac-ineq",
+      "tags": ["grade_band:hs", "question_type:frac-ineq"],
+      "links": {
+        "applies_to_kp": ["math.hs.inequality.rational"],
+        "uses_shortcut": ["sc:hs:frac-ineq:zero-points"]
+      }
+    },
+    {
+      "id": "method:hs:sets:complement-interval",
+      "label": "区间补集求解",
+      "summary": "已知全集与集合区间求补集",
+      "text": "在全集 U 下求 A 的补集，注意开闭区间",
+      "kp_id": "math.hs.sets.complement",
+      "question_type": "set-complement",
+      "tags": ["grade_band:hs", "question_type:set-complement"],
+      "links": {"applies_to_kp": ["math.hs.sets.complement", "math.hs.sets.interval"]}
+    }
+  ]
+}

@@ -4,9 +4,11 @@ from typing import Annotated
 from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import Response
 
+from app.clients.redis_client import redis_ok
 from app.config import settings
 from app.image_preprocess import read_normalized_upload_with_meta
 from app.schemas import HealthResponse, PageAnalyzeResult
+from app.storage.minio_client import minio_ok
 from app.vllm_client import vllm_client
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,8 @@ async def system_health() -> HealthResponse:
         vllm_base_url=settings.vllm_base_url,
         vllm_model=settings.vllm_model,
         vllm_reachable=reachable,
+        redis_ok=redis_ok(),
+        minio_ok=minio_ok(),
     )
 
 

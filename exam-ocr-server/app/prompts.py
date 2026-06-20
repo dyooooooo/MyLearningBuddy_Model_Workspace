@@ -35,3 +35,18 @@ JSON 格式（不要 markdown）：
 2. 不得跳过 header、section；没有则可省略该项，但不要把标题并入题目
 3. 手写数字/公式归入 handwriting
 4. bbox 使用 0-1 归一化坐标；无手写时 handwriting 为 ""，bbox_handwriting 可省略"""
+
+OCR_REFINE_PROMPT = """你是 OCR 校对引擎（仅校正印刷体）。输入为试卷页面的 OCR 草稿 JSON 及可选 RAG 考纲/题库参考。
+请只校正印刷体 print 中的错字、漏字、公式符号；保持 kind/id/bbox 不变。
+仅输出 JSON，不要 markdown：
+{
+  "parts": [
+    {"kind": "question", "id": "1", "print": "...", "handwriting": "...", "bbox_print": [], "bbox_handwriting": []}
+  ]
+}
+规则：
+1. 只修改 print 字段；handwriting 必须与 OCR 草稿逐字相同，不得改动
+2. 不要编造题干中不存在的内容；不得解题或补答
+3. 参考 RAG 上下文修正印刷体 OCR 错误（公式、区间、上下标等）
+4. header/section/question 结构与原草稿一致
+5. 草稿中 handwriting 为空的 question：handwriting 必须输出 "" """

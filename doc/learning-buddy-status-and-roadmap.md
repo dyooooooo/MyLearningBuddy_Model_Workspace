@@ -212,16 +212,18 @@ flowchart TB
 | 层 | 成熟度 | 现状摘要 |
 |----|--------|----------|
 | **⑥** | 🟡 | 拍照 + 手动增量帧 ✅；(a) 连续过程 🟡；视频/语音/习惯/兴趣 ❌ |
-| **C2** | 🟡 | 拍照 OCR ✅；refine/fusion/切题/ASR/推荐 ❌ |
-| **C1** | 🟡 | WSL GLM 可推理；未接入伴学主链 ❌ |
-| **A** | 🟡 | 整页作业历史 ✅；题目实体、通用库、习惯画像 ❌ |
-| **B** | 🟡 | Session/页快照 ✅；mastery、错题/方法模式、Drive ❌ |
-| **A⁺** | ❌ | 无知识点级掌握视图 |
-| **①–④** | ❌ | 无主链、无 Agent 编排 |
-| **⑤** | 🟡 | 采集触达 + 作业库只读 ✅；讲解/推题/跟踪/审核 ❌ |
+| **C2** | 🟡 | 拍照 OCR ✅；**ocr_refine** + Buddy RAG 上下文 ✅（M2）；fusion/切题/ASR ❌ |
+| **C1** | 🟡 | GX10 vLLM Qwen3-VL ✅；ocr_refine 文本校对 ✅ |
+| **A** | 🟡 | Buddy **homework + question_entities** ✅；通用库、习惯画像 ❌ |
+| **B** | 🟡 | Session + **memory_events**（含 OCR_REFINED、OBSERVER_NOTE）✅ |
+| **A⁺** | 🟡 | **learning-buddy-api** `:8100`：Qdrant hybrid RAG + kp 掌握度 + 错题标記 ✅ |
+| **①–④** | 🟡 | **LangGraph 7 节点**（ingest→rag→eval→observer→diagnosis→planning）🟡；①②④ 规则/LLM 混合 |
+| **⑤** | 🟡 | /test/ 作业库 + 错题本 + Agent Runs ✅；讲解/推题 ❌ |
 
-**当前里程碑**：**M0**（见 §5.1）。  
-已有 `companion-pipeline`、exam-ocr、作业库 = **为 ⑥→C2→A/B 喂数**的早期实现，**不是**伴学终局。
+**当前里程碑**：**M1 收尾 / M2 起步 / M3 骨架**（GX10 Scheme B，2026-06）。  
+**试点生产栈（≤5 生）**：PostgreSQL + Redis 队列 + Qdrant + MinIO；buddy-worker 异步 LangGraph；c2-gateway 无状态会话（Redis/MinIO）。
+
+Buddy API 为 A/B/A+ 权威；`/test/` 模拟 Android（`X-Student-Id` 头）；ingest 经 Redis → buddy-worker 触发图。
 
 ### 1.4 ③ 多智能体编制（落地约束）
 
@@ -256,14 +258,14 @@ learning-buddy-api（待建）──► A⁺、①–④、Memory Drive、C1 路
 |------|-----|--------|------|
 | **exam-ocr** | C2 | Hub multipart OCR（**WSL 开发参考，Spark 已弃用**） | ocr_refine、ocr_fusion |
 | **exam-ocr-server / c2-gateway** | C2 | Spark `:8000` 网关、companion 分节、vLLM vision | 切题 prompt 迭代 |
-| **MyLearningBuddy** | ⑥⑤、A/B | 拍照 OCR、伴学流水线 M0、Room 作业库 | A⁺、视频/语音、伴学行动 |
-| **learning-buddy-api** | A⁺、①–④ | — | 全部 |
+| **MyLearningBuddy** | ⑥⑤、A/B | 拍照 OCR、伴学流水线 M0、Room 作业库 | **M1 薄客户端**（能力在 `/test/` 先行，后迁移） |
+| **learning-buddy-api** | A⁺、①–④ | **试点** `:8100`（PostgreSQL + Milvus + LangGraph 7 节点 + GPU bge） | Memory Drive、多科 corpus |
 
 ### 2.2 已跑通链路（M0 子集，Spark C2 双 Docker）
 
 ```text
-平板 → Spark c2-gateway :8000 → vLLM Qwen3.6-35B-NVFP4 :8088（Docker 内网）
-         POST /api/v1/ocr/page → 按题输出（上印刷 / 下手写）
+浏览器 /test/ 或 平板 → Spark c2-gateway :8000 → vLLM Qwen3.6-35B-NVFP4 :8088
+         POST /api/v1/companion/... → 定稿 ingest → learning-buddy-api :8100
 ```
 
 网关 health：`GET /api/v1/system/health`；整页识别：`POST /api/v1/ocr/page`（multipart 图片）。
@@ -279,12 +281,12 @@ learning-buddy-api（待建）──► A⁺、①–④、Memory Drive、C1 路
 | 比较/合并 | B | (a) |
 | `HomeworkEntry` 入库 | A | (b) |
 
-**命名约定**：本文 **里程碑 M0–M7** = 产品路线图；**伴学流水线 Phase 0/C** = Android 工程阶段（`MyLearningBuddy/docs/architecture/companion-pipeline.md`），二者不混用。
+**命名约定**：本文 **里程碑 M0–M7** = 产品路线图；**伴学流水线 Phase 0/C** = 采集工程阶段（原 Android `companion-pipeline.md`；**M1 起 Phase C 在 `/test/` 前台实现**，再迁平板）。
 
 | 工程阶段 | 对应里程碑 | 内容 |
 |----------|------------|------|
 | 流水线 Phase 0 | M0 | 手动帧、增量 OCR、合并入库 |
-| 流水线 Phase C | M1+ | 相机连续采帧，扩展 ⑥(a) |
+| 流水线 Phase C | M1 | **浏览器连续相机**（`/test/`）；Android 后续薄客户端对接 |
 
 ---
 
@@ -302,7 +304,7 @@ learning-buddy-api（待建）──► A⁺、①–④、Memory Drive、C1 路
 | 8 | 学习方法与提醒 | ② + ⑤ | ❌ |
 | 9 | 语音交互与讲题 | ⑥ + ⑤ + ③ + C1 | ❌ |
 
-**近期目标（M1 可验收）**：⑥(b) 稳定 + C2 切题 + A 题目实体 + B 错题 v0 + **A⁺ 初版（按知识点一条掌握记录）**。
+**近期目标（M1 可验收）**：**`/test/` 伴学前台**完成 Phase C + 切题可视化 + 错题 v0 + **A⁺ 初版（fluency 展示）**；后台 buddy-api / gateway 已就绪，Android **M1 不阻塞** Spark 验收。
 
 ---
 
@@ -378,16 +380,18 @@ M7 视频习惯 ████████████  ⑥ 视频/行为、(b)(c)
 | Room 作业库 | A/⑤ | 列表、详情、删除 |
 | C2 文档仅描述 multipart 链路 | C2 文档 | 各仓 docs/.mdc 无 legacy 两步 OCR 表述 |
 
-#### M1 — 结构化与 A⁺ 初版
+#### M1 — 结构化与 A⁺ 初版（**前台先行**）
+
+> **实施载体**：`exam-ocr-server/static/`（`/test/`）+ `learning-buddy-api`；详见 [doc/plans/m1-companion-frontend.md](plans/m1-companion-frontend.md)。
 
 | 交付 | 层 | 验收 |
 |------|-----|------|
-| 切题实体（题干/作答区） | C2→A | 作业详情可按题展示 |
-| 错题本 v0 | A+B | 题目级标记错题 |
-| **A⁺ 初版** | A⁺ | 每知识点至少 1 条掌握状态（会/不会/未知） |
-| 流水线 Phase C（连续相机） | ⑥ | 定时采帧无需手动加序列 |
+| 切题实体（题干/作答区 + bbox） | C2→A | 作业详情可按题展示、可选叠框 |
+| 错题本 v0 | A+B | 题目级标记错题；Tab「错题本」 |
+| **A⁺ 初版** | A⁺ | 每知识点掌握状态 + fluency/wrong_rate |
+| 流水线 Phase C（连续采帧） | ⑥ | 浏览器定时截帧 → 现有 frames API |
 
-**M1 完成标准**：一次伴学会话结束 → A 有题目实体 → A⁺ 有对应知识点更新 → 仍可无 ①③。
+**M1 完成标准**：一次伴学会话结束 → A 有题目实体 → A⁺ 有对应知识点更新 → 仍可无 ①③。**不在 M1 要求 Android 联调。**
 
 #### M2 — 感知认知工具
 
@@ -395,16 +399,18 @@ M7 视频习惯 ████████████  ⑥ 视频/行为、(b)(c)
 |------|-----|------|
 | `ocr_refine` | C2 | 同一页 OCR 草稿经校正后指标可测 |
 | `ocr_fusion`（可选） | C2 | 固定机位多帧稳定度提升 |
-| 通用题库 RAG | A+C2 | 检索命中写入切题校对上下文 |
-| A⁺ 写入管线 | A⁺ | 每次作业入库自动更新掌握记录 |
+| 通用题库 RAG | A+C2 | ✅ Chroma + hybrid 检索；ocr_refine 注入上下文 |
+| ocr_refine | C2 | ✅ gateway 文本校对 + Buddy RAG |
+| A⁺ 写入管线 | A⁺ | ✅ ingest 自动 RAG 打标 + 聚合 |
 
 #### M3 — 编排基础
 
 | 交付 | 层 | 验收 |
 |------|-----|------|
-| `learning-buddy-api` | 后端 | FastAPI 独立进程，平板只调 Buddy + C2 |
-| LangGraph 最小图 | ③ | `入库事件 → C2 OCR → 切题 → 更新 A⁺` 可追踪 |
-| 观察/画像 Agent 草稿 | ③ | 只写 A⁺/B，不对学生说话 |
+| `learning-buddy-api` | 后端 | ✅ FastAPI `:8100`，ingest 后异步 LangGraph |
+| LangGraph 最小图 | ③ | ✅ `load_homework → rag_validate → observer → finalize_run`（**不重跑 OCR**） |
+| graph_runs API + /test/ Agent Tab | ③ | ✅ `GET .../graph-runs` + 前台可观测 |
+| 观察 Agent 草稿 | ③ | ✅ OBSERVER_NOTE 事件 + A+ 重算（规则版，无学生输出） |
 
 #### M4 — 治理主链
 
@@ -540,6 +546,52 @@ cd ~/exam-ocr
 
 ---
 
+## 7.4 M2 升级：知识图谱 · NVIDIA 检索栈 · 能力模型 · 变现
+
+> 2026-06 落地于 `learning-buddy-api` + `learning-buddy-c2` Docker 栈。
+
+### A 通用库 = 知识图谱
+
+| 组件 | 说明 |
+|------|------|
+| PG 图 | `corpus_nodes` / `corpus_edges` / `corpus_tags` — 8 类节点（含 Tag）、21 对边 |
+| 三件套 | 每节点 `summary` + `tags[]` + `links` |
+| 语料 | `data/textbook/` · `data/methods/` · `data/shortcuts/` · `data/chunks/` · 扩展 `question-bank` |
+| 动态边 | ingest 同步 Q↔Kp/Method/Shortcut；Redis worker 异步补全 |
+
+### 检索栈（Spark ARM64 自托管 — 当前：GPU bge，NIM 可选）
+
+| 服务 | 角色 |
+|------|------|
+| Milvus | 向量入口（`node_id` + dense **512d** + hybrid payload） |
+| **bge-small-zh-v1.5**（CUDA） | GPU embedding（`EMBED_DEVICE=cuda`，hf-mirror 预拉） |
+| **bge-reranker-v2-m3**（CUDA） | vector top-30 → rerank top-5 |
+| LlamaIndex | PropertyGraph 检索编排 |
+| vLLM Qwen3.6-35B | eval Solve 参考解 |
+| NeMo NIM（可选） | `tools/setup-nemo-nim.sh` + 代理；默认 **关闭** |
+
+检索链：`vector → rerank → graph_expand → tag/grade 过滤 → EvalContext`
+
+### 评测 Agent（两阶段）
+
+1. **rag_validate** — kp 校验/补标 only  
+2. **eval_agent** — `solve_reference`（课内 Method/Shortcut 约束）+ `judge_against_reference`（等价判定）  
+3. **aplus_aggregate** — `fluency_ratio` + `wrong_rate` → `MasteryView.fluency`
+
+Harness：`data/eval/eval_cases.jsonl` · `scripts/acceptance-eval-agent.sh`
+
+### 变现（B2C + B2B）
+
+| 模式 | 要点 |
+|------|------|
+| B2C | 14 天全功能 trial → free（OCR+基础 kp）→ paid（全部 AI） |
+| B2B | 图谱后台 + seat + 白标；Spark/校内私有部署 |
+| 内容包 | 按**教材版本**售卖 Method + Shortcut + Chunk |
+
+API：`GET /api/v1/students/{id}/tier` · `app/services/monetization.py`
+
+---
+
 ## 8. 总结
 
 | 维度 | 统一结论 |
@@ -547,7 +599,7 @@ cd ~/exam-ocr
 | **总架构** | 见 §1 [架构图 PNG](assets/learning-buddy-master-architecture.png)；伴学型非伴读型 |
 | **数据流** | ⑥→C2→A/B→A⁺→①②③④→⑤→⑥；全文仅此一条主链 |
 | **M0 现状** | ⑥ 拍照与流水线、C2 OCR、A/B 萌芽；A⁺ 与 ①–④ 未建；⑤ 仅触达/展示 |
-| **近期执行** | **M1**：切题 + 错题 + **A⁺ 初版** + 流水线 Phase C |
+| **近期执行** | **M1 前台**：`/test/` Phase C + 切题可视化 + 错题 + A⁺ fluency；后台已就绪；Android 待 M1 验收后薄客户端迁移 |
 | **仓库边界** | exam-ocr = C2 only；Buddy API = A⁺ + ①–④；平板 = ⑥ + ⑤ 入口 |
 
 **一句话**：Learning Buddy 是持续感知驱动的伴学系统；现有 OCR 与流水线是 **M0 喂数管道**；按 **M1→M7** 点亮分层，使记忆与 **A⁺** 成为个体差异驱动的核心，而非孤立作业库。

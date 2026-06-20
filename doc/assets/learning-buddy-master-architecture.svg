@@ -213,7 +213,7 @@
   <g filter="url(#softGlow)">
     <rect x="380" y="502" width="600" height="54" rx="12" fill="url(#aPlusBar)"/>
     <text x="680" y="526" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">A+ &#20010;&#24615;&#21270;&#30693;&#35782;&#24211;</text>
-    <text x="680" y="544" text-anchor="middle" fill="#e0e7ff" font-size="10.5">&#33021;&#21147;&#36793;&#30028; &#183; &#24369;&#24378;&#39033; &#183; &#25484;&#25569;&#24230; &#183; &#20852;&#36259;&#26435;&#37325;</text>
+    <text x="680" y="544" text-anchor="middle" fill="#e0e7ff" font-size="10.5">&#33021;&#21147;&#36793;&#30028; &#183; &#24369;&#24378;&#39033; &#183; fluency&#215;&#27491;&#30830;&#29575; &#183; &#20852;&#36259;&#26435;&#37325;</text>
   </g>
 
   <!-- A / B -->
@@ -221,7 +221,7 @@
     <rect x="80" y="576" width="560" height="78" rx="11" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
     <rect x="80" y="576" width="6" height="78" rx="3" fill="#64748b"/>
     <text x="360" y="602" text-anchor="middle" class="cardTitle" fill="#0f172a">A &#23398;&#20064;&#36164;&#20135;&#19982;&#20010;&#20307;&#30011;&#20687;&#23618;</text>
-    <text x="360" y="624" text-anchor="middle" class="cardHint">&#36890;&#29992;&#20869;&#23481;&#24211; &#183; &#21382;&#21490;&#35760;&#24405; &#183; &#20064;&#24895;&#30011;&#20687; &#183; &#21521;&#37327;&#26816;&#32034;</text>
+    <text x="360" y="624" text-anchor="middle" class="cardHint">PG &#30693;&#35782;&#22270;&#35889; &#183; Milvus+cuVS &#183; NeMo embed/rerank &#183; Method/Shortcut/Chunk</text>
   </g>
 
   <g filter="url(#cardShadow)">

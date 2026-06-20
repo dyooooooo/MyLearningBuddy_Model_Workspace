@@ -1,0 +1,42 @@
+{
+  "subject": "math",
+  "grade": "hs",
+  "title": "高中数学考纲（试点）",
+  "nodes": [
+    {"id": "math.hs.sets", "label": "集合", "description": "全集、子集、补集、交集并集", "parent_id": null, "level": 1, "keywords": ["集合", "补集", "全集", "U", "A̅"]},
+    {"id": "math.hs.sets.complement", "label": "集合的补集", "description": "已知全集U与集合A求补集", "parent_id": "math.hs.sets", "level": 2, "keywords": ["补集", "A̅", "全集"]},
+    {"id": "math.hs.sets.interval", "label": "区间与集合表示", "description": "开闭区间、无穷端点", "parent_id": "math.hs.sets", "level": 2, "keywords": ["区间", "(-∞", "∞)", "开区间"]},
+
+    {"id": "math.hs.functions", "label": "函数", "description": "函数概念、定义域值域、幂函数指数对数", "parent_id": null, "level": 1, "keywords": ["函数", "f(x)", "定义域"]},
+    {"id": "math.hs.functions.power", "label": "幂函数", "description": "幂函数图像过定点、求函数值", "parent_id": "math.hs.functions", "level": 2, "keywords": ["幂函数", "y=x^a", "图像过点"]},
+    {"id": "math.hs.functions.piecewise", "label": "分段函数", "description": "分段函数求值、复合求值", "parent_id": "math.hs.functions", "level": 2, "keywords": ["分段函数", "分段", "已知f(x)"]},
+    {"id": "math.hs.functions.value", "label": "函数求值", "description": "代入自变量求函数值", "parent_id": "math.hs.functions", "level": 2, "keywords": ["f(2)", "求值", "则 f"]},
+
+    {"id": "math.hs.inequality", "label": "不等式", "description": "一元二次、分式、绝对值不等式", "parent_id": null, "level": 1, "keywords": ["不等式", "解集"]},
+    {"id": "math.hs.inequality.rational", "label": "分式不等式", "description": "分式不等式化为同号求解", "parent_id": "math.hs.inequality", "level": 2, "keywords": ["分式", ">0", "<0", "分子分母"]},
+    {"id": "math.hs.inequality.quadratic", "label": "一元二次不等式", "description": "二次不等式解集与图像", "parent_id": "math.hs.inequality", "level": 2, "keywords": ["x²", "二次不等式"]},
+
+    {"id": "math.hs.trigonometry", "label": "三角函数", "description": "任意角、诱导公式、同角关系", "parent_id": null, "level": 1, "keywords": ["三角", "sin", "cos", "tan"]},
+    {"id": "math.hs.trigonometry.induction", "label": "诱导公式", "description": "π/2±α等诱导公式化简", "parent_id": "math.hs.trigonometry", "level": 2, "keywords": ["诱导", "sin(π/2", "cot"]},
+    {"id": "math.hs.trigonometry.ratio", "label": "三角函数定义与比值", "description": "终边过点求sin cos tan", "parent_id": "math.hs.trigonometry", "level": 2, "keywords": ["终边", "P(", "sinα", "cosα"]},
+
+    {"id": "math.hs.sequence", "label": "数列", "description": "等差等比、通项、求和", "parent_id": null, "level": 1, "keywords": ["数列", "通项", "a_n"]},
+    {"id": "math.hs.sequence.arithmetic", "label": "等差数列", "description": "等差数列通项与求和", "parent_id": "math.hs.sequence", "level": 2, "keywords": ["等差", "公差", "a_n"]},
+
+    {"id": "math.hs.calculus.basic", "label": "导数初步", "description": "导数定义、切线、单调性", "parent_id": null, "level": 1, "keywords": ["导数", "f'(x)", "单调"]},
+    {"id": "math.hs.calculus.extreme", "label": "函数极值与最值", "description": "利用导数求极值、闭区间最值", "parent_id": "math.hs.calculus.basic", "level": 2, "keywords": ["极值", "最值", "取值范围", "f(x₁+x₂)"]},
+
+    {"id": "math.hs.equation.log", "label": "对数方程", "description": "对数运算、lg方程、定义域", "parent_id": null, "level": 1, "keywords": ["lg", "log", "对数"]},
+    {"id": "math.hs.equation.log.domain", "label": "对数定义域", "description": "真数大于零、分母不为零", "parent_id": "math.hs.equation.log", "level": 2, "keywords": ["lg(", "定义域", "≠∅", "取值范围"]},
+
+    {"id": "math.hs.probability", "label": "概率统计", "description": "古典概型、分布、期望", "parent_id": null, "level": 1, "keywords": ["概率", "随机"]},
+
+    {"id": "math.hs.geometry.analytic", "label": "解析几何", "description": "直线圆圆锥曲线", "parent_id": null, "level": 1, "keywords": ["直线", "圆", "抛物线"]},
+
+    {"id": "math.hs.algebra.fraction", "label": "分式化简", "description": "分式运算、约分", "parent_id": null, "level": 1, "keywords": ["分式", "化简"]},
+
+    {"id": "math.hs.functions.rational", "label": "分式函数", "description": "分式型函数求值与变形", "parent_id": "math.hs.functions", "level": 2, "keywords": ["x+2/x", "g(x)=3x"]},
+
+    {"id": "math.hs.functions.symmetry", "label": "函数对称与变量替换", "description": "f(x₁)=f(x₂)条件下的代数变形", "parent_id": "math.hs.functions", "level": 2, "keywords": ["f(x₁)=f(x₂)", "x₁≠x₂"]}
+  ]
+}

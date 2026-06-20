@@ -66,6 +66,22 @@ def _longer(a: str, b: str) -> str:
     return a if len(_text(a)) >= len(_text(b)) else b
 
 
+def _has_handwriting_bbox(p: PagePart) -> bool:
+    bb = p.bbox_handwriting or []
+    return len(bb) >= 4
+
+
+def _merge_question_handwriting(cur: PagePart, incoming: PagePart) -> None:
+    """Only adopt incoming handwriting when vision grounded it with a bbox."""
+    incoming_hw = _text(incoming.handwriting)
+    if not incoming_hw:
+        return
+    if not _has_handwriting_bbox(incoming):
+        return
+    cur.handwriting = _longer(cur.handwriting, incoming.handwriting)
+    cur.bbox_handwriting = list(incoming.bbox_handwriting)
+
+
 def merge_parts(base: list[PagePart], incoming: list[PagePart]) -> list[PagePart]:
     if not base:
         return [p.model_copy(deep=True) for p in incoming]
@@ -90,9 +106,7 @@ def merge_parts(base: list[PagePart], incoming: list[PagePart]) -> list[PagePart
         cur = by_kind[k]
         cur.print_text = _longer(cur.print_text, p.print_text)
         if p.kind == "question":
-            cur.handwriting = _longer(cur.handwriting, p.handwriting)
-            if p.bbox_handwriting:
-                cur.bbox_handwriting = list(p.bbox_handwriting)
+            _merge_question_handwriting(cur, p)
         if p.bbox_print:
             cur.bbox_print = list(p.bbox_print)
 

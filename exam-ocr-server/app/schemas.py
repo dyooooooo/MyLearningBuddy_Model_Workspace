@@ -12,6 +12,8 @@ class HealthResponse(BaseModel):
     vllm_base_url: str
     vllm_model: str
     vllm_reachable: bool = False
+    redis_ok: bool = False
+    minio_ok: bool = False
 
 
 class PagePart(BaseModel):
@@ -66,6 +68,7 @@ SessionEventType = Literal[
     "OCR_START",
     "OCR_DONE",
     "OCR_SKIPPED",
+    "OCR_REFINED",
     "MERGED",
     "SKIPPED",
     "NEW_PAGE",
@@ -77,6 +80,17 @@ SessionEventType = Literal[
 class MergeDiff(BaseModel):
     new_question_ids: list[str] = Field(default_factory=list)
     handwriting_growth: dict[str, int] = Field(default_factory=dict)
+
+
+class QuestionTimingEstimate(BaseModel):
+    """Per-question dwell time inferred from progressive capture frames."""
+
+    page_id: str
+    question_id: str
+    first_answer_at: str
+    duration_ms: int = 0
+    duration_source: Literal["next_answer", "page_end"] = "next_answer"
+    answer_order: int = 1
 
 
 class SessionEvent(BaseModel):
@@ -95,6 +109,9 @@ class FrameRecord(BaseModel):
     merge_diff: MergeDiff | None = None
     same_page_score: float | None = None
     duration_ms: int = 0
+    ocr_ms: int = 0
+    refine_ms: int = 0
+    total_ms: int = 0
     skip_reason: str | None = None
 
 
@@ -107,6 +124,7 @@ class CompanionSession(BaseModel):
     merged_parts: list[PagePart] = Field(default_factory=list)
     frames: list[FrameRecord] = Field(default_factory=list)
     events: list[SessionEvent] = Field(default_factory=list)
+    question_timings: list[QuestionTimingEstimate] = Field(default_factory=list)
     meta: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -120,22 +138,16 @@ class HomeworkEntry(BaseModel):
     meta: dict[str, Any] = Field(default_factory=dict)
 
 
-class MasteryRecord(BaseModel):
-    kp_id: str
-    label: str
-    mastery: MasteryLevel = "unknown"
-    updated_at: str
-    source_homework_id: str | None = None
-    demo: bool = True
-
-
-class CreateSessionRequest(BaseModel):
-    subject: str | None = None
-    note: str | None = None
-
-
-class CreateSessionResponse(BaseModel):
-    session: CompanionSession
+class FrameBatchItem(BaseModel):
+    frame_id: str
+    scheduler_action: SchedulerAction
+    merge_diff: MergeDiff | None = None
+    same_page_score: float | None = None
+    skip_reason: str | None = None
+    ocr_ms: int = 0
+    refine_ms: int = 0
+    total_ms: int = 0
+    duration_ms: int = 0
 
 
 class AddFrameResponse(BaseModel):
@@ -147,7 +159,40 @@ class AddFrameResponse(BaseModel):
     ocr_parts: list[PagePart] = Field(default_factory=list)
     merged_parts: list[PagePart] = Field(default_factory=list)
     duration_ms: int = 0
+    ocr_ms: int = 0
+    refine_ms: int = 0
+    total_ms: int = 0
     homework_finalized: HomeworkEntry | None = None
+    session: CompanionSession
+
+
+class AddFramesBatchResponse(BaseModel):
+    frames: list[FrameBatchItem] = Field(default_factory=list)
+    batch_total_ms: int = 0
+    homework_finalized: list[HomeworkEntry] = Field(default_factory=list)
+    session: CompanionSession
+
+
+class MasteryRecord(BaseModel):
+    kp_id: str
+    label: str
+    mastery: MasteryLevel = "unknown"
+    updated_at: str
+    source_homework_id: str | None = None
+    source_session_id: str | None = None
+    question_id: str | None = None
+    print_text: str = ""
+    handwriting: str = ""
+    inference_note: str = ""
+    demo: bool = True
+
+
+class CreateSessionRequest(BaseModel):
+    subject: str | None = None
+    note: str | None = None
+
+
+class CreateSessionResponse(BaseModel):
     session: CompanionSession
 
 

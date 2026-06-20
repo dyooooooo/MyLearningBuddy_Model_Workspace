@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780">
+  <defs>
+    <marker id="a1" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#2563eb"/></marker>
+    <marker id="a2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#7c3aed"/></marker>
+  </defs>
+  <style>
+    text { font-family: "Noto Sans SC", sans-serif; }
+    .t { font-size: 20px; font-weight: 700; fill: #0f172a; }
+    .sec { font-size: 14px; font-weight: 700; fill: #334155; }
+    .box { font-size: 11px; fill: #475569; }
+    .new { font-size: 10px; fill: #7c3aed; font-weight: 700; }
+  </style>
+  <rect width="1200" height="780" fill="#f8fafc"/>
+  <text x="40" y="36" class="t">&#25968;&#25454;&#27969;&#65306;&#24403;&#21069;&#24050;&#36890; vs M3 &#30446;&#26631;</text>
+  <text x="40" y="72" class="sec">A. &#24403;&#21069;&#24050;&#36890;&#65288;&#23454;&#32447;&#65289;</text>
+  <rect x="40" y="88" width="1120" height="280" rx="12" fill="#fff" stroke="#cbd5e1"/>
+  <g transform="translate(60,110)"><rect width="100" height="48" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="50" y="22" text-anchor="middle" font-size="11" font-weight="700">&#9317; &#21069;&#21488;</text>
+    <text x="50" y="38" text-anchor="middle" font-size="9">&#36873;&#22270;/&#21152;&#24103;</text></g>
+  <line x1="170" y1="134" x2="200" y2="134" stroke="#2563eb" stroke-width="2" marker-end="url(#a1)"/>
+  <g transform="translate(200,110)"><rect width="120" height="48" rx="8" fill="#ecfeff" stroke="#0891b2"/>
+    <text x="60" y="22" text-anchor="middle" font-size="11" font-weight="700">c2-gateway</text>
+    <text x="60" y="38" text-anchor="middle" font-size="9">merge+OCR</text></g>
+  <line x1="330" y1="134" x2="360" y2="134" stroke="#2563eb" stroke-width="2" marker-end="url(#a1)"/>
+  <g transform="translate(360,110)"><rect width="90" height="48" rx="8" fill="#f0fdf4" stroke="#16a34a"/>
+    <text x="45" y="22" text-anchor="middle" font-size="11" font-weight="700">vLLM</text>
+    <text x="45" y="38" text-anchor="middle" font-size="9">C2 OCR</text></g>
+  <line x1="450" y1="134" x2="480" y2="134" stroke="#2563eb" stroke-width="2" marker-end="url(#a1)"/>
+  <g transform="translate(480,110)"><rect width="100" height="48" rx="8" fill="#ecfeff" stroke="#0891b2"/>
+    <text x="50" y="22" text-anchor="middle" font-size="11" font-weight="700">&#23450;&#31295;</text>
+    <text x="50" y="38" text-anchor="middle" font-size="9">finalize</text></g>
+  <line x1="580" y1="134" x2="610" y2="134" stroke="#2563eb" stroke-width="2" marker-end="url(#a1)"/>
+  <g transform="translate(610,110)"><rect width="140" height="48" rx="8" fill="#eef2ff" stroke="#4f46e5"/>
+    <text x="70" y="22" text-anchor="middle" font-size="11" font-weight="700">Buddy ingest</text>
+    <text x="70" y="38" text-anchor="middle" font-size="9">homework+&#39064;</text></g>
+  <line x1="680" y1="158" x2="680" y2="190" stroke="#2563eb" stroke-width="2"/>
+  <line x1="280" y1="190" x2="1020" y2="190" stroke="#2563eb" stroke-width="2"/>
+  <line x1="280" y1="190" x2="280" y2="210" stroke="#2563eb" stroke-width="2" marker-end="url(#a1)"/>
+  <line x1="680" y1="190" x2="680" y2="210" stroke="#2563eb" stroke-width="2" marker-end="url(#a1)"/>
+  <line x1="1020" y1="190" x2="1020" y2="210" stroke="#2563eb" stroke-width="2" marker-end="url(#a1)"/>
+  <g transform="translate(220,210)"><rect width="120" height="56" rx="8" fill="#e0f2fe" stroke="#0284c7"/>
+    <text x="60" y="24" text-anchor="middle" font-size="11" font-weight="700">A &#20316;&#19994;+&#39064;</text>
+    <text x="60" y="42" text-anchor="middle" font-size="9">SQLite</text></g>
+  <g transform="translate(640,210)"><rect width="120" height="56" rx="8" fill="#fce7f3" stroke="#db2777"/>
+    <text x="60" y="24" text-anchor="middle" font-size="11" font-weight="700">B &#35760;&#24518;&#20107;&#20214;</text>
+    <text x="60" y="42" text-anchor="middle" font-size="9">PAGE_FINALIZED</text></g>
+  <g transform="translate(960,210)"><rect width="120" height="56" rx="8" fill="#ede9fe" stroke="#7c3aed"/>
+    <text x="60" y="24" text-anchor="middle" font-size="11" font-weight="700">RAG kp_tags</text>
+    <text x="60" y="42" text-anchor="middle" font-size="9">Chroma</text></g>
+  <line x1="960" y1="266" x2="960" y2="268" stroke="#7c3aed" stroke-width="2" marker-end="url(#a2)"/>
+  <g transform="translate(900,268)"><rect width="160" height="56" rx="8" fill="#ddd6fe" stroke="#6d28d9"/>
+    <text x="80" y="24" text-anchor="middle" font-size="11" font-weight="700">A+ &#25484;&#25569;&#35270;&#22270;</text>
+    <text x="80" y="42" text-anchor="middle" font-size="9">&#35268;&#21017;&#32858;&#21512; v1</text></g>
+  <text x="60" y="350" class="box">&#26029;&#28857;: &#9312;&#9313;&#9314;&#9316;&#9315; &#22343;&#26410;&#25509;</text>
+  <text x="40" y="400" class="sec">B. M3 &#30446;&#26631;&#65288;&#34394;&#32447; = &#26032;&#22686;&#65289;</text>
+  <rect x="40" y="416" width="1120" height="320" rx="12" fill="#faf5ff" stroke="#c4b5fd"/>
+  <g transform="translate(60,440)"><rect width="130" height="44" rx="8" fill="#eef2ff" stroke="#4f46e5"/>
+    <text x="65" y="20" text-anchor="middle" font-size="10" font-weight="700">ingest &#23436;&#25104;</text>
+    <text x="65" y="36" text-anchor="middle" font-size="9">PAGE_FINALIZED</text></g>
+  <line x1="200" y1="462" x2="230" y2="462" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#a2)"/>
+  <g transform="translate(230,440)"><rect width="130" height="44" rx="8" fill="#fff" stroke="#7c3aed" stroke-dasharray="4 2"/>
+    <text x="65" y="20" text-anchor="middle" class="new">LangGraph</text>
+    <text x="65" y="36" text-anchor="middle" font-size="9">graph_runs</text></g>
+  <line x1="370" y1="462" x2="400" y2="462" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#a2)"/>
+  <g transform="translate(400,440)"><rect width="120" height="44" rx="8" fill="#fff" stroke="#7c3aed" stroke-dasharray="4 2"/>
+    <text x="60" y="20" text-anchor="middle" class="new">ocr_refine</text>
+    <text x="60" y="36" text-anchor="middle" font-size="9">M2</text></g>
+  <line x1="530" y1="462" x2="560" y2="462" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#a2)"/>
+  <g transform="translate(560,440)"><rect width="120" height="44" rx="8" fill="#fff" stroke="#7c3aed" stroke-dasharray="4 2"/>
+    <text x="60" y="20" text-anchor="middle" class="new">RAG &#23545;&#40784;</text>
+    <text x="60" y="36" text-anchor="middle" font-size="9">Chroma</text></g>
+  <line x1="690" y1="462" x2="720" y2="462" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#a2)"/>
+  <g transform="translate(720,440)"><rect width="150" height="44" rx="8" fill="#fff" stroke="#7c3aed" stroke-dasharray="4 2"/>
+    <text x="75" y="20" text-anchor="middle" class="new">&#35266;&#23519; Agent</text>
+    <text x="75" y="36" text-anchor="middle" font-size="9">&#21482;&#20889; A+/B</text></g>
+  <line x1="880" y1="462" x2="910" y2="462" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#a2)"/>
+  <g transform="translate(910,440)"><rect width="130" height="44" rx="8" fill="#ddd6fe" stroke="#6d28d9"/>
+    <text x="65" y="20" text-anchor="middle" font-size="10" font-weight="700">A+ &#37325;&#31639;</text>
+    <text x="65" y="36" text-anchor="middle" font-size="9">&#21487;&#36861;&#36394;</text></g>
+  <rect x="60" y="510" width="1080" height="200" rx="10" fill="#fff" stroke="#e9d5ff"/>
+  <text x="80" y="536" font-size="12" font-weight="700" fill="#5b21b6">&#19982;&#21407;&#36335;&#32447;&#22270;&#24046;&#24322;</text>
+  <text x="80" y="560" class="box">&#183; LangGraph &#19981;&#20877;&#37325;&#36305;&#23436;&#25972; OCR &#8212; OCR &#22312; gateway &#23450;&#31295;&#21069;</text>
+  <text x="80" y="582" class="box">&#183; M3 &#22270;&#20174; homework &#24050;&#20837;&#24211;&#35302;&#21457;</text>
+  <text x="80" y="604" class="box">&#183; TS &#21069;&#21488;&#23637;&#31034; graph run &#27493;&#39588;</text>
+  <text x="80" y="626" class="box">&#183; M4 &#25509; &#9312;&#9313;&#9316; &#183; M5 &#25509; &#9315;</text>
+  <text x="40" y="760" font-size="11" fill="#64748b">doc/assets/data-flow-current-vs-m3.svg</text>

@@ -1,0 +1,16 @@
+{
+  "nodes": [
+    {
+      "id": "chunk:pep-a:sets:complement-def",
+      "label": "补集定义",
+      "summary": "设 U 为全集，A⊆U，则补集 ∁U A = {x∈U | x∉A}",
+      "text": "补集是相对全集而言的，注意端点开闭",
+      "kp_id": "math.hs.sets.complement",
+      "tags": ["grade_band:hs", "chunk_kind:definition"],
+      "links": {
+        "defines_kp": ["math.hs.sets.complement"],
+        "section_id": "sec:pep-a:math:hs:ch3:sets"
+      }
+    }
+  ]
+}

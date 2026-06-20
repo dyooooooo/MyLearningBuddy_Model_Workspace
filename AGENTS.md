@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-**Product goal**: [**Learning Buddy**](doc/learning-buddy-status-and-roadmap.md) — 伴学型教学记忆智能体（⑥→C2→A/B→A⁺→①–⑤ 闭环）。当前里程碑 **M0**；近期 **M1**（切题、错题、A⁺ 初版）。
+**Product goal**: [**Learning Buddy**](doc/learning-buddy-status-and-roadmap.md) — 伴学型教学记忆智能体（⑥→C2→A/B→A⁺→①–⑤ 闭环）。**M1 前台先行**（`/test/` + buddy-api）；Android 待 M1 验收后迁移。
 
 **Platform**: Configure **NVIDIA DGX Spark** as the AI lab for Learning Buddy:
 
@@ -29,6 +29,11 @@
 | Rule | Purpose |
 |------|---------|
 | `learning-buddy.mdc` | **Product mission** — 伴学架构、仓库边界、M0–M7 |
+| `ai-four-pillars.mdc` | **AI 四工程** — Prompt / RAG / Harness / Loop 总纲（改 LLM/Agent 必查） |
+| `prompt-engineering.mdc` | Prompt 版本化、schema、角色边界（C1/C2/③） |
+| `rag-engineering.mdc` | A 通用库 RAG、Chroma、kp 标注 |
+| `harness-engineering.mdc` | acceptance、golden eval、LangGraph trace |
+| `loop-engineering.mdc` | 伴学闭环、ingest→A⁺、Memory Drive |
 | `project-mission.mdc` | DGX Spark lab + NVIDIA-first priorities |
 | `context7-auto.mdc` | Auto-fetch library docs via Context7 |
 | `dgx-spark-platform.mdc` | Hardware, Dashboard, operational constraints |
@@ -47,6 +52,7 @@
 | `build-spark/` | build.nvidia.com/spark playbooks catalog & workflows |
 | `nvidia-ai-stack/` | NGC, models, vLLM, TensorRT-LLM, NIM |
 | `learning-buddy/` | Product architecture, milestones, repo boundaries |
+| `ai-four-pillars/` | Prompt / RAG / Harness / Loop 工作流与业界实践 |
 | `agents-dev/` | Cursor SDK, agents, MCP integration |
 
 ### MCP (`.cursor/mcp.json`)

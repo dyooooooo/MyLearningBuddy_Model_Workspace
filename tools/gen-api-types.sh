@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Generate TypeScript types from Buddy + Gateway OpenAPI (services must be up).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+FE="${ROOT}/exam-ocr-server/frontend"
+BUDDY_URL="${BUDDY_URL:-http://127.0.0.1:8100}"
+GATEWAY_URL="${GATEWAY_URL:-http://127.0.0.1:8000}"
+
+mkdir -p "${FE}/src/api"
+
+if ! command -v npx >/dev/null 2>&1; then
+  echo "npx required; install Node.js 20+"
+  exit 1
+fi
+
+cd "${FE}"
+npm install --no-save openapi-typescript@7 2>/dev/null || npm install
+
+npx openapi-typescript "${BUDDY_URL}/openapi.json" -o src/api/buddy.d.ts
+npx openapi-typescript "${GATEWAY_URL}/openapi.json" -o src/api/gateway.d.ts
+
+echo "Generated:"
+echo "  ${FE}/src/api/buddy.d.ts"
+echo "  ${FE}/src/api/gateway.d.ts"

@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    {
+      "id": "sec:pep-a:math:hs:ch3:sets",
+      "label": "第三章 集合",
+      "summary": "集合概念、运算与补集",
+      "text": "第三章 集合与常用逻辑用语",
+      "kp_id": "math.hs.sets",
+      "parent_id": "tb:pep-a:math:hs:vol1",
+      "tags": ["grade_band:hs", "chapter:3"],
+      "links": {"textbook_id": "tb:pep-a:math:hs:vol1", "covers_kp": ["math.hs.sets"]}
+    }
+  ]
+}

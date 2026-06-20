@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1200" y2="680" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+  <style>
+    text { font-family: "Noto Sans SC", "PingFang SC", sans-serif; }
+    .t { font-size: 22px; font-weight: 700; fill: #0f172a; }
+    .sub { font-size: 12px; fill: #64748b; }
+    .mh { font-size: 13px; font-weight: 700; fill: #0f172a; }
+    .mi { font-size: 10.5px; fill: #475569; }
+    .leg { font-size: 10px; fill: #64748b; }
+  </style>
+  <rect width="1200" height="680" fill="url(#bg2)"/>
+  <text x="40" y="42" class="t">&#37324;&#31243;&#30865; Roadmap&#65288;&#20462;&#35746; &#183; 2026-06&#65289;</text>
+  <text x="40" y="64" class="sub">&#32511;&#33394;=&#24050;&#23436;&#25104; &#183; &#29609;&#29609;&#33394;=&#36827;&#34892;&#20013; &#183; &#28784;&#33394;=&#26410;&#24320;&#22987; &#183; &#21024;&#38500;&#32447;=&#19981;&#24517;&#37325;&#20570;</text>
+  <rect x="40" y="82" width="14" height="14" rx="3" fill="#22c55e"/><text x="60" y="93" class="leg">Done</text>
+  <rect x="120" y="82" width="14" height="14" rx="3" fill="#f59e0b"/><text x="140" y="93" class="leg">In progress</text>
+  <rect x="240" y="82" width="14" height="14" rx="3" fill="#e2e8f0" stroke="#94a3b8"/><text x="260" y="93" class="leg">Not started</text>
+  <rect x="360" y="82" width="14" height="14" rx="3" fill="#fecaca"/><text x="380" y="93" class="leg">Skip / merged</text>
+  <line x1="200" y1="120" x2="200" y2="620" stroke="#cbd5e1" stroke-width="2"/>
+  <circle cx="200" cy="150" r="10" fill="#22c55e"/>
+  <text x="230" y="145" class="mh">M0 &#22522;&#32447;</text>
+  <rect x="230" y="152" width="920" height="52" rx="8" fill="#dcfce7" stroke="#86efac"/>
+  <text x="244" y="172" class="mi">&#10003; &#20276;&#23398;&#27969;&#27700;&#32447; Phase0 &#183; C2 OCR &#183; /test/ &#183; Docker &#19977;&#23481;&#22120;</text>
+  <text x="244" y="190" class="mi">&#21407;: Android Room &#8594; &#29616;: GX10 &#21069;&#21488;&#31561;&#20215;&#21363;&#21487;</text>
+  <circle cx="200" cy="230" r="10" fill="#f59e0b"/>
+  <text x="230" y="225" class="mh">M1 &#32467;&#26500;&#21270; + A+ &#21021;&#29256;</text>
+  <rect x="230" y="232" width="920" height="88" rx="8" fill="#fef3c7" stroke="#fcd34d"/>
+  <text x="244" y="252" class="mi">&#10003; Buddy API &#183; QuestionEntity &#183; &#38169;&#39064;&#26631;&#35760; &#183; kp &#32423; A+ &#183; RAG</text>
+  <text x="244" y="270" class="mi">&#9679; &#21069;&#21488; Phase C &#27169;&#25311; &#183; &#20999;&#39064;&#31283;&#23450; &#183; &#38169;&#39064;&#26412; Tab</text>
+  <text x="244" y="288" class="mi">&#21024;&#38500;: &#20174;&#38646;&#24314; buddy-api&#65288;&#24050;&#25552;&#21069;&#23436;&#25104;&#65289;&#12289;Android Room&#65288;&#26242;&#32531;&#65289;</text>
+  <rect x="230" y="298" width="280" height="16" rx="4" fill="#fde68a"/>
+  <text x="370" y="309" text-anchor="middle" font-size="9" fill="#92400e">&#32422; 65% &#183; &#25910;&#23614; 1-2 &#21608;</text>
+  <circle cx="200" cy="350" r="10" fill="#f59e0b"/>
+  <text x="230" y="345" class="mh">M2 &#35748;&#30693;&#24037;&#20855;&#65288;&#25910;&#31364;&#65289;</text>
+  <rect x="230" y="352" width="920" height="72" rx="8" fill="#fef3c7" stroke="#fcd34d"/>
+  <text x="244" y="372" class="mi">&#24517;&#20570;: ocr_refine &#183; RAG &#27880;&#20837; C2 &#26657;&#23545; prompt&#65288;&#22797;&#29992; Buddy Chroma&#65289;</text>
+  <text x="244" y="390" class="mi">&#21024;&#38500;: &#39318;&#27425;&#24314; RAG&#65288;&#24050;&#26377; Chroma&#65289;&#12289;A+ &#20889;&#20837;&#31649;&#32447;&#65288;ingest &#24050;&#33258;&#21160;&#65289;</text>
+  <text x="244" y="408" class="mi">ocr_fusion &#21487;&#36873;&#38477;&#32423;</text>
+  <circle cx="200" cy="460" r="10" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+  <text x="230" y="455" class="mh">M3 &#32534;&#25490;&#22522;&#30784; &#8592; &#24403;&#21069;&#30446;&#26631;</text>
+  <rect x="230" y="462" width="920" height="88" rx="8" fill="#eef2ff" stroke="#a5b4fc"/>
+  <text x="244" y="482" class="mi">API &#24050;&#26377; &#183; &#24517;&#20570;: LangGraph + &#35266;&#23519; Agent</text>
+  <text x="244" y="500" class="mi">&#36215;&#28857;: &#23450;&#31295; ingest &#21518; &#8594; refine &#8594; RAG &#8594; observer &#8594; A+</text>
+  <text x="244" y="518" class="mi">TS &#21069;&#21488;: Agent run &#21487;&#35266;&#27979;</text>
+  <text x="244" y="536" class="mi">&#19981;&#20570;: &#9312;&#9313;&#9316;&#9315; &#183; Memory Drive &#183; Android</text>
+  <circle cx="200" cy="580" r="8" fill="#e2e8f0" stroke="#94a3b8"/>
+  <text x="230" y="568" class="mh">M4 &#27835;&#29702;&#20027;&#38142;</text>
+  <text x="230" y="586" class="mi">&#9312;&#35786;&#26029; &#9313;&#35268;&#21010; &#183; Agent &#20998;&#31163; &#183; &#9316;&#39118;&#25511;</text>
+  <circle cx="200" cy="610" r="6" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="230" y="608" class="mh" fill="#64748b">M5 &#20276;&#23398;&#34892;&#21160; &#183; M6 &#35821;&#38899; &#183; M7 &#35270;&#39057;</text>
+  <polygon points="170,290 190,300 170,310" fill="#4f46e5"/>
+  <text x="100" y="304" text-anchor="end" font-size="11" font-weight="700" fill="#4338ca">&#20320;&#22312;&#36825;&#37324;</text>
+  <line x1="110" y1="300" x2="168" y2="300" stroke="#4338ca" stroke-width="2"/>
+  <text x="40" y="660" class="sub">doc/assets/milestone-roadmap-revised.svg</text>

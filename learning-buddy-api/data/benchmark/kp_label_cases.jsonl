@@ -1,0 +1,28 @@
+{"print_text": "已知全集 U=(-∞, 1)，集合 A=(-1, 1)，则 A 的补集为", "expected_kp_id": "math.hs.sets.complement"}
+{"print_text": "已知 U=(-∞,+∞)，A=(-2,3]，求 ∁U A", "expected_kp_id": "math.hs.sets.complement"}
+{"print_text": "设全集 U=R，A={x|x<2}，求 A 的补集", "expected_kp_id": "math.hs.sets.interval"}
+{"print_text": "U=R, A=[0,2], 求 A 在 U 中的补集", "expected_kp_id": "math.hs.sets.complement"}
+{"print_text": "不等式 (3x-1)/(x+1) > 0 的解集为", "expected_kp_id": "math.hs.inequality.rational"}
+{"print_text": "解分式不等式 (x-2)/(x+3) ≥ 0", "expected_kp_id": "math.hs.inequality.rational"}
+{"print_text": "求 (2x+1)/(x-1) < 0 的解集", "expected_kp_id": "math.hs.inequality.rational"}
+{"print_text": "若幂函数 y=f(x) 的图像经过点 (³√3, 3)，则 f(2) 的值为", "expected_kp_id": "math.hs.functions.power"}
+{"print_text": "幂函数 f(x)=x^α 过点 (2,4)，求 α", "expected_kp_id": "math.hs.functions.power"}
+{"print_text": "已知 f(x) = { x+3, x<-1; x², x≥-1，则 f(-2) 与 f(1) 的值", "expected_kp_id": "math.hs.functions.piecewise"}
+{"print_text": "分段函数 f(x) 在 x=-1 处求极限", "expected_kp_id": "math.hs.functions.piecewise"}
+{"print_text": "已知角 α 的终边过点 P(1, 2)，求 sinα cosα", "expected_kp_id": "math.hs.trigonometry.ratio"}
+{"print_text": "已知角 α 终边过 P(1,2)，求 sin(π/2+α) cot(π-α)", "expected_kp_id": "math.hs.trigonometry.induction"}
+{"print_text": "化简 sin(π+α) 与 cos(π/2-α)", "expected_kp_id": "math.hs.trigonometry.induction"}
+{"print_text": "等差数列 {a_n} 中 a_1=2, d=3, 求 a_10", "expected_kp_id": "math.hs.sequence.arithmetic"}
+{"print_text": "设 x₁, x₂, x₃ > 0 且 x₁ ≠ x₂, f(x)=x+2/x, g(x)=3x, 若 f(x₁)=f(x₂)=g(x₃), 求 f(x₁+x₂)+g(x₃) 的取值范围", "expected_kp_id": "math.hs.calculus.extreme"}
+{"print_text": "设 a∈R，若 {x | lg(x²+2x) - lg(ax-1) = 0} ≠ ∅，则 a 的取值范围", "expected_kp_id": "math.hs.equation.log.domain"}
+{"print_text": "解方程 lg(x+1) + lg(x-1) = 1", "expected_kp_id": "math.hs.equation.log"}
+{"print_text": "解不等式 x²-5x+6>0", "expected_kp_id": "math.hs.inequality.quadratic"}
+{"print_text": "(x-1)(x+2)<0 解集", "expected_kp_id": "math.hs.inequality.quadratic"}
+{"print_text": "已知 f(x)=2x-1 求 f(3)", "expected_kp_id": "math.hs.functions.value"}
+{"print_text": "求 f(x)=x³ 在 x=1 处导数", "expected_kp_id": "math.hs.calculus.basic"}
+{"print_text": "用区间表示 {x|x≤1 或 x>5}", "expected_kp_id": "math.hs.sets.interval"}
+{"print_text": "函数 f(x)=x+2/x 在 x>0 时的最小值", "expected_kp_id": "math.hs.functions.rational"}
+{"print_text": "已知 f(x₁)=f(x₂) 且 x₁≠x₂ 求 x₁+x₂", "expected_kp_id": "math.hs.functions.symmetry"}
+{"print_text": "补集 ∁U A 其中 U=R A=(-1,1)", "expected_kp_id": "math.hs.sets.complement"}
+{"print_text": "分式不等式分子分母同号 (x-1)/(x+2)≤0", "expected_kp_id": "math.hs.inequality.rational"}
+{"print_text": "诱导公式 sin(π/2+α) 的值", "expected_kp_id": "math.hs.trigonometry.induction"}

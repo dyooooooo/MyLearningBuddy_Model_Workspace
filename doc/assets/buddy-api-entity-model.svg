@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820">
+  <defs>
+    <filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08"/></filter>
+  </defs>
+  <style>
+    text { font-family: "Noto Sans SC", Consolas, monospace; }
+    .t { font-size: 20px; font-weight: 700; fill: #0f172a; font-family: "Noto Sans SC", sans-serif; }
+    .sub { font-size: 11px; fill: #64748b; font-family: "Noto Sans SC", sans-serif; }
+    .cn { font-size: 12px; font-weight: 700; fill: #0f172a; font-family: "Noto Sans SC", sans-serif; }
+    .fld { font-size: 10px; fill: #334155; }
+    .pk { font-size: 10px; fill: #b45309; font-weight: 700; }
+    .fk { font-size: 9px; fill: #6366f1; }
+  </style>
+  <rect width="1200" height="820" fill="#f8fafc"/>
+  <text x="40" y="36" class="t">Buddy API &#25968;&#25454;&#27169;&#22411;&#65288;SQLite&#65289;</text>
+  <text x="40" y="58" class="sub">A=&#36164;&#20135; &#183; B=&#20107;&#20214;&#35760;&#24518; &#183; A+=&#25353; kp &#32858;&#21512; &#183; RAG=&#21521;&#37327;&#26803;&#32034;</text>
+  <g filter="url(#sh)">
+    <rect x="40" y="90" width="200" height="120" rx="8" fill="#fff" stroke="#64748b"/>
+    <rect x="40" y="90" width="200" height="28" rx="8" fill="#f1f5f9"/><rect x="40" y="110" width="200" height="8" fill="#f1f5f9"/>
+    <text x="140" y="108" text-anchor="middle" class="cn">Student</text>
+    <text x="52" y="132" class="pk">student_id</text><text x="130" y="132" class="fld">: str PK</text>
+    <text x="52" y="150" class="fld">display_name</text>
+    <text x="52" y="168" class="fld">grade_band</text>
+    <text x="52" y="186" class="fld">created_at</text>
+  </g>
+  <g filter="url(#sh)">
+    <rect x="280" y="90" width="240" height="150" rx="8" fill="#e0f2fe" stroke="#0284c7"/>
+    <rect x="280" y="90" width="240" height="28" rx="8" fill="#bae6fd"/><rect x="280" y="110" width="240" height="8" fill="#bae6fd"/>
+    <text x="400" y="108" text-anchor="middle" class="cn">HomeworkEntry (A)</text>
+    <text x="292" y="132" class="pk">homework_id</text><text x="380" y="132" class="fld">: PK</text>
+    <text x="292" y="150" class="fld">student_id</text><text x="380" y="150" class="fk">FK</text>
+    <text x="292" y="168" class="fld">session_id, page_id</text>
+    <text x="292" y="186" class="fld">subject, title</text>
+    <text x="292" y="204" class="fld">finalized_at</text>
+  </g>
+  <g filter="url(#sh)">
+    <rect x="560" y="90" width="260" height="190" rx="8" fill="#e0f2fe" stroke="#0284c7"/>
+    <rect x="560" y="90" width="260" height="28" rx="8" fill="#bae6fd"/><rect x="560" y="110" width="260" height="8" fill="#bae6fd"/>
+    <text x="690" y="108" text-anchor="middle" class="cn">QuestionEntity (A)</text>
+    <text x="572" y="132" class="pk">question_id</text><text x="660" y="132" class="fld">: PK</text>
+    <text x="572" y="150" class="fld">homework_id</text><text x="660" y="150" class="fk">FK</text>
+    <text x="572" y="168" class="fld">print_text, handwriting</text>
+    <text x="572" y="186" class="fld">kp_tags[]</text><text x="660" y="186" class="fk">RAG</text>
+    <text x="572" y="204" class="fld">is_wrong, mastery</text>
+    <text x="572" y="222" class="fld">rag_evidence_json</text>
+    <text x="572" y="240" class="fld">bbox, sort_index</text>
+  </g>
+  <g filter="url(#sh)">
+    <rect x="280" y="290" width="260" height="170" rx="8" fill="#fce7f3" stroke="#db2777"/>
+    <rect x="280" y="290" width="260" height="28" rx="8" fill="#fbcfe8"/><rect x="280" y="310" width="260" height="8" fill="#fbcfe8"/>
+    <text x="410" y="308" text-anchor="middle" class="cn">MemoryEvent (B)</text>
+    <text x="292" y="332" class="pk">event_id</text><text x="370" y="332" class="fld">: PK</text>
+    <text x="292" y="350" class="fld">student_id</text><text x="370" y="350" class="fk">FK</text>
+    <text x="292" y="368" class="fld">event_type</text>
+    <text x="292" y="386" class="fld">PAGE_FINALIZED</text>
+    <text x="292" y="404" class="fld">QUESTION_TAGGED</text>
+    <text x="292" y="422" class="fld">MARKED_WRONG</text>
+    <text x="292" y="440" class="fld">payload_json, ts</text>
+  </g>
+  <g filter="url(#sh)">
+    <rect x="580" y="320" width="280" height="180" rx="8" fill="#ede9fe" stroke="#7c3aed"/>
+    <rect x="580" y="320" width="280" height="28" rx="8" fill="#ddd6fe"/><rect x="580" y="340" width="280" height="8" fill="#ddd6fe"/>
+    <text x="720" y="338" text-anchor="middle" class="cn">MasteryView (A+)</text>
+    <text x="592" y="362" class="pk">student_id + kp_id</text>
+    <text x="592" y="380" class="fld">label, level, weak</text>
+    <text x="592" y="398" class="fld">evidence[]</text>
+    <text x="592" y="416" class="fld">question_id, snippet</text>
+    <text x="592" y="434" class="fld">rule_version</text>
+    <text x="592" y="476" class="fld">A+B &#32858;&#21512;&#20889;&#20837;</text>
+  </g>
+  <g filter="url(#sh)">
+    <rect x="900" y="90" width="260" height="130" rx="8" fill="#f0fdf4" stroke="#16a34a"/>
+    <rect x="900" y="90" width="260" height="28" rx="8" fill="#bbf7d0"/><rect x="900" y="110" width="260" height="8" fill="#bbf7d0"/>
+    <text x="1030" y="108" text-anchor="middle" class="cn">RAG (Chroma)</text>
+    <text x="912" y="132" class="fld">syllabus math_hs.json</text>
+    <text x="912" y="150" class="fld">question-bank jsonl</text>
+    <text x="912" y="168" class="fld">bge-small-zh embed</text>
+    <text x="912" y="186" class="fld">map_question_to_kp()</text>
+  </g>
+  <line x1="240" y1="150" x2="280" y2="150" stroke="#64748b" stroke-width="1.5"/>
+  <line x1="520" y1="165" x2="560" y2="165" stroke="#64748b" stroke-width="1.5"/>
+  <text x="530" y="158" font-size="9" fill="#64748b">1:N</text>
+  <line x1="140" y1="210" x2="140" y2="360" stroke="#64748b" stroke-width="1.5"/>
+  <line x1="140" y1="360" x2="280" y2="360" stroke="#64748b" stroke-width="1.5"/>
+  <line x1="690" y1="280" x2="690" y2="320" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="700" y="300" font-size="9" fill="#7c3aed">&#32858;&#21512;</text>
+  <line x1="820" y1="175" x2="900" y2="155" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <rect x="40" y="530" width="1120" height="250" rx="12" fill="#fff" stroke="#cbd5e1"/>
+  <text x="60" y="560" class="cn" font-size="13">&#30693;&#35782;&#24211;&#27010;&#24565;&#26144;&#23556;</text>
+  <text x="60" y="590" font-size="11" font-weight="700" fill="#0f172a">&#25688;&#35201;</text>
+  <text x="120" y="590" class="sub">description &#183; print_text &#183; rag_evidence &#183; label</text>
+  <text x="60" y="620" font-size="11" font-weight="700" fill="#0f172a">&#26631;&#31614;</text>
+  <text x="120" y="620" class="sub">kp_tags &#183; is_wrong &#183; mastery &#183; weak</text>
+  <text x="60" y="650" font-size="11" font-weight="700" fill="#0f172a">&#20851;&#32852;</text>
+  <text x="120" y="650" class="sub">homework_id &#183; &#35821;&#20041;&#8594;kp &#183; evidence[] &#183; B &#20107;&#20214;&#38142;</text>
+  <rect x="60" y="670" width="520" height="90" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="80" y="694" font-size="11" font-weight="700" fill="#334155">&#20889;&#20837;&#36335;&#24452;</text>
+  <text x="80" y="714" class="sub">&#23450;&#31295; &#8594; ingest &#8594; RAG &#8594; aplus_aggregate</text>
+  <text x="80" y="734" class="sub">&#26631;&#38169; &#8594; PATCH &#8594; &#37325;&#31639; A+</text>
+  <text x="40" y="800" class="sub">doc/assets/buddy-api-entity-model.svg</text>
