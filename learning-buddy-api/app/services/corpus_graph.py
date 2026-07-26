@@ -16,6 +16,16 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _get_node(session: Session, node_id: str) -> CorpusNode | None:
+    row = session.get(CorpusNode, node_id)
+    if row is not None:
+        return row
+    for obj in session.new:
+        if isinstance(obj, CorpusNode) and obj.id == node_id:
+            return obj
+    return session.query(CorpusNode).filter(CorpusNode.id == node_id).first()
+
+
 def upsert_node(
     session: Session,
     *,
@@ -28,15 +38,9 @@ def upsert_node(
     full_text: str = "",
     tags_json: list[str] | None = None,
     meta_json: dict | None = None,
-    status: str = "published",
+    status: str = "draft",
 ) -> CorpusNode:
-    row = session.get(CorpusNode, node_id)
-    if row is None:
-        row = (
-            session.query(CorpusNode)
-            .filter(CorpusNode.id == node_id)
-            .first()
-        )
+    row = _get_node(session, node_id)
     if row is None:
         row = CorpusNode(
             id=node_id,
@@ -116,7 +120,14 @@ def link_tag(session: Session, node_id: str, tag_id: str, source: str = "system"
         .filter(CorpusTagLink.node_id == node_id, CorpusTagLink.tag_id == tag_id)
         .first()
     )
-    if not existing:
+    if existing is None:
+        for obj in session.new:
+            if (
+                isinstance(obj, CorpusTagLink)
+                and obj.node_id == node_id
+                and obj.tag_id == tag_id
+            ):
+                return
         session.add(CorpusTagLink(node_id=node_id, tag_id=tag_id, created_at=_now_iso()))
 
 
@@ -127,6 +138,7 @@ def expand_neighbors(
     rel_types: set[str] | None = None,
     max_hops: int = 2,
     limit: int = 50,
+    published_only: bool = True,
 ) -> list[CorpusNode]:
     seen: set[str] = set(node_ids)
     frontier = list(node_ids)
@@ -146,8 +158,11 @@ def expand_neighbors(
                 next_frontier.append(e.to_id)
         for nid in next_frontier:
             node = session.get(CorpusNode, nid)
-            if node and node.status == "published":
-                collected[nid] = node
+            if node is None:
+                continue
+            if published_only and node.status != "published":
+                continue
+            collected[nid] = node
         frontier = next_frontier
         if len(collected) >= limit:
             break

@@ -1,0 +1,1084 @@
+{
+  "job": {
+    "id": "de6bd85c-8eef-4126-8953-cfadd80abb55",
+    "status": "done",
+    "page_count": 30,
+    "label": "高中数学第一册_35b",
+    "created_at": "2026-07-03T15:29:59.550891+00:00",
+    "debug_prefix": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug",
+    "prompt_version": "layout_blueprint_v5",
+    "blank_pages": [
+      29
+    ]
+  },
+  "manifest_table": [
+    {
+      "page_no": 1,
+      "status": "ok",
+      "raw_blocks": 7,
+      "raw_kinds": {
+        "text": 6,
+        "figure": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 7,
+      "final_kinds": {
+        "text": 6,
+        "figure": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 2,
+      "status": "ok",
+      "raw_blocks": 6,
+      "raw_kinds": {
+        "running": 1,
+        "text": 4,
+        "figure": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 6,
+      "final_kinds": {
+        "running": 1,
+        "text": 4,
+        "figure": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 3,
+      "status": "ok",
+      "raw_blocks": 6,
+      "raw_kinds": {
+        "text": 5,
+        "table": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 6,
+      "final_kinds": {
+        "text": 5,
+        "table": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 4,
+      "status": "ok",
+      "raw_blocks": 6,
+      "raw_kinds": {
+        "running": 2,
+        "text": 4
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 6,
+      "final_kinds": {
+        "running": 2,
+        "text": 4
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 5,
+      "status": "ok",
+      "raw_blocks": 6,
+      "raw_kinds": {
+        "running": 2,
+        "text": 4
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 6,
+      "final_kinds": {
+        "running": 2,
+        "text": 4
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 6,
+      "status": "ok",
+      "raw_blocks": 3,
+      "raw_kinds": {
+        "running": 2,
+        "text": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 3,
+      "final_kinds": {
+        "running": 2,
+        "text": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 7,
+      "status": "ok",
+      "raw_blocks": 4,
+      "raw_kinds": {
+        "running": 2,
+        "text": 2
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 4,
+      "final_kinds": {
+        "running": 2,
+        "text": 2
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 8,
+      "status": "ok",
+      "raw_blocks": 3,
+      "raw_kinds": {
+        "figure": 1,
+        "text": 2
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 3,
+      "final_kinds": {
+        "figure": 1,
+        "text": 2
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 9,
+      "status": "ok",
+      "raw_blocks": 16,
+      "raw_kinds": {
+        "running": 2,
+        "figure": 1,
+        "text": 13
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 16,
+      "final_kinds": {
+        "running": 2,
+        "figure": 1,
+        "text": 13
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 10,
+      "status": "ok",
+      "raw_blocks": 9,
+      "raw_kinds": {
+        "running": 2,
+        "text": 6,
+        "table": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 9,
+      "final_kinds": {
+        "running": 2,
+        "text": 6,
+        "table": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 11,
+      "status": "ok",
+      "raw_blocks": 12,
+      "raw_kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 12,
+      "final_kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 12,
+      "status": "ok",
+      "raw_blocks": 14,
+      "raw_kinds": {
+        "running": 2,
+        "text": 9,
+        "equation": 1,
+        "figure": 2
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 14,
+      "final_kinds": {
+        "running": 2,
+        "text": 9,
+        "equation": 1,
+        "figure": 2
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 13,
+      "status": "ok",
+      "raw_blocks": 7,
+      "raw_kinds": {
+        "running": 2,
+        "text": 4,
+        "equation": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 7,
+      "final_kinds": {
+        "running": 2,
+        "text": 4,
+        "equation": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 14,
+      "status": "ok",
+      "raw_blocks": 22,
+      "raw_kinds": {
+        "running": 2,
+        "text": 17,
+        "figure": 1,
+        "equation": 2
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 22,
+      "final_kinds": {
+        "running": 2,
+        "text": 17,
+        "figure": 1,
+        "equation": 2
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 15,
+      "status": "ok",
+      "raw_blocks": 7,
+      "raw_kinds": {
+        "running": 2,
+        "text": 4,
+        "equation": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 7,
+      "final_kinds": {
+        "running": 2,
+        "text": 4,
+        "equation": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 16,
+      "status": "ok",
+      "raw_blocks": 14,
+      "raw_kinds": {
+        "running": 2,
+        "text": 10,
+        "figure": 2
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 14,
+      "final_kinds": {
+        "running": 2,
+        "text": 10,
+        "figure": 2
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 17,
+      "status": "ok",
+      "raw_blocks": 14,
+      "raw_kinds": {
+        "running": 2,
+        "text": 11,
+        "figure": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 14,
+      "final_kinds": {
+        "running": 2,
+        "text": 11,
+        "figure": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 18,
+      "status": "ok",
+      "raw_blocks": 8,
+      "raw_kinds": {
+        "running": 2,
+        "text": 5,
+        "figure": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 8,
+      "final_kinds": {
+        "running": 2,
+        "text": 5,
+        "figure": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 19,
+      "status": "ok",
+      "raw_blocks": 14,
+      "raw_kinds": {
+        "running": 2,
+        "text": 12
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 14,
+      "final_kinds": {
+        "running": 2,
+        "text": 12
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 20,
+      "status": "ok",
+      "raw_blocks": 12,
+      "raw_kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 12,
+      "final_kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 21,
+      "status": "ok",
+      "raw_blocks": 12,
+      "raw_kinds": {
+        "running": 2,
+        "text": 9,
+        "equation": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 12,
+      "final_kinds": {
+        "running": 2,
+        "text": 9,
+        "equation": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 22,
+      "status": "ok",
+      "raw_blocks": 7,
+      "raw_kinds": {
+        "running": 2,
+        "text": 5
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 7,
+      "final_kinds": {
+        "running": 2,
+        "text": 5
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 23,
+      "status": "ok",
+      "raw_blocks": 7,
+      "raw_kinds": {
+        "running": 2,
+        "text": 5
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 7,
+      "final_kinds": {
+        "running": 2,
+        "text": 5
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 24,
+      "status": "ok",
+      "raw_blocks": 19,
+      "raw_kinds": {
+        "running": 2,
+        "figure": 2,
+        "text": 13,
+        "equation": 1,
+        "table": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 19,
+      "final_kinds": {
+        "running": 2,
+        "figure": 2,
+        "text": 13,
+        "equation": 1,
+        "table": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 25,
+      "status": "ok",
+      "raw_blocks": 29,
+      "raw_kinds": {
+        "running": 2,
+        "text": 26,
+        "equation": 1
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 29,
+      "final_kinds": {
+        "running": 2,
+        "text": 26,
+        "equation": 1
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [
+        {
+          "page_no": 25,
+          "attempt": 1,
+          "error": "1 validation error for PageBlueprint\nblocks.27.bbox\n  Value error, bbox must be normalized to 0..1000 [type=value_error, input_value=[120, 980, 910, 1005], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+        }
+      ],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 26,
+      "status": "ok",
+      "raw_blocks": 12,
+      "raw_kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 12,
+      "final_kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 27,
+      "status": "ok",
+      "raw_blocks": 4,
+      "raw_kinds": {
+        "running": 2,
+        "text": 2
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 4,
+      "final_kinds": {
+        "running": 2,
+        "text": 2
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 28,
+      "status": "ok",
+      "raw_blocks": 20,
+      "raw_kinds": {
+        "running": 2,
+        "text": 18
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 20,
+      "final_kinds": {
+        "running": 2,
+        "text": 18
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    },
+    {
+      "page_no": 29,
+      "status": "blank_detected",
+      "raw_blocks": null,
+      "raw_kinds": null,
+      "raw_text_empty": null,
+      "final_blocks": 1,
+      "final_kinds": {
+        "text": 1
+      },
+      "final_text_empty": 1,
+      "truncated": null,
+      "finish_reason": null,
+      "attempt_errors": [],
+      "raw_eq_final": false
+    },
+    {
+      "page_no": 30,
+      "status": "ok",
+      "raw_blocks": 4,
+      "raw_kinds": {
+        "figure": 1,
+        "text": 3
+      },
+      "raw_text_empty": 0,
+      "final_blocks": 4,
+      "final_kinds": {
+        "figure": 1,
+        "text": 3
+      },
+      "final_text_empty": 0,
+      "truncated": false,
+      "finish_reason": "stop",
+      "attempt_errors": [],
+      "raw_eq_final": true
+    }
+  ],
+  "summary_stats": {
+    "pages_total": 30,
+    "raw_ne_final_count": 1,
+    "raw_ne_final_page_nos": [
+      29
+    ],
+    "text_empty_final": [
+      29
+    ],
+    "truncated": [],
+    "non_ok": [
+      {
+        "page_no": 29,
+        "status": "blank_detected"
+      }
+    ],
+    "high_figure_final_gte3": [],
+    "issue_pages_detailed": [
+      3,
+      4,
+      5,
+      10,
+      11,
+      12,
+      13,
+      14,
+      16,
+      18,
+      19,
+      21,
+      24,
+      29
+    ]
+  },
+  "detailed_problem_pages": {
+    "3": {
+      "raw_model": {
+        "block_count": 6,
+        "kinds": {
+          "text": 5,
+          "table": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0003/raw_model.json",
+      "blueprint": {
+        "block_count": 6,
+        "kinds": {
+          "text": 5,
+          "table": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0003/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0003.html",
+        "plain_len": 90,
+        "preview": "主 编 李大潜 王建磐 副 主 编 应坚刚 鲍建生 本册编写人员 王伟叶 傅吉祥 王春明 王志强 潘 奋 吴泉水 高卫国 邱维元 责任编辑 张莹莹 装帧设计 陆 弦 王 捷 周 吉"
+      }
+    },
+    "4": {
+      "raw_model": {
+        "block_count": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0004/raw_model.json",
+      "blueprint": {
+        "block_count": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0004/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0004.html",
+        "plain_len": 840,
+        "preview": "前言 前 言 数学应该是绝大多数人一生中学得最多的一门功课. 认真学习数学，努力学好数学，不仅可以牢固地打好数学的知识基础，掌握一种科学的语言，为走进科学的大门提供有力的工具和坚实的后盾；更重要地，通过认真而严格的数学学习和训练，可以领会到数学的思想方法和精神实质，造就一些特有而重要的素质和能力，形成自己的数学素养，让人变得更加聪明，更有智慧，更有竞争力，终身受用不尽. 从这个意义上，可以毫不夸张"
+      }
+    },
+    "5": {
+      "raw_model": {
+        "block_count": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0005/raw_model.json",
+      "blueprint": {
+        "block_count": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0005/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0005.html",
+        "plain_len": 628,
+        "preview": "前言 人三言两语就说清楚了的，自己却颠三倒四、不得要领，能够说真正弄懂了数学吗?! 为了帮助学生学好数学，也为了帮助教师教好数学，本教材秉承上述理念，在编写上做了认真的探索与实践，希望能成为广大师生的良师益友，更好地发挥引路和示范的作用. 书中各章的章首语，虽只有不到一页的篇幅，但却是该章入门的一个宏观向导，务请认真注意. 各章末的内容提要，简明扼要地列出了该章的核心内容，希望对复习能起到较好的帮"
+      }
+    },
+    "10": {
+      "raw_model": {
+        "block_count": 9,
+        "kinds": {
+          "running": 2,
+          "text": 6,
+          "table": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0010/raw_model.json",
+      "blueprint": {
+        "block_count": 9,
+        "kinds": {
+          "running": 2,
+          "text": 6,
+          "table": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0010/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0010.html",
+        "plain_len": 768,
+        "preview": "1.1 集合初步 (2) 600 的正约数的全体组成的集合； (3) 2019 年在上海出生的所有人组成的集合； (4) 给定的一条长度为 1 的线段上的所有点组成的集合. 解 (1) 6 的正整数倍可表示为 ，其中 是正整数. 因为正整数有无限个，所以 6 的正整数倍的全体组成的集合是一个无限集. (2) 600 的正约数一定是小于或等于 600 的正整数，其个数不超过 600. 所以 600 "
+      }
+    },
+    "11": {
+      "raw_model": {
+        "block_count": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0011/raw_model.json",
+      "blueprint": {
+        "block_count": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0011/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0011.html",
+        "plain_len": 662,
+        "preview": "1 集合与逻辑 注释 “集合中所有元素具有的共同特征”是指： (1) 在该集合中的元素都具有这个特征； (2) 不在该集合中的元素不具有这个特征. (2) 末位是 的自然数； (3) 比较大的苹果. 2. 用符号“ ”或“ ”填空： (1) ______ ; (2) ______ ; (3) ______ ; (4) ______ . 2 集合的表示方法 除了用自然语言描述集合，我们还有一些其他方"
+      }
+    },
+    "12": {
+      "raw_model": {
+        "block_count": 14,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1,
+          "figure": 2
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0012/raw_model.json",
+      "blueprint": {
+        "block_count": 14,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1,
+          "figure": 2
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0012/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0012.html",
+        "plain_len": 557,
+        "preview": "1.1 集合初步 例 4 选择适当的方法表示下列集合： (1) 大于 且小于 的全体偶数组成的集合 ； (2) 被 除余 的所有自然数组成的集合 ； (3) 直角坐标平面上由第二象限与第四象限中的所有点组成的集合 . 解 (1) 用列举法： . (2) 用描述法： . (3) 因为第二象限中所有点 具有的特征是 且 ，而第四象限中所有点具有的特征是 且 ，所以第二象限与第四象限中所有点具有的特征可"
+      }
+    },
+    "13": {
+      "raw_model": {
+        "block_count": 7,
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0013/raw_model.json",
+      "blueprint": {
+        "block_count": 7,
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0013/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0013.html",
+        "plain_len": 567,
+        "preview": "1 集合与逻辑 注释 结合例题，试比较分别用自然语言、列举法、描述法和区间表示集合时，其各自的特点和适用对象。 例 5 用区间表示下列集合： (1) ； (2) 不等式 的所有解组成的集合。 解 (1) 该集合可用区间 表示。 (2) 因为不等式 的解是 ，所以它的所有解组成的集合是 。 练习 1.1(2) 1. 用列举法表示下列集合： (1) 能整除 的所有正整数组成的集合； (2) 绝对值小于"
+      }
+    },
+    "14": {
+      "raw_model": {
+        "block_count": 22,
+        "kinds": {
+          "running": 2,
+          "text": 17,
+          "figure": 1,
+          "equation": 2
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0014/raw_model.json",
+      "blueprint": {
+        "block_count": 22,
+        "kinds": {
+          "running": 2,
+          "text": 17,
+          "figure": 1,
+          "equation": 2
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0014/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0014.html",
+        "plain_len": 694,
+        "preview": "1.1 集合初步 我们常用文氏图(Venn diagram)来直观表示集合以及集合之间的关系. 图 1-1-3 是 的文氏图. 上述四组集合中的每组都有 . 但是，第(1)(2)组与第(3)(4)组是有区别的. 在第(1)(2)组中，集合 中有些元素不属于集合 ，即 不是 的子集；而在第(3)(4)组中，集合 中的每个元素都属于集合 ，即 . 对于集合之间的包含关系，我们有下列结论： (1) ； "
+      }
+    },
+    "16": {
+      "raw_model": {
+        "block_count": 14,
+        "kinds": {
+          "running": 2,
+          "text": 10,
+          "figure": 2
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0016/raw_model.json",
+      "blueprint": {
+        "block_count": 14,
+        "kinds": {
+          "running": 2,
+          "text": 10,
+          "figure": 2
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0016/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0016.html",
+        "plain_len": 486,
+        "preview": "1.1 集合初步 可以用文氏图直观地反映 的几种不同情况，如图 1-1-4 所示. 图 1-1-4 图 1-1-4(1) 表示集合 与 既有公共元素又都有非公共元素的情况，此时阴影部分 既是 的真子集又是 的真子集；图 1-1-4(2) 表示集合 是 的子集的情况，此时 ；图 1-1-4(3) 表示集合 与 没有公共元素的情况，此时 . 例 9 已知集合 ， . 求 . 解 由题意， 表示 既属于"
+      }
+    },
+    "18": {
+      "raw_model": {
+        "block_count": 8,
+        "kinds": {
+          "running": 2,
+          "text": 5,
+          "figure": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0018/raw_model.json",
+      "blueprint": {
+        "block_count": 8,
+        "kinds": {
+          "running": 2,
+          "text": 5,
+          "figure": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0018/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0018.html",
+        "plain_len": 437,
+        "preview": "1.1 集合初步 数组成的集合。 可以用文氏图直观地反映 ，如图 1-1-7，其中阴影部分表示集合 在全集 中的补集 。 图 1-1-7 例 12 设全集 ，集合 ，集合 。分别求： ， ， 及 。 解 由条件，可得 ， ， 。 所以 ， 。 而 ，所以 ， 。 练习 1.1(4) 1. 设 为全集 的任一子集，则 (1) ______；（ 表示 的补集 的补集） (2) ______； (3) "
+      }
+    },
+    "19": {
+      "raw_model": {
+        "block_count": 14,
+        "kinds": {
+          "running": 2,
+          "text": 12
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0019/raw_model.json",
+      "blueprint": {
+        "block_count": 14,
+        "kinds": {
+          "running": 2,
+          "text": 12
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0019/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0019.html",
+        "plain_len": 380,
+        "preview": "1 集合与逻辑 B. 第三象限内的所有点组成的集合； C. 第一象限和第三象限内的所有点组成的集合； D. 不在第二象限也不在第四象限内的所有点组成的集合. 4. 用符号“ ”“ ”或“ ”连接集合 与 ： (1) ， ； (2) ， 是 的正约数 5. 已知集合 ， . 是否存在实数 ，使得 ？若存在，求 的值；若不存在，说明理由. 6. 已知集合 ， ，且 . 求集合 . 7. 已知集合 ， "
+      }
+    },
+    "21": {
+      "raw_model": {
+        "block_count": 12,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0021/raw_model.json",
+      "blueprint": {
+        "block_count": 12,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0021/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0021.html",
+        "plain_len": 730,
+        "preview": "1 集合与逻辑 注释 “若 ，则 ”形式的命题也可写为“如果 ，那么 ”的形式. 注释 这种方法在数学上称为举反例. (5) 这是一个真命题，它是两个三角形全等的一个判定定理. (6) 因为“你是高一学生吗?”不是陈述句，无法判断其真假，所以它不是命题. (7) 虽然“ ”是陈述句，但是它包含一个可变的对象 ，无法判断其真假，因此它不是命题. 当 被赋予不同的值时，它就成为不同的命题. 例如，当 "
+      }
+    },
+    "24": {
+      "raw_model": {
+        "block_count": 19,
+        "kinds": {
+          "running": 2,
+          "figure": 2,
+          "text": 13,
+          "equation": 1,
+          "table": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0024/raw_model.json",
+      "blueprint": {
+        "block_count": 19,
+        "kinds": {
+          "running": 2,
+          "figure": 2,
+          "text": 13,
+          "equation": 1,
+          "table": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0024/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0024.html",
+        "plain_len": 813,
+        "preview": "1.2 常用逻辑用语 3 反证法 反证法是数学中常用的证明方法之一. 下面，我们学习如何用反证法证明一些命题. 在前面已经提到，要判断命题“若 ，则 ”是假命题，只要存在一个满足条件 但不满足结论 的对象就行了. 但是要判断命题“若 ，则 ”是真命题，就需要证明所有满足条件 的对象都满足结论 . 有时直接验证这一点并不是一件容易的事. 例 5 设 . 证明：若 是偶数，则 也是偶数. 证明 假设结"
+      }
+    },
+    "29": {
+      "raw_model": {
+        "missing": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0029/raw_model.json"
+      },
+      "raw_model_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0029/raw_model.json",
+      "blueprint": {
+        "block_count": 1,
+        "kinds": {
+          "text": 1
+        },
+        "first_text": "",
+        "figure_captions": []
+      },
+      "blueprint_path": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/debug/p0029/blueprint.json",
+      "html": {
+        "key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/pages/p0029.html",
+        "plain_len": 0,
+        "preview": ""
+      }
+    }
+  },
+  "html_to_plain_text_module": null
+}

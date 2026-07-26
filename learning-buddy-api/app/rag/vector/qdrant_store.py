@@ -44,7 +44,14 @@ class QdrantVectorStore(VectorStore):
                 vectors_config=qm.VectorParams(size=dim, distance=qm.Distance.COSINE),
             )
 
-    def upsert_documents(self, docs: list[CorpusDocument], vectors: list[list[float]]) -> None:
+    def upsert_documents(
+        self,
+        docs: list[CorpusDocument],
+        vectors: list[list[float]],
+        *,
+        status: str = "published",
+        source_channel: str = "manual",
+    ) -> None:
         if not docs:
             return
         self._ensure_collection(len(vectors[0]))
@@ -65,6 +72,8 @@ class QdrantVectorStore(VectorStore):
                         "parent_id": doc.parent_id,
                         "text": doc.text,
                         "source": doc.doc_type,
+                        "status": status,
+                        "source_channel": source_channel,
                     },
                 )
             )
@@ -77,6 +86,7 @@ class QdrantVectorStore(VectorStore):
         subject: str,
         grade_band: str,
         top_k: int = 5,
+        status_filter: str | None = "published",
     ) -> list[VectorHit]:
         if not self._client.collection_exists(self.collection):
             return []

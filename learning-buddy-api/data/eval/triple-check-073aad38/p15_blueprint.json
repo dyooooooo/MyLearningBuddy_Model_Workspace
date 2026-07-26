@@ -1,0 +1,652 @@
+{
+  "page_no": 15,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p15_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370.0,
+        95.0,
+        805.0,
+        185.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "含 1 个元素的子集 3 个：{a}, {b}, {c}；\n含 2 个元素的子集 3 个：{a,b}, {a,c}, {b,c}；\n含 3 个元素的子集 1 个：{a,b,c}。\n除集合 {a,b,c} 本身外，其余 7 个都是真子集。",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "prompt",
+      "bbox": [
+        125.0,
+        195.0,
+        230.0,
+        220.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "练习 1.1(3)",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        235.0,
+        550.0,
+        250.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "1. 判断下列说法是否正确，并简要说明理由：",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        255.0,
+        455.0,
+        270.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "(1) 若 a∈A 且 A⊆B，则 a∈B；",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        275.0,
+        455.0,
+        290.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "(2) 若 A⊆B 且 A⊆C，则 B=C；",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A⊆B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A⊆C",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " B=C",
+            "latex": "B = C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p15_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        295.0,
+        455.0,
+        310.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "(3) 若 A⊂B 且 B⊆C，则 A⊂C.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        325.0,
+        425.0,
+        340.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "2. 用符号“⊃”“=”或“⊂”填空：",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        345.0,
+        390.0,
+        360.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "(1) {a} ______ {a,b,c}；",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        365.0,
+        410.0,
+        380.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "(2) {a,b,c} ______ {a,c}；",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        385.0,
+        500.0,
+        400.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "(3) {1,2} ______ {x | x²-3x+2=0}.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        410.0,
+        580.0,
+        425.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "3. 写出所有满足 {a}⊂M⊂{a,b,c,d} 的集合 M.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "prompt",
+      "bbox": [
+        340.0,
+        460.0,
+        560.0,
+        490.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "4 集合的运算",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b13",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        335.0,
+        525.0,
+        905.0,
+        655.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "先看一个校园生活的例子. 申辉中学高一年级的学生报名参加数学建模社与理学社. 这样，除该校高一年级的全体学生组成的集合 U 外，还有参加数学建模社的学生组成的集合 A，参加理学社的学生组成的集合 B，两个社都参加的学生组成的集合 C，两个社中至少参加一个的学生组成的集合 D，还有未参加数学建模社的学生组成的集合 E，等等.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b14",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        335.0,
+        660.0,
+        905.0,
+        745.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "可以看到，集合 A、B、C、D、E 等都是集合 U 的子集，集合 C 是由集合 A 与 B 的公共元素组成的，集合 D 是由集合 A 与 B 的所有元素组成的，集合 E 是由集合 U 中去掉 A 中的元素后剩下的元素组成的.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b15",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        335.0,
+        750.0,
+        905.0,
+        790.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "本节我们要从已知的集合出发，通过“交”“并”“补”的运算得到新的集合.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b16",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        335.0,
+        795.0,
+        905.0,
+        835.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "首先，我们可以对任意两个集合取公共元素，从而得到一个新的集合.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b17",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        335.0,
+        840.0,
+        905.0,
+        900.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "定义 由既属于集合 A 又属于集合 B 的所有元素组成的集合，叫做集合 A 与 B 的交集(intersection)，记作 A∩B(读作“A 交 B”)，即",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "定义",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "由既属于集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "又属于集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的所有元素组成的集合，叫做集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的交集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(intersection)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，记作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A∩B(",
+            "latex": "A \\cap B (  ",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "读作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "交",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B”)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，即",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p15_b18",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        490.0,
+        905.0,
+        745.0,
+        925.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "A∩B={x|x∈A 且 x∈B}.",
+        "caption": null,
+        "table_html": null,
+        "latex": "A \\cap B = \\{x | x \\in A \\text{ 且 } x \\in B\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "A∩B={x|x∈A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " x∈B}.",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p15_b19",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        120.0,
+        650.0,
+        295.0,
+        730.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "当集合 U、A、B 确定时，如何确定集合 C、D、E 呢？",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p15_b20",
+      "kind": "running",
+      "zone": "running",
+      "role": "body",
+      "bbox": [
+        90.0,
+        960.0,
+        120.0,
+        985.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "8",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

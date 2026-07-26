@@ -12,13 +12,9 @@ student_hdr=(-H "X-Student-Id: ${STUDENT}")
 echo "== Buddy API health =="
 curl -sf "${auth[@]}" "${BUDDY_URL}/api/v1/system/health" | python3 -m json.tool
 
-echo "== Corpus counts =="
-HEALTH=$(curl -sf "${auth[@]}" "${BUDDY_URL}/api/v1/system/health")
-SYL=$(echo "$HEALTH" | python3 -c "import sys,json; print(json.load(sys.stdin).get('syllabus_count',0))")
-QB=$(echo "$HEALTH" | python3 -c "import sys,json; print(json.load(sys.stdin).get('question_bank_count',0))")
-if [ "$SYL" -lt 20 ] || [ "$QB" -lt 40 ]; then
-  echo "WARN: corpus small (syllabus=$SYL bank=$QB); run reindex if needed"
-fi
+echo "== Corpus counts (file manifest; PG/Milvus are manual) =="
+curl -sf "${auth[@]}" "${BUDDY_URL}/api/v1/system/health" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print('syllabus_files:', d.get('syllabus_count',0), 'bank_files:', d.get('question_bank_count',0))"
 
 for i in 1 2 3 4 5; do
   if curl -sf "${GATEWAY_URL}/api/v1/system/health" >/dev/null 2>&1; then
@@ -68,6 +64,14 @@ curl -sf "${auth[@]}" --get "${BUDDY_URL}/api/v1/rag/search" \
   --data-urlencode "q=分式不等式" \
   --data-urlencode "subject=math" \
   --data-urlencode "grade_band=hs" | python3 -m json.tool | head -30
+
+echo "== Homework list (rag_evidence with legacy graph blob) =="
+curl -sf "${auth[@]}" "${BUDDY_URL}/api/v1/students/${STUDENT}/homework" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); assert isinstance(d,list); print('homework entries:', len(d))"
+
+echo "== Mastery merged labels =="
+curl -sf "${auth[@]}" "${BUDDY_URL}/api/v1/students/${STUDENT}/mastery" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); assert isinstance(d,list); print('mastery kps:', len(d)); print('sample:', (d[0].get('label') if d else 'none'))"
 
 if [ "${1:-}" = "--benchmark" ]; then
   echo "== KP RAG benchmark =="

@@ -1,0 +1,81 @@
+{
+  "page_no": 8,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p8_f1",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        0,
+        0,
+        1000,
+        480
+      ],
+      "anchor_id": null,
+      "figure_group_id": "p8_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "图 第 1 章"
+        }
+      }
+    },
+    {
+      "id": "p8_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        70,
+        580,
+        480,
+        650
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "集合与逻辑"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p8_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        500,
+        510,
+        920,
+        770
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数学语言十分精确，不容易产生歧义。集合是现代数学语言的重要组成部分。使用集合的语言，可以准确、简洁地表示所要研究的对象，更好地描述所研究的对象之间的关系。",
+            "数学作为很多其他学科的基础和工具，其内涵及语言都是按照逻辑的方式来组织的。根据正确的前提，按照严格的逻辑推理，总是能够得到正确的结论。",
+            "在数学语言的表达方面，有一些公认的特殊约定，努力学习并遵循这些约定，能够更好地在数学领域里与他人开展交流，对进一步的学习和研究都非常有益。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

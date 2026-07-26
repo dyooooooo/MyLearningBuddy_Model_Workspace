@@ -14,6 +14,8 @@ class HealthResponse(BaseModel):
     vllm_reachable: bool = False
     redis_ok: bool = False
     minio_ok: bool = False
+    openai_lan_proxy: bool = False
+    openai_lan_proxy_base: str = "/v1"
 
 
 class PagePart(BaseModel):
@@ -30,6 +32,8 @@ class PagePart(BaseModel):
     )
     bbox_print: list[float] = Field(default_factory=list)
     bbox_handwriting: list[float] = Field(default_factory=list)
+    print_rich: dict[str, Any] | None = None
+    handwriting_rich: dict[str, Any] | None = None
 
     model_config = {"populate_by_name": True}
 
@@ -106,6 +110,8 @@ class FrameRecord(BaseModel):
     captured_at: str
     scheduler_action: SchedulerAction
     ocr_parts: list[PagePart] = Field(default_factory=list)
+    vision_parts: list[PagePart] = Field(default_factory=list)
+    n_refine_changes: int = 0
     merge_diff: MergeDiff | None = None
     same_page_score: float | None = None
     duration_ms: int = 0

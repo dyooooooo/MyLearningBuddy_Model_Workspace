@@ -1,0 +1,198 @@
+{
+  "page_no": 13,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p13_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40,
+        20,
+        960,
+        55
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1 集合与逻辑"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p13_b1",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        120,
+        100,
+        300,
+        200
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "结合例题，试比较分别用自然语言、列举法、描述法和区间表示集合时，其各自的特点和适用对象。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p13_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        360,
+        100,
+        920,
+        240
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 5 用区间表示下列集合：",
+            "(1) $\\{x \\mid 1 \\leqslant x < 2\\}$；",
+            "(2) 不等式 $2x \\leqslant 6$ 的所有解组成的集合。",
+            "解 (1) 该集合可用区间 $[1,2)$ 表示。",
+            "(2) 因为不等式 $2x \\leqslant 6$ 的解是 $x \\leqslant 3$，所以它的所有解组成的集合是 $(-\\infty, 3]$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p13_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        120,
+        250,
+        920,
+        500
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "练习 1.1(2)",
+            "1. 用列举法表示下列集合：",
+            "(1) 能整除 $10$ 的所有正整数组成的集合；",
+            "(2) 绝对值小于 $4$ 的所有整数组成的集合。",
+            "2. 用描述法表示下列集合：",
+            "(1) 全体偶数组成的集合；",
+            "(2) 平面直角坐标系中 $x$ 轴上所有点组成的集合。",
+            "3. 用区间表示下列集合：",
+            "(1) $\\{x \\mid -1 < x \\leqslant 5\\}$；",
+            "(2) 不等式 $-2x > 6$ 的所有解组成的集合。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p13_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        340,
+        520,
+        920,
+        930
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3 集合之间的关系",
+            "考察以下四组集合：",
+            "(1) $C$ 是申辉中学高一(1)班的全体学生组成的集合，$D$ 是申辉中学全体学生组成的集合；",
+            "(2) $C$ 是一平面上所有矩形组成的集合，$D$ 是该平面上所有平行四边形组成的集合；",
+            "(3) $C=\\{2,3\\}$，$D=\\{x \\mid x^{2}-5x+6=0\\}$；",
+            "(4) $C=\\{x \\mid x=2k+1, k \\in \\mathbf{Z}\\}$，$D=\\{x \\mid x \\text{ 是奇数}\\}$。",
+            "容易发现，在上述每组集合中，集合 $C$ 中的每个元素都属于集合 $D$。两个集合之间的这种关系是十分常见的。",
+            "定义 对于两个集合 $A$ 与 $B$，如果集合 $A$ 的每个元素都是集合 $B$ 的元素，那么集合 $A$ 叫做集合 $B$ 的子集(subset)，记作 $A \\subseteq B$ (或 $B \\supseteq A$)，读作“$A$ 包含于 $B$”(或“$B$ 包含 $A$”)。",
+            "对任何集合 $A$，规定",
+            "$\\varnothing \\subseteq A$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p13_eq1",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        580,
+        900,
+        650,
+        920
+      ],
+      "anchor_id": "p13_b4",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "\\varnothing \\subseteq A",
+          "fallback_text": "空集是任何集合的子集"
+        },
+        "figure": null
+      }
+    },
+    {
+      "id": "p13_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40,
+        950,
+        960,
+        980
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "6"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

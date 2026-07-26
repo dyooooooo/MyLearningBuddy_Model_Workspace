@@ -13,6 +13,7 @@ NodeType = Literal[
     "shortcut",
     "question",
     "tag",
+    "media",
 ]
 
 DocType = Literal[

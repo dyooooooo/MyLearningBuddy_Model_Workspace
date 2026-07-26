@@ -1,0 +1,223 @@
+{
+  "page_no": 18,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p18_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770,
+        30,
+        900,
+        50
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.1 集合初步"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p18_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        95,
+        95,
+        660,
+        160
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数组成的集合。",
+            "可以用文氏图直观地反映 $\\overline{A}$，如图 1-1-7，其中阴影部分表示集合 $A$ 在全集 $U$ 中的补集 $\\overline{A}$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p18_f1",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        715,
+        100,
+        860,
+        170
+      ],
+      "anchor_id": "p18_b1",
+      "figure_group_id": "p18_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "图 1-1-7"
+        }
+      }
+    },
+    {
+      "id": "p18_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95,
+        165,
+        660,
+        350
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 12 设全集 $U=\\{a, b, c, d, e\\}$，集合 $A=\\{a, b, c\\}$，集合 $B=\\{c, d\\}$。分别求：$\\overline{A \\cup B}$，$\\overline{A} \\cap \\overline{B}$，$\\overline{A \\cap B}$ 及 $\\overline{A} \\cup \\overline{B}$。",
+            "解 由条件，可得",
+            "$A \\cup B=\\{a, b, c, d\\}$，$\\overline{A}=\\{d, e\\}$，$\\overline{B}=\\{a, b, e\\}$。",
+            "所以",
+            "$\\overline{A \\cup B}=\\{e\\}$，$\\overline{A} \\cap \\overline{B}=\\{e\\}$。",
+            "而 $A \\cap B=\\{c\\}$，所以",
+            "$\\overline{A \\cap B}=\\{a, b, d, e\\}$，$\\overline{A} \\cup \\overline{B}=\\{a, b, d, e\\}$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p18_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        105,
+        365,
+        730,
+        580
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "练习 1.1(4)",
+            "1. 设 $A$ 为全集 $U$ 的任一子集，则",
+            "(1) $\\overline{\\overline{A}}=$ ______；（$\\overline{\\overline{A}}$ 表示 $A$ 的补集 $\\overline{A}$ 的补集）",
+            "(2) $A \\cap \\overline{A}=$ ______；",
+            "(3) $A \\cup \\overline{A}=$ ______。",
+            "2. 已知全集为 $\\mathbf{R}$，集合 $A=\\{x \\mid -2 < x \\leqslant 1\\}$。求 $\\overline{A}$。",
+            "3. 已知集合 $A=\\{1, 2, 3, 4, 5\\}$，$B=\\{2, 4, 6, 8\\}$，$C=\\{3, 4, 5, 6\\}$。求：",
+            "(1) $(A \\cap B) \\cup C$，$(A \\cup C) \\cap (B \\cup C)$；",
+            "(2) $(A \\cup B) \\cap C$，$(A \\cap C) \\cup (B \\cap C)$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p18_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        170,
+        615,
+        275,
+        640
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "习题 1.1"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p18_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        105,
+        685,
+        590,
+        925
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "A 组",
+            "1. 用列举法表示下列集合：",
+            "(1) 10 以内的所有素数组成的集合；",
+            "(2) $\\{y \\mid y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}$。",
+            "2. 用描述法表示下列集合：",
+            "(1) 被 3 除余 1 的所有自然数组成的集合；",
+            "(2) 比 1 大又比 10 小的所有实数组成的集合；",
+            "(3) 平面直角坐标系中坐标轴上所有点组成的集合。",
+            "3. 集合 $\\{(x, y) \\mid xy > 0, x、y \\text{ 为实数}\\}$ 是指 （ ）",
+            "A. 第一象限内的所有点组成的集合；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p18_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        890,
+        960,
+        920,
+        985
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "11"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

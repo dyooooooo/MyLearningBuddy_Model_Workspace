@@ -1,0 +1,120 @@
+{
+  "page_no": 6,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p6_hd",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        800.0,
+        50.0,
+        950.0,
+        100.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "目  录"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "toc",
+      "bbox": [
+        100.0,
+        150.0,
+        900.0,
+        950.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "第 1 章  集合与逻辑",
+            "1.1  集合初步  2",
+            "1.2  常用逻辑用语  13",
+            "内容提要  20",
+            "复习题  20",
+            "第 2 章  等式与不等式",
+            "2.1  等式与不等式的性质  24",
+            "2.2  不等式的求解  34",
+            "2.3  基本不等式及其应用  46",
+            "内容提要  55",
+            "复习题  56",
+            "第 3 章  幂、指数与对数",
+            "3.1  幂与指数  60",
+            "3.2  对数  66",
+            "内容提要  76",
+            "复习题  76",
+            "第 4 章  幂函数、指数函数与对数函数",
+            "4.1  幂函数  80",
+            "4.2  指数函数  86"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_ft",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        850.0,
+        950.0,
+        950.0,
+        1000.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

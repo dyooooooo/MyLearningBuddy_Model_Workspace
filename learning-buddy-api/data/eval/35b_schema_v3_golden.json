@@ -1,0 +1,29 @@
+{
+  "source_report": "data/eval/triple-check-03f17de3/report.json",
+  "job_id": "e832287d-9b1c-41a3-94f4-a6407a9bf47e",
+  "prompt_before": "layout_blueprint_v2",
+  "prompt_target": "layout_blueprint_v3",
+  "problem_pages": [6, 10, 11, 12, 16, 17, 18],
+  "root_causes": [
+    "non-table blocks carried table-like payloads",
+    "single-cell figure-caption pseudo tables overrode correct text",
+    "exercise prose was misclassified as table/equation",
+    "block coverage was 1.0 while rendered text fidelity was low",
+    "table of contents rendered as a bordered <table> (p6)",
+    "multi-paragraph text collapsed into one <p> when it contained math (p10/p11/p18)",
+    "sub-items merged into one oversized inline-math span that stretched the line (p10/p11)",
+    "figure crop bbox grazed adjacent text and pulled in Chinese characters (p12)",
+    "residual Unicode math glyphs (∉/⊆) left un-typeset in LaTeX"
+  ],
+  "acceptance": {
+    "html_block_coverage": 1.0,
+    "polluted_payload_count": 0,
+    "pages_with_payload_errors": [],
+    "min_json_to_html_token_recall": 0.85,
+    "must_not_render_repeated_caption_table": "图 1-1-1",
+    "min_avg_paragraph_ratio": 0.9,
+    "pages_with_paragraph_loss": [],
+    "pages_with_oversized_inline_math": [],
+    "toc_must_not_render_table_tag_page": 6
+  }
+}

@@ -74,5 +74,18 @@ def keyword_score_for_kp(
 
 
 def hybrid_score(vector_score: float, keyword_score: float, alpha: float | None = None) -> float:
+    """Legacy linear blend — prefer RRF in retriever.search when enabled."""
     a = settings.rag_hybrid_alpha if alpha is None else alpha
     return max(0.0, min(1.0, a * vector_score + (1.0 - a) * keyword_score))
+
+
+def lexical_overlap_score(query: str, doc_text: str) -> float:
+    """Sparse/lexical channel score (token overlap) for RRF hybrid."""
+    q_tokens = set(tokenize(query))
+    if not q_tokens or not doc_text:
+        return 0.0
+    d_tokens = set(tokenize(doc_text))
+    if not d_tokens:
+        return 0.0
+    overlap = len(q_tokens & d_tokens)
+    return min(1.0, overlap / max(1, min(len(q_tokens), 8)))

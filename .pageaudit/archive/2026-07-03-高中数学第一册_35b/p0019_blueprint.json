@@ -1,0 +1,1555 @@
+{
+  "page_no": 19,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p19_hd",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40.0,
+        20.0,
+        960.0,
+        55.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1 集合与逻辑"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p19_b1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        100.0,
+        920.0,
+        160.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "B. 第三象限内的所有点组成的集合；",
+            "C. 第一象限和第三象限内的所有点组成的集合；",
+            "D. 不在第二象限也不在第四象限内的所有点组成的集合."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p19_b2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        165.0,
+        920.0,
+        225.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "4. 用符号“$\\subset$”“$=$”或“$\\supset$”连接集合 $A$ 与 $B$：",
+            "(1) $A=\\{x \\mid x^{2}-2 x+1=0\\}$，$B=\\{x \\mid x^{2}-1=0\\}$；",
+            "(2) $A=\\{1,2,4,8\\}$，$B=\\{x \\mid x$ 是 $8$ 的正约数$\\}.$"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "4. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用符号",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\subset",
+            "latex": "\\subset",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "=",
+            "latex": "=",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\supset",
+            "latex": "\\supset",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "连接集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{x \\mid x^{2}-2 x+1=0\\}",
+            "latex": "A=\\{x \\mid x^{2}-2 x+1=0\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{x \\mid x^{2}-1=0\\}",
+            "latex": "B=\\{x \\mid x^{2}-1=0\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{1,2,4,8\\}",
+            "latex": "A=\\{1,2,4,8\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{x \\mid x",
+            "latex": "B=\\{x \\mid x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "8",
+            "latex": "8",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的正约数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\}.",
+            "latex": "\\}.",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        230.0,
+        920.0,
+        275.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "5. 已知集合 $A=\\{1\\}$，$B=\\{x \\mid x^{2}-3 x+a=0\\}$. 是否存在实数 $a$，使得 $A \\subset B$？若存在，求 $a$ 的值；若不存在，说明理由."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "5. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{1\\}",
+            "latex": "A=\\{1\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{x \\mid x^{2}-3 x+a=0\\}",
+            "latex": "B=\\{x \\mid x^{2}-3 x+a=0\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是否存在实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a",
+            "latex": "a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，使得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subset B",
+            "latex": "A \\subset B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "？若存在，求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a",
+            "latex": "a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的值；若不存在，说明理由",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        280.0,
+        920.0,
+        300.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "6. 已知集合 $A=\\{x, y\\}$，$B=\\{2 x, 2 x^{2}\\}$，且 $A=B$. 求集合 $A$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "6. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{x, y\\}",
+            "latex": "A=\\{x, y\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{2 x, 2 x^{2}\\}",
+            "latex": "B=\\{2 x, 2 x^{2}\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=B",
+            "latex": "A = B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b5",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        305.0,
+        920.0,
+        345.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "7. 已知集合 $A=\\{x \\mid x \\leqslant 7\\}$，$B=\\{x \\mid x<2\\}$，$C=\\{x \\mid x>5\\}$. 求：$A \\cap B$，$A \\cap C$，$A \\cap(B \\cap C)$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "7. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{x \\mid x \\leqslant 7\\}",
+            "latex": "A=\\{x \\mid x \\leqslant 7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{x \\mid x<2\\}",
+            "latex": "B=\\{x \\mid x<2\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C=\\{x \\mid x>5\\}",
+            "latex": "C=\\{x \\mid x>5\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cap B",
+            "latex": "A \\cap B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cap C",
+            "latex": "A \\cap C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cap(B \\cap C)",
+            "latex": "A \\cap(B \\cap C)",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b6",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        350.0,
+        920.0,
+        370.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "8. 已知集合 $A=\\{(x, y) \\mid y=-x+1\\}$，$B=\\{(x, y) \\mid y=x^{2}-1\\}$. 求 $A \\cap B$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "8. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{(x, y) \\mid y=-x+1\\}",
+            "latex": "A=\\{(x, y) \\mid y=-x+1\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{(x, y) \\mid y=x^{2}-1\\}",
+            "latex": "B=\\{(x, y) \\mid y=x^{2}-1\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cap B",
+            "latex": "A \\cap B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b7",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        375.0,
+        920.0,
+        395.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "9. 已知全集 $U=\\mathbf{R}$，集合 $A=\\{x \\mid 4-x>2 x+1\\}$. 求 $\\overline{A}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "9. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知全集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "U=\\mathbf{R}",
+            "latex": "U=\\mathbf{R}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{x \\mid 4-x>2 x+1\\}",
+            "latex": "A=\\{x \\mid 4-x>2 x+1\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A}",
+            "latex": "\\overline{A}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b8",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        400.0,
+        920.0,
+        420.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "B 组"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p19_b9",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        425.0,
+        920.0,
+        445.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 已知集合 $A=\\left\\{2,(a+1)^{2}, a^{2}+3 a+3\\right\\}$，且 $1 \\in A$. 求实数 $a$ 的值."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "1. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\left\\{2,(a+1)^{2}, a^{2}+3 a+3\\right\\}",
+            "latex": "A=\\left\\{2,(a+1)^{2}, a^{2}+3 a+3\\right\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "1 \\in A",
+            "latex": "1 \\in A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a",
+            "latex": "a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的值",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b10",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        450.0,
+        920.0,
+        500.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 已知集合 $A=\\{x \\mid x=2 n+1, n \\in \\mathbf{Z}\\}$，$B=\\{x \\mid x=4 n-1, n \\in \\mathbf{Z}\\}$. 判断集合 $A$ 与 $B$ 的包含关系，并证明你的结论."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "2. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{x \\mid x=2 n+1, n \\in \\mathbf{Z}\\}",
+            "latex": "A=\\{x \\mid x=2 n+1, n \\in \\mathbf{Z}\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{x \\mid x=4 n-1, n \\in \\mathbf{Z}\\}",
+            "latex": "B=\\{x \\mid x=4 n-1, n \\in \\mathbf{Z}\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "判断集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的包含关系，并证明你的结论",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b11",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        505.0,
+        920.0,
+        550.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3. 设 $a$ 是实数，集合 $M=\\{x \\mid x^{2}+x-6=0\\}$，$N=\\{y \\mid a y+2=0\\}$. 是否存在 $a$，使得 $N \\subset M$？若存在，求这些 $a$ 的值；若不存在，说明理由."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "3. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a",
+            "latex": "a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是实数，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "M=\\{x \\mid x^{2}+x-6=0\\}",
+            "latex": "M=\\{x \\mid x^{2}+x-6=0\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "N=\\{y \\mid a y+2=0\\}",
+            "latex": "N=\\{y \\mid a y+2=0\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是否存在",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a",
+            "latex": "a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，使得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "N \\subset M",
+            "latex": "N \\subset M",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "？若存在，求这些",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a",
+            "latex": "a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的值；若不存在，说明理由",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b12",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145.0,
+        555.0,
+        920.0,
+        575.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "4. 已知集合 $A=\\{1,4, x\\}$，$B=\\left\\{1, x^{2}\\right\\}$，且 $A \\cup B=A$. 求 $x$ 的值及集合 $A$、$B$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "4. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{1,4, x\\}",
+            "latex": "A=\\{1,4, x\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\left\\{1, x^{2}\\right\\}",
+            "latex": "B=\\left\\{1, x^{2}\\right\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cup B=A",
+            "latex": "A \\cup B=A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x",
+            "latex": "x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的值及集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_ft",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40.0,
+        940.0,
+        960.0,
+        980.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "12"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

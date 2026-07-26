@@ -1,0 +1,23 @@
+{
+  "name": "layout_rebuild_dup_header",
+  "mode": "layout_rebuild",
+  "page_no": 11,
+  "aligned": [
+    {
+      "unit_id": "a1",
+      "kind": "paired",
+      "mineru_text": "1 集合与逻辑",
+      "b35_text": "集合与逻辑"
+    },
+    {
+      "unit_id": "a2",
+      "kind": "mineru_only",
+      "mineru_text": "集合与逻辑"
+    }
+  ],
+  "decisions": [
+    {"unit_id": "a1", "action": "keep_35b"},
+    {"unit_id": "a2", "action": "drop"}
+  ],
+  "expect_kept_texts": ["集合与逻辑"]
+}

@@ -1,0 +1,2401 @@
+{
+  "page_no": 14,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p14_hd",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770.0,
+        35.0,
+        895.0,
+        50.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.1 集合初步"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p14_b1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        95.0,
+        100.0,
+        660.0,
+        230.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "我们常用文氏图(Venn diagram)来直观表示集合以及集合之间的关系. 图 1-1-3 是 $A \\subseteq B$ 的文氏图.",
+            "上述四组集合中的每组都有 $C \\subseteq D$. 但是，第(1)(2)组与第(3)(4)组是有区别的. 在第(1)(2)组中，集合 $D$ 中有些元素不属于集合 $C$，即 $D$ 不是 $C$ 的子集；而在第(3)(4)组中，集合 $D$ 中的每个元素都属于集合 $C$，即 $D \\subseteq C$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "我们常用文氏图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(Venn diagram)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "来直观表示集合以及集合之间的关系",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-3 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subseteq B",
+            "latex": "A \\subseteq B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的文氏图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "上述四组集合中的每组都有",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C \\subseteq D",
+            "latex": "C \\subseteq D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "但是，第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1)(2)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组与第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(3)(4)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组是有区别的",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "在第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1)(2)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组中，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "D",
+            "latex": "D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中有些元素不属于集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C",
+            "latex": "C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "D",
+            "latex": "D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C",
+            "latex": "C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的子集；而在第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(3)(4)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组中，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "D",
+            "latex": "D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中的每个元素都属于集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C",
+            "latex": "C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "D \\subseteq C",
+            "latex": "D \\subseteq C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_f1",
+      "kind": "figure",
+      "content_type": "figure",
+      "zone": "aside_right",
+      "role": "figure",
+      "bbox": [
+        715.0,
+        125.0,
+        880.0,
+        235.0
+      ],
+      "anchor_id": "p14_b1",
+      "figure_group_id": "p14_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "图 1-1-3"
+        },
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/figures/p0014_p14_f1.jpg",
+        "asset_url": "/api/v1/admin/import35b/asset?key=import35b%2F7b33d74bc3d042a0b9836116f8cc3bdf%2Fassets%2F35b%2Ffigures%2Fp0014_p14_f1.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p14_b2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        95.0,
+        240.0,
+        660.0,
+        370.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "对于集合之间的包含关系，我们有下列结论：",
+            "(1) $A \\subseteq A$；",
+            "(2) 若 $A \\subseteq B$ 且 $B \\subseteq A$，则 $A=B$；",
+            "(3) 传递性：若 $A \\subseteq B$ 且 $B \\subseteq C$，则 $A \\subseteq C$.",
+            "由此，对第(3)(4)组集合，$C=D$ 成立；而对第(1)(2)组集合，$C=D$ 不成立. 为此，我们引入真子集的概念."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "对于集合之间的包含关系，我们有下列结论：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subseteq A",
+            "latex": "A \\subseteq A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subseteq B",
+            "latex": "A \\subseteq B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B \\subseteq A",
+            "latex": "B \\subseteq A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=B",
+            "latex": "A = B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "传递性：若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subseteq B",
+            "latex": "A \\subseteq B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B \\subseteq C",
+            "latex": "B \\subseteq C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subseteq C",
+            "latex": "A \\subseteq C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "由此，对第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(3)(4)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组集合，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C=D",
+            "latex": "C = D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "成立；而对第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1)(2)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组集合，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C=D",
+            "latex": "C = D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不成立",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "为此，我们引入真子集的概念",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "aside_right",
+      "role": "note",
+      "bbox": [
+        700.0,
+        280.0,
+        870.0,
+        370.0
+      ],
+      "anchor_id": "p14_b2",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "集合关系中的“若 $A \\subseteq B$ 且 $B \\subseteq A$，则 $A=B$”与实数大小关系中“若 $a \\leqslant b$ 且 $b \\leqslant a$，则 $a=b$”类似."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "集合关系中的",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subseteq B",
+            "latex": "A \\subseteq B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B \\subseteq A",
+            "latex": "B \\subseteq A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=B",
+            "latex": "A = B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与实数大小关系中",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a \\leqslant b",
+            "latex": "a \\leqslant b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "b \\leqslant a",
+            "latex": "b \\leqslant a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a=b",
+            "latex": "a = b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "类似",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        95.0,
+        375.0,
+        660.0,
+        465.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "定义 对于两个集合 $A$ 与 $B$，如果 $A \\subseteq B$，且 $B$ 中至少有一个元素不属于 $A$（即 $B$ 不是 $A$ 的子集），那么称集合 $A$ 是集合 $B$ 的真子集(proper subset)，记作 $A \\subset B$（或 $B \\supset A$），读作“$A$ 真包含于 $B$”（或“$B$ 真包含 $A$”）."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "定义",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "对于两个集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，如果",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subseteq B",
+            "latex": "A \\subseteq B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中至少有一个元素不属于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "（即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的子集），那么称集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的真子集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(proper subset)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，记作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\subset B",
+            "latex": "A \\subset B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "（或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B \\supset A",
+            "latex": "B \\supset A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "），读作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "真包含于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "（或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B",
+            "latex": "B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "真包含",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "）",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b5",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        135.0,
+        470.0,
+        660.0,
+        500.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "对第(1)(2)组集合，$C \\subset D$ 成立.",
+            "对于常用的数集，我们有如下的包含关系："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "对第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1)(2)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组集合，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C \\subset D",
+            "latex": "C \\subset D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "成立",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "对于常用的数集，我们有如下的包含关系：",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_eq1",
+      "kind": "equation",
+      "content_type": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        300.0,
+        510.0,
+        450.0,
+        530.0
+      ],
+      "anchor_id": "p14_b5",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "\\mathbf{N} \\subset \\mathbf{Z} \\subset \\mathbf{Q} \\subset \\mathbf{R}",
+          "fallback_text": "N ⊂ Z ⊂ Q ⊂ R"
+        },
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "\\mathbf{N} \\subset \\mathbf{Z} \\subset \\mathbf{Q} \\subset \\mathbf{R}",
+            "latex": "\\mathbf{N} \\subset \\mathbf{Z} \\subset \\mathbf{Q} \\subset \\mathbf{R}",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b6",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        535.0,
+        600.0,
+        560.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 6 确定 $x$ 与 $y$，使得集合 $\\{2x, x+y\\} = \\{4, 8\\}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 6 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "确定",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x",
+            "latex": "x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y",
+            "latex": "y",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，使得集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\{2x, x+y\\} = \\{4, 8\\}",
+            "latex": "\\{2x, x+y\\} = \\{4, 8\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b7",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        565.0,
+        400.0,
+        590.0
+      ],
+      "anchor_id": "p14_b6",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "解 由集合相等的定义，可知"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p14_eq2",
+      "kind": "equation",
+      "content_type": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        265.0,
+        595.0,
+        485.0,
+        630.0
+      ],
+      "anchor_id": "p14_b7",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "\\begin{cases} 2x=4, \\\\ x+y=8 \\end{cases} \\text{ 或 } \\begin{cases} 2x=8, \\\\ x+y=4. \\end{cases}",
+          "fallback_text": "2x=4, x+y=8 或 2x=8, x+y=4"
+        },
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "\\begin{cases} 2x=4, \\\\ x+y=8 \\end{cases} \\text{ 或 } \\begin{cases} 2x=8, \\\\ x+y=4. \\end{cases}",
+            "latex": "\\begin{cases} 2x=4, \\\\ x+y=8 \\end{cases} \\text{ 或 } \\begin{cases} 2x=8, \\\\ x+y=4. \\end{cases}",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b8",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95.0,
+        635.0,
+        345.0,
+        675.0
+      ],
+      "anchor_id": "p14_eq2",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "分别解得 $\\begin{cases} x=2, \\\\ y=6 \\end{cases}$ 或 $\\begin{cases} x=4, \\\\ y=0.$"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "分别解得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\begin{cases} x=2, \\\\ y=6 \\end{cases}",
+            "latex": "\\begin{cases} x=2, \\\\ y=6 \\end{cases}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\begin{cases} x=4, \\\\ y=0.",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b9",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "aside_right",
+      "role": "note",
+      "bbox": [
+        700.0,
+        560.0,
+        870.0,
+        620.0
+      ],
+      "anchor_id": "p14_eq2",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "此处为什么有两种情况？"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p14_b10",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        685.0,
+        550.0,
+        710.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 7 确定下列每组中两个集合之间的关系："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p14_b11",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        715.0,
+        560.0,
+        735.0
+      ],
+      "anchor_id": "p14_b10",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(1) $A=\\{n \\mid n \\text{ 是 } 12 \\text{ 的正约数}\\}$，$B=\\{1,2,3,6\\}$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{n \\mid n \\text{ 是 } 12 \\text{ 的正约数}\\}",
+            "latex": "A=\\{n \\mid n \\text{ 是 } 12 \\text{ 的正约数}\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{1,2,3,6\\}",
+            "latex": "B=\\{1,2,3,6\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b12",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        740.0,
+        655.0,
+        760.0
+      ],
+      "anchor_id": "p14_b11",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) $C=\\{n \\mid n=3k+1, k \\in \\mathbf{N}\\}$，$D=\\{n \\mid n=3m-2, m \\in \\mathbf{N}\\}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C=\\{n \\mid n=3k+1, k \\in \\mathbf{N}\\}",
+            "latex": "C=\\{n \\mid n=3k+1, k \\in \\mathbf{N}\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "D=\\{n \\mid n=3m-2, m \\in \\mathbf{N}\\}",
+            "latex": "D=\\{n \\mid n=3m-2, m \\in \\mathbf{N}\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b13",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        765.0,
+        565.0,
+        785.0
+      ],
+      "anchor_id": "p14_b12",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "解 (1) 因为 $A=\\{1,2,3,4,6,12\\}$，所以 $B \\subset A$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "解",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "因为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{1,2,3,4,6,12\\}",
+            "latex": "A=\\{1,2,3,4,6,12\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B \\subset A",
+            "latex": "B \\subset A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b14",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95.0,
+        790.0,
+        660.0,
+        835.0
+      ],
+      "anchor_id": "p14_b13",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 因为当 $k \\in \\mathbf{N}$ 时，$C$ 中的元素 $n=3k+1=3(k+1)-2$ 必定属于 $D$，所以 $C \\subseteq D$.",
+            "又因为 $-2 \\in D$，而 $-2 \\notin C$，所以 $C \\subset D$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "因为当",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "k \\in \\mathbf{N}",
+            "latex": "k \\in \\mathbf{N}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "时，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C",
+            "latex": "C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中的元素",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n=3k+1=3(k+1)-2",
+            "latex": "n = 3 k + 1 = 3 ( k + 1 ) - 2",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "必定属于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "D",
+            "latex": "D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C \\subseteq D",
+            "latex": "C \\subseteq D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "又因为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "-2 \\in D",
+            "latex": "-2 \\in D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，而",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "-2 \\notin C",
+            "latex": "-2 \\notin C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C \\subset D",
+            "latex": "C \\subset D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b15",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        850.0,
+        650.0,
+        875.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 8 写出集合 $\\{a,b,c\\}$ 的所有子集，并指出哪些是真子集."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 8 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "写出集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\{a,b,c\\}",
+            "latex": "\\{a,b,c\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的所有子集，并指出哪些是真子集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_b16",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        880.0,
+        445.0,
+        900.0
+      ],
+      "anchor_id": "p14_b15",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "解 可以按照子集的元素个数分类："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p14_b17",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        905.0,
+        445.0,
+        925.0
+      ],
+      "anchor_id": "p14_b16",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "不含任何元素的子集 1 个：空集 $\\varnothing$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "不含任何元素的子集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "个：空集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\varnothing",
+            "latex": "\\varnothing",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p14_ft",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        880.0,
+        960.0,
+        905.0,
+        985.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "7"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

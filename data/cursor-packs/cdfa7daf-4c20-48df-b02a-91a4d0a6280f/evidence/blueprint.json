@@ -1,0 +1,117 @@
+{
+  "page_no": 5,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "block_1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        100.0,
+        100.0,
+        900.0,
+        150.0
+      ],
+      "anchor_id": "block_1",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "block_2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        100.0,
+        150.0,
+        900.0,
+        380.0
+      ],
+      "anchor_id": "block_2",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "block_3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        100.0,
+        380.0,
+        900.0,
+        620.0
+      ],
+      "anchor_id": "block_3",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "block_4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        780.0,
+        620.0,
+        900.0,
+        650.0
+      ],
+      "anchor_id": "block_4",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

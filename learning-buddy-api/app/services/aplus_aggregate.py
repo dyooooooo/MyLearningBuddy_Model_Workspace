@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db.models import MasteryView, QuestionEntity
-from app.rag.corpus.pipeline import kp_label
+from app.rag.kp_resolver import canonical_kp_id, resolve_kp_label
 from app.util.json_util import dumps, loads
 
 logger = logging.getLogger(__name__)
@@ -37,9 +37,10 @@ def _questions_for_kp(
         .all()
     )
     matched: list[QuestionEntity] = []
+    cid = canonical_kp_id(kp_id)
     for q in rows:
         tags = loads(q.kp_tags_json, [])
-        if any(t.get("kp_id") == kp_id for t in tags):
+        if any(canonical_kp_id(t.get("kp_id") or "") == cid for t in tags):
             matched.append(q)
     return matched
 
@@ -124,7 +125,7 @@ def _aggregate_kp_rules(
         kp_id=kp_id,
         subject=subject,
         grade_band=grade_band,
-        label=kp_label(kp_id),
+        label=resolve_kp_label(canonical_kp_id(kp_id)),
         mastery=mastery,
         confidence=confidence,
         weak=weak,
@@ -162,7 +163,7 @@ def recompute_student(session: Session, student_id: str) -> int:
     for q in rows:
         scope = (q.subject, q.grade_band)
         for t in loads(q.kp_tags_json, []):
-            kid = t.get("kp_id")
+            kid = canonical_kp_id(t.get("kp_id") or "")
             if kid:
                 by_scope.setdefault(scope, set()).add(kid)
     total = 0
@@ -215,7 +216,7 @@ def patch_mastery(
             kp_id=kp_id,
             subject=subject,
             grade_band=grade_band,
-            label=kp_label(kp_id),
+            label=resolve_kp_label(canonical_kp_id(kp_id)),
             demo=False,
         )
     row.mastery = mastery

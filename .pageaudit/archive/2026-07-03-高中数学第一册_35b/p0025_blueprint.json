@@ -1,0 +1,2364 @@
+{
+  "page_no": 25,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p25_hd",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40.0,
+        20.0,
+        960.0,
+        55.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1 集合与逻辑"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        120.0,
+        120.0,
+        280.0,
+        200.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "结论“$x>1$ 或 $y>1$”不成立，即“$x$ 与 $y$ 中至少有一个大于 $1$”不成立。也就是“$x$ 与 $y$ 都不大于 $1$”。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "结论",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x>1",
+            "latex": "x > 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y>1",
+            "latex": "y > 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不成立，即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x",
+            "latex": "x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y",
+            "latex": "y",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中至少有一个大于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "1",
+            "latex": "1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不成立。也就是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x",
+            "latex": "x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y",
+            "latex": "y",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "都不大于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "1",
+            "latex": "1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        120.0,
+        210.0,
+        280.0,
+        280.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 7 的证明是历史上著名的一个反证法证明。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        120.0,
+        290.0,
+        280.0,
+        420.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "一个实数是有理数当且仅当它可以表示成两个整数的商 $\\frac{m}{n}$。如果 $m$ 与 $n$ 有大于 $1$ 的公因数，总可以进行约分，所以不妨设 $m$ 与 $n$ 是互素的。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "一个实数是有理数当且仅当它可以表示成两个整数的商",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\frac{m}{n}",
+            "latex": "\\frac{m}{n}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。如果",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m",
+            "latex": "m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "有大于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "1",
+            "latex": "1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的公因数，总可以进行约分，所以不妨设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m",
+            "latex": "m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是互素的。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        90.0,
+        910.0,
+        140.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "假设 $x \\leqslant 1$ 且 $y \\leqslant 1$，则 $x+y \\leqslant 2$，这与已知条件 $x+y>2$ 矛盾。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "假设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x \\leqslant 1",
+            "latex": "x \\leqslant 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y \\leqslant 1",
+            "latex": "y \\leqslant 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x+y \\leqslant 2",
+            "latex": "x+y \\leqslant 2",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，这与已知条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x+y>2",
+            "latex": "x + y > 2",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "矛盾。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b5",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        145.0,
+        910.0,
+        165.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "所以假设不成立，即 $x>1$ 或 $y>1$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "所以假设不成立，即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x>1",
+            "latex": "x > 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y>1",
+            "latex": "y > 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b6",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        170.0,
+        910.0,
+        215.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 5 和例 6 证明的都是“若 $\\alpha$，则 $\\beta$”形式的命题。对一些其他形式的命题，也可用反证法证明。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 5 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "和例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 6 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "证明的都是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "形式的命题。对一些其他形式的命题，也可用反证法证明。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b7",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        220.0,
+        910.0,
+        240.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 7 证明：$\\sqrt{2}$ 是无理数。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 7 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "证明：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\sqrt{2}",
+            "latex": "\\sqrt{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是无理数。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b8",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        245.0,
+        910.0,
+        265.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "证明 用反证法证明。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b9",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        270.0,
+        910.0,
+        290.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "假设 $\\sqrt{2}$ 是有理数。则可设"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "假设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\sqrt{2}",
+            "latex": "\\sqrt{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是有理数。则可设",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_eq1",
+      "kind": "equation",
+      "content_type": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        580.0,
+        295.0,
+        660.0,
+        325.0
+      ],
+      "anchor_id": "p25_b9",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "\\sqrt{2}=\\frac{m}{n}",
+          "fallback_text": "sqrt(2) = m/n"
+        },
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "\\sqrt{2}=\\frac{m}{n}",
+            "latex": "\\sqrt{2}=\\frac{m}{n}",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b10",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        330.0,
+        910.0,
+        450.0
+      ],
+      "anchor_id": "p25_eq1",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "其中 $m$ 与 $n$ 是互素的正整数。于是 $m=\\sqrt{2}n$。两边平方，得 $m^{2}=2n^{2}$。所以，$m^{2}$ 是偶数。由例 5，知 $m$ 也是偶数。于是，可设 $m=2k$，$k$ 为正整数。将其代入 $m^{2}=2n^{2}$，得 $2n^{2}=4k^{2}$，即 $n^{2}=2k^{2}$，故 $n^{2}$ 是偶数。再根据例 5，知 $n$ 也是偶数。于是 $m$、$n$ 有公因数 2，这与 $m$、$n$ 互素的假设矛盾。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "其中",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m",
+            "latex": "m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是互素的正整数。于是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m=\\sqrt{2}n",
+            "latex": "m=\\sqrt{2}n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。两边平方，得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m^{2}=2n^{2}",
+            "latex": "m^{2}=2n^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。所以，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m^{2}",
+            "latex": "m^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是偶数。由例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 5",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，知",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m",
+            "latex": "m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "也是偶数。于是，可设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m=2k",
+            "latex": "m = 2 k",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "k",
+            "latex": "k",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "为正整数。将其代入",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m^{2}=2n^{2}",
+            "latex": "m^{2}=2n^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "2n^{2}=4k^{2}",
+            "latex": "2n^{2}=4k^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n^{2}=2k^{2}",
+            "latex": "n^{2}=2k^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，故",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n^{2}",
+            "latex": "n^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是偶数。再根据例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 5",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，知",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "也是偶数。于是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m",
+            "latex": "m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "有公因数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 2",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，这与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m",
+            "latex": "m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "互素的假设矛盾。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b11",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        455.0,
+        910.0,
+        475.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "所以假设不成立，即 $\\sqrt{2}$ 是无理数。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "所以假设不成立，即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\sqrt{2}",
+            "latex": "\\sqrt{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是无理数。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b12",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        120.0,
+        490.0,
+        230.0,
+        510.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "练习 1.2(3)"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b13",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        520.0,
+        910.0,
+        540.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 设 $n \\in \\mathbf{Z}$。证明：若 $n^{3}$ 是奇数，则 $n$ 是奇数。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "1. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n \\in \\mathbf{Z}",
+            "latex": "n \\in \\mathbf{Z}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。证明：若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n^{3}",
+            "latex": "n^{3}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是奇数，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是奇数。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b14",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        545.0,
+        910.0,
+        565.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 证明：对于三个实数 $a$、$b$、$c$，若 $a \\neq c$，则 $a \\neq b$ 或 $b \\neq c$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "2. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "证明：对于三个实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a",
+            "latex": "a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "b",
+            "latex": "b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "c",
+            "latex": "c",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a \\neq c",
+            "latex": "a \\neq c",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a \\neq b",
+            "latex": "a \\neq b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "b \\neq c",
+            "latex": "b \\neq c",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b15",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        180.0,
+        600.0,
+        295.0,
+        620.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "习题 1.2"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b16",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        120.0,
+        670.0,
+        170.0,
+        690.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "A 组"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b17",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        700.0,
+        910.0,
+        720.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 判断下列语句是否为命题："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b18",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        725.0,
+        910.0,
+        745.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(1) 有的正方形是三角形；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b19",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        750.0,
+        910.0,
+        770.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 任意一个三角形的内角和都为 $180^{\\circ}$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "任意一个三角形的内角和都为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "180^{\\circ}",
+            "latex": "180^{\\circ}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b20",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        775.0,
+        910.0,
+        795.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(3) 1 是自然数吗？"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b21",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        800.0,
+        910.0,
+        820.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(4) $3>\\pi$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(4) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "3>\\pi",
+            "latex": "3>\\pi",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b22",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        825.0,
+        910.0,
+        845.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(5) $2 \\in (0,5)$，且 $2 \\in \\mathbf{Z}$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(5) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "2 \\in (0,5)",
+            "latex": "2 \\in (0,5)",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "2 \\in \\mathbf{Z}",
+            "latex": "2 \\in \\mathbf{Z}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b23",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        850.0,
+        910.0,
+        870.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 判断下列命题的真假，并说明理由："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b24",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        875.0,
+        910.0,
+        895.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(1) 如果 $a$、$b$ 都是奇数，那么 $a+b$ 是偶数；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "如果",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a",
+            "latex": "a",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "b",
+            "latex": "b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "都是奇数，那么",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "a+b",
+            "latex": "a + b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是偶数；",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_b25",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        900.0,
+        910.0,
+        920.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 一组对边平行且两对角线等长的四边形是平行四边形；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p25_b26",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150.0,
+        925.0,
+        910.0,
+        945.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(3) 如果 $A \\cap B=A$，那么 $A \\cup B=B$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "如果",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cap B=A",
+            "latex": "A \\cap B=A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，那么",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cup B=B",
+            "latex": "A \\cup B=B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p25_ft",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40.0,
+        960.0,
+        960.0,
+        990.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "18"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

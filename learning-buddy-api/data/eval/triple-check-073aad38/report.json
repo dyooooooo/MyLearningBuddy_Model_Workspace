@@ -1,0 +1,513 @@
+{
+  "job_id": "073aad38-484f-4ba5-85c4-f66e7e211f01",
+  "label": "上海高中数学第一册_jsonschema",
+  "user_label_note": "用户称 label 为「上海高中数学第一册下，第 3 章 Johnson Scan」",
+  "pages": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+  ],
+  "summary": {
+    "ok": 3,
+    "warn": 6,
+    "fail": 11
+  },
+  "rows": [
+    {
+      "page_no": 1,
+      "blocks": 8,
+      "zones": {
+        "main": 8
+      },
+      "chars_bp": 59,
+      "chars_html": 46,
+      "chars_pdf": 126,
+      "cov_bp_pdf": 0.545,
+      "cov_html_pdf": 0.545,
+      "figures": [
+        {
+          "id": "p1_b1",
+          "zone": "main",
+          "caption": "封面背景图：火箭发射场景"
+        }
+      ],
+      "tables_bp": 0,
+      "issues": [
+        "low_bp_pdf_coverage:0.545",
+        "low_html_pdf_coverage:0.545"
+      ],
+      "verdict": "warn"
+    },
+    {
+      "page_no": 2,
+      "blocks": 8,
+      "zones": {
+        "main": 8
+      },
+      "chars_bp": 72,
+      "chars_html": 38,
+      "chars_pdf": 0,
+      "cov_bp_pdf": null,
+      "cov_html_pdf": null,
+      "figures": [
+        {
+          "id": "p2_b8",
+          "zone": "main",
+          "caption": "火箭发射"
+        }
+      ],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=72,html=38"
+      ],
+      "verdict": "warn"
+    },
+    {
+      "page_no": 3,
+      "blocks": 1,
+      "zones": {
+        "main": 1
+      },
+      "chars_bp": 595,
+      "chars_html": 90,
+      "chars_pdf": 677,
+      "cov_bp_pdf": 0.405,
+      "cov_html_pdf": 0.181,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=595,html=90",
+        "low_bp_pdf_coverage:0.405",
+        "low_html_pdf_coverage:0.181",
+        "bp_not_in_html:普通高中教科书 数学 必修 第一册",
+        "bp_not_in_html:上海市中小学（幼儿园）课程改革委员会组织编写",
+        "bp_not_in_html:890 \\times 1240 \\quad 1/16"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 4,
+      "blocks": 6,
+      "zones": {
+        "running": 2,
+        "main": 4
+      },
+      "chars_bp": 902,
+      "chars_html": 889,
+      "chars_pdf": 879,
+      "cov_bp_pdf": 1.0,
+      "cov_html_pdf": 1.0,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [],
+      "verdict": "ok"
+    },
+    {
+      "page_no": 5,
+      "blocks": 6,
+      "zones": {
+        "aside_left": 1,
+        "main": 4,
+        "running": 1
+      },
+      "chars_bp": 633,
+      "chars_html": 630,
+      "chars_pdf": 658,
+      "cov_bp_pdf": 1.0,
+      "cov_html_pdf": 1.0,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [],
+      "verdict": "ok"
+    },
+    {
+      "page_no": 6,
+      "blocks": 21,
+      "zones": {
+        "main": 20,
+        "running": 1
+      },
+      "chars_bp": 453,
+      "chars_html": 226,
+      "chars_pdf": 231,
+      "cov_bp_pdf": 1.0,
+      "cov_html_pdf": 1.0,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=453,html=226"
+      ],
+      "verdict": "warn"
+    },
+    {
+      "page_no": 7,
+      "blocks": 12,
+      "zones": {
+        "aside_left": 1,
+        "main": 10,
+        "running": 1
+      },
+      "chars_bp": 125,
+      "chars_html": 122,
+      "chars_pdf": 125,
+      "cov_bp_pdf": 1.0,
+      "cov_html_pdf": 1.0,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [],
+      "verdict": "ok"
+    },
+    {
+      "page_no": 8,
+      "blocks": 3,
+      "zones": {
+        "main": 3
+      },
+      "chars_bp": 264,
+      "chars_html": 227,
+      "chars_pdf": 241,
+      "cov_bp_pdf": 1.0,
+      "cov_html_pdf": 0.988,
+      "figures": [
+        {
+          "id": "p8_b1",
+          "zone": "main",
+          "caption": "第 1 章"
+        }
+      ],
+      "tables_bp": 0,
+      "issues": [
+        "bp_not_in_html:背景图片：石库门建筑（中共一大会址），上方覆盖有白色大字“第 1 章”。"
+      ],
+      "verdict": "warn"
+    },
+    {
+      "page_no": 9,
+      "blocks": 14,
+      "zones": {
+        "aside_left": 1,
+        "main": 11,
+        "running": 2
+      },
+      "chars_bp": 774,
+      "chars_html": 724,
+      "chars_pdf": 729,
+      "cov_bp_pdf": 0.839,
+      "cov_html_pdf": 0.839,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [
+        "bp_not_in_html:(4) 不等式 2x+1≤0 的所有解;",
+        "bp_not_in_html:如果两个集合 A 与 B 的组成元素完全相同，就称这两个集合相等，记作 A=B."
+      ],
+      "verdict": "warn"
+    },
+    {
+      "page_no": 10,
+      "blocks": 16,
+      "zones": {
+        "running": 2,
+        "main": 14
+      },
+      "chars_bp": 1045,
+      "chars_html": 682,
+      "chars_pdf": 740,
+      "cov_bp_pdf": 0.909,
+      "cov_html_pdf": 0.906,
+      "figures": [],
+      "tables_bp": 1,
+      "issues": [
+        "bp_html_len_gap:bp=1045,html=682",
+        "bp_not_in_html:表 1-1 常用数集的符号",
+        "bp_not_in_html:表 1-1 常用数集的符号",
+        "bp_not_in_html:<table>"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 11,
+      "blocks": 22,
+      "zones": {
+        "running": 2,
+        "main": 19,
+        "aside_left": 1
+      },
+      "chars_bp": 874,
+      "chars_html": 722,
+      "chars_pdf": 803,
+      "cov_bp_pdf": 0.91,
+      "cov_html_pdf": 0.896,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=874,html=722",
+        "bp_not_in_html:(1) 1/2 ___ N;",
+        "bp_not_in_html:(3) -2 ___ Q;",
+        "bp_not_in_html:(2) 5 ___ Z;"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 12,
+      "blocks": 24,
+      "zones": {
+        "running": 2,
+        "main": 21,
+        "aside_right": 1
+      },
+      "chars_bp": 1343,
+      "chars_html": 565,
+      "chars_pdf": 737,
+      "cov_bp_pdf": 0.718,
+      "cov_html_pdf": 0.714,
+      "figures": [
+        {
+          "id": "p12_b16",
+          "zone": "main",
+          "caption": "图1-1-1"
+        },
+        {
+          "id": "p12_b19",
+          "zone": "main",
+          "caption": "图1-1-2"
+        }
+      ],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=1343,html=565",
+        "bp_not_in_html:解 (1) 用列举法：A={2,4,6,8}.",
+        "bp_not_in_html:解 (1) 用列举法：A={2,4,6,8}.",
+        "bp_not_in_html:(2) 用描述法：B={n|n=3k+2, k∈N}."
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 13,
+      "blocks": 6,
+      "zones": {
+        "aside_left": 1,
+        "main": 4,
+        "running": 1
+      },
+      "chars_bp": 713,
+      "chars_html": 622,
+      "chars_pdf": 692,
+      "cov_bp_pdf": 0.791,
+      "cov_html_pdf": 0.783,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [
+        "bp_not_in_html:(2) 不等式 2x≤6 的所有解组成的集合。",
+        "bp_not_in_html:(2) 因为不等式 2x≤6 的解是 x≤3，所以它的所有解组成的集合是 (-∞",
+        "bp_not_in_html:(2) 不等式 -2x>6 的所有解组成的集合."
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 14,
+      "blocks": 29,
+      "zones": {
+        "running": 2,
+        "main": 24,
+        "aside_right": 3
+      },
+      "chars_bp": 1201,
+      "chars_html": 823,
+      "chars_pdf": 946,
+      "cov_bp_pdf": 0.578,
+      "cov_html_pdf": 0.573,
+      "figures": [
+        {
+          "id": "p14_b3",
+          "zone": "aside_right",
+          "caption": "图 1-1-3"
+        }
+      ],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=1201,html=823",
+        "figure_zone:p14_b3:aside_right:图 1-1-3",
+        "bp_not_in_html:(2) 若 A⊆B 且 B⊆A，则 A=B;",
+        "bp_not_in_html:由此，对第(3)(4)组集合，C=D 成立；而对第(1)(2)组集合，C=D 不",
+        "bp_not_in_html:N ⊂ Z ⊂ Q ⊂ R"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 15,
+      "blocks": 20,
+      "zones": {
+        "main": 18,
+        "aside_left": 1,
+        "running": 1
+      },
+      "chars_bp": 887,
+      "chars_html": 817,
+      "chars_pdf": 791,
+      "cov_bp_pdf": 0.669,
+      "cov_html_pdf": 0.669,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [
+        "bp_not_in_html:(2) 若 A⊆B 且 A⊆C，则 B=C；",
+        "bp_not_in_html:定义 由既属于集合 A 又属于集合 B 的所有元素组成的集合，叫做集合 A 与 ",
+        "bp_not_in_html:A∩B={x|x∈A 且 x∈B}."
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 16,
+      "blocks": 19,
+      "zones": {
+        "running": 2,
+        "main": 14,
+        "aside_right": 3
+      },
+      "chars_bp": 922,
+      "chars_html": 508,
+      "chars_pdf": 693,
+      "cov_bp_pdf": 0.68,
+      "cov_html_pdf": 0.684,
+      "figures": [
+        {
+          "id": "p16_b3",
+          "zone": "main",
+          "caption": "图 1-1-4"
+        },
+        {
+          "id": "p16_b17",
+          "zone": "main",
+          "caption": "图 1-1-5"
+        }
+      ],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=922,html=508",
+        "aside_dup:aside_right",
+        "bp_not_in_html:可以用文氏图直观地反映 A ∩ B 的几种不同情况，如图 1-1-4 所示.",
+        "bp_not_in_html:图 1-1-4(1)表示集合 A 与 B 既有公共元素又都有非公共元素的情况，此",
+        "bp_not_in_html:A = {(x, y) | 2x + y = 5}, B = {(x, y) |"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 17,
+      "blocks": 15,
+      "zones": {
+        "running": 2,
+        "main": 13
+      },
+      "chars_bp": 1067,
+      "chars_html": 725,
+      "chars_pdf": 814,
+      "cov_bp_pdf": 0.704,
+      "cov_html_pdf": 0.701,
+      "figures": [
+        {
+          "id": "p17_b5",
+          "zone": "main",
+          "caption": "图 1-1-6"
+        }
+      ],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=1067,html=725",
+        "bp_not_in_html:图 1-1-5(1)表示集合 A 与 B 既有公共元素又都有非公共元素的情况，此",
+        "bp_not_in_html:例 10 已知集合 A = (-2, 2), B = (-3, -1) ∪ (1",
+        "bp_not_in_html:于是 A ∩ B = (-2, -1) ∪ (1, 2), A ∪ B = (-"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 18,
+      "blocks": 10,
+      "zones": {
+        "running": 2,
+        "main": 7,
+        "aside_right": 1
+      },
+      "chars_bp": 707,
+      "chars_html": 436,
+      "chars_pdf": 649,
+      "cov_bp_pdf": 0.605,
+      "cov_html_pdf": 0.605,
+      "figures": [
+        {
+          "id": "p18_b3",
+          "zone": "aside_right",
+          "caption": "图 1-1-7"
+        }
+      ],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=707,html=436",
+        "figure_zone:p18_b3:aside_right:图 1-1-7",
+        "bp_not_in_html:例 12 设全集 U={a,b,c,d,e}，集合 A={a,b,c}，集合 B",
+        "bp_not_in_html:A∪B={a,b,c,d}，A={d,e}，B={a,b,e}。",
+        "bp_not_in_html:A∪B={e}，A∩B={e}。"
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 19,
+      "blocks": 16,
+      "zones": {
+        "running": 2,
+        "main": 14
+      },
+      "chars_bp": 715,
+      "chars_html": 383,
+      "chars_pdf": 659,
+      "cov_bp_pdf": 0.545,
+      "cov_html_pdf": 0.545,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [
+        "bp_html_len_gap:bp=715,html=383",
+        "low_bp_pdf_coverage:0.545",
+        "low_html_pdf_coverage:0.545",
+        "bp_not_in_html:(1) A={x|x²-2x+1=0}, B={x|x²-1=0};",
+        "bp_not_in_html:5. 已知集合 A={1}, B={x|x²-3x+a=0}. 是否存在实数 a",
+        "bp_not_in_html:6. 已知集合 A={x,y}, B={2x,2x²}, 且 A=B. 求集合 "
+      ],
+      "verdict": "fail"
+    },
+    {
+      "page_no": 20,
+      "blocks": 11,
+      "zones": {
+        "running": 2,
+        "main": 9
+      },
+      "chars_bp": 674,
+      "chars_html": 636,
+      "chars_pdf": 653,
+      "cov_bp_pdf": 0.909,
+      "cov_html_pdf": 0.909,
+      "figures": [],
+      "tables_bp": 0,
+      "issues": [
+        "bp_not_in_html:(7) x > 3.",
+        "bp_not_in_html:(1) 这是一个真命题. 因为个位数字是 5 的自然数可写成 10k+5 的形式"
+      ],
+      "verdict": "warn"
+    }
+  ]
+}

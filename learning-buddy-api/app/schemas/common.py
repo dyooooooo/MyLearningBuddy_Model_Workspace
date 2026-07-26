@@ -11,11 +11,35 @@ MemoryEventType = Literal[
     "QUESTION_EVALUATED",
     "MARKED_WRONG",
     "MASTERY_OVERRIDE",
+    "MASTERY_REMOVED",
     "OBSERVER_NOTE",
     "EVAL_AGENT_NOTE",
     "DIAGNOSIS_NOTE",
     "PLAN_NOTE",
 ]
+
+WrongSourceType = Literal["eval", "manual", "pending"] | None
+EvalStatusType = Literal["completed", "failed", "pending"] | None
+
+
+class LabelI18n(BaseModel):
+    zh: str = ""
+    en: str = ""
+
+
+MathSegmentKind = Literal["text", "math"]
+
+
+class MathSegment(BaseModel):
+    kind: MathSegmentKind
+    raw: str
+    latex: str | None = None
+    valid: bool = False
+
+
+class RichText(BaseModel):
+    raw: str = ""
+    segments: list[MathSegment] = Field(default_factory=list)
 
 
 class PagePartIn(BaseModel):
@@ -47,6 +71,7 @@ class KpTag(BaseModel):
     score: float
     source: str = ""
     label: str = ""
+    label_i18n: LabelI18n | None = None
 
 
 class RagEvidence(BaseModel):
@@ -68,11 +93,19 @@ class QuestionOut(BaseModel):
     ordinal: str
     print_text: str
     handwriting: str
+    print_rich: RichText | None = None
+    handwriting_rich: RichText | None = None
     bbox_print: list[float] = Field(default_factory=list)
     bbox_handwriting: list[float] = Field(default_factory=list)
     is_wrong: bool | None = None
     dwell_ms: int | None = None
     eval_confidence: float | None = None
+    eval_json: dict[str, Any] = Field(default_factory=dict)
+    agent_is_wrong: bool | None = None
+    wrong_source: WrongSourceType = None
+    eval_status: EvalStatusType = None
+    reference_answer: str | None = None
+    match_notes: str | None = None
     kp_tags: list[KpTag] = Field(default_factory=list)
     rag_evidence: list[RagEvidence] = Field(default_factory=list)
     created_at: str = ""
@@ -124,6 +157,7 @@ class MasteryViewOut(BaseModel):
     student_id: str
     kp_id: str
     label: str
+    label_i18n: LabelI18n | None = None
     mastery: MasteryLevel
     confidence: float = 0.0
     weak: bool = False
@@ -138,10 +172,82 @@ class MasteryViewOut(BaseModel):
 class PatchQuestionRequest(BaseModel):
     is_wrong: bool | None = None
     kp_tags: list[KpTag] | None = None
+    print_text: str | None = None
+    handwriting: str | None = None
+    restore_agent: bool = False
+
+
+class PatchHomeworkRequest(BaseModel):
+    meta: dict[str, Any] | None = None
+    finalized_at: str | None = None
+
+
+class PostMasteryRequest(BaseModel):
+    kp_id: str
+    mastery: MasteryLevel = "unknown"
+    label: str = ""
 
 
 class PatchMasteryRequest(BaseModel):
     mastery: MasteryLevel
+    weak: bool | None = None
+    confidence: float | None = None
+
+
+class WrongBookItemOut(BaseModel):
+    question_id: str
+    homework_id: str
+    ordinal: str
+    print_text: str = ""
+    handwriting: str = ""
+    print_rich: RichText | None = None
+    handwriting_rich: RichText | None = None
+    kp_tags: list[KpTag] = Field(default_factory=list)
+    finalized_at: str = ""
+    is_wrong: bool | None = None
+    wrong_source: WrongSourceType = None
+    agent_is_wrong: bool | None = None
+    eval_status: EvalStatusType = None
+    eval_confidence: float | None = None
+    reference_answer: str | None = None
+    match_notes: str | None = None
+    eval_json: dict[str, Any] = Field(default_factory=dict)
+    candidate_reason: str | None = None
+
+
+class WrongBookOut(BaseModel):
+    items: list[WrongBookItemOut] = Field(default_factory=list)
+    candidates: list[WrongBookItemOut] = Field(default_factory=list)
+    count: int = 0
+    candidate_count: int = 0
+
+
+class QuestionEvalTraceOut(BaseModel):
+    question_id: str
+    ordinal: str
+    is_wrong: bool | None = None
+    reference_answer: str | None = None
+    eval_confidence: float | None = None
+    eval_trace: dict[str, Any] = Field(default_factory=dict)
+
+
+class HomeworkEvalTracesOut(BaseModel):
+    homework_id: str
+    student_id: str
+    trace_count: int = 0
+    question_count: int = 0
+    avg_ms: int = 0
+    log_file: str = ""
+    questions: list[QuestionEvalTraceOut] = Field(default_factory=list)
+
+
+class SyllabusKpOut(BaseModel):
+    kp_id: str
+    label: str
+    label_i18n: LabelI18n
+    description: str = ""
+    level: int = 1
+    parent_id: str | None = None
 
 
 class RagSearchHit(BaseModel):

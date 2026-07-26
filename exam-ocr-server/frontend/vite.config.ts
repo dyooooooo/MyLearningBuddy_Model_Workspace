@@ -7,10 +7,14 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {
-      input: "src/main.ts",
+      input: {
+        main: "src/main.ts",
+        math: "src/math-render.ts",
+      },
+      preserveEntrySignatures: "exports-only",
       output: {
-        entryFileNames: "main.js",
-        assetFileNames: "assets/[name][extname]",
+        entryFileNames: "[name].js",
+        assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
   },

@@ -1,0 +1,349 @@
+{
+  "page_no": 19,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p19_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40,
+        20,
+        960,
+        55
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1 集合与逻辑"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        100,
+        920,
+        160
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "B. 第三象限内的所有点组成的集合；",
+            "C. 第一象限和第三象限内的所有点组成的集合；",
+            "D. 不在第二象限也不在第四象限内的所有点组成的集合."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        165,
+        920,
+        225
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "4. 用符号“$\\subset$”“$=$”或“$\\supset$”连接集合 $A$ 与 $B$：",
+            "(1) $A=\\{x \\mid x^{2}-2 x+1=0\\}$，$B=\\{x \\mid x^{2}-1=0\\}$；",
+            "(2) $A=\\{1,2,4,8\\}$，$B=\\{x \\mid x$ 是 $8$ 的正约数$\\}.$"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        230,
+        920,
+        275
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "5. 已知集合 $A=\\{1\\}$，$B=\\{x \\mid x^{2}-3 x+a=0\\}$. 是否存在实数 $a$，使得 $A \\subset B$？若存在，求 $a$ 的值；若不存在，说明理由."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        280,
+        920,
+        300
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "6. 已知集合 $A=\\{x, y\\}$，$B=\\{2 x, 2 x^{2}\\}$，且 $A=B$. 求集合 $A$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        305,
+        920,
+        345
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "7. 已知集合 $A=\\{x \\mid x \\leqslant 7\\}$，$B=\\{x \\mid x<2\\}$，$C=\\{x \\mid x>5\\}$. 求：$A \\cap B$，$A \\cap C$，$A \\cap(B \\cap C)$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        350,
+        920,
+        370
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "8. 已知集合 $A=\\{(x, y) \\mid y=-x+1\\}$，$B=\\{(x, y) \\mid y=x^{2}-1\\}$. 求 $A \\cap B$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        375,
+        920,
+        395
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "9. 已知全集 $U=\\mathbf{R}$，集合 $A=\\{x \\mid 4-x>2 x+1\\}$. 求 $\\overline{A}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        400,
+        920,
+        420
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "B 组"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        425,
+        920,
+        445
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 已知集合 $A=\\left\\{2,(a+1)^{2}, a^{2}+3 a+3\\right\\}$，且 $1 \\in A$. 求实数 $a$ 的值."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        450,
+        920,
+        500
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 已知集合 $A=\\{x \\mid x=2 n+1, n \\in \\mathbf{Z}\\}$，$B=\\{x \\mid x=4 n-1, n \\in \\mathbf{Z}\\}$. 判断集合 $A$ 与 $B$ 的包含关系，并证明你的结论."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        505,
+        920,
+        550
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3. 设 $a$ 是实数，集合 $M=\\{x \\mid x^{2}+x-6=0\\}$，$N=\\{y \\mid a y+2=0\\}$. 是否存在 $a$，使得 $N \\subset M$？若存在，求这些 $a$ 的值；若不存在，说明理由."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        145,
+        555,
+        920,
+        575
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "4. 已知集合 $A=\\{1,4, x\\}$，$B=\\left\\{1, x^{2}\\right\\}$，且 $A \\cup B=A$. 求 $x$ 的值及集合 $A$、$B$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p19_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40,
+        940,
+        960,
+        980
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "12"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

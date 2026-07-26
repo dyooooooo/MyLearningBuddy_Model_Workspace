@@ -1,0 +1,39 @@
+{
+  "id": "40c28f24-28d2-4450-bbaf-b583de9fbbd6",
+  "job_id": "b9cf8767-5a90-4d7e-8b56-37275252a345",
+  "page_no": 3,
+  "textbook_key": "tb35b:math:hs:高一数学上-35b:e8357c46",
+  "label": "高一数学上_35b",
+  "body": "整页空白，但是结构化输出将正文标记为caption",
+  "tags": [
+    "blank_page"
+  ],
+  "block_id": "",
+  "screenshot_key": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/feedback/40c28f24-28d2-4450-bbaf-b583de9fbbd6/screenshot.jpg",
+  "input_page_key": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/debug/p0003/page.jpg",
+  "t1_snapshot": [
+    {
+      "suspect_type": "MAIN_EMPTY",
+      "severity": "high",
+      "page_no": 3,
+      "block_id": "",
+      "evidence": {
+        "main_blocks": 24
+      },
+      "candidates": [
+        "整页内容丢失（模型误标 role/zone）",
+        "本页本来就是空白页/纯图页"
+      ],
+      "fingerprint": "e8e87f2f08a07a5b",
+      "fingerprint_exact": "1ddbacdf081094d2",
+      "detector": "rule"
+    }
+  ],
+  "debug_prefix": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/debug/p0003",
+  "prompt_version": "layout_blueprint_v5",
+  "status": "open",
+  "pack_path": "",
+  "resolution_note": "",
+  "created_at": "2026-07-09T08:20:31.920385+00:00",
+  "updated_at": "2026-07-09T08:20:31.920394+00:00"
+}

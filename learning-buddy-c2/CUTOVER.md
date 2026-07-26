@@ -7,7 +7,7 @@ Spark 侧验收已通过（`scripts/acceptance-c2.sh`）。以下在 **Windows /
 将 C2 基址改为：
 
 ```text
-http://192.168.3.200:8000
+http://192.168.1.10:8000
 ```
 
 ## 2. 停 Windows / WSL 旧 C2
@@ -24,7 +24,7 @@ http://192.168.3.200:8000
 ```bash
 rsync -avz --exclude '.gradle' --exclude 'build' --exclude 'node_modules' \
   /mnt/d/01_coding/LearningStack/exam-ocr-server/ \
-  mylearningbuddy@192.168.3.200:~/MyLearningBuddy_Model_Workspace/exam-ocr-server/
+  mylearningbuddy@192.168.1.10:~/MyLearningBuddy_Model_Workspace/exam-ocr-server/
 ```
 
 在 **Spark** 重建网关：

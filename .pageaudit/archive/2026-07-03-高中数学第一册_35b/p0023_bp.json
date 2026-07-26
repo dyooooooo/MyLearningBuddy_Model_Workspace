@@ -1,0 +1,2465 @@
+{
+  "page_no": 23,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p23_hd",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40.0,
+        20.0,
+        960.0,
+        55.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1 集合与逻辑"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p23_b1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        335.0,
+        95.0,
+        905.0,
+        335.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) $\\alpha$: $x^{2}$ 是有理数，$\\beta$: $x$ 是有理数.",
+            "解 (1) 因为正方形的四个内角都是直角，所以命题“若 $\\alpha$，则 $\\beta$”是真命题，$\\alpha$ 是 $\\beta$ 的充分条件.",
+            "反之，因为四个内角都是直角的四边形也可以是长宽不相等的矩形，所以命题“若 $\\beta$，则 $\\alpha$”是假命题，$\\alpha$ 不是 $\\beta$ 的必要条件.",
+            "(2) 因为有理数 $\\frac{r}{s}$ ($r$、$s \\in \\mathbf{Z}$) 的平方 $\\frac{r^{2}}{s^{2}}$ 必是一个有理数，所以“若 $\\beta$，则 $\\alpha$”是真命题，$\\alpha$ 是 $\\beta$ 的必要条件.",
+            "反之，因为 $(\\sqrt{2})^{2}=2$ 是有理数，但 $\\sqrt{2}$ 是无理数，所以“若 $\\alpha$，则 $\\beta$”是假命题，$\\alpha$ 不是 $\\beta$ 的充分条件."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ": ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x^{2}",
+            "latex": "x^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是有理数，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ": ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x",
+            "latex": "x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是有理数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "解",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "因为正方形的四个内角都是直角，所以命题",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是真命题，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的充分条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "反之，因为四个内角都是直角的四边形也可以是长宽不相等的矩形，所以命题",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是假命题，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的必要条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "因为有理数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\frac{r}{s}",
+            "latex": "\\frac{r}{s}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " (",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "r",
+            "latex": "r",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "s \\in \\mathbf{Z}",
+            "latex": "s \\in \\mathbf{Z}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ") ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的平方",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\frac{r^{2}}{s^{2}}",
+            "latex": "\\frac{r^{2}}{s^{2}}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "必是一个有理数，所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是真命题，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的必要条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "反之，因为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "(\\sqrt{2})^{2}=2",
+            "latex": "(\\sqrt{2})^{2}=2",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是有理数，但",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\sqrt{2}",
+            "latex": "\\sqrt{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是无理数，所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是假命题，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的充分条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p23_aside1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        130.0,
+        210.0,
+        290.0,
+        275.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "下一小节将给出 $\\sqrt{2}$ 是无理数的证明."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "下一小节将给出",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\sqrt{2}",
+            "latex": "\\sqrt{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是无理数的证明",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p23_b2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        335.0,
+        345.0,
+        905.0,
+        495.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "定义 对于两个陈述句 $\\alpha$ 与 $\\beta$，如果既有 $\\alpha \\Rightarrow \\beta$，又有 $\\beta \\Rightarrow \\alpha$，就称 $\\alpha$ 是 $\\beta$ 的充分必要条件，简称充要条件，记作 $\\alpha \\Leftrightarrow \\beta$，读作“$\\alpha$ 与 $\\beta$ 等价”或“$\\alpha$ 成立当且仅当 $\\beta$ 成立”.",
+            "例如，“三角形的两个内角相等”是“三角形的两条边相等”的充要条件；“实数 $x$、$y$ 满足 $|x|=|y|$”是“实数 $x$、$y$ 满足 $(x+y)(x-y)=0$”的充要条件."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "定义",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "对于两个陈述句",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，如果既有",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha \\Rightarrow \\beta",
+            "latex": "\\alpha \\Rightarrow \\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，又有",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta \\Rightarrow \\alpha",
+            "latex": "\\beta \\Rightarrow \\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，就称",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的充分必要条件，简称充要条件，记作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha \\Leftrightarrow \\beta",
+            "latex": "\\alpha \\Leftrightarrow \\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，读作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "等价",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "成立当且仅当",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "成立",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”.",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "例如，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "三角形的两个内角相等",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "三角形的两条边相等",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的充要条件；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x",
+            "latex": "x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y",
+            "latex": "y",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "满足",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "|x|=|y|",
+            "latex": "| x | = | y |",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x",
+            "latex": "x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y",
+            "latex": "y",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "满足",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "(x+y)(x-y)=0",
+            "latex": "( x + y ) ( x - y ) = 0",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的充要条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p23_b3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        335.0,
+        500.0,
+        905.0,
+        695.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 4 已知 $m$ 是实数，集合 $M=\\{2,3,m+6\\}$，$N=\\{0,7\\}$.",
+            "求证：“$m=1$”是“$M \\cap N=\\{7\\}$”的充要条件.",
+            "证明 先证充分性(即证 $m=1 \\Rightarrow M \\cap N=\\{7\\}$). 当 $m=1$ 时，$M=\\{2,3,7\\}$. 又因为 $N=\\{0,7\\}$，所以 $M \\cap N=\\{7\\}$.",
+            "再证必要性(即证 $M \\cap N=\\{7\\} \\Rightarrow m=1$). 当 $M \\cap N=\\{7\\}$ 时，由 $7 \\in M$，得 $m+6=7$，因此 $m=1$.",
+            "综上所述，“$m=1$”是“$M \\cap N=\\{7\\}$”的充要条件."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 4 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m",
+            "latex": "m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是实数，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "M=\\{2,3,m+6\\}",
+            "latex": "M=\\{2,3,m+6\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "N=\\{0,7\\}",
+            "latex": "N=\\{0,7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求证：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m=1",
+            "latex": "m = 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "M \\cap N=\\{7\\}",
+            "latex": "M \\cap N=\\{7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的充要条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "证明",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "先证充分性",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "即证",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m=1 \\Rightarrow M \\cap N=\\{7\\}",
+            "latex": "m=1 \\Rightarrow M \\cap N=\\{7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "). ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "当",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m=1",
+            "latex": "m = 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "时，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "M=\\{2,3,7\\}",
+            "latex": "M=\\{2,3,7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "又因为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "N=\\{0,7\\}",
+            "latex": "N=\\{0,7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "M \\cap N=\\{7\\}",
+            "latex": "M \\cap N=\\{7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "再证必要性",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "即证",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "M \\cap N=\\{7\\} \\Rightarrow m=1",
+            "latex": "M \\cap N=\\{7\\} \\Rightarrow m=1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "). ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "当",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "M \\cap N=\\{7\\}",
+            "latex": "M \\cap N=\\{7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "时，由",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "7 \\in M",
+            "latex": "7 \\in M",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m+6=7",
+            "latex": "m + 6 = 7",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，因此",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m=1",
+            "latex": "m = 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "综上所述，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m=1",
+            "latex": "m = 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "M \\cap N=\\{7\\}",
+            "latex": "M \\cap N=\\{7\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的充要条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p23_b4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        110.0,
+        710.0,
+        905.0,
+        915.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "练习 1.2(2)",
+            "1. 已知 $\\alpha$: 四边形 $ABCD$ 的两组对边分别平行，$\\beta$: 四边形 $ABCD$ 为矩形，$\\gamma$: 四边形 $ABCD$ 的两组对边分别相等. 用“充分非必要”“必要非充分”“充要”或“既非充分又非必要”填空：",
+            "(1) $\\alpha$ 是 $\\beta$ 的条件；",
+            "(2) $\\beta$ 是 $\\gamma$ 的条件；",
+            "(3) $\\alpha$ 是 $\\gamma$ 的条件.",
+            "2. 设 $\\alpha$: $1 \\leqslant x < 4$，$\\beta$: $x < m$，$\\alpha$ 是 $\\beta$ 的充分条件. 求实数 $m$ 的取值范围."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "练习 1.2(2)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "1. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ": ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "四边形",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "ABCD",
+            "latex": "A B C D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的两组对边分别平行，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ": ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "四边形",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "ABCD",
+            "latex": "A B C D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "为矩形，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\gamma",
+            "latex": "\\gamma",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ": ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "四边形",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "ABCD",
+            "latex": "A B C D",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的两组对边分别相等",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "充分非必要",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "必要非充分",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "充要",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "既非充分又非必要",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "填空：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的条件；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\gamma",
+            "latex": "\\gamma",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的条件；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\gamma",
+            "latex": "\\gamma",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "2. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ": ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "1 \\leqslant x < 4",
+            "latex": "1 \\leqslant x < 4",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ": ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x < m",
+            "latex": "x < m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的充分条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "m",
+            "latex": "m",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的取值范围",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p23_ft",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40.0,
+        940.0,
+        960.0,
+        980.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "16"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

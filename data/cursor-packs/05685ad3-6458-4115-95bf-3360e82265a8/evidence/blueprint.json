@@ -1,0 +1,144 @@
+{
+  "page_no": 7,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "block_1",
+      "kind": "table",
+      "content_type": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        330.0,
+        100.0,
+        900.0,
+        190.0
+      ],
+      "anchor_id": "block_1",
+      "figure_group_id": "block_1",
+      "content": {
+        "text": null,
+        "table": {
+          "rows": [
+            [
+              "4.3 对数函数",
+              "93"
+            ],
+            [
+              "内容提要",
+              "102"
+            ],
+            [
+              "复习题",
+              "102"
+            ]
+          ],
+          "caption": null
+        },
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "block_2",
+      "kind": "table",
+      "content_type": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        330.0,
+        280.0,
+        900.0,
+        440.0
+      ],
+      "anchor_id": "block_2",
+      "figure_group_id": "block_2",
+      "content": {
+        "text": null,
+        "table": {
+          "rows": [
+            [
+              "5.1 函数",
+              "106"
+            ],
+            [
+              "5.2 函数的基本性质",
+              "115"
+            ],
+            [
+              "5.3 函数的应用",
+              "127"
+            ],
+            [
+              "*5.4 反函数",
+              "136"
+            ],
+            [
+              "内容提要",
+              "141"
+            ],
+            [
+              "复习题",
+              "142"
+            ]
+          ],
+          "caption": null
+        },
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "block_3",
+      "kind": "equation",
+      "content_type": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        100.0,
+        230.0,
+        560.0,
+        260.0
+      ],
+      "anchor_id": "block_3",
+      "figure_group_id": "block_3",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "第5章 函数的概念、性质及应用",
+          "fallback_text": "第5章 函数的概念、性质及应用"
+        },
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "第5章 函数的概念、性质及应用",
+            "latex": "第 5 章 函 数 的 概 念 、 性 质 及 应 用",
+            "valid": true
+          }
+        ]
+      }
+    }
+  ]
+}

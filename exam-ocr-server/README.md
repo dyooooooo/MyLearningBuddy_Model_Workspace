@@ -8,7 +8,7 @@ FastAPI C2 gateway for Spark dual-Docker deployment.
 ## Test UI
 
 ```text
-http://192.168.3.200:8000/test/
+http://192.168.1.10:8000/test/
 ```
 
 ## API

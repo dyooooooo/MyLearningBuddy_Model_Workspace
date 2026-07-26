@@ -1,0 +1,257 @@
+{
+  "page_no": 10,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p10_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770,
+        30,
+        900,
+        50
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.1 集合初步"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p10_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        100,
+        660,
+        385
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 600 的正约数的全体组成的集合；",
+            "(3) 2019 年在上海出生的所有人组成的集合；",
+            "(4) 给定的一条长度为 1 的线段上的所有点组成的集合.",
+            "解 (1) 6 的正整数倍可表示为 $6n$，其中 $n$ 是正整数. 因为正整数有无限个，所以 6 的正整数倍的全体组成的集合是一个无限集.",
+            "(2) 600 的正约数一定是小于或等于 600 的正整数，其个数不超过 600. 所以 600 的正约数的全体组成的集合是一个有限集.",
+            "(3) 虽然 2019 年出生在上海的人比较多，但总数还是有限的. 所以 2019 年在上海出生的所有人组成的集合是一个有限集.",
+            "(4) 因为该线段的二等分点、三等分点、四等分点……都是该集合中的元素，所以一条给定的长度为 1 的线段上的所有点组成的集合是一个无限集."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p10_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        95,
+        395,
+        660,
+        435
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数学中，常常需要用到数的集合. 数的集合简称数集. 常用的数集可用以下特定的符号来表示，见表 1-1."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p10_t1",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        95,
+        450,
+        660,
+        575
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": {
+          "rows": [
+            [
+              "数集",
+              "符号"
+            ],
+            [
+              "自然数集",
+              "N"
+            ],
+            [
+              "整数集",
+              "Z"
+            ],
+            [
+              "有理数集",
+              "Q"
+            ],
+            [
+              "实数集",
+              "R"
+            ]
+          ],
+          "caption": "表 1-1 常用数集的符号"
+        },
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p10_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        590,
+        660,
+        690
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 2 用符号“$\\in$”或“$\\notin$”填空：",
+            "(1) 0 ______ N；",
+            "(2) 1 ______ Z；",
+            "(3) $\\sqrt{2}$ ______ Q；",
+            "(4) $-\\sqrt{\\pi}$ ______ R.",
+            "解 (1) $0 \\in \\mathbf{N}$. (2) $1 \\in \\mathbf{Z}$. (3) $\\sqrt{2} \\notin \\mathbf{Q}$. (4) $-\\sqrt{\\pi} \\in \\mathbf{R}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p10_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        95,
+        700,
+        660,
+        810
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "不含有任何元素的集合称为空集，记作 $\\varnothing$. 引进空集是有必要的. 例如，方程 $x^{2}+1=0$ 没有实数解，我们就说它的实数解组成的集合是空集. 又如，当两条直线平行时，它们没有公共点，就可说这两条直线的公共点组成的集合是空集. 在以后学习交集时，我们还将进一步体会到引入空集的必要性."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p10_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        110,
+        825,
+        210,
+        845
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "练习 1.1(1)"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p10_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        95,
+        860,
+        880,
+        920
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 判断下列各组对象能否组成集合. 若能组成集合，指出是有限集还是无限集；若不能组成集合，请说明理由.",
+            "(1) 上海市现有各区的名称；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p10_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        880,
+        950,
+        910,
+        980
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

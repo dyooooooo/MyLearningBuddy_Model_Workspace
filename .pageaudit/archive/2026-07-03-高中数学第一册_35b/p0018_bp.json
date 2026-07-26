@@ -1,0 +1,1297 @@
+{
+  "page_no": 18,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p18_hd",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770.0,
+        30.0,
+        900.0,
+        50.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.1 集合初步"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p18_b1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        95.0,
+        95.0,
+        660.0,
+        160.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数组成的集合。",
+            "可以用文氏图直观地反映 $\\overline{A}$，如图 1-1-7，其中阴影部分表示集合 $A$ 在全集 $U$ 中的补集 $\\overline{A}$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "数组成的集合。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "可以用文氏图直观地反映",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A}",
+            "latex": "\\overline{A}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，如图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-7",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，其中阴影部分表示集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "在全集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "U",
+            "latex": "U",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中的补集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A}",
+            "latex": "\\overline{A}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p18_f1",
+      "kind": "figure",
+      "content_type": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        715.0,
+        100.0,
+        860.0,
+        170.0
+      ],
+      "anchor_id": "p18_b1",
+      "figure_group_id": "p18_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "图 1-1-7"
+        },
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/figures/p0018_p18_f1.jpg",
+        "asset_url": "/api/v1/admin/import35b/asset?key=import35b%2F7b33d74bc3d042a0b9836116f8cc3bdf%2Fassets%2F35b%2Ffigures%2Fp0018_p18_f1.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p18_b2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95.0,
+        165.0,
+        660.0,
+        350.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 12 设全集 $U=\\{a, b, c, d, e\\}$，集合 $A=\\{a, b, c\\}$，集合 $B=\\{c, d\\}$。分别求：$\\overline{A \\cup B}$，$\\overline{A} \\cap \\overline{B}$，$\\overline{A \\cap B}$ 及 $\\overline{A} \\cup \\overline{B}$。",
+            "解 由条件，可得",
+            "$A \\cup B=\\{a, b, c, d\\}$，$\\overline{A}=\\{d, e\\}$，$\\overline{B}=\\{a, b, e\\}$。",
+            "所以",
+            "$\\overline{A \\cup B}=\\{e\\}$，$\\overline{A} \\cap \\overline{B}=\\{e\\}$。",
+            "而 $A \\cap B=\\{c\\}$，所以",
+            "$\\overline{A \\cap B}=\\{a, b, d, e\\}$，$\\overline{A} \\cup \\overline{B}=\\{a, b, d, e\\}$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 12 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "设全集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "U=\\{a, b, c, d, e\\}",
+            "latex": "U=\\{a, b, c, d, e\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{a, b, c\\}",
+            "latex": "A=\\{a, b, c\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{c, d\\}",
+            "latex": "B=\\{c, d\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。分别求：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A \\cup B}",
+            "latex": "\\overline{A \\cup B}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A} \\cap \\overline{B}",
+            "latex": "\\overline{A} \\cap \\overline{B}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A \\cap B}",
+            "latex": "\\overline{A \\cap B}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "及",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A} \\cup \\overline{B}",
+            "latex": "\\overline{A} \\cup \\overline{B}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "解 由条件，可得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cup B=\\{a, b, c, d\\}",
+            "latex": "A \\cup B=\\{a, b, c, d\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A}=\\{d, e\\}",
+            "latex": "\\overline{A}=\\{d, e\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{B}=\\{a, b, e\\}",
+            "latex": "\\overline{B}=\\{a, b, e\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A \\cup B}=\\{e\\}",
+            "latex": "\\overline{A \\cup B}=\\{e\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A} \\cap \\overline{B}=\\{e\\}",
+            "latex": "\\overline{A} \\cap \\overline{B}=\\{e\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "而",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cap B=\\{c\\}",
+            "latex": "A \\cap B=\\{c\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A \\cap B}=\\{a, b, d, e\\}",
+            "latex": "\\overline{A \\cap B}=\\{a, b, d, e\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A} \\cup \\overline{B}=\\{a, b, d, e\\}",
+            "latex": "\\overline{A} \\cup \\overline{B}=\\{a, b, d, e\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p18_b3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        105.0,
+        365.0,
+        730.0,
+        580.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "练习 1.1(4)",
+            "1. 设 $A$ 为全集 $U$ 的任一子集，则",
+            "(1) $\\overline{\\overline{A}}=$ ______；（$\\overline{\\overline{A}}$ 表示 $A$ 的补集 $\\overline{A}$ 的补集）",
+            "(2) $A \\cap \\overline{A}=$ ______；",
+            "(3) $A \\cup \\overline{A}=$ ______。",
+            "2. 已知全集为 $\\mathbf{R}$，集合 $A=\\{x \\mid -2 < x \\leqslant 1\\}$。求 $\\overline{A}$。",
+            "3. 已知集合 $A=\\{1, 2, 3, 4, 5\\}$，$B=\\{2, 4, 6, 8\\}$，$C=\\{3, 4, 5, 6\\}$。求：",
+            "(1) $(A \\cap B) \\cup C$，$(A \\cup C) \\cap (B \\cup C)$；",
+            "(2) $(A \\cup B) \\cap C$，$(A \\cap C) \\cup (B \\cap C)$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "练习 1.1(4)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "1. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "为全集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "U",
+            "latex": "U",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的任一子集，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{\\overline{A}}=",
+            "latex": "\\overline{\\overline{A}}=",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ______",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "；（",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{\\overline{A}}",
+            "latex": "\\overline{\\overline{A}}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "表示",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A",
+            "latex": "A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的补集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A}",
+            "latex": "\\overline{A}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的补集）",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cap \\overline{A}=",
+            "latex": "A \\cap \\overline{A}=",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ______",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A \\cup \\overline{A}=",
+            "latex": "A \\cup \\overline{A}=",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ______",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "2. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知全集为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\mathbf{R}",
+            "latex": "\\mathbf{R}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{x \\mid -2 < x \\leqslant 1\\}",
+            "latex": "A=\\{x \\mid -2 < x \\leqslant 1\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\overline{A}",
+            "latex": "\\overline{A}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "3. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A=\\{1, 2, 3, 4, 5\\}",
+            "latex": "A=\\{1, 2, 3, 4, 5\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B=\\{2, 4, 6, 8\\}",
+            "latex": "B=\\{2, 4, 6, 8\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "C=\\{3, 4, 5, 6\\}",
+            "latex": "C=\\{3, 4, 5, 6\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。求：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "(A \\cap B) \\cup C",
+            "latex": "(A \\cap B) \\cup C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "(A \\cup C) \\cap (B \\cup C)",
+            "latex": "(A \\cup C) \\cap (B \\cup C)",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "(A \\cup B) \\cap C",
+            "latex": "(A \\cup B) \\cap C",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "(A \\cap C) \\cup (B \\cap C)",
+            "latex": "(A \\cap C) \\cup (B \\cap C)",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p18_b4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        170.0,
+        615.0,
+        275.0,
+        640.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "习题 1.1"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p18_b5",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        105.0,
+        685.0,
+        590.0,
+        925.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "A 组",
+            "1. 用列举法表示下列集合：",
+            "(1) 10 以内的所有素数组成的集合；",
+            "(2) $\\{y \\mid y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}$。",
+            "2. 用描述法表示下列集合：",
+            "(1) 被 3 除余 1 的所有自然数组成的集合；",
+            "(2) 比 1 大又比 10 小的所有实数组成的集合；",
+            "(3) 平面直角坐标系中坐标轴上所有点组成的集合。",
+            "3. 集合 $\\{(x, y) \\mid xy > 0, x、y \\text{ 为实数}\\}$ 是指 （ ）",
+            "A. 第一象限内的所有点组成的集合；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "A 组",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "1. 用列举法表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1) 10 以内的所有素数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\{y \\mid y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}",
+            "latex": "\\{y \\mid y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "2. 用描述法表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1) 被 3 除余 1 的所有自然数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(2) 比 1 大又比 10 小的所有实数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(3) 平面直角坐标系中坐标轴上所有点组成的集合。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "3. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\{(x, y) \\mid xy > 0, x、y \\text{ 为实数}\\}",
+            "latex": "\\{(x, y) \\mid xy > 0, x、y \\text{ 为实数}\\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是指",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "（",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "）",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "A. 第一象限内的所有点组成的集合；",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p18_ft",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        890.0,
+        960.0,
+        920.0,
+        985.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "11"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

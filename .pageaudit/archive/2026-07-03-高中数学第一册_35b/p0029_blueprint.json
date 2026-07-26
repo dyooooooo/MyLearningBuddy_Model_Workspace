@@ -1,0 +1,38 @@
+{
+  "page_no": 29,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p0029_blank",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        0.0,
+        0.0,
+        1000.0,
+        1000.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": []
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

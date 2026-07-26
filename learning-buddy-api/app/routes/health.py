@@ -5,7 +5,7 @@ from app.config import settings
 from app.clients.nemo_retriever import nemo_embed_health, nemo_rerank_health
 from app.clients.redis_client import redis_ok
 from app.db.session import check_db_ok, db_session
-from app.rag.corpus.pipeline import corpus_stats, full_rebuild
+from app.rag.corpus.pipeline import corpus_stats
 from app.rag.vector.factory import get_vector_store
 from app.schemas.common import HealthResponse
 
@@ -37,7 +37,18 @@ def health() -> HealthResponse:
 
 
 @router.post("/reindex")
-def reindex(force: bool = True, session: Session = Depends(db_session)):
+def reindex(force: bool = False, session: Session = Depends(db_session)):
+    """Legacy endpoint. force=true wipes PG+Milvus (empty). No auto-seed or auto-embed."""
     del session
-    s, q = full_rebuild(force=force)
-    return {"syllabus_count": s, "question_bank_count": q}
+    if force:
+        from app.services.corpus_governance import reset_corpus_workspace
+        from app.db.session import get_session_factory
+
+        factory = get_session_factory()
+        with factory() as s:
+            result = reset_corpus_workspace(s, reseed=False)
+        return result
+    return {
+        "mode": "noop",
+        "message": "知识库为手动模式：Studio 导入 → 审核 → 发布，才会写入向量库",
+    }

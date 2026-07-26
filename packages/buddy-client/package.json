@@ -1,0 +1,14 @@
+{
+  "name": "@learning-buddy/buddy-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Framework-agnostic typed client + ApiError + SSE helpers for Learning Buddy Studio / future frontends",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "@tanstack/query-core": "^5.0.0"
+  }
+}

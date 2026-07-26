@@ -45,7 +45,7 @@ def complete_edges_for_question(
         node_type="question",
         subject=subject,
         grade_band=grade_band,
-        status="published",
+        status="draft",
     )
     session.flush()
     return count

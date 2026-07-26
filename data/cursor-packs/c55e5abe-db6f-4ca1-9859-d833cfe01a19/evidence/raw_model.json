@@ -1,0 +1,471 @@
+{
+  "page_no": 6,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "b1",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b1",
+      "figure_group_id": "b1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "目录"
+        }
+      }
+    },
+    {
+      "id": "b2",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b2",
+      "figure_group_id": "b2",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "第1章 集合与逻辑"
+        }
+      }
+    },
+    {
+      "id": "b3",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b3",
+      "figure_group_id": "b3",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "1.1 集合初步 2"
+        }
+      }
+    },
+    {
+      "id": "b4",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b4",
+      "figure_group_id": "b4",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "1.2 常用逻辑用语 13"
+        }
+      }
+    },
+    {
+      "id": "b5",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b5",
+      "figure_group_id": "b5",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "内容提要 20"
+        }
+      }
+    },
+    {
+      "id": "b6",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b6",
+      "figure_group_id": "b6",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "复习题 20"
+        }
+      }
+    },
+    {
+      "id": "b7",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b7",
+      "figure_group_id": "b7",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "第2章 等式与不等式"
+        }
+      }
+    },
+    {
+      "id": "b8",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b8",
+      "figure_group_id": "b8",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "2.1 等式与不等式的性质 24"
+        }
+      }
+    },
+    {
+      "id": "b9",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b9",
+      "figure_group_id": "b9",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "2.2 不等式的求解 34"
+        }
+      }
+    },
+    {
+      "id": "b10",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b10",
+      "figure_group_id": "b10",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "2.3 基本不等式及其应用 46"
+        }
+      }
+    },
+    {
+      "id": "b11",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b11",
+      "figure_group_id": "b11",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "内容提要 55"
+        }
+      }
+    },
+    {
+      "id": "b12",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b12",
+      "figure_group_id": "b12",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "复习题 56"
+        }
+      }
+    },
+    {
+      "id": "b13",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b13",
+      "figure_group_id": "b13",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "第3章 幂、指数与对数"
+        }
+      }
+    },
+    {
+      "id": "b14",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b14",
+      "figure_group_id": "b14",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "3.1 幂与指数 60"
+        }
+      }
+    },
+    {
+      "id": "b15",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b15",
+      "figure_group_id": "b15",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "3.2 对数 66"
+        }
+      }
+    },
+    {
+      "id": "b16",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b16",
+      "figure_group_id": "b16",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "内容提要 76"
+        }
+      }
+    },
+    {
+      "id": "b17",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b17",
+      "figure_group_id": "b17",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "复习题 76"
+        }
+      }
+    },
+    {
+      "id": "b18",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b18",
+      "figure_group_id": "b18",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "第4章 幂函数、指数函数与对数函数"
+        }
+      }
+    },
+    {
+      "id": "b19",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b19",
+      "figure_group_id": "b19",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "4.1 幂函数 80"
+        }
+      }
+    },
+    {
+      "id": "b20",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b20",
+      "figure_group_id": "b20",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "4.2 指数函数 86"
+        }
+      }
+    },
+    {
+      "id": "b21",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        720,
+        120,
+        920,
+        280
+      ],
+      "anchor_id": "b21",
+      "figure_group_id": "b21",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "1"
+        }
+      }
+    }
+  ]
+}

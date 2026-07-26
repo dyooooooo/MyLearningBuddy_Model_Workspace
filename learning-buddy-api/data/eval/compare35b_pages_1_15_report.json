@@ -1,0 +1,1610 @@
+{
+  "pages": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "rows": [
+    {
+      "label": "pre_archived",
+      "page_no": 1,
+      "blocks": 9,
+      "zones": {
+        "main": 9
+      },
+      "chars": 81,
+      "figures": 2,
+      "figure_captions": [
+        "封面背景图：火箭发射场景",
+        "国家教材委员会专家委员会审核通过 2020"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 126,
+      "pdf_coverage": 0.545,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 1,
+      "blocks": 7,
+      "zones": {
+        "main": 7
+      },
+      "chars": 45,
+      "figures": 1,
+      "figure_captions": [
+        "教材封面：火箭发射背景图"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 126,
+      "pdf_coverage": 0.545,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 1,
+      "blocks": 8,
+      "zones": {
+        "main": 8
+      },
+      "chars": 59,
+      "figures": 1,
+      "figure_captions": [
+        "封面背景图：火箭发射场景"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 126,
+      "pdf_coverage": 0.545,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 2,
+      "blocks": 8,
+      "zones": {
+        "main": 8
+      },
+      "chars": 74,
+      "figures": 1,
+      "figure_captions": [
+        "火箭发射场景"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 0,
+      "pdf_coverage": 0.0,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 2,
+      "blocks": 8,
+      "zones": {
+        "main": 8
+      },
+      "chars": 40,
+      "figures": 1,
+      "figure_captions": [
+        "火箭发射场景"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 0,
+      "pdf_coverage": 0.0,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 2,
+      "blocks": 8,
+      "zones": {
+        "main": 8
+      },
+      "chars": 151,
+      "figures": 1,
+      "figure_captions": [
+        ""
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 0,
+      "pdf_coverage": 0.0,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 3,
+      "blocks": 6,
+      "zones": {
+        "main": 6
+      },
+      "chars": 609,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 677,
+      "pdf_coverage": 0.97,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 3,
+      "blocks": 7,
+      "zones": {
+        "main": 7
+      },
+      "chars": 608,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 677,
+      "pdf_coverage": 0.97,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 3,
+      "blocks": 6,
+      "zones": {
+        "main": 6
+      },
+      "chars": 626,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 677,
+      "pdf_coverage": 0.97,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 4,
+      "blocks": 6,
+      "zones": {
+        "running": 2,
+        "main": 4
+      },
+      "chars": 902,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 879,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 4,
+      "blocks": 6,
+      "zones": {
+        "running": 2,
+        "main": 4
+      },
+      "chars": 892,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 879,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 4,
+      "blocks": 6,
+      "zones": {
+        "running": 2,
+        "main": 4
+      },
+      "chars": 902,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 879,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 5,
+      "blocks": 5,
+      "zones": {
+        "main": 4,
+        "running": 1
+      },
+      "chars": 630,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 658,
+      "pdf_coverage": 0.996,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 5,
+      "blocks": 6,
+      "zones": {
+        "aside_left": 1,
+        "main": 5
+      },
+      "chars": 629,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 658,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 5,
+      "blocks": 5,
+      "zones": {
+        "main": 4,
+        "running": 1
+      },
+      "chars": 630,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 658,
+      "pdf_coverage": 0.996,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 6,
+      "blocks": 21,
+      "zones": {
+        "main": 20,
+        "running": 1
+      },
+      "chars": 453,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 231,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 6,
+      "blocks": 21,
+      "zones": {
+        "main": 20,
+        "running": 1
+      },
+      "chars": 226,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 231,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 6,
+      "blocks": 21,
+      "zones": {
+        "main": 20,
+        "running": 1
+      },
+      "chars": 453,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 231,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 7,
+      "blocks": 12,
+      "zones": {
+        "aside_left": 1,
+        "main": 10,
+        "running": 1
+      },
+      "chars": 125,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 125,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 7,
+      "blocks": 12,
+      "zones": {
+        "aside_left": 1,
+        "main": 10,
+        "running": 1
+      },
+      "chars": 122,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 125,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 7,
+      "blocks": 12,
+      "zones": {
+        "aside_left": 1,
+        "main": 10,
+        "running": 1
+      },
+      "chars": 125,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 125,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 8,
+      "blocks": 4,
+      "zones": {
+        "main": 4
+      },
+      "chars": 257,
+      "figures": 1,
+      "figure_captions": [
+        "背景图片：上海中共一大会址。"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 241,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 8,
+      "blocks": 3,
+      "zones": {
+        "main": 3
+      },
+      "chars": 239,
+      "figures": 1,
+      "figure_captions": [
+        "第一章 集合与逻辑 封面背景图"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 241,
+      "pdf_coverage": 0.994,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 8,
+      "blocks": 4,
+      "zones": {
+        "main": 4
+      },
+      "chars": 261,
+      "figures": 1,
+      "figure_captions": [
+        "中国共产党第一次全国代表大会会址"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 241,
+      "pdf_coverage": 1.0,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 9,
+      "blocks": 16,
+      "zones": {
+        "running": 2,
+        "main": 12,
+        "aside_left": 2
+      },
+      "chars": 1564,
+      "figures": 1,
+      "figure_captions": [
+        "康托(G. Cantor, 1845—1918), 德国数学家, 集合论创始人."
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 729,
+      "pdf_coverage": 0.839,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 9,
+      "blocks": 16,
+      "zones": {
+        "running": 2,
+        "main": 12,
+        "aside_left": 2
+      },
+      "chars": 802,
+      "figures": 1,
+      "figure_captions": [
+        "康托(G. Cantor, 1845—1918), 德国数学家, 集合论创始人."
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 729,
+      "pdf_coverage": 0.839,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 9,
+      "blocks": 16,
+      "zones": {
+        "running": 2,
+        "main": 12,
+        "aside_left": 2
+      },
+      "chars": 1564,
+      "figures": 1,
+      "figure_captions": [
+        "康托(G. Cantor, 1845—1918), 德国数学家, 集合论创始人."
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 729,
+      "pdf_coverage": 0.839,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 10,
+      "blocks": 7,
+      "zones": {
+        "main": 5,
+        "running": 2
+      },
+      "chars": 685,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 740,
+      "pdf_coverage": 0.574,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 10,
+      "blocks": 16,
+      "zones": {
+        "main": 14,
+        "running": 2
+      },
+      "chars": 927,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 740,
+      "pdf_coverage": 0.9,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 10,
+      "blocks": 16,
+      "zones": {
+        "running": 2,
+        "main": 14
+      },
+      "chars": 968,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 740,
+      "pdf_coverage": 0.909,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 11,
+      "blocks": 22,
+      "zones": {
+        "running": 2,
+        "main": 19,
+        "aside_left": 1
+      },
+      "chars": 874,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 803,
+      "pdf_coverage": 0.91,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 11,
+      "blocks": 21,
+      "zones": {
+        "running": 2,
+        "main": 18,
+        "aside_left": 1
+      },
+      "chars": 854,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 803,
+      "pdf_coverage": 0.91,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 11,
+      "blocks": 24,
+      "zones": {
+        "running": 2,
+        "main": 21,
+        "aside_left": 1
+      },
+      "chars": 875,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 803,
+      "pdf_coverage": 0.91,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 12,
+      "blocks": 17,
+      "zones": {
+        "running": 2,
+        "main": 14,
+        "aside_right": 1
+      },
+      "chars": 686,
+      "figures": 2,
+      "figure_captions": [
+        "图1-1-1",
+        "图1-1-2"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 737,
+      "pdf_coverage": 0.718,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 12,
+      "blocks": 13,
+      "zones": {
+        "running": 2,
+        "main": 10,
+        "aside_right": 1
+      },
+      "chars": 677,
+      "figures": 2,
+      "figure_captions": [
+        "图1-1-1",
+        "图1-1-2"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 737,
+      "pdf_coverage": 0.718,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 12,
+      "blocks": 8,
+      "zones": {
+        "running": 2,
+        "main": 5,
+        "aside_right": 1
+      },
+      "chars": 688,
+      "figures": 2,
+      "figure_captions": [
+        "图1-1-1",
+        "图1-1-2"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 737,
+      "pdf_coverage": 0.718,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 13,
+      "blocks": 10,
+      "zones": {
+        "aside_left": 1,
+        "main": 8,
+        "running": 1
+      },
+      "chars": 736,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 692,
+      "pdf_coverage": 0.791,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 13,
+      "blocks": 9,
+      "zones": {
+        "aside_left": 1,
+        "main": 7,
+        "running": 1
+      },
+      "chars": 777,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 692,
+      "pdf_coverage": 0.783,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 13,
+      "blocks": 7,
+      "zones": {
+        "aside_left": 1,
+        "main": 5,
+        "running": 1
+      },
+      "chars": 713,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 692,
+      "pdf_coverage": 0.791,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 14,
+      "blocks": 29,
+      "zones": {
+        "running": 2,
+        "main": 24,
+        "aside_right": 3
+      },
+      "chars": 1187,
+      "figures": 1,
+      "figure_captions": [
+        "图 1-1-3"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 946,
+      "pdf_coverage": 0.578,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 14,
+      "blocks": 29,
+      "zones": {
+        "running": 2,
+        "main": 24,
+        "aside_right": 3
+      },
+      "chars": 1179,
+      "figures": 1,
+      "figure_captions": [
+        "图 1-1-3"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 946,
+      "pdf_coverage": 0.573,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 14,
+      "blocks": 28,
+      "zones": {
+        "running": 2,
+        "main": 23,
+        "aside_right": 3
+      },
+      "chars": 1261,
+      "figures": 1,
+      "figure_captions": [
+        "图 1-1-3"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 946,
+      "pdf_coverage": 0.578,
+      "issues": []
+    },
+    {
+      "label": "pre_archived",
+      "page_no": 15,
+      "blocks": 21,
+      "zones": {
+        "main": 18,
+        "aside_left": 1,
+        "running": 2
+      },
+      "chars": 908,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 791,
+      "pdf_coverage": 0.679,
+      "issues": []
+    },
+    {
+      "label": "schema_off",
+      "page_no": 15,
+      "blocks": 21,
+      "zones": {
+        "running": 2,
+        "main": 18,
+        "aside_left": 1
+      },
+      "chars": 857,
+      "figures": 1,
+      "figure_captions": [
+        "4 集合的运算"
+      ],
+      "bad_figure_captions": [],
+      "pdf_chars": 791,
+      "pdf_coverage": 0.682,
+      "issues": []
+    },
+    {
+      "label": "schema_on",
+      "page_no": 15,
+      "blocks": 12,
+      "zones": {
+        "main": 10,
+        "aside_left": 1,
+        "running": 1
+      },
+      "chars": 902,
+      "figures": 0,
+      "figure_captions": [],
+      "bad_figure_captions": [],
+      "pdf_chars": 791,
+      "pdf_coverage": 0.669,
+      "issues": []
+    }
+  ],
+  "by_page": {
+    "1": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 1,
+        "blocks": 9,
+        "zones": {
+          "main": 9
+        },
+        "chars": 81,
+        "figures": 2,
+        "figure_captions": [
+          "封面背景图：火箭发射场景",
+          "国家教材委员会专家委员会审核通过 2020"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 126,
+        "pdf_coverage": 0.545,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 1,
+        "blocks": 7,
+        "zones": {
+          "main": 7
+        },
+        "chars": 45,
+        "figures": 1,
+        "figure_captions": [
+          "教材封面：火箭发射背景图"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 126,
+        "pdf_coverage": 0.545,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 1,
+        "blocks": 8,
+        "zones": {
+          "main": 8
+        },
+        "chars": 59,
+        "figures": 1,
+        "figure_captions": [
+          "封面背景图：火箭发射场景"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 126,
+        "pdf_coverage": 0.545,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "2": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 2,
+        "blocks": 8,
+        "zones": {
+          "main": 8
+        },
+        "chars": 74,
+        "figures": 1,
+        "figure_captions": [
+          "火箭发射场景"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 0,
+        "pdf_coverage": 0.0,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 2,
+        "blocks": 8,
+        "zones": {
+          "main": 8
+        },
+        "chars": 40,
+        "figures": 1,
+        "figure_captions": [
+          "火箭发射场景"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 0,
+        "pdf_coverage": 0.0,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 2,
+        "blocks": 8,
+        "zones": {
+          "main": 8
+        },
+        "chars": 151,
+        "figures": 1,
+        "figure_captions": [
+          ""
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 0,
+        "pdf_coverage": 0.0,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "3": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 3,
+        "blocks": 6,
+        "zones": {
+          "main": 6
+        },
+        "chars": 609,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 677,
+        "pdf_coverage": 0.97,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 3,
+        "blocks": 7,
+        "zones": {
+          "main": 7
+        },
+        "chars": 608,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 677,
+        "pdf_coverage": 0.97,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 3,
+        "blocks": 6,
+        "zones": {
+          "main": 6
+        },
+        "chars": 626,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 677,
+        "pdf_coverage": 0.97,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "4": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 4,
+        "blocks": 6,
+        "zones": {
+          "running": 2,
+          "main": 4
+        },
+        "chars": 902,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 879,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 4,
+        "blocks": 6,
+        "zones": {
+          "running": 2,
+          "main": 4
+        },
+        "chars": 892,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 879,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 4,
+        "blocks": 6,
+        "zones": {
+          "running": 2,
+          "main": 4
+        },
+        "chars": 902,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 879,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "5": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 5,
+        "blocks": 5,
+        "zones": {
+          "main": 4,
+          "running": 1
+        },
+        "chars": 630,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 658,
+        "pdf_coverage": 0.996,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 5,
+        "blocks": 6,
+        "zones": {
+          "aside_left": 1,
+          "main": 5
+        },
+        "chars": 629,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 658,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 5,
+        "blocks": 5,
+        "zones": {
+          "main": 4,
+          "running": 1
+        },
+        "chars": 630,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 658,
+        "pdf_coverage": 0.996,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "6": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 6,
+        "blocks": 21,
+        "zones": {
+          "main": 20,
+          "running": 1
+        },
+        "chars": 453,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 231,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 6,
+        "blocks": 21,
+        "zones": {
+          "main": 20,
+          "running": 1
+        },
+        "chars": 226,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 231,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 6,
+        "blocks": 21,
+        "zones": {
+          "main": 20,
+          "running": 1
+        },
+        "chars": 453,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 231,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "7": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 7,
+        "blocks": 12,
+        "zones": {
+          "aside_left": 1,
+          "main": 10,
+          "running": 1
+        },
+        "chars": 125,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 125,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 7,
+        "blocks": 12,
+        "zones": {
+          "aside_left": 1,
+          "main": 10,
+          "running": 1
+        },
+        "chars": 122,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 125,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 7,
+        "blocks": 12,
+        "zones": {
+          "aside_left": 1,
+          "main": 10,
+          "running": 1
+        },
+        "chars": 125,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 125,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "8": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 8,
+        "blocks": 4,
+        "zones": {
+          "main": 4
+        },
+        "chars": 257,
+        "figures": 1,
+        "figure_captions": [
+          "背景图片：上海中共一大会址。"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 241,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 8,
+        "blocks": 3,
+        "zones": {
+          "main": 3
+        },
+        "chars": 239,
+        "figures": 1,
+        "figure_captions": [
+          "第一章 集合与逻辑 封面背景图"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 241,
+        "pdf_coverage": 0.994,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 8,
+        "blocks": 4,
+        "zones": {
+          "main": 4
+        },
+        "chars": 261,
+        "figures": 1,
+        "figure_captions": [
+          "中国共产党第一次全国代表大会会址"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 241,
+        "pdf_coverage": 1.0,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "9": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 9,
+        "blocks": 16,
+        "zones": {
+          "running": 2,
+          "main": 12,
+          "aside_left": 2
+        },
+        "chars": 1564,
+        "figures": 1,
+        "figure_captions": [
+          "康托(G. Cantor, 1845—1918), 德国数学家, 集合论创始人."
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 729,
+        "pdf_coverage": 0.839,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 9,
+        "blocks": 16,
+        "zones": {
+          "running": 2,
+          "main": 12,
+          "aside_left": 2
+        },
+        "chars": 802,
+        "figures": 1,
+        "figure_captions": [
+          "康托(G. Cantor, 1845—1918), 德国数学家, 集合论创始人."
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 729,
+        "pdf_coverage": 0.839,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 9,
+        "blocks": 16,
+        "zones": {
+          "running": 2,
+          "main": 12,
+          "aside_left": 2
+        },
+        "chars": 1564,
+        "figures": 1,
+        "figure_captions": [
+          "康托(G. Cantor, 1845—1918), 德国数学家, 集合论创始人."
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 729,
+        "pdf_coverage": 0.839,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "10": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 10,
+        "blocks": 7,
+        "zones": {
+          "main": 5,
+          "running": 2
+        },
+        "chars": 685,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 740,
+        "pdf_coverage": 0.574,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 10,
+        "blocks": 16,
+        "zones": {
+          "main": 14,
+          "running": 2
+        },
+        "chars": 927,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 740,
+        "pdf_coverage": 0.9,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 10,
+        "blocks": 16,
+        "zones": {
+          "running": 2,
+          "main": 14
+        },
+        "chars": 968,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 740,
+        "pdf_coverage": 0.909,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "11": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 11,
+        "blocks": 22,
+        "zones": {
+          "running": 2,
+          "main": 19,
+          "aside_left": 1
+        },
+        "chars": 874,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 803,
+        "pdf_coverage": 0.91,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 11,
+        "blocks": 21,
+        "zones": {
+          "running": 2,
+          "main": 18,
+          "aside_left": 1
+        },
+        "chars": 854,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 803,
+        "pdf_coverage": 0.91,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 11,
+        "blocks": 24,
+        "zones": {
+          "running": 2,
+          "main": 21,
+          "aside_left": 1
+        },
+        "chars": 875,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 803,
+        "pdf_coverage": 0.91,
+        "issues": []
+      },
+      "verdict": "OFF less fragmented"
+    },
+    "12": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 12,
+        "blocks": 17,
+        "zones": {
+          "running": 2,
+          "main": 14,
+          "aside_right": 1
+        },
+        "chars": 686,
+        "figures": 2,
+        "figure_captions": [
+          "图1-1-1",
+          "图1-1-2"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 737,
+        "pdf_coverage": 0.718,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 12,
+        "blocks": 13,
+        "zones": {
+          "running": 2,
+          "main": 10,
+          "aside_right": 1
+        },
+        "chars": 677,
+        "figures": 2,
+        "figure_captions": [
+          "图1-1-1",
+          "图1-1-2"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 737,
+        "pdf_coverage": 0.718,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 12,
+        "blocks": 8,
+        "zones": {
+          "running": 2,
+          "main": 5,
+          "aside_right": 1
+        },
+        "chars": 688,
+        "figures": 2,
+        "figure_captions": [
+          "图1-1-1",
+          "图1-1-2"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 737,
+        "pdf_coverage": 0.718,
+        "issues": []
+      },
+      "verdict": "ON less fragmented"
+    },
+    "13": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 13,
+        "blocks": 10,
+        "zones": {
+          "aside_left": 1,
+          "main": 8,
+          "running": 1
+        },
+        "chars": 736,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 692,
+        "pdf_coverage": 0.791,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 13,
+        "blocks": 9,
+        "zones": {
+          "aside_left": 1,
+          "main": 7,
+          "running": 1
+        },
+        "chars": 777,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 692,
+        "pdf_coverage": 0.783,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 13,
+        "blocks": 7,
+        "zones": {
+          "aside_left": 1,
+          "main": 5,
+          "running": 1
+        },
+        "chars": 713,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 692,
+        "pdf_coverage": 0.791,
+        "issues": []
+      },
+      "verdict": "ON less fragmented"
+    },
+    "14": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 14,
+        "blocks": 29,
+        "zones": {
+          "running": 2,
+          "main": 24,
+          "aside_right": 3
+        },
+        "chars": 1187,
+        "figures": 1,
+        "figure_captions": [
+          "图 1-1-3"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 946,
+        "pdf_coverage": 0.578,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 14,
+        "blocks": 29,
+        "zones": {
+          "running": 2,
+          "main": 24,
+          "aside_right": 3
+        },
+        "chars": 1179,
+        "figures": 1,
+        "figure_captions": [
+          "图 1-1-3"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 946,
+        "pdf_coverage": 0.573,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 14,
+        "blocks": 28,
+        "zones": {
+          "running": 2,
+          "main": 23,
+          "aside_right": 3
+        },
+        "chars": 1261,
+        "figures": 1,
+        "figure_captions": [
+          "图 1-1-3"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 946,
+        "pdf_coverage": 0.578,
+        "issues": []
+      },
+      "verdict": "三者相当"
+    },
+    "15": {
+      "pre_archived": {
+        "label": "pre_archived",
+        "page_no": 15,
+        "blocks": 21,
+        "zones": {
+          "main": 18,
+          "aside_left": 1,
+          "running": 2
+        },
+        "chars": 908,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 791,
+        "pdf_coverage": 0.679,
+        "issues": []
+      },
+      "schema_off": {
+        "label": "schema_off",
+        "page_no": 15,
+        "blocks": 21,
+        "zones": {
+          "running": 2,
+          "main": 18,
+          "aside_left": 1
+        },
+        "chars": 857,
+        "figures": 1,
+        "figure_captions": [
+          "4 集合的运算"
+        ],
+        "bad_figure_captions": [],
+        "pdf_chars": 791,
+        "pdf_coverage": 0.682,
+        "issues": []
+      },
+      "schema_on": {
+        "label": "schema_on",
+        "page_no": 15,
+        "blocks": 12,
+        "zones": {
+          "main": 10,
+          "aside_left": 1,
+          "running": 1
+        },
+        "chars": 902,
+        "figures": 0,
+        "figure_captions": [],
+        "bad_figure_captions": [],
+        "pdf_chars": 791,
+        "pdf_coverage": 0.669,
+        "issues": []
+      },
+      "verdict": "ON less fragmented"
+    }
+  }
+}

@@ -46,4 +46,4 @@ iw dev "$WIFI_IF" get power_save
 nmcli -g 802-11-wireless.powersave,connection.autoconnect-priority connection show "$CONN_NAME"
 
 echo ""
-echo "Done. For best stability, also plug Ethernet (enP7s7) and reserve 192.168.3.200 on the router."
+echo "Done. For best stability, also plug Ethernet (enP7s7) and reserve 192.168.1.10 on the router."

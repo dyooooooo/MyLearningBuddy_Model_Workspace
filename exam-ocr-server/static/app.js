@@ -1,5 +1,5 @@
-import { createCompanionUI } from "./companion-ui.js?v=20260625";
-import { drawOverlay, overlayFromParts, renderPage } from "./render-utils.js";
+import { createCompanionUI } from "./companion-ui.js?v=20260622evalfinish";
+import { drawOverlay, overlayFromParts, renderPage } from "./render-utils.js?v=20260622evalfinish";
 import { isImageFile, normalizeImageFile } from "./image-api.js";
 
 const $ = (sel) => document.querySelector(sel);
@@ -24,6 +24,7 @@ const els = {
   hideDoneQueue: $("#hideDoneQueue"),
   tabHelp: $("#tabHelp"),
   btnExport: $("#btnExport"),
+  localeSelect: $("#localeSelect"),
   btnFinalizeDock: $("#btnFinalizeDock"),
   btnEndSessionDock: $("#btnEndSessionDock"),
   dockHint: $("#dockHint"),

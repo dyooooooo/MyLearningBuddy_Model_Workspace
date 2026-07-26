@@ -9,13 +9,18 @@ from app.config import settings
 from app.db.session import get_session_factory
 from app.rag.corpus.pipeline import kp_label
 from app.rag.embedder import embed_texts
-from app.rag.keyword_score import hybrid_score, keyword_score_for_kp
+from app.rag.keyword_score import hybrid_score, keyword_score_for_kp, lexical_overlap_score
+from app.rag.rrf import rrf_fuse
 from app.rag.vector.factory import get_vector_store
 from app.schemas.common import RagSearchHit
 from app.services.corpus_graph import expand_neighbors
 from app.util.json_util import loads
 
 logger = logging.getLogger(__name__)
+
+
+def _hit_key(h: RagSearchHit) -> str:
+    return f"{h.kp_id}|{h.text[:80]}|{h.label}"
 
 
 @dataclass
@@ -28,6 +33,7 @@ class EvalContext:
     kps: list[dict[str, Any]] = field(default_factory=list)
     methods: list[dict[str, Any]] = field(default_factory=list)
     shortcuts: list[dict[str, Any]] = field(default_factory=list)
+    questions: list[dict[str, Any]] = field(default_factory=list)
     chunks: list[dict[str, Any]] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
 
@@ -38,6 +44,7 @@ class EvalContext:
             "kps": self.kps,
             "methods": self.methods,
             "shortcuts": self.shortcuts,
+            "questions": self.questions,
             "chunks": self.chunks,
             "tags": self.tags,
         }
@@ -50,6 +57,7 @@ def search(
     grade_band: str = "hs",
     top_k: int | None = None,
 ) -> list[RagSearchHit]:
+    """Dense Milvus + lexical sparse channel fused by RRF (then optional legacy blend)."""
     k = top_k or settings.rag_top_k
     if not query.strip():
         return []
@@ -58,22 +66,60 @@ def search(
     store = get_vector_store()
     raw = store.search(query_emb, subject=subject, grade_band=grade_band, top_k=k)
 
-    hits: list[RagSearchHit] = []
+    dense_hits: list[RagSearchHit] = []
     for h in raw:
+        dense_hits.append(
+            RagSearchHit(
+                kp_id=h.kp_id,
+                score=round(float(h.score), 4),
+                source=(h.source or "dense") + "+dense",
+                text=h.text,
+                label=h.label or kp_label(h.kp_id),
+            )
+        )
+
+    if settings.rag_hybrid_rrf_enabled and dense_hits:
+        sparse_ranked = sorted(
+            dense_hits,
+            key=lambda h: lexical_overlap_score(query, h.text)
+            + keyword_score_for_kp(query, h.kp_id, h.text, subject=subject, grade_band=grade_band),
+            reverse=True,
+        )
+        fused = rrf_fuse(
+            [dense_hits, sparse_ranked],
+            key_fn=_hit_key,
+            k=settings.rag_rrf_k,
+            limit=k,
+        )
+        out: list[RagSearchHit] = []
+        for i, h in enumerate(fused):
+            out.append(
+                RagSearchHit(
+                    kp_id=h.kp_id,
+                    score=round(1.0 / (settings.rag_rrf_k + i + 1), 4),
+                    source=(h.source or "").replace("+dense", "") + "+hybrid_rrf",
+                    text=h.text,
+                    label=h.label,
+                )
+            )
+        return out
+
+    # Legacy alpha blend fallback
+    hits: list[RagSearchHit] = []
+    for h in dense_hits:
         kw = keyword_score_for_kp(query, h.kp_id, h.text, subject=subject, grade_band=grade_band)
         score = hybrid_score(h.score, kw)
         hits.append(
             RagSearchHit(
                 kp_id=h.kp_id,
                 score=round(score, 4),
-                source=h.source,
+                source=h.source.replace("+dense", "") + "+hybrid_alpha",
                 text=h.text,
-                label=h.label or kp_label(h.kp_id),
+                label=h.label,
             )
         )
-
     hits.sort(key=lambda x: x.score, reverse=True)
-    return hits[: k]
+    return hits[:k]
 
 
 def _rerank_hits(query: str, hits: list[RagSearchHit]) -> list[RagSearchHit]:
@@ -116,7 +162,7 @@ def retrieve_eval_context(
     subject: str = "math",
     grade_band: str = "hs",
 ) -> EvalContext:
-    """vector entry → rerank → graph expand → tag/grade filter."""
+    """hybrid(RRF) → rerank → graph expand → tag/grade filter."""
     hits = search(query, subject=subject, grade_band=grade_band, top_k=settings.rag_top_k)
     hits = _rerank_hits(query, hits)
     entry_ids = []
@@ -145,6 +191,8 @@ def retrieve_eval_context(
                 ctx.methods.append(bucket)
             elif n.node_type == "shortcut":
                 ctx.shortcuts.append(bucket)
+            elif n.node_type == "question":
+                ctx.questions.append(bucket)
             elif n.node_type in ("chunk", "section", "textbook"):
                 ctx.chunks.append(bucket)
         ctx.tags = sorted(tag_set)

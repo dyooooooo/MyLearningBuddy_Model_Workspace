@@ -1,0 +1,382 @@
+{
+  "page_no": 3,
+  "status": "ok",
+  "prompt_version": "layout_blueprint_v5",
+  "used_json_schema": true,
+  "mfr_enabled": true,
+  "call": {
+    "used_schema": true,
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 5655,
+      "total_tokens": 9301,
+      "completion_tokens": 3646,
+      "prompt_tokens_details": null
+    },
+    "max_tokens": 6144
+  },
+  "truncated": false,
+  "raw": {
+    "blocks": 24,
+    "kinds": {
+      "text": 24
+    },
+    "text_empty": 24
+  },
+  "final": {
+    "blocks": 24,
+    "kinds": {
+      "text": 24
+    },
+    "text_empty": 24
+  },
+  "boundary_repairs": [],
+  "findings": [
+    {
+      "suspect_type": "MAIN_EMPTY",
+      "severity": "high",
+      "page_no": 3,
+      "block_id": "",
+      "evidence": {
+        "main_blocks": 24
+      },
+      "candidates": [
+        "整页内容丢失（模型误标 role/zone）",
+        "本页本来就是空白页/纯图页"
+      ],
+      "fingerprint": "e8e87f2f08a07a5b",
+      "fingerprint_exact": "1ddbacdf081094d2",
+      "detector": "rule"
+    }
+  ],
+  "attempt_errors": [],
+  "elapsed_ms": 26923,
+  "stages_available": {
+    "raw_model": true,
+    "post_repair": true,
+    "post_mfr": true,
+    "post_crop": true,
+    "blueprint": true,
+    "html": true,
+    "ssr_report": true,
+    "changelog": true
+  },
+  "changelog_summary": {
+    "total_changes": 168,
+    "summary_zh": "本页共 168 处后处理修改：防腐层修复 168",
+    "by_transition": {
+      "raw_model→post_repair": 168,
+      "post_repair→post_mfr": 0,
+      "post_mfr→post_crop": 0,
+      "post_crop→blueprint": 0
+    }
+  },
+  "quality": {
+    "page_no": 3,
+    "html_block_coverage": {
+      "page_no": 3,
+      "total_blocks": 24,
+      "rendered_blocks": 0,
+      "coverage": 0.0,
+      "missing_block_ids": [
+        "b1",
+        "b2",
+        "b3",
+        "b4",
+        "b5",
+        "b6",
+        "b7",
+        "b8",
+        "b9",
+        "b10",
+        "b11",
+        "b12",
+        "b13",
+        "b14",
+        "b15",
+        "b16",
+        "b17",
+        "b18",
+        "b19",
+        "b20",
+        "b21",
+        "b22",
+        "b23",
+        "b24"
+      ]
+    },
+    "content_payload_consistency": {
+      "consistent": false,
+      "error_count": 72,
+      "polluted_payload_count": 48,
+      "errors": [
+        {
+          "block_id": "b1",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b1",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b1",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b2",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b2",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b2",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b3",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b3",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b3",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b4",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b4",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b4",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b5",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b5",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b5",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b6",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b6",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b6",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b7",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b7",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b7",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b8",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b8",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b8",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b9",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b9",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b9",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b10",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b10",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b10",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b11",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b11",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b11",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b12",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b12",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b12",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b13",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b13",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b13",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b14",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b14",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b14",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b15",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b15",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b15",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b16",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b16",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        },
+        {
+          "block_id": "b16",
+          "error": "figure_payload_on_non_figure"
+        },
+        {
+          "block_id": "b17",
+          "error": "missing_text_payload"
+        },
+        {
+          "block_id": "b17",
+          "error": "extra_payloads",
+          "extra": [
+            "figure"
+          ]
+        }
+      ]
+    },
+    "rendered_text_fidelity": {
+      "json_primary_chars": 0,
+      "html_plain_chars": 0,
+      "json_to_html_token_recall": 1.0
+    },
+    "paragraph_fidelity": {
+      "expected_paragraphs": 0,
+      "rendered_paragraphs": 0,
+      "paragraph_ratio": 1.0
+    },
+    "inline_math_span_health": {
+      "inline_math_spans": 0,
+      "max_inline_math_len": 0,
+      "oversized_inline_math": false
+    }
+  }
+}

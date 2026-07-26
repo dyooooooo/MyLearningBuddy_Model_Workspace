@@ -1,0 +1,886 @@
+{
+  "page_no": 19,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p19_b1",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        30.0,
+        15.0,
+        290.0,
+        80.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "1 集合与逻辑",
+        "caption": "1 集合与逻辑",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p19_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        170.0,
+        100.0,
+        675.0,
+        160.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "B. 第三象限内的所有点组成的集合；\nC. 第一象限和第三象限内的所有点组成的集合；\nD. 不在第二象限也不在第四象限内的所有点组成的集合.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p19_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        165.0,
+        535.0,
+        185.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "4. 用符号“⊂”“=”或“⊃”连接集合 A 与 B：",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p19_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        190.0,
+        595.0,
+        210.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "(1) A={x|x²-2x+1=0}, B={x|x²-1=0};",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "(1) A={x|x²-2x+1=0}, B={x|x²-1=0};",
+            "latex": "( 1 ) A = \\{ x | x ² - 2 x + 1 = 0 \\} ,  B = \\{ x | x ² - 1 = 0 \\} ;",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        215.0,
+        570.0,
+        235.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "(2) A={1,2,4,8}, B={x|x 是 8 的正约数}.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "(2) A={1,2,4,8}, B={x|x ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 8 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的正约数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "}.",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        110.0,
+        235.0,
+        905.0,
+        275.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "5. 已知集合 A={1}, B={x|x²-3x+a=0}. 是否存在实数 a，使得 A⊂B? 若存在，求 a 的值；若不存在，说明理由.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "5. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A={1}, B={x|x²-3x+a=0}. ",
+            "latex": "A = \\{ 1 \\} ,  B = \\{ x | x ² - 3 x + a = 0 \\} .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "是否存在实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " a",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，使得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A⊂B? ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若存在，求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " a ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的值；若不存在，说明理由",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        280.0,
+        705.0,
+        300.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "6. 已知集合 A={x,y}, B={2x,2x²}, 且 A=B. 求集合 A.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "6. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A={x,y}, B={2x,2x²}, ",
+            "latex": "A = \\{ x , y \\} ,  B = \\{ 2 x , 2 x ² \\} ,",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A=B. ",
+            "latex": "A = B .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "求集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A.",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        110.0,
+        305.0,
+        905.0,
+        345.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "7. 已知集合 A={x|x≤7}, B={x|x<2}, C={x|x>5}. 求: A∩B, A∩C, A∩(B∩C).",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "7. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A={x|x≤7}, B={x|x<2}, C={x|x>5}. ",
+            "latex": "A = \\{ x | x \\le 7 \\} ,  B = \\{ x | x < 2 \\} ,  C = \\{ x | x > 5 \\} .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": ": A∩B, A∩C, A∩(B∩C).",
+            "latex": ": A \\cap B ,  A \\cap C ,  A \\cap ( B \\cap C ) .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        350.0,
+        815.0,
+        370.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "8. 已知集合 A={(x,y)|y=-x+1}, B={(x,y)|y=x²-1}. 求 A∩B.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "8. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A={(x,y)|y=-x+1}, B={(x,y)|y=x²-1}. ",
+            "latex": "A = \\{ ( x , y ) | y = - x + 1 \\} ,  B = \\{ ( x , y ) | y = x ² - 1 \\} .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A∩B.",
+            "latex": "A \\cap B .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        375.0,
+        640.0,
+        395.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "9. 已知全集 U=R, 集合 A={x|4-x>2x+1}. 求 A̅.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "9. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知全集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " U=R, ",
+            "latex": "U = R ,",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A={x|4-x>2x+1}. ",
+            "latex": "A = \\{ x | 4 - x > 2 x + 1 \\} .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A̅.",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        125.0,
+        400.0,
+        170.0,
+        420.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "B 组",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p19_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        435.0,
+        755.0,
+        455.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "1. 已知集合 A={2,(a+1)²,a²+3a+3}, 且 1∈A. 求实数 a 的值.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "1. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A={2,(a+1)²,a²+3a+3}, ",
+            "latex": "A = \\{ 2 , ( a + 1 ) ² , a ² + 3 a + 3 \\} ,",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1∈A. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "求实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " a ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的值",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b13",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        110.0,
+        460.0,
+        905.0,
+        500.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "2. 已知集合 A={x|x=2n+1, n∈Z}, B={x|x=4n-1, n∈Z}. 判断集合 A 与 B 的包含关系，并证明你的结论.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "2. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A={x|x=2n+1, n∈Z}, B={x|x=4n-1, n∈Z}. ",
+            "latex": "A = \\{ x | x = 2 n + 1 ,  n \\in Z \\} ,  B = \\{ x | x = 4 n - 1 ,  n \\in Z \\} .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "判断集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的包含关系，并证明你的结论",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b14",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        110.0,
+        505.0,
+        905.0,
+        545.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "3. 设 a 是实数，集合 M={x|x²+x-6=0}, N={y|ay+2=0}. 是否存在 a，使得 N⊂M? 若存在，求这些 a 的值；若不存在，说明理由.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "3. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " a ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是实数，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " M={x|x²+x-6=0}, N={y|ay+2=0}. ",
+            "latex": "M = \\{ x | x ² + x - 6 = 0 \\} ,  N = \\{ y | a y + 2 = 0 \\} .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "是否存在",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " a",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，使得",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " N⊂M? ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若存在，求这些",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " a ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的值；若不存在，说明理由",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b15",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        150.0,
+        550.0,
+        850.0,
+        570.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "4. 已知集合 A={1,4,x}, B={1,x²}, 且 A∪B=A. 求 x 的值及集合 A、B.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "4. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "已知集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A={1,4,x}, B={1,x²}, ",
+            "latex": "A = \\{ 1 , 4 , x \\} ,  B = \\{ 1 , x ² \\} ,",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A∪B=A. ",
+            "latex": "A \\cup B = A .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " x ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的值及集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "B.",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p19_b16",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        75.0,
+        960.0,
+        115.0,
+        990.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "12",
+        "caption": "12",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

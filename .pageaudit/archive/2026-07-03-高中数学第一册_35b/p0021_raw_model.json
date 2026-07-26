@@ -1,0 +1,310 @@
+{
+  "page_no": 21,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p21_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40,
+        20,
+        960,
+        55
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1 集合与逻辑"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        95,
+        910,
+        278
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(5) 这是一个真命题，它是两个三角形全等的一个判定定理.",
+            "(6) 因为“你是高一学生吗?”不是陈述句，无法判断其真假，所以它不是命题.",
+            "(7) 虽然“$x>3$”是陈述句，但是它包含一个可变的对象 $x$，无法判断其真假，因此它不是命题. 当 $x$ 被赋予不同的值时，它就成为不同的命题. 例如，当 $x=4$ 时，“$x>3$”是真命题；当 $x=1$ 时，“$x>3$”是假命题."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_aside1",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        100,
+        280,
+        280,
+        360
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "“若 $\beta$，则 $\beta$”形式的命题也可写为“如果 $\beta$，那么 $\beta$”的形式."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        290,
+        910,
+        395
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 1 中命题(4)与(5)具有“若 $\beta$，则 $\beta$”的形式. 在保持含义不变的前提下，例 1 中命题(1)与(2)也可改写为这种形式：",
+            "若一个自然数的个位数字是 5，则这个自然数能被 5 整除；",
+            "若两个三角形都是直角三角形，则它们相似.",
+            "在形如"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_eq1",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        560,
+        405,
+        670,
+        425
+      ],
+      "anchor_id": "p21_b2",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "\\text{“若 } \\beta \\text{，则 } \\beta \\text{”}",
+          "fallback_text": "“若 β，则 β”"
+        },
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        430,
+        910,
+        565
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "的命题中，陈述句 $\beta$ 称为条件，$\beta$ 称为结论.",
+            "命题“若 $\beta$，则 $\beta$”是真命题，是指所有满足条件 $\beta$ 的对象都满足结论 $\beta$. 用集合的语言描述即",
+            "$\\{x \\mid x \\text{ 满足 } \\beta\\} \\subseteq \\{x \\mid x \\text{ 满足 } \\beta\\}.$",
+            "所以，要确定这类命题是真命题，就必须给出其证明，如例 1 中的(1)与(5)."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_aside2",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        100,
+        580,
+        280,
+        640
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "这种方法在数学上称为举反例."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        570,
+        910,
+        660
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "命题“若 $\beta$，则 $\beta$”是假命题，是指存在满足条件 $\beta$ 的对象，它不满足结论 $\beta$. 所以，要确定这类命题是假命题，可用处理例 1 中(2)与(4)的方法，举一个满足条件 $\beta$ 而不满足结论 $\beta$ 的例子就可以了."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        330,
+        665,
+        910,
+        705
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "定义 如果命题“若 $\beta$，则 $\beta$”是真命题，那么就称 $\beta$ 推出 $\beta$，记作 $\beta \\Rightarrow \\beta$ (或 $\beta \\Leftarrow \\beta$)."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        710,
+        910,
+        775
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "因为子集关系满足传递性，所以推出关系也满足传递性：",
+            "若 $\beta \\Rightarrow \\beta$ 且 $\beta \\Rightarrow \\beta$，则 $\beta \\Rightarrow \\beta$.",
+            "它是逻辑推理的基础."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        780,
+        910,
+        925
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 2 将下列命题改写成“若 $\beta$，则 $\beta$”的形式，并判断“$\beta \\Rightarrow \\beta$”是否成立.",
+            "(1) 等腰三角形的两底角相等；",
+            "(2) 凡是素数都是奇数；",
+            "(3) 对顶角相等.",
+            "解 (1) 若一个三角形是等腰三角形，则它的两个底角相"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p21_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40,
+        940,
+        960,
+        980
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "14"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "page_no": 7,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p7_b1",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "body",
+      "bbox": [
+        120.0,
+        35.0,
+        150.0,
+        50.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "目录",
+        "caption": "目录",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        95.0,
+        900.0,
+        120.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "4.3 对数函数 93",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        380.0,
+        140.0,
+        900.0,
+        160.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "内容提要 102",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        380.0,
+        165.0,
+        900.0,
+        185.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "复习题 102",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        110.0,
+        230.0,
+        560.0,
+        260.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "第 5 章 函数的概念、性质及应用",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        280.0,
+        900.0,
+        300.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "5.1 函数 106",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        305.0,
+        900.0,
+        325.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "5.2 函数的基本性质 115",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        330.0,
+        900.0,
+        350.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "5.3 函数的应用 127",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        355.0,
+        900.0,
+        375.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "*5.4 反函数 136",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        380.0,
+        400.0,
+        900.0,
+        420.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "内容提要 141",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        380.0,
+        425.0,
+        900.0,
+        445.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "复习题 142",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p7_b12",
+      "kind": "running",
+      "zone": "running",
+      "role": "body",
+      "bbox": [
+        90.0,
+        940.0,
+        110.0,
+        970.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "2",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

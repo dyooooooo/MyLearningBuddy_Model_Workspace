@@ -1,0 +1,1 @@
+{"case_id": "feedback_520c6391_p4", "page_no": 4, "feedback_id": "520c6391-26f1-4f18-809d-3b9ae8cd023c", "job_id": "b9cf8767-5a90-4d7e-8b56-37275252a345", "layer": "compiler", "note": "将正文识别为\"figure\": {\r\n          \"caption\": \"副主编 应坚刚 鲍建生\"\r\n        }", "expect": {"t1_hard_findings": []}}

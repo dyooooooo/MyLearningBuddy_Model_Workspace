@@ -1,0 +1,312 @@
+{
+  "page_no": 18,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p18_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770.0,
+        35.0,
+        895.0,
+        50.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": "p18_f1",
+      "content": {
+        "text": "1.1 集合初步",
+        "caption": "图 1-1-7",
+        "table_html": "<table><tr><td>1. 设 A 为全集 U 的任一子集，则</td></tr><tr><td>(1) A̅̅̅̅=______；(A̅̅̅̅表示 A 的补集 A̅ 的补集)</td></tr><tr><td>(2) A ∩ A̅̅̅̅=______；</td></tr><tr><td>(3) A ∪ A̅̅̅̅=______.</td></tr></table>",
+        "latex": "A \\cup B=\\{a,b,c,d\\}, \\overline{A}=\\{d,e\\}, \\overline{B}=\\{a,b,e\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p18_b3",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        230.0,
+        280.0,
+        490.0,
+        305.0
+      ],
+      "anchor_id": "p18_b3",
+      "figure_group_id": "p18_f1",
+      "content": {
+        "text": "1. 用列举法表示下列集合：",
+        "caption": "图 1-1-7",
+        "table_html": "<table><tr><td>1. 用列举法表示下列集合：</td></tr><tr><td>(1) 10 以内的所有素数组成的集合；</td></tr><tr><td>(2) \\{y | y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}.</td></tr></table>",
+        "latex": "A \\cap B=\\{a,b,d,e\\}, \\overline{A \\cup B}=\\{a,b,d,e\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "1. 用列举法表示下列集合：",
+            "latex": "1 . 用 列 举 法 表 示 下 列 集 合 ：",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p18_b4",
+      "kind": "table",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100.0,
+        365.0,
+        900.0,
+        580.0
+      ],
+      "anchor_id": "p18_b4",
+      "figure_group_id": "p18_f1",
+      "content": {
+        "text": "1. 用列举法表示下列集合：\n(1) 10 以内的所有素数组成的集合；\n(2) \\{y | y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}.\n2. 用描述法表示下列集合：\n(1) 被 3 除余 1 的所有自然数组成的集合；\n(2) 比 1 大又比 10 小的所有实数组成的集合；\n(3) 平面直角坐标系中坐标轴上所有点组成的集合.\n3. 集合 \\{(x,y) | xy>0, x、y 为实数\\} 是指\nA. 第一象限内的所有点组成的集合；",
+        "caption": "图 1-1-7",
+        "table_html": "<table><tr><td>1. 用列举法表示下列集合：</td></tr><tr><td>(1) 10 以内的所有素数组成的集合；</td></tr><tr><td>(2) \\{y | y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}.</td></tr></table>",
+        "latex": "A \\cap B=\\{a,b,d,e\\}, \\overline{A \\cup B}=\\{a,b,d,e\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "1. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用列举法表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(1) 10 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "以内的所有素数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\n(2) \\{y | y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}.\n2. ",
+            "latex": "( 2 ) \\ \\{ y | y = x - 1 ,  0 \\ \\le q s l a n t x \\ \\le q s l a n t 3 ,  x \\ \\in \\ \\mathbf{Z} \\ \\} . 2 .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "用描述法表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "被",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 3 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "除余",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的所有自然数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "比",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "大又比",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 10 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "小的所有实数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "平面直角坐标系中坐标轴上所有点组成的集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".\n3. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " \\{(x,y) | xy>0, x",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "y ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "为实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\} ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是指",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\nA. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "第一象限内的所有点组成的集合；",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p18_b5",
+      "kind": "table",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        820.0,
+        880.0,
+        885.0,
+        900.0
+      ],
+      "anchor_id": "p18_b5",
+      "figure_group_id": "p18_f1",
+      "content": {
+        "text": "（ ）",
+        "caption": "图 1-1-7",
+        "table_html": "<table><tr><td>1. 用列举法表示下列集合：</td></tr><tr><td>(1) 10 以内的所有素数组成的集合；</td></tr><tr><td>(2) \\{y | y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}.</td></tr></table>",
+        "latex": "A \\cap B=\\{a,b,d,e\\}, \\overline{A \\cup B}=\\{a,b,d,e\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p18_fo",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        890.0,
+        960.0,
+        925.0,
+        985.0
+      ],
+      "anchor_id": "p18_fo",
+      "figure_group_id": "p18_f1",
+      "content": {
+        "text": "11",
+        "caption": "图 1-1-7",
+        "table_html": "<table><tr><td>1. 用列举法表示下列集合：</td></tr><tr><td>(1) 10 以内的所有素数组成的集合；</td></tr><tr><td>(2) \\{y | y=x-1, 0 \\leqslant x \\leqslant 3, x \\in \\mathbf{Z}\\}.</td></tr></table>",
+        "latex": "A \\cap B=\\{a,b,d,e\\}, \\overline{A \\cup B}=\\{a,b,d,e\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

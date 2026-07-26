@@ -1,0 +1,152 @@
+{
+  "page_no": 2,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p2_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        580,
+        40,
+        940,
+        90
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "普通高中教科书"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p2_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        80,
+        110,
+        400,
+        160
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "SHUXUE"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p2_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        80,
+        180,
+        580,
+        360
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数学"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p2_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        660,
+        190,
+        930,
+        290
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "必修",
+            "第一册"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p2_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        680,
+        320,
+        850,
+        350
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "上海教育出版社"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p2_f1",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        0,
+        350,
+        1000,
+        1000
+      ],
+      "anchor_id": null,
+      "figure_group_id": "p2_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "图 封面"
+        }
+      }
+    }
+  ]
+}

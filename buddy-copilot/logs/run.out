@@ -1,0 +1,40 @@
+2026-07-23 13:38:49,176 copilot.main INFO 启动清扫：1 个僵尸会话已置为 failed（可续聊）
+INFO:     Started server process [2158100]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8200 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58032 - "GET /api/v1/copilot/health HTTP/1.1" 200 OK
+INFO:     172.18.0.10:45892 - "POST /api/v1/copilot/sessions HTTP/1.1" 200 OK
+INFO:     172.18.0.10:45892 - "GET /api/v1/copilot/sessions/121e82f8a2324d3b/events?after_seq=0 HTTP/1.1" 200 OK
+2026-07-23 13:43:47,817 httpx INFO HTTP Request: GET http://127.0.0.1:8100/api/v1/admin/editions/overview "HTTP/1.1 200 OK"
+2026-07-23 13:43:52,979 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/CreateAgent "HTTP/1.1 200 OK"
+2026-07-23 13:43:54,409 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkCursorService/ListModels "HTTP/1.1 200 OK"
+INFO:     172.18.0.10:45876 - "GET /api/v1/copilot/models HTTP/1.1" 200 OK
+2026-07-23 13:43:59,816 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/Send "HTTP/1.1 200 OK"
+2026-07-23 13:43:59,816 copilot.agent INFO run started: agent=agent-45d282b8-f86f-49cd-a4cb-2b42cac08870 run=run-6562a003-21ed-4011-85ae-be11b559b960 force=False
+INFO:     172.18.0.10:55630 - "POST /api/v1/copilot/sessions/121e82f8a2324d3b/messages HTTP/1.1" 200 OK
+2026-07-23 14:06:07,253 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/Send "HTTP/1.1 200 OK"
+2026-07-23 14:06:07,253 copilot.agent INFO run started: agent=agent-45d282b8-f86f-49cd-a4cb-2b42cac08870 run=run-053ed024-a993-4b30-9307-25f4be1534ba force=False
+INFO:     172.18.0.10:55128 - "POST /api/v1/copilot/sessions/121e82f8a2324d3b/approvals HTTP/1.1" 200 OK
+2026-07-23 14:06:29,914 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/Send "HTTP/1.1 200 OK"
+2026-07-23 14:06:29,914 copilot.agent INFO run started: agent=agent-45d282b8-f86f-49cd-a4cb-2b42cac08870 run=run-ce9a2a54-6048-43c0-940a-d2a38742c980 force=False
+2026-07-23 14:21:29,988 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/CancelRun "HTTP/1.1 200 OK"
+2026-07-23 14:21:32,103 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/CloseAgent "HTTP/1.1 200 OK"
+2026-07-23 14:21:32,107 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/ResumeAgent "HTTP/1.1 200 OK"
+2026-07-23 14:21:34,137 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/Send "HTTP/1.1 200 OK"
+2026-07-23 14:21:34,137 copilot.agent INFO run started: agent=agent-45d282b8-f86f-49cd-a4cb-2b42cac08870 run=run-74e6275f-42bc-41d3-b68c-27705c3eb06a force=True
+2026-07-23 14:26:57,133 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/CancelRun "HTTP/1.1 200 OK"
+2026-07-23 14:26:59,193 httpx INFO HTTP Request: POST http://127.0.0.1:33449/sdk.v1.SdkAgentService/CloseAgent "HTTP/1.1 200 OK"
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2158100]
+INFO:     Started server process [2631749]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8200 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53794 - "GET /api/v1/copilot/health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [2631749]

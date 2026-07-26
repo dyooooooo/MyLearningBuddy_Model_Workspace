@@ -1,0 +1,38 @@
+{
+  "page_no": 1,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p1_cover",
+      "kind": "figure",
+      "content_type": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        0.0,
+        0.0,
+        1000.0,
+        1000.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "普通高中教科书 数学 必修 第一册 上海教育出版社"
+        },
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": "corpus/imports/e1d0e8d8d43043b9bd9359970ae47de9/assets/35b/figures/p0001_p1_cover.jpg",
+        "asset_url": "/api/v1/studio/proxy/import/asset?key=corpus%2Fimports%2Fe1d0e8d8d43043b9bd9359970ae47de9%2Fassets%2F35b%2Ffigures%2Fp0001_p1_cover.jpg",
+        "text_segments": null
+      }
+    }
+  ]
+}

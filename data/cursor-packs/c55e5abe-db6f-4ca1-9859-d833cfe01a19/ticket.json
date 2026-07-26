@@ -1,0 +1,22 @@
+{
+  "id": "c55e5abe-db6f-4ca1-9859-d833cfe01a19",
+  "job_id": "b9cf8767-5a90-4d7e-8b56-37275252a345",
+  "page_no": 6,
+  "textbook_key": "tb35b:math:hs:高一数学上-35b:e8357c46",
+  "label": "高一数学上_35b",
+  "body": "插入了很多不该有的图片，也就是裁剪有问题。",
+  "tags": [
+    "other"
+  ],
+  "block_id": "",
+  "screenshot_key": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/feedback/c55e5abe-db6f-4ca1-9859-d833cfe01a19/screenshot.jpg",
+  "input_page_key": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/debug/p0006/page.jpg",
+  "t1_snapshot": [],
+  "debug_prefix": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/debug/p0006",
+  "prompt_version": "layout_blueprint_v5",
+  "status": "open",
+  "pack_path": "",
+  "resolution_note": "",
+  "created_at": "2026-07-09T08:27:10.071013+00:00",
+  "updated_at": "2026-07-09T08:27:10.071020+00:00"
+}

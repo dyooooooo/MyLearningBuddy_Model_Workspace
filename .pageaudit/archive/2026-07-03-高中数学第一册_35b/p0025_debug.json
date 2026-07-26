@@ -1,0 +1,44 @@
+{
+  "page_no": 25,
+  "status": "ok",
+  "prompt_version": "layout_blueprint_v5",
+  "used_json_schema": true,
+  "call": {
+    "used_schema": true,
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 5550,
+      "total_tokens": 10047,
+      "completion_tokens": 4497,
+      "prompt_tokens_details": null
+    },
+    "max_tokens": 6144
+  },
+  "truncated": false,
+  "raw": {
+    "blocks": 29,
+    "kinds": {
+      "running": 2,
+      "text": 26,
+      "equation": 1
+    },
+    "text_empty": 0
+  },
+  "final": {
+    "blocks": 29,
+    "kinds": {
+      "running": 2,
+      "text": 26,
+      "equation": 1
+    },
+    "text_empty": 0
+  },
+  "attempt_errors": [
+    {
+      "page_no": 25,
+      "attempt": 1,
+      "error": "1 validation error for PageBlueprint\nblocks.27.bbox\n  Value error, bbox must be normalized to 0..1000 [type=value_error, input_value=[120, 980, 910, 1005], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+    }
+  ],
+  "elapsed_ms": 93051
+}

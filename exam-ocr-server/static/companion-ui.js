@@ -7,13 +7,22 @@ import {
   overlayFromParts,
   renderMasteryPanel,
   renderHomeworkQuestions,
+  renderOcrComparePanel,
+  renderWrongBookPanel,
+  countOcrPrintChanges,
   renderPage,
-} from "./render-utils.js";
+} from "./render-utils.js?v=20260622evalfinish";
+import { getLocale, setLocale } from "./i18n.js";
 import { isImageFile, normalizeImageFile } from "./image-api.js";
 
 const API = "/api/v1/companion";
 const LS_STUDENT = "lb_student_id";
 const STUDENT_ID_RE = /^[a-z][a-z0-9_-]{2,31}$/;
+
+function parseEvalUpdated(detail) {
+  const m = String(detail || "").match(/eval_updated=(\d+)/);
+  return m ? parseInt(m[1], 10) : -1;
+}
 
 function normalizeStudentId(raw) {
   return (raw || "")
@@ -57,9 +66,10 @@ function formatStudentError(detail, status, knownIds = []) {
 const TAB_HELP = {
   merged: "同一页多帧 OCR 累积合并后的最终文本（预览区默认不叠框，便于阅读）",
   frame: "当前选中帧的单次 OCR；勾选「显示识别框」可查看 bbox",
+  compare: "并排对比 Vision OCR 草稿与 OCR-refine 结果，仅看印刷体 print 是否被改正",
   homework: "已定稿的作业（A 层）。需先点底部「定稿当前页」或「结束会话」",
   mastery: "A⁺ 掌握度：考纲/题库 RAG 映射知识点，定稿后聚合；可标错题、手动调整",
-  wrongbook: "错题本：已标记 is_wrong 的题目，按知识点分组",
+  wrongbook: "错题本：Agent 自动判错 + 人工补加/改判",
   agentruns: "M3 Agent 编排：定稿 ingest 后 LangGraph 运行步骤",
 };
 
@@ -105,7 +115,7 @@ export function createCompanionUI(els) {
   }
 
   function apiHeaders(extra = {}) {
-    return { "X-Student-Id": getStudentId(), ...extra };
+    return { "X-Student-Id": getStudentId(), "X-Locale": getLocale(), ...extra };
   }
 
   function showStudentBanner(message, kind = "warn") {
@@ -176,43 +186,61 @@ export function createCompanionUI(els) {
     processingPreviewUrl: null,
     homeworkDetailId: null,
     pipelineTiming: null,
-    draftWrong: {},
     tierInfo: null,
     hwView: null,
+    locale: getLocale(),
   };
 
   function wireQuestionCardActions(root = els.resultBody) {
-    root.querySelectorAll(".btn-mark-wrong").forEach((btn) => {
-      btn.addEventListener("click", () => void patchQuestionWrong(btn.dataset.qid, btn.dataset.wrong === "1"));
-    });
-    root.querySelectorAll(".btn-mark-wrong-draft").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const ord = btn.dataset.ordinal;
-        const mark = btn.dataset.wrong === "1";
-        if (mark) state.draftWrong[ord] = true;
-        else delete state.draftWrong[ord];
-        if (state.sideTab === "merged" || state.sideTab === "frame") {
-          renderMergedOrFrame({ skipOverlay: true });
-        }
-        showToast(mark ? `第 ${ord} 题已预标错题（定稿后写入）` : `已取消第 ${ord} 题预标`, "ok");
+    root.querySelectorAll(".btn-goto-wb").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        void setSideTab("wrongbook");
       });
+    });
+    root.querySelectorAll(".btn-edit-q").forEach((btn) => {
+      btn.addEventListener("click", () => void editQuestionFields(btn.dataset.qid));
+    });
+    root.querySelectorAll(".btn-del-q").forEach((btn) => {
+      btn.addEventListener("click", () => void deleteQuestion(btn.dataset.qid));
     });
   }
 
-  async function applyDraftWrongMarks(homeworkId) {
-    const draft = { ...state.draftWrong };
-    if (!Object.keys(draft).length || !homeworkId) return;
-    const res = await fetch(`${API}/homework/${encodeURIComponent(homeworkId)}`, {
-      headers: apiHeaders(),
+  function wireWrongBookActions() {
+    const root = els.resultBody;
+    root.querySelectorAll(".btn-wb-re-eval").forEach((btn) => {
+      btn.addEventListener("click", () => void reEvalWrongBook(false));
     });
-    if (!res.ok) return;
-    const entry = await res.json();
-    for (const q of entry.questions ?? []) {
-      if (draft[q.ordinal]) {
-        await patchQuestionWrong(q.id, true);
-      }
-    }
-    state.draftWrong = {};
+    root.querySelectorAll(".btn-wb-re-eval-all").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!confirm(getLocale() === "en" ? "Re-eval ALL homework for this student?" : "确定对该学生全部作业重新 Agent 评测？")) return;
+        void reEvalWrongBook(true);
+      });
+    });
+    root.querySelectorAll(".btn-wb-add").forEach((btn) => {
+      btn.addEventListener("click", () => void patchQuestionWrong(btn.dataset.qid, true));
+    });
+    root.querySelectorAll(".btn-wb-remove").forEach((btn) => {
+      btn.addEventListener("click", () => void patchQuestionWrong(btn.dataset.qid, false));
+    });
+    root.querySelectorAll(".btn-wb-restore").forEach((btn) => {
+      btn.addEventListener("click", () => void restoreAgentVerdict(btn.dataset.qid));
+    });
+  }
+
+  function wireMasteryActions() {
+    els.resultBody.querySelectorAll(".mastery-select").forEach((sel) => {
+      sel.addEventListener("change", () => patchMastery(sel.dataset.kp, sel.value));
+    });
+    els.resultBody.querySelectorAll(".btn-del-kp").forEach((btn) => {
+      btn.addEventListener("click", () => void deleteMastery(btn.dataset.kp));
+    });
+    els.resultBody.querySelectorAll(".btn-add-kp").forEach((btn) => {
+      btn.addEventListener("click", () => void showAddKpDialog());
+    });
+    els.resultBody.querySelectorAll(".btn-recompute-mastery").forEach((btn) => {
+      btn.addEventListener("click", () => void recomputeMastery());
+    });
   }
 
   async function fetchTierInfo() {
@@ -1017,7 +1045,7 @@ export function createCompanionUI(els) {
       await loadFramePreview(frameId);
       renderTimeline();
       if (state.sideTab === "merged" || state.sideTab === "frame") {
-        renderMergedOrFrame({ skipOverlay: true });
+        renderActivePanel({ skipOverlay: true });
       }
     }
     return ok;
@@ -1213,7 +1241,7 @@ export function createCompanionUI(els) {
       }
       renderTimeline();
       if (state.sideTab === "merged" || state.sideTab === "frame") {
-        renderMergedOrFrame({ skipOverlay: true });
+        renderActivePanel({ skipOverlay: true });
       }
 
       const metrics = frameMetrics(data.session?.frames ?? []);
@@ -1339,15 +1367,88 @@ export function createCompanionUI(els) {
     if (!frame) return;
     renderTimeline();
     if (state.sessionId) void loadFramePreview(frameId);
-    if (state.sideTab === "frame" || state.sideTab === "merged") {
-      renderMergedOrFrame({ skipOverlay: true });
+    if (state.sideTab === "frame" || state.sideTab === "merged" || state.sideTab === "compare") {
+      renderActivePanel({ skipOverlay: true });
     }
     els.frameMeta.hidden = false;
     const dbg = formatTimelineDebug(frame);
     els.frameMeta.textContent = `#${frame.seq} · ${ACTION_LABELS[frame.scheduler_action] ?? frame.scheduler_action} · ${dbg}`;
   }
 
-  function renderMergedOrFrame(opts = {}) {
+  let mathEnrichSeq = 0;
+
+  function partsNeedMathRich(parts) {
+    return (parts ?? []).some((p) => {
+      const pt = p.print ?? p.print_text ?? "";
+      const hw = p.handwriting ?? "";
+      const hasPrintRich = Array.isArray(p.print_rich?.segments) && p.print_rich.segments.length;
+      const hasHwRich =
+        Array.isArray(p.handwriting_rich?.segments) && p.handwriting_rich.segments.length;
+      return (pt && !hasPrintRich) || (hw && !hasHwRich);
+    });
+  }
+
+  async function enrichPartsRich(parts) {
+    if (!parts?.length || !partsNeedMathRich(parts)) return parts;
+    const res = await fetch(`${API}/math/normalize-parts`, {
+      method: "POST",
+      headers: { ...apiHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        parts: parts.map((p) => ({
+          kind: p.kind,
+          id: p.id,
+          print: p.print ?? p.print_text ?? "",
+          handwriting: p.handwriting ?? "",
+        })),
+      }),
+    });
+    if (!res.ok) return parts;
+    const data = await res.json();
+    return parts.map((p, i) => ({ ...p, ...(data.parts?.[i] ?? {}) }));
+  }
+
+  async function renderOcrCompareView() {
+    const frame = state.session?.frames?.find((f) => f.id === state.selectedFrameId);
+    if (!frame) {
+      els.mergedTitle.textContent = "OCR 对比";
+      els.questionCount.hidden = true;
+      els.resultBody.innerHTML =
+        '<p class="placeholder">请在时间轴选择一帧，或加帧后查看 Vision vs refine</p>';
+      return;
+    }
+    const seq = ++mathEnrichSeq;
+    let vision = frame.vision_parts ?? [];
+    let refined = frame.ocr_parts ?? [];
+    if (partsNeedMathRich(vision) || partsNeedMathRich(refined)) {
+      [vision, refined] = await Promise.all([
+        enrichPartsRich(vision),
+        enrichPartsRich(refined),
+      ]);
+      if (seq !== mathEnrichSeq) return;
+      frame.vision_parts = vision;
+      frame.ocr_parts = refined;
+    }
+    const changes = countOcrPrintChanges(vision, refined);
+    els.mergedTitle.textContent = `OCR 对比 · 帧 #${frame.seq}`;
+    els.questionCount.hidden = false;
+    els.questionCount.textContent =
+      changes > 0 ? `印刷体 ${changes} 处差异` : "印刷体无差异";
+    els.resultBody.innerHTML = renderOcrComparePanel(vision, refined, {
+      ocr_ms: frame.ocr_ms,
+      refine_ms: frame.refine_ms,
+      n_refine_changes: frame.n_refine_changes,
+    });
+  }
+
+  function renderActivePanel(opts = {}) {
+    if (state.sideTab === "compare") {
+      void renderOcrCompareView();
+      return;
+    }
+    void renderMergedOrFrame(opts);
+  }
+
+  async function renderMergedOrFrame(opts = {}) {
     const { skipOverlay = false } = opts;
     let parts = state.session?.merged_parts ?? [];
     let title = "当前页合并结果";
@@ -1360,13 +1461,28 @@ export function createCompanionUI(els) {
     const nQ = parts.filter((p) => p.kind === "question").length;
     els.questionCount.hidden = false;
     els.questionCount.textContent = nQ > 0 ? `${nQ} 题` : `${parts.length} 段`;
-    els.resultBody.innerHTML = renderPage(parts, state.session?.question_timings, state.draftWrong);
+    const seq = ++mathEnrichSeq;
+    if (partsNeedMathRich(parts)) {
+      parts = await enrichPartsRich(parts);
+      if (seq !== mathEnrichSeq) return;
+      if (state.sideTab === "frame" && state.selectedFrameId) {
+        const frame = state.session.frames.find((f) => f.id === state.selectedFrameId);
+        if (frame) frame.ocr_parts = parts;
+      } else {
+        state.session.merged_parts = parts;
+      }
+    }
+    els.resultBody.innerHTML = renderPage(parts, state.session?.question_timings);
     wireQuestionCardActions(els.resultBody);
     if (!skipOverlay) refreshOverlay();
   }
 
   async function loadHomework() {
     const res = await fetch(`${API}/homework`, { headers: apiHeaders() });
+    if (!res.ok) {
+      els.sideList.innerHTML = `<p class="placeholder error">作业库加载失败（${res.status}）<br><small>Buddy API 异常，请稍后重试或查看 gateway 日志</small></p>`;
+      return;
+    }
     const data = await res.json();
     const entries = data.entries ?? [];
     if (!entries.length) {
@@ -1377,14 +1493,41 @@ export function createCompanionUI(els) {
     els.sideList.innerHTML = entries
       .map(
         (e) =>
-          `<article class="list-card" data-hw-id="${escapeHtml(e.id)}">
-            <header>${escapeHtml(e.finalized_at?.slice(0, 19) ?? e.id.slice(0, 8))}</header>
+          `<article class="list-card hw-list-card" data-hw-id="${escapeHtml(e.id)}">
+            <header>${escapeHtml(e.meta?.title || e.finalized_at?.slice(0, 19) || e.id.slice(0, 8))}</header>
             <p>${e.parts?.filter((p) => p.kind === "question").length ?? 0} 题 · ${e.source_frame_ids?.length ?? 0} 帧</p>
+            <footer class="hw-list-actions">
+              <button type="button" class="btn ghost sm btn-hw-open" data-hw-id="${escapeHtml(e.id)}">打开</button>
+              <button type="button" class="btn ghost sm btn-hw-edit" data-hw-id="${escapeHtml(e.id)}">编辑</button>
+              <button type="button" class="btn ghost sm btn-hw-del" data-hw-id="${escapeHtml(e.id)}">删除</button>
+            </footer>
           </article>`,
       )
       .join("");
-    els.sideList.querySelectorAll(".list-card").forEach((card) => {
-      card.addEventListener("click", () => showHomework(card.dataset.hwId));
+    els.sideList.querySelectorAll(".btn-hw-open, .list-card.hw-list-card header, .list-card.hw-list-card p").forEach((el) => {
+      el.addEventListener("click", (ev) => {
+        if (ev.target.closest(".hw-list-actions")) return;
+        const card = el.closest("[data-hw-id]");
+        if (card) showHomework(card.dataset.hwId);
+      });
+    });
+    els.sideList.querySelectorAll(".btn-hw-open").forEach((btn) => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        showHomework(btn.dataset.hwId);
+      });
+    });
+    els.sideList.querySelectorAll(".btn-hw-edit").forEach((btn) => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        void editHomeworkMeta(btn.dataset.hwId);
+      });
+    });
+    els.sideList.querySelectorAll(".btn-hw-del").forEach((btn) => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        void deleteHomework(btn.dataset.hwId);
+      });
     });
   }
 
@@ -1438,15 +1581,23 @@ export function createCompanionUI(els) {
     const questionsHtml = questions.length
       ? renderHomeworkQuestions(questions, {
           frameSelectorFor: (q) => buildFrameSelector(q, frameIds, frameByQ[q.ordinal]),
+          locale: getLocale(),
+          editable: true,
         })
       : renderPage(entry.parts ?? [], entry.meta?.question_timings);
+
+    const hwToolbar = `<div class="hw-toolbar">
+      <button type="button" class="btn ghost sm" id="hwReEvalBtn">重新评测</button>
+      <button type="button" class="btn ghost sm" id="hwEditMetaBtn">编辑备注</button>
+      <button type="button" class="btn ghost sm" id="hwDeleteBtn">删除作业</button>
+    </div>`;
 
     const previewHint =
       frameIds.length && entry.session_id
         ? `<p class="hw-preview-hint">点击题目切换左侧帧预览与 bbox；帧图来自 MinIO 缓存</p>`
         : `<p class="hw-preview-hint muted">无帧预览（会话帧已过期或未保存）</p>`;
 
-    els.resultBody.innerHTML = `${backBtn}
+    els.resultBody.innerHTML = `${backBtn}${hwToolbar}
       <div class="hw-detail-layout">
         <div class="hw-preview-col">
           <div class="hw-preview-stage" id="hwPreviewStage">
@@ -1465,6 +1616,9 @@ export function createCompanionUI(els) {
       els.resultBody.hidden = true;
       els.mergedTitle.textContent = "作业库";
     });
+    document.getElementById("hwReEvalBtn")?.addEventListener("click", () => void reEvalHomework(entry.id));
+    document.getElementById("hwEditMetaBtn")?.addEventListener("click", () => void editHomeworkMeta(entry.id));
+    document.getElementById("hwDeleteBtn")?.addEventListener("click", () => void deleteHomework(entry.id));
 
     wireQuestionCardActions(els.resultBody);
 
@@ -1542,6 +1696,58 @@ export function createCompanionUI(els) {
     });
   }
 
+  async function pollGraphEval(homeworkId, maxSec = 180) {
+    showToast(getLocale() === "en" ? "Agent evaluating…" : "Agent 评测中…", "info");
+    for (let i = 0; i < maxSec; i++) {
+      const res = await fetch(`${API}/graph-runs`, { headers: apiHeaders() });
+      if (!res.ok) break;
+      const runs = await res.json();
+      const related = runs.filter((r) => r.homework_id === homeworkId);
+      const run = related.find((r) => r.status === "succeeded");
+      const failed = related.find((r) => r.status === "failed");
+      if (run) {
+        const evalStep = (run.steps ?? []).find((s) => s.node === "eval_agent");
+        if (evalStep && parseEvalUpdated(evalStep.detail) > 0) {
+          showToast(getLocale() === "en" ? "Agent eval complete" : "Agent 评测完成", "ok");
+          await setSideTab("wrongbook");
+          return true;
+        }
+      }
+      if (failed && i > 5) {
+        const hasEval = (failed.steps ?? []).some(
+          (s) => s.node === "eval_agent" && parseEvalUpdated(s.detail) > 0,
+        );
+        if (hasEval) {
+          showToast(getLocale() === "en" ? "Agent eval done (graph partial)" : "Agent 评测完成（graph 部分失败）", "ok");
+          await setSideTab("wrongbook");
+          return true;
+        }
+        if (i > 15 && !(failed.steps ?? []).some((s) => s.node === "eval_agent")) {
+          showToast(
+            getLocale() === "en"
+              ? "Graph failed before eval — use Re-eval in wrong book"
+              : "Graph 在评测前失败，请点错题本「重新 Agent 评测」",
+            "warn",
+          );
+          return false;
+        }
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    showToast(getLocale() === "en" ? "Eval timeout — check Agent tab or re-eval" : "评测超时，请查看 Agent 或点重新评测", "warn");
+    return false;
+  }
+
+  async function restoreAgentVerdict(questionId) {
+    await fetch(`${API}/questions/${encodeURIComponent(questionId)}`, {
+      method: "PATCH",
+      headers: apiHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ restore_agent: true }),
+    });
+    await loadWrongBook();
+    showToast(getLocale() === "en" ? "Restored Agent verdict" : "已恢复 Agent 判定", "ok");
+  }
+
   async function patchQuestionWrong(questionId, markWrong) {
     await fetch(`${API}/questions/${encodeURIComponent(questionId)}`, {
       method: "PATCH",
@@ -1549,38 +1755,163 @@ export function createCompanionUI(els) {
       body: JSON.stringify({ is_wrong: markWrong }),
     });
     if (state.homeworkDetailId) await showHomework(state.homeworkDetailId);
-    showToast(markWrong ? "已标为错题" : "已取消错题标记", "ok");
+    await loadWrongBook();
+    showToast(markWrong ? (getLocale() === "en" ? "Added to wrong book" : "已加入错题本") : (getLocale() === "en" ? "Removed from wrong book" : "已移出错题本"), "ok");
+  }
+
+  async function deleteQuestion(questionId) {
+    if (!confirm(getLocale() === "en" ? "Delete this question?" : "确定删除该题目？")) return;
+    await fetch(`${API}/questions/${encodeURIComponent(questionId)}`, {
+      method: "DELETE",
+      headers: apiHeaders(),
+    });
+    if (state.homeworkDetailId) await showHomework(state.homeworkDetailId);
+    else await loadHomework();
+    showToast(getLocale() === "en" ? "Question deleted" : "题目已删除", "ok");
+  }
+
+  async function editQuestionFields(questionId) {
+    const entry = state.hwView?.entry;
+    const q = (entry?.questions ?? []).find((x) => x.id === questionId);
+    if (!q) return;
+    const print_text = prompt(getLocale() === "en" ? "Print text:" : "印刷题干：", q.print_text || "");
+    if (print_text === null) return;
+    const handwriting = prompt(getLocale() === "en" ? "Handwriting:" : "手写作答：", q.handwriting || "");
+    if (handwriting === null) return;
+    await fetch(`${API}/questions/${encodeURIComponent(questionId)}`, {
+      method: "PATCH",
+      headers: apiHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ print_text, handwriting }),
+    });
+    await showHomework(state.homeworkDetailId);
+    showToast(getLocale() === "en" ? "Question updated" : "题目已更新", "ok");
+  }
+
+  async function deleteHomework(hwId) {
+    if (!confirm(getLocale() === "en" ? "Delete this homework?" : "确定删除该作业？不可恢复。")) return;
+    await fetch(`${API}/homework/${encodeURIComponent(hwId)}`, {
+      method: "DELETE",
+      headers: apiHeaders(),
+    });
+    state.homeworkDetailId = null;
+    state.hwView = null;
+    els.sideList.hidden = false;
+    els.resultBody.hidden = true;
+    await loadHomework();
+    showToast(getLocale() === "en" ? "Homework deleted" : "作业已删除", "ok");
+  }
+
+  async function editHomeworkMeta(hwId) {
+    const title = prompt(getLocale() === "en" ? "Display title:" : "显示标题：", "");
+    if (title === null) return;
+    const note = prompt(getLocale() === "en" ? "Note:" : "备注：", "");
+    if (note === null) return;
+    await fetch(`${API}/homework/${encodeURIComponent(hwId)}`, {
+      method: "PATCH",
+      headers: apiHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ meta: { title, note } }),
+    });
+    await showHomework(hwId);
+  }
+
+  async function reEvalWrongBook(allHomework = false) {
+    showToast(getLocale() === "en" ? "Agent re-eval running…" : "Agent 重新评测中…", "info");
+    const qs = allHomework ? "?all_homework=true" : "";
+    const res = await fetch(`${API}/wrong-book/re-eval${qs}`, {
+      method: "POST",
+      headers: apiHeaders(),
+    });
+    if (!res.ok) {
+      showToast(getLocale() === "en" ? "Re-eval failed" : "重新评测失败", "err");
+      return;
+    }
+    const data = await res.json();
+    await loadWrongBook();
+    showToast(
+      getLocale() === "en"
+        ? `Re-eval done: ${data.eval_updated ?? 0} questions`
+        : `重新评测完成：${data.eval_updated ?? 0} 题`,
+      "ok",
+    );
+  }
+
+  async function reEvalHomework(hwId) {
+    showToast(getLocale() === "en" ? "Re-eval started…" : "重新评测中…", "info");
+    await fetch(`${API}/homework/${encodeURIComponent(hwId)}/re-eval`, {
+      method: "POST",
+      headers: apiHeaders(),
+    });
+    await showHomework(hwId);
+    await pollGraphEval(hwId, 120);
+  }
+
+  async function deleteMastery(kpId) {
+    if (!confirm(getLocale() === "en" ? "Delete this mastery entry?" : "确定删除该知识点记录？")) return;
+    await fetch(`${API}/mastery/${encodeURIComponent(kpId)}`, {
+      method: "DELETE",
+      headers: apiHeaders(),
+    });
+    await loadMastery();
+  }
+
+  async function recomputeMastery() {
+    await fetch(`${API}/mastery/recompute`, { method: "POST", headers: apiHeaders() });
+    await loadMastery();
+    showToast(getLocale() === "en" ? "Mastery recomputed" : "已重新聚合 A⁺", "ok");
+  }
+
+  async function showAddKpDialog() {
+    const res = await fetch(`${API}/rag/syllabus-kps`, { headers: apiHeaders() });
+    if (!res.ok) return;
+    const kps = await res.json();
+    const pick = prompt(
+      (getLocale() === "en" ? "Enter kp_id from syllabus:\n" : "输入考纲 kp_id：\n") +
+        kps.slice(0, 8).map((k) => `${k.kp_id} · ${k.label}`).join("\n"),
+    );
+    if (!pick) return;
+    await fetch(`${API}/mastery`, {
+      method: "POST",
+      headers: apiHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ kp_id: pick.trim(), mastery: "unknown" }),
+    });
+    await loadMastery();
   }
 
   async function loadWrongBook() {
     const res = await fetch(`${API}/wrong-book`, { headers: apiHeaders() });
-    const data = res.ok ? await res.json() : { items: [], count: 0 };
-    const items = data.items ?? [];
-    els.questionCount.hidden = false;
-    els.questionCount.textContent = `${items.length} 错题`;
-    if (!items.length) {
-      els.resultBody.innerHTML =
-        '<p class="placeholder">暂无错题<br><small>在作业详情中点击「标为错题」</small></p>';
+    if (!res.ok) {
+      els.questionCount.hidden = false;
+      els.questionCount.textContent = "加载失败";
+      els.resultBody.innerHTML = `<p class="placeholder error">错题本加载失败（${res.status}）</p>`;
       return;
     }
-    const byKp = new Map();
-    for (const it of items) {
-      const kp = it.kp_tags?.[0]?.label || it.kp_tags?.[0]?.kp_id || "未打标";
-      if (!byKp.has(kp)) byKp.set(kp, []);
-      byKp.get(kp).push(it);
-    }
-    let html = "";
-    for (const [kp, qs] of byKp) {
-      html += `<section class="wrong-kp"><h4>${escapeHtml(kp)}</h4><ul>`;
-      for (const q of qs) {
-        html += `<li><strong>#${escapeHtml(q.ordinal ?? "?")}</strong> ${escapeHtml((q.print_text || "").slice(0, 80))}
-          <button type="button" class="btn ghost sm btn-mark-wrong" data-qid="${escapeHtml(q.question_id)}" data-wrong="0">取消错题</button></li>`;
-      }
-      html += "</ul></section>";
-    }
-    els.resultBody.innerHTML = html;
-    els.resultBody.querySelectorAll(".btn-mark-wrong").forEach((btn) => {
-      btn.addEventListener("click", () => void patchQuestionWrong(btn.dataset.qid, false).then(() => loadWrongBook()));
+    const data = await res.json();
+    els.questionCount.hidden = false;
+    els.questionCount.textContent = `${data.count ?? 0} 错题 · ${data.candidate_count ?? 0} 待复核`;
+    els.resultBody.innerHTML = renderWrongBookPanel(data, getLocale());
+    wireWrongBookActions();
+  }
+
+  async function showHomeworkEvalTrace(hwId) {
+    state.sideTab = "homework";
+    await showHomework(hwId);
+    requestAnimationFrame(() => {
+      els.resultBody.querySelectorAll(".eval-trace-timeline").forEach((el) => {
+        el.open = true;
+      });
+      const first = els.resultBody.querySelector(".eval-trace-timeline");
+      if (first) first.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    showToast(getLocale() === "en" ? "Homework eval trace opened" : "已打开作业评测调试", "ok");
+  }
+
+  function wireAgentRunActions() {
+    els.resultBody.querySelectorAll(".btn-agent-hw-trace").forEach((btn) => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const hwId = btn.dataset.hwid;
+        if (hwId) void showHomeworkEvalTrace(hwId);
+      });
     });
   }
 
@@ -1597,15 +1928,25 @@ export function createCompanionUI(els) {
     els.resultBody.innerHTML = runs
       .slice(0, 20)
       .map(
-        (r) => `<article class="list-card agent-run">
+        (r) => {
+          const evalStep = (r.steps ?? []).find((s) => s.node === "eval_agent");
+          const evalDetail = evalStep?.detail ? escapeHtml(evalStep.detail) : "";
+          const traceLbl = getLocale() === "en" ? "Eval trace" : "评测调试";
+          const hwBtn = r.homework_id
+            ? `<button type="button" class="btn ghost sm btn-agent-hw-trace" data-hwid="${escapeHtml(r.homework_id)}">${traceLbl}</button>`
+            : "";
+          return `<article class="list-card agent-run">
           <header><span class="badge">${escapeHtml(r.status)}</span> ${escapeHtml(r.started_at?.slice(0, 19) ?? r.id.slice(0, 8))}</header>
-          <p>homework: ${escapeHtml(r.homework_id?.slice(0, 8) ?? "")}</p>
+          <p>homework: <code>${escapeHtml(r.homework_id ?? "")}</code> ${hwBtn}</p>
+          ${evalDetail ? `<p class="muted agent-eval-detail">${evalDetail}</p>` : ""}
           <ol class="agent-steps">${(r.steps ?? [])
             .map((s) => `<li><code>${escapeHtml(s.node)}</code> ${escapeHtml(s.detail ?? "")}</li>`)
             .join("")}</ol>
-        </article>`,
+        </article>`;
+        },
       )
       .join("");
+    wireAgentRunActions();
   }
 
   async function loadMastery() {
@@ -1614,10 +1955,12 @@ export function createCompanionUI(els) {
     const records = res.ok ? await res.json() : [];
     els.questionCount.hidden = false;
     els.questionCount.textContent = records.length > 0 ? `${records.length} 知识点` : "0 知识点";
-    els.resultBody.innerHTML = renderMasteryPanel(records, { demo: false, tierInfo: state.tierInfo });
-    els.resultBody.querySelectorAll(".mastery-select").forEach((sel) => {
-      sel.addEventListener("change", () => patchMastery(sel.dataset.kp, sel.value));
+    els.resultBody.innerHTML = renderMasteryPanel(records, {
+      demo: false,
+      tierInfo: state.tierInfo,
+      locale: getLocale(),
     });
+    wireMasteryActions();
   }
 
   async function patchMastery(kpId, mastery) {
@@ -1651,7 +1994,9 @@ export function createCompanionUI(els) {
               ? "Agent Runs"
               : tab === "frame"
                 ? "本帧 OCR"
-                : "当前页合并结果";
+                : tab === "compare"
+                  ? "OCR 对比"
+                  : "当前页合并结果";
     if (els.showOverlay) {
       els.showOverlay.disabled = tab !== "frame";
       if (tab !== "frame") {
@@ -1660,6 +2005,7 @@ export function createCompanionUI(els) {
         state.showOverlay = els.showOverlay.checked;
       }
     }
+    return refreshSideList();
   }
 
   async function refreshSideList() {
@@ -1667,7 +2013,7 @@ export function createCompanionUI(els) {
     else if (state.sideTab === "mastery") await loadMastery();
     else if (state.sideTab === "wrongbook") await loadWrongBook();
     else if (state.sideTab === "agentruns") await loadAgentRuns();
-    else renderMergedOrFrame();
+    else renderActivePanel();
   }
 
   function applySession(session, opts = {}) {
@@ -1678,7 +2024,7 @@ export function createCompanionUI(els) {
     }
     renderTimeline();
     renderEvents();
-    renderMergedOrFrame({ skipOverlay: true });
+    renderActivePanel({ skipOverlay: true });
     setSessionBar();
     if (
       !skipPreview &&
@@ -1700,7 +2046,6 @@ export function createCompanionUI(els) {
     state.batchAbort?.abort();
     state.batchAbort = null;
     state.pipelineTiming = null;
-    state.draftWrong = {};
     renderBatchQueue();
     setProcessingBanner(null);
 
@@ -1729,12 +2074,13 @@ export function createCompanionUI(els) {
     const data = await res.json();
     applySession(data.session);
     const hwId = data.homework?.id;
-    if (hwId) await applyDraftWrongMarks(hwId);
     await loadHomework();
     setSideTab("homework");
-    await loadHomework();
-    if (hwId) showHomework(hwId);
-    showToast("当前页已写入作业库 · A⁺ 已更新", "ok");
+    if (hwId) {
+      showHomework(hwId);
+      void pollGraphEval(hwId);
+    }
+    showToast("当前页已写入作业库 · Agent 评测已排队", "ok");
     setWorkflowStep(4);
   }
 
@@ -1747,11 +2093,10 @@ export function createCompanionUI(els) {
     const data = await res.json();
     applySession(data.session);
     const hwId = data.homework?.id;
-    if (hwId) await applyDraftWrongMarks(hwId);
     await loadHomework();
+    if (hwId) void pollGraphEval(hwId);
     setSideTab("mastery");
-    await loadMastery();
-    showToast("会话已结束 · 已生成 A⁺ 掌握记录", "ok");
+    showToast("会话已结束 · Agent 评测已排队", "ok");
     setWorkflowStep(4);
   }
 
@@ -1813,6 +2158,15 @@ export function createCompanionUI(els) {
     });
 
     window.addEventListener("resize", () => refreshOverlay());
+
+    if (els.localeSelect) {
+      els.localeSelect.value = getLocale();
+      els.localeSelect.addEventListener("change", async () => {
+        setLocale(els.localeSelect.value);
+        state.locale = getLocale();
+        await refreshSideList();
+      });
+    }
   }
 
   return {

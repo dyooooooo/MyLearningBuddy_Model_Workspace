@@ -1,0 +1,90 @@
+{
+  "page_no": 7,
+  "status": "ok",
+  "prompt_version": "layout_blueprint_v5",
+  "used_json_schema": true,
+  "mfr_enabled": true,
+  "call": {
+    "used_schema": true,
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 5655,
+      "total_tokens": 6353,
+      "completion_tokens": 698,
+      "prompt_tokens_details": null
+    },
+    "max_tokens": 6144
+  },
+  "truncated": false,
+  "raw": {
+    "blocks": 3,
+    "kinds": {
+      "table": 2,
+      "equation": 1
+    },
+    "text_empty": 0
+  },
+  "final": {
+    "blocks": 3,
+    "kinds": {
+      "table": 2,
+      "equation": 1
+    },
+    "text_empty": 0
+  },
+  "boundary_repairs": [],
+  "findings": [],
+  "attempt_errors": [],
+  "elapsed_ms": 7846,
+  "stages_available": {
+    "raw_model": true,
+    "post_repair": true,
+    "post_mfr": true,
+    "post_crop": true,
+    "blueprint": true,
+    "html": true,
+    "ssr_report": true,
+    "changelog": true
+  },
+  "changelog_summary": {
+    "total_changes": 22,
+    "summary_zh": "本页共 22 处后处理修改：防腐层修复 21、Normalize 1",
+    "by_transition": {
+      "raw_model→post_repair": 21,
+      "post_repair→post_mfr": 0,
+      "post_mfr→post_crop": 0,
+      "post_crop→blueprint": 1
+    }
+  },
+  "quality": {
+    "page_no": 7,
+    "html_block_coverage": {
+      "page_no": 7,
+      "total_blocks": 3,
+      "rendered_blocks": 3,
+      "coverage": 1.0,
+      "missing_block_ids": []
+    },
+    "content_payload_consistency": {
+      "consistent": true,
+      "error_count": 0,
+      "polluted_payload_count": 0,
+      "errors": []
+    },
+    "rendered_text_fidelity": {
+      "json_primary_chars": 131,
+      "html_plain_chars": 125,
+      "json_to_html_token_recall": 1.0
+    },
+    "paragraph_fidelity": {
+      "expected_paragraphs": 0,
+      "rendered_paragraphs": 0,
+      "paragraph_ratio": 1.0
+    },
+    "inline_math_span_health": {
+      "inline_math_spans": 0,
+      "max_inline_math_len": 0,
+      "oversized_inline_math": false
+    }
+  }
+}

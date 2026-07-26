@@ -1,0 +1,39 @@
+{
+  "id": "520c6391-26f1-4f18-809d-3b9ae8cd023c",
+  "job_id": "b9cf8767-5a90-4d7e-8b56-37275252a345",
+  "page_no": 4,
+  "textbook_key": "tb35b:math:hs:高一数学上-35b:e8357c46",
+  "label": "高一数学上_35b",
+  "body": "将正文识别为\"figure\": {\r\n          \"caption\": \"副主编 应坚刚 鲍建生\"\r\n        }",
+  "tags": [
+    "blank_page"
+  ],
+  "block_id": "",
+  "screenshot_key": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/feedback/520c6391-26f1-4f18-809d-3b9ae8cd023c/screenshot.jpg",
+  "input_page_key": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/debug/p0004/page.jpg",
+  "t1_snapshot": [
+    {
+      "suspect_type": "MAIN_EMPTY",
+      "severity": "high",
+      "page_no": 4,
+      "block_id": "",
+      "evidence": {
+        "main_blocks": 4
+      },
+      "candidates": [
+        "整页内容丢失（模型误标 role/zone）",
+        "本页本来就是空白页/纯图页"
+      ],
+      "fingerprint": "6282c36d15a8cdb1",
+      "fingerprint_exact": "80247de4422f4f33",
+      "detector": "rule"
+    }
+  ],
+  "debug_prefix": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/debug/p0004",
+  "prompt_version": "layout_blueprint_v5",
+  "status": "open",
+  "pack_path": "",
+  "resolution_note": "",
+  "created_at": "2026-07-09T08:22:02.826156+00:00",
+  "updated_at": "2026-07-09T08:22:02.826164+00:00"
+}

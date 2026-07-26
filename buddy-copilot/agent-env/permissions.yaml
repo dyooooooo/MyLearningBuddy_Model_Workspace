@@ -1,0 +1,149 @@
+# 权限即数据（OCP：对修改封闭、对扩展开放）
+# 分档、闸门、场景可见性、文件白名单、预算全部在此声明；
+# 引擎核心（loop / mcp_server / gate / fs_guard）零硬编码，只读本文件。
+#
+# 新增工具 = tools 加一行 + app/tools/plugins/ 加一个函数；核心代码不动。
+
+# 四档权限
+tiers:
+  read:  { auto: true,  label: "只读" }
+  run:   { auto: true,  label: "运行（不改代码）" }
+  draft: { auto: true,  label: "草稿修改（可回滚）" }
+  gated: { auto: false, label: "需用户批准" }
+
+# 工具 → 档位（canonical 名用点号；MCP 挂载名自动转下划线）
+tools:
+  # ---- 只读 ----
+  editions.overview:      { tier: read }
+  editions.bundle:        { tier: read }
+  editions.draft:         { tier: read }
+  editions.calibrate:     { tier: read }   # 只算不落盘
+  corpus.list_jobs:       { tier: read }
+  corpus.job:             { tier: read }
+  corpus.page_context:    { tier: read }
+  corpus.page_html:       { tier: read }
+  minio.stat:             { tier: read }   # 导入前 fail-fast 预检
+  harness.run_golden:     { tier: read }
+  harness.page_diff:      { tier: read }
+  env.resource_map:       { tier: read }
+  # ---- 运行（不改代码） ----
+  corpus.start_import:    { tier: run }
+  corpus.extend_import:   { tier: run }   # 同 job 追加 MinerU 分段（AI 分段）
+  corpus.reprocess_page:  { tier: run }
+  corpus.get_blocks:      { tier: read }  # Cursor 读 IR
+  corpus.patch_block:     { tier: run }   # Cursor 单块改 IR（自动记账）
+  corpus.replace_page_blocks: { tier: run }  # Cursor 整页重排（自动记账）
+  corpus.rerender_page:   { tier: run }   # 仅重渲 HTML
+  corpus.render_preview:  { tier: run }   # 渲染 PDF 页面预览图到本地（escalate 看图用）
+  layout.judge_35b:       { tier: run }   # 35B（import_advice 场景禁用）
+  layout.anchor_mineru:   { tier: run }
+  layout.compare:         { tier: run }
+  layout.triad:           { tier: run }
+  harness.run_pytest:     { tier: run }
+  session.update_todos:   { tier: run }   # 仅更新会话 UI 任务清单
+  edition.record_effective_change: { tier: draft }
+  edition.finalize_from_session:   { tier: draft }
+  # ---- 草稿修改（Postgres 草稿，可回滚） ----
+  editions.save_draft:    { tier: draft }
+  editions.fork:          { tier: draft }
+  # ---- 闸门（逐个批准卡） ----
+  editions.publish:
+    tier: gated
+    risk: medium
+    gate_note: "发布方案：草稿落为正式版本，影响后续所有导入"
+  fs.request_edit:
+    tier: gated
+    risk: high
+    gate_note: "申请修改工作区文件（白名单内），批准后 Agent 才动手"
+  docker.rebuild:
+    tier: gated
+    risk: high
+    gate_note: "重建并重启 buddy-api + buddy-worker 容器（分钟级中断）"
+
+# 场景级工具可见性（接口隔离：每个场景只看到自己需要的工具面）
+scenarios:
+  import_advice:
+    tools:
+      - editions.overview
+      - editions.bundle
+      - editions.draft
+      - editions.calibrate
+      - editions.fork
+      - editions.save_draft
+      - editions.publish
+      - edition.record_effective_change
+      - edition.finalize_from_session
+      - corpus.list_jobs
+      - corpus.job
+      - corpus.page_context
+      - corpus.page_html
+      - corpus.start_import
+      - corpus.extend_import
+      - corpus.reprocess_page
+      - corpus.get_blocks
+      - corpus.patch_block
+      - corpus.replace_page_blocks
+      - corpus.rerender_page
+      - corpus.render_preview
+      - minio.stat
+      - harness.run_golden
+      - harness.page_diff
+      - session.update_todos
+      - env.resource_map
+      - fs.request_edit   # 代码级阻塞的唯一合法通道（白名单内，需批准）；docker.rebuild 仍走人工
+  page_assist:
+    tools:
+      - editions.overview
+      - editions.bundle
+      - editions.draft
+      - editions.calibrate
+      - editions.save_draft
+      - corpus.job
+      - corpus.page_context
+      - corpus.page_html
+      - corpus.reprocess_page
+      - corpus.render_preview
+      - layout.judge_35b
+      - layout.anchor_mineru
+      - layout.compare
+      - layout.triad
+      - fs.request_edit
+      - docker.rebuild
+      - minio.stat
+      - harness.run_golden
+      - harness.run_pytest
+      - harness.page_diff
+      - env.resource_map
+      - session.update_todos
+
+# 预算护栏
+budgets:
+  run_timeout_s: 900        # 单轮 Agent 运行墙钟
+  idle_timeout_s: 300       # 无输出空转看门狗：连续 N 秒无流式文本、无工具活动、无待决批准 → 判定挂死，自动重连重试
+  gate_timeout_s: 1800      # 批准卡等待超时（超时按拒绝处理）
+  max_tool_calls: 120       # 每轮工具调用上限（按会话落库，多 MCP 进程共享）
+  max_nudges: 2             # 未交最终报告时的追问次数
+
+# 文件边界（fs_guard 数据源）
+files:
+  write_whitelist:
+    - learning-buddy-api/configs/editions/
+    - learning-buddy-api/data/prompts/
+    - learning-buddy-api/app/import_35b/prompts/
+    - learning-buddy-api/tests/
+  forbidden:
+    - .env
+    - learning-buddy-c2/
+  # 白名单外但必须能真回滚的源码区：运行前按 backup_suffixes 备份，
+  # 越权改动按字节还原（未跟踪的新文件也能删回去）
+  guarded_roots:
+    - learning-buddy-api/app/
+    - exam-ocr-server/app/
+    - buddy-copilot/app/
+  # 只备份源码后缀，避开 guarded_roots 里的大体积资产
+  backup_suffixes:
+    - .py
+    - .md
+    - .json
+    - .yaml
+    - .yml

@@ -16,11 +16,21 @@ logger = logging.getLogger(__name__)
 _client: httpx.AsyncClient | None = None
 
 
-def _headers(student_id: str) -> dict[str, str]:
-    return {
+def _headers(student_id: str, *, locale: str | None = None) -> dict[str, str]:
+    h = {
         "Authorization": f"Bearer {settings.buddy_api_token}",
         "X-Student-Id": student_id,
     }
+    if locale:
+        h["X-Locale"] = locale
+    return h
+
+
+def _locale_from_request(request) -> str | None:
+    if request is None:
+        return None
+    loc = (request.headers.get("X-Locale") or "").strip()
+    return loc or None
 
 
 def _client_get() -> httpx.AsyncClient:
@@ -170,12 +180,42 @@ async def ensure_student(
     }
 
 
-async def proxy_get(path: str, student_id: str) -> httpx.Response:
-    return await _client_get().get(path, headers=_headers(student_id))
+async def proxy_get(path: str, student_id: str, request=None) -> httpx.Response:
+    return await _client_get().get(path, headers=_headers(student_id, locale=_locale_from_request(request)))
 
 
-async def proxy_patch(path: str, body: dict, student_id: str) -> httpx.Response:
-    return await _client_get().patch(path, json=body, headers=_headers(student_id))
+async def proxy_patch(path: str, body: dict, student_id: str, request=None) -> httpx.Response:
+    return await _client_get().patch(path, json=body, headers=_headers(student_id, locale=_locale_from_request(request)))
+
+
+async def proxy_post(path: str, body: dict, student_id: str, request=None) -> httpx.Response:
+    return await _client_get().post(path, json=body, headers=_headers(student_id, locale=_locale_from_request(request)))
+
+
+async def proxy_delete(path: str, student_id: str, request=None) -> httpx.Response:
+    return await _client_get().delete(path, headers=_headers(student_id, locale=_locale_from_request(request)))
+
+
+async def normalize_page_parts(parts: list[PagePart]) -> list[PagePart]:
+    if not parts:
+        return parts
+    body = {
+        "parts": [{"print": p.print_text, "handwriting": p.handwriting} for p in parts],
+    }
+    r = await _client_get().post(
+        "/api/v1/math/normalize-parts",
+        json=body,
+        headers={"Authorization": f"Bearer {settings.buddy_api_token}"},
+    )
+    r.raise_for_status()
+    rows = r.json().get("parts", [])
+    out: list[PagePart] = []
+    for part, row in zip(parts, rows):
+        copy = part.model_copy(deep=True)
+        copy.print_rich = row.get("print_rich")
+        copy.handwriting_rich = row.get("handwriting_rich")
+        out.append(copy)
+    return out
 
 
 async def rag_search(
@@ -197,3 +237,26 @@ async def rag_search(
     except Exception as e:
         logger.warning("Buddy rag_search failed: %s", e)
         return []
+
+
+async def corpus_admin_request(
+    method: str,
+    path: str,
+    *,
+    json: dict | None = None,
+    params: dict | None = None,
+    content: bytes | None = None,
+    extra_headers: dict | None = None,
+) -> httpx.Response:
+    client = _client_get()
+    headers = _admin_headers()
+    if extra_headers:
+        headers = {**headers, **extra_headers}
+    return await client.request(
+        method,
+        path,
+        json=json if content is None else None,
+        content=content,
+        params=params,
+        headers=headers,
+    )

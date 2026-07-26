@@ -1,0 +1,11 @@
+{
+  "feedback_id": "59725640-5e14-44aa-87f3-19cc608a441c",
+  "job_id": "b9cf8767-5a90-4d7e-8b56-37275252a345",
+  "page_no": 5,
+  "pack_path": "data/cursor-packs/59725640-5e14-44aa-87f3-19cc608a441c",
+  "plan_mode": "execute_direct",
+  "triage_confidence": "high",
+  "entry_doc": "EXEC.plan.md",
+  "layer": "compiler",
+  "generated_at": "2026-07-09T08:24:59.163056+00:00"
+}

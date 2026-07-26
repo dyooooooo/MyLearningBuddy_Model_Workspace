@@ -1,0 +1,11 @@
+{
+  "feedback_id": "05685ad3-6458-4115-95bf-3360e82265a8",
+  "job_id": "b9cf8767-5a90-4d7e-8b56-37275252a345",
+  "page_no": 7,
+  "pack_path": "data/cursor-packs/05685ad3-6458-4115-95bf-3360e82265a8",
+  "plan_mode": "refine_first",
+  "triage_confidence": "low",
+  "entry_doc": "PLAN.prompt.md",
+  "layer": "harness",
+  "generated_at": "2026-07-09T08:27:43.610449+00:00"
+}

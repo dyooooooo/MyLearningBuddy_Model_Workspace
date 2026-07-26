@@ -1,0 +1,9 @@
+{
+  "id": "_base",
+  "version": "1",
+  "display_name": "Base (minimal defaults)",
+  "base": null,
+  "subject": "math",
+  "grade_band": "hs",
+  "description": "Minimal cross-edition defaults. Fork this for new textbooks; promote shared entries carefully."
+}

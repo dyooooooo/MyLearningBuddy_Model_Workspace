@@ -12,7 +12,7 @@ import httpx
 from app.image_preprocess import read_normalized_upload_with_meta
 
 from app.companion import service, store
-from app.buddy_client import ensure_student, list_students_admin, proxy_get, proxy_patch
+from app.buddy_client import ensure_student, list_students_admin, normalize_page_parts, proxy_delete, proxy_get, proxy_patch, proxy_post
 from app.schemas import (
     AddFrameResponse,
     AddFramesBatchResponse,
@@ -24,6 +24,7 @@ from app.schemas import (
     HomeworkEntry,
     MasteryListResponse,
     MasteryRecord,
+    PagePart,
     PatchMasteryRequest,
     SessionExportResponse,
 )
@@ -38,6 +39,23 @@ class EnsureStudentRequest(BaseModel):
 
 
 _STUDENT_ID_RE = re.compile(r"^[a-z][a-z0-9_-]{2,31}$")
+
+
+class NormalizePartsBody(BaseModel):
+    parts: list[dict] = Field(default_factory=list)
+
+
+@router.post("/math/normalize-parts")
+async def companion_normalize_parts(body: NormalizePartsBody):
+    """Batch math segment enrich for live OCR panels (merged / frame / compare)."""
+    parts = [PagePart.model_validate(p) for p in body.parts]
+    try:
+        enriched = await normalize_page_parts(parts)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"math normalize failed: {exc}") from exc
+    return {
+        "parts": [p.model_dump(mode="json", by_alias=True) for p in enriched],
+    }
 
 
 @router.get("/buddy/students")
@@ -81,7 +99,7 @@ async def buddy_ensure_student(request: Request, body: EnsureStudentRequest):
 @router.get("/buddy/tier")
 async def buddy_tier(request: Request):
     sid = _student_id(request)
-    r = await proxy_get(f"/api/v1/students/{sid}/tier", sid)
+    r = await proxy_get(f"/api/v1/students/{sid}/tier", sid, request)
     if r.status_code == 404:
         raise HTTPException(status_code=404, detail="Student not found; call ensure-student first")
     if r.status_code != 200:
@@ -169,7 +187,7 @@ async def export_session(session_id: str) -> SessionExportResponse:
 @router.get("/homework", response_model=HomeworkListResponse)
 async def list_homework(request: Request, session_id: str | None = None) -> HomeworkListResponse:
     sid = _student_id(request)
-    r = await proxy_get(f"/api/v1/students/{sid}/homework", sid)
+    r = await proxy_get(f"/api/v1/students/{sid}/homework", sid, request)
     if r.status_code != 200:
         raise HTTPException(status_code=502, detail="Buddy API homework list failed")
     entries_raw = r.json()
@@ -182,7 +200,7 @@ async def list_homework(request: Request, session_id: str | None = None) -> Home
 @router.get("/homework/{entry_id}")
 async def get_homework(request: Request, entry_id: str):
     sid = _student_id(request)
-    r = await proxy_get(f"/api/v1/students/{sid}/homework/{entry_id}", sid)
+    r = await proxy_get(f"/api/v1/students/{sid}/homework/{entry_id}", sid, request)
     if r.status_code == 404:
         raise HTTPException(status_code=404, detail="Homework not found")
     if r.status_code != 200:
@@ -190,11 +208,44 @@ async def get_homework(request: Request, entry_id: str):
     return JSONResponse(_buddy_homework_to_entry(r.json(), include_questions=True))
 
 
+@router.patch("/homework/{entry_id}")
+async def patch_homework_entry(request: Request, entry_id: str, body: dict):
+    sid = _student_id(request)
+    r = await proxy_patch(f"/api/v1/students/{sid}/homework/{entry_id}", body, sid, request)
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Homework not found")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Buddy homework patch failed")
+    return r.json()
+
+
+@router.delete("/homework/{entry_id}")
+async def delete_homework_entry(request: Request, entry_id: str):
+    sid = _student_id(request)
+    r = await proxy_delete(f"/api/v1/students/{sid}/homework/{entry_id}", sid, request)
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Homework not found")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Buddy homework delete failed")
+    return r.json()
+
+
+@router.post("/homework/{entry_id}/re-eval")
+async def re_eval_homework(request: Request, entry_id: str):
+    sid = _student_id(request)
+    r = await proxy_post(f"/api/v1/students/{sid}/homework/{entry_id}/re-eval", {}, sid, request)
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Homework not found")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Buddy re-eval failed")
+    return r.json()
+
+
 @router.get("/mastery", response_model=MasteryListResponse)
 async def list_mastery(request: Request, session_id: str | None = None) -> MasteryListResponse:
     del session_id
     sid = _student_id(request)
-    r = await proxy_get(f"/api/v1/students/{sid}/mastery", sid)
+    r = await proxy_get(f"/api/v1/students/{sid}/mastery", sid, request)
     if r.status_code != 200:
         raise HTTPException(status_code=502, detail="Buddy API mastery list failed")
     records = []
@@ -213,13 +264,57 @@ async def list_mastery(request: Request, session_id: str | None = None) -> Maste
     return MasteryListResponse(records=records, demo=False)
 
 
+@router.post("/mastery")
+async def post_mastery(request: Request, body: dict):
+    sid = _student_id(request)
+    r = await proxy_post(f"/api/v1/students/{sid}/mastery", body, sid, request)
+    if r.status_code != 200:
+        raise HTTPException(status_code=r.status_code, detail="Buddy mastery create failed")
+    return r.json()
+
+
+@router.delete("/mastery/{kp_id}")
+async def delete_mastery(request: Request, kp_id: str):
+    sid = _student_id(request)
+    r = await proxy_delete(f"/api/v1/students/{sid}/mastery/{kp_id}", sid, request)
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Mastery not found")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Buddy mastery delete failed")
+    return r.json()
+
+
+@router.post("/mastery/recompute")
+async def recompute_mastery(request: Request):
+    sid = _student_id(request)
+    r = await proxy_post(f"/api/v1/students/{sid}/mastery/recompute", {}, sid, request)
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Buddy mastery recompute failed")
+    return r.json()
+
+
+@router.get("/rag/syllabus-kps")
+async def syllabus_kps_proxy(request: Request, subject: str = "math", grade_band: str = "hs"):
+    sid = _student_id(request)
+    r = await proxy_get(
+        f"/api/v1/rag/syllabus-kps?subject={subject}&grade_band={grade_band}",
+        sid,
+        request,
+    )
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Buddy syllabus-kps failed")
+    return r.json()
+
+
 @router.patch("/mastery/{kp_id}", response_model=MasteryRecord)
 async def patch_mastery(request: Request, kp_id: str, body: PatchMasteryRequest) -> MasteryRecord:
     sid = _student_id(request)
+    payload: dict = {"mastery": body.mastery}
     r = await proxy_patch(
         f"/api/v1/students/{sid}/mastery/{kp_id}",
-        {"mastery": body.mastery},
+        payload,
         sid,
+        request,
     )
     if r.status_code != 200:
         raise HTTPException(status_code=r.status_code, detail="Buddy mastery patch failed")
@@ -237,7 +332,7 @@ async def patch_mastery(request: Request, kp_id: str, body: PatchMasteryRequest)
 @router.get("/buddy/mastery")
 async def buddy_mastery_raw(request: Request):
     sid = _student_id(request)
-    r = await proxy_get(f"/api/v1/students/{sid}/mastery", sid)
+    r = await proxy_get(f"/api/v1/students/{sid}/mastery", sid, request)
     if r.status_code != 200:
         raise HTTPException(status_code=502, detail="Buddy API mastery failed")
     return r.json()
@@ -246,34 +341,49 @@ async def buddy_mastery_raw(request: Request):
 @router.get("/graph-runs")
 async def list_graph_runs(request: Request):
     sid = _student_id(request)
-    r = await proxy_get(f"/api/v1/students/{sid}/graph-runs", sid)
+    r = await proxy_get(f"/api/v1/students/{sid}/graph-runs", sid, request)
     if r.status_code != 200:
         raise HTTPException(status_code=502, detail="Buddy graph-runs failed")
     return r.json()
 
 
 @router.get("/wrong-book")
-async def wrong_book(request: Request):
+async def wrong_book(request: Request, homework_id: str | None = None):
     sid = _student_id(request)
-    r = await proxy_get(f"/api/v1/students/{sid}/homework", sid)
+    path = f"/api/v1/students/{sid}/wrong-book"
+    if homework_id:
+        path += f"?homework_id={homework_id}"
+    r = await proxy_get(path, sid, request)
     if r.status_code != 200:
-        raise HTTPException(status_code=502, detail="Buddy homework list failed")
-    items: list[dict] = []
-    for hw in r.json():
-        for q in hw.get("questions") or []:
-            if q.get("is_wrong") is True:
-                items.append(
-                    {
-                        "question_id": q.get("id"),
-                        "homework_id": hw.get("id"),
-                        "ordinal": q.get("ordinal"),
-                        "print_text": q.get("print_text", ""),
-                        "handwriting": q.get("handwriting", ""),
-                        "kp_tags": q.get("kp_tags", []),
-                        "finalized_at": hw.get("finalized_at"),
-                    }
-                )
-    return {"items": items, "count": len(items)}
+        raise HTTPException(status_code=502, detail="Buddy wrong-book failed")
+    return r.json()
+
+
+@router.post("/wrong-book/re-eval")
+async def wrong_book_re_eval(request: Request, homework_id: str | None = None, all_homework: bool = False):
+    sid = _student_id(request)
+    path = f"/api/v1/students/{sid}/wrong-book/re-eval?clear_manual=true"
+    if homework_id:
+        path += f"&homework_id={homework_id}"
+    if all_homework:
+        path += "&all_homework=true"
+    r = await proxy_post(path, {}, sid, request)
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Nothing to re-eval")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Buddy wrong-book re-eval failed")
+    return r.json()
+
+
+@router.delete("/questions/{question_id}")
+async def delete_question(request: Request, question_id: str):
+    sid = _student_id(request)
+    r = await proxy_delete(f"/api/v1/students/{sid}/questions/{question_id}", sid, request)
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Question not found")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Buddy question delete failed")
+    return r.json()
 
 
 @router.patch("/questions/{question_id}")
@@ -283,6 +393,7 @@ async def patch_question(request: Request, question_id: str, body: dict):
         f"/api/v1/students/{sid}/questions/{question_id}",
         body,
         sid,
+        request,
     )
     if r.status_code == 404:
         raise HTTPException(status_code=404, detail="Question not found")

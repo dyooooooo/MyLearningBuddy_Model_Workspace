@@ -1,0 +1,10 @@
+{
+  "description": "Incremental import golden — meta fields after per-page OCR",
+  "job_meta_after_two_pages": {
+    "pages_ready": [1, 2],
+    "chunk_progress": "2/3",
+    "parse_engine": "vision_ocr"
+  },
+  "expect_draft_status": "draft",
+  "expect_chunk_kind": "page_import"
+}

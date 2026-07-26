@@ -1,0 +1,1023 @@
+{
+  "job": "7b33d74bc3d042a0b9836116f8cc3bdf",
+  "pages": [
+    {
+      "page": 1,
+      "status": "ok",
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "text": 6,
+          "figure": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "text": 6,
+          "figure": 1
+        },
+        "blocks": 7,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 34
+      },
+      "html": {
+        "plain_len": 15,
+        "figs": 1,
+        "paras": 0,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 2,
+      "status": "ok",
+      "raw": {
+        "blocks": 6,
+        "kinds": {
+          "running": 1,
+          "text": 4,
+          "figure": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 1,
+          "text": 4,
+          "figure": 1
+        },
+        "blocks": 6,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 32
+      },
+      "html": {
+        "plain_len": 37,
+        "figs": 1,
+        "paras": 5,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 3,
+      "status": "ok",
+      "raw": {
+        "blocks": 6,
+        "kinds": {
+          "text": 5,
+          "table": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "text": 5,
+          "table": 1
+        },
+        "blocks": 6,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 619
+      },
+      "html": {
+        "plain_len": 90,
+        "figs": 0,
+        "paras": 0,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 4,
+      "status": "ok",
+      "raw": {
+        "blocks": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 4
+        },
+        "blocks": 6,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 838
+      },
+      "html": {
+        "plain_len": 840,
+        "figs": 0,
+        "paras": 4,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 5,
+      "status": "ok",
+      "raw": {
+        "blocks": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 4
+        },
+        "blocks": 6,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 625
+      },
+      "html": {
+        "plain_len": 628,
+        "figs": 0,
+        "paras": 4,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 6,
+      "status": "ok",
+      "raw": {
+        "blocks": 3,
+        "kinds": {
+          "running": 2,
+          "text": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 1
+        },
+        "blocks": 3,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 254
+      },
+      "html": {
+        "plain_len": 225,
+        "figs": 0,
+        "paras": 19,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 7,
+      "status": "ok",
+      "raw": {
+        "blocks": 4,
+        "kinds": {
+          "running": 2,
+          "text": 2
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 2
+        },
+        "blocks": 4,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 119
+      },
+      "html": {
+        "plain_len": 120,
+        "figs": 0,
+        "paras": 10,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 8,
+      "status": "ok",
+      "raw": {
+        "blocks": 3,
+        "kinds": {
+          "figure": 1,
+          "text": 2
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "figure": 1,
+          "text": 2
+        },
+        "blocks": 3,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 227
+      },
+      "html": {
+        "plain_len": 229,
+        "figs": 1,
+        "paras": 4,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 9,
+      "status": "ok",
+      "raw": {
+        "blocks": 16,
+        "kinds": {
+          "running": 2,
+          "figure": 1,
+          "text": 13
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "figure": 1,
+          "text": 13
+        },
+        "blocks": 16,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 825
+      },
+      "html": {
+        "plain_len": 693,
+        "figs": 1,
+        "paras": 19,
+        "inline_math": 31,
+        "bad_latex": 1,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x1"
+      ]
+    },
+    {
+      "page": 10,
+      "status": "ok",
+      "raw": {
+        "blocks": 9,
+        "kinds": {
+          "running": 2,
+          "text": 6,
+          "table": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 6,
+          "table": 1
+        },
+        "blocks": 9,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 919
+      },
+      "html": {
+        "plain_len": 768,
+        "figs": 0,
+        "paras": 18,
+        "inline_math": 12,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 11,
+      "status": "ok",
+      "raw": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 10
+        },
+        "blocks": 12,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 996
+      },
+      "html": {
+        "plain_len": 662,
+        "figs": 0,
+        "paras": 25,
+        "inline_math": 27,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 12,
+      "status": "ok",
+      "raw": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1,
+          "figure": 2
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1,
+          "figure": 2
+        },
+        "blocks": 14,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 960
+      },
+      "html": {
+        "plain_len": 557,
+        "figs": 2,
+        "paras": 18,
+        "inline_math": 43,
+        "bad_latex": 4,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x4"
+      ]
+    },
+    {
+      "page": 13,
+      "status": "ok",
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        },
+        "blocks": 7,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 957
+      },
+      "html": {
+        "plain_len": 567,
+        "figs": 0,
+        "paras": 26,
+        "inline_math": 36,
+        "bad_latex": 5,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x5"
+      ]
+    },
+    {
+      "page": 14,
+      "status": "ok",
+      "raw": {
+        "blocks": 22,
+        "kinds": {
+          "running": 2,
+          "text": 17,
+          "figure": 1,
+          "equation": 2
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 17,
+          "figure": 1,
+          "equation": 2
+        },
+        "blocks": 22,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1542
+      },
+      "html": {
+        "plain_len": 694,
+        "figs": 1,
+        "paras": 24,
+        "inline_math": 62,
+        "bad_latex": 2,
+        "fallback": 1
+      },
+      "flags": [
+        "LATEX_BAD x2",
+        "MATH_FALLBACK x1"
+      ]
+    },
+    {
+      "page": 15,
+      "status": "ok",
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        },
+        "blocks": 7,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1181
+      },
+      "html": {
+        "plain_len": 661,
+        "figs": 0,
+        "paras": 22,
+        "inline_math": 63,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 16,
+      "status": "ok",
+      "raw": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 10,
+          "figure": 2
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 10,
+          "figure": 2
+        },
+        "blocks": 14,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 881
+      },
+      "html": {
+        "plain_len": 486,
+        "figs": 2,
+        "paras": 10,
+        "inline_math": 37,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 17,
+      "status": "ok",
+      "raw": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 11,
+          "figure": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 11,
+          "figure": 1
+        },
+        "blocks": 14,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1152
+      },
+      "html": {
+        "plain_len": 618,
+        "figs": 1,
+        "paras": 12,
+        "inline_math": 53,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 18,
+      "status": "ok",
+      "raw": {
+        "blocks": 8,
+        "kinds": {
+          "running": 2,
+          "text": 5,
+          "figure": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 5,
+          "figure": 1
+        },
+        "blocks": 8,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1291
+      },
+      "html": {
+        "plain_len": 437,
+        "figs": 1,
+        "paras": 29,
+        "inline_math": 39,
+        "bad_latex": 2,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x2"
+      ]
+    },
+    {
+      "page": 19,
+      "status": "ok",
+      "raw": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 12
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 12
+        },
+        "blocks": 14,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1067
+      },
+      "html": {
+        "plain_len": 380,
+        "figs": 0,
+        "paras": 16,
+        "inline_math": 51,
+        "bad_latex": 1,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x1"
+      ]
+    },
+    {
+      "page": 20,
+      "status": "ok",
+      "raw": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 10
+        },
+        "blocks": 12,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 744
+      },
+      "html": {
+        "plain_len": 624,
+        "figs": 0,
+        "paras": 16,
+        "inline_math": 12,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 21,
+      "status": "ok",
+      "raw": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1
+        },
+        "blocks": 12,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1159
+      },
+      "html": {
+        "plain_len": 730,
+        "figs": 0,
+        "paras": 23,
+        "inline_math": 39,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 22,
+      "status": "ok",
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 5
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 5
+        },
+        "blocks": 7,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1131
+      },
+      "html": {
+        "plain_len": 744,
+        "figs": 0,
+        "paras": 19,
+        "inline_math": 42,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 23,
+      "status": "ok",
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 5
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 5
+        },
+        "blocks": 7,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1443
+      },
+      "html": {
+        "plain_len": 653,
+        "figs": 0,
+        "paras": 19,
+        "inline_math": 80,
+        "bad_latex": 1,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x1"
+      ]
+    },
+    {
+      "page": 24,
+      "status": "ok",
+      "raw": {
+        "blocks": 19,
+        "kinds": {
+          "running": 2,
+          "figure": 2,
+          "text": 13,
+          "equation": 1,
+          "table": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "figure": 2,
+          "text": 13,
+          "equation": 1,
+          "table": 1
+        },
+        "blocks": 19,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1055
+      },
+      "html": {
+        "plain_len": 813,
+        "figs": 2,
+        "paras": 13,
+        "inline_math": 29,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 25,
+      "status": "ok",
+      "raw": {
+        "blocks": 29,
+        "kinds": {
+          "running": 2,
+          "text": 26,
+          "equation": 1
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 26,
+          "equation": 1
+        },
+        "blocks": 29,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1071
+      },
+      "html": {
+        "plain_len": 630,
+        "figs": 0,
+        "paras": 26,
+        "inline_math": 61,
+        "bad_latex": 3,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x3"
+      ]
+    },
+    {
+      "page": 26,
+      "status": "ok",
+      "raw": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 10
+        },
+        "blocks": 12,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1335
+      },
+      "html": {
+        "plain_len": 543,
+        "figs": 0,
+        "paras": 22,
+        "inline_math": 85,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    },
+    {
+      "page": 27,
+      "status": "ok",
+      "raw": {
+        "blocks": 4,
+        "kinds": {
+          "running": 2,
+          "text": 2
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 2
+        },
+        "blocks": 4,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1107
+      },
+      "html": {
+        "plain_len": 680,
+        "figs": 0,
+        "paras": 26,
+        "inline_math": 48,
+        "bad_latex": 1,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x1"
+      ]
+    },
+    {
+      "page": 28,
+      "status": "ok",
+      "raw": {
+        "blocks": 20,
+        "kinds": {
+          "running": 2,
+          "text": 18
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "running": 2,
+          "text": 18
+        },
+        "blocks": 20,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 1872
+      },
+      "html": {
+        "plain_len": 666,
+        "figs": 0,
+        "paras": 29,
+        "inline_math": 90,
+        "bad_latex": 3,
+        "fallback": 0
+      },
+      "flags": [
+        "LATEX_BAD x3"
+      ]
+    },
+    {
+      "page": 29,
+      "status": "blank_detected",
+      "raw": null,
+      "blueprint": {
+        "kinds": {
+          "text": 1
+        },
+        "blocks": 1,
+        "text_empty": 1,
+        "long_fig_caption": 0,
+        "chars": 0
+      },
+      "html": {
+        "plain_len": 0,
+        "figs": 0,
+        "paras": 0,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "BLANK",
+        "TEXT_EMPTY x1"
+      ]
+    },
+    {
+      "page": 30,
+      "status": "ok",
+      "raw": {
+        "blocks": 4,
+        "kinds": {
+          "figure": 1,
+          "text": 3
+        },
+        "text_empty": 0
+      },
+      "blueprint": {
+        "kinds": {
+          "figure": 1,
+          "text": 3
+        },
+        "blocks": 4,
+        "text_empty": 0,
+        "long_fig_caption": 0,
+        "chars": 266
+      },
+      "html": {
+        "plain_len": 269,
+        "figs": 1,
+        "paras": 4,
+        "inline_math": 0,
+        "bad_latex": 0,
+        "fallback": 0
+      },
+      "flags": [
+        "ok"
+      ]
+    }
+  ]
+}

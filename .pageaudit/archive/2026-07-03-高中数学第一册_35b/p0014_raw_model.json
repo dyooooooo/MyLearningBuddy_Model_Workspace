@@ -1,0 +1,540 @@
+{
+  "page_no": 14,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p14_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770,
+        35,
+        895,
+        50
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.1 集合初步"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        95,
+        100,
+        660,
+        230
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "我们常用文氏图(Venn diagram)来直观表示集合以及集合之间的关系. 图 1-1-3 是 $A \\subseteq B$ 的文氏图.",
+            "上述四组集合中的每组都有 $C \\subseteq D$. 但是，第(1)(2)组与第(3)(4)组是有区别的. 在第(1)(2)组中，集合 $D$ 中有些元素不属于集合 $C$，即 $D$ 不是 $C$ 的子集；而在第(3)(4)组中，集合 $D$ 中的每个元素都属于集合 $C$，即 $D \\subseteq C$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_f1",
+      "kind": "figure",
+      "zone": "aside_right",
+      "role": "figure",
+      "bbox": [
+        715,
+        125,
+        880,
+        235
+      ],
+      "anchor_id": "p14_b1",
+      "figure_group_id": "p14_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "图 1-1-3"
+        }
+      }
+    },
+    {
+      "id": "p14_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        95,
+        240,
+        660,
+        370
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "对于集合之间的包含关系，我们有下列结论：",
+            "(1) $A \\subseteq A$；",
+            "(2) 若 $A \\subseteq B$ 且 $B \\subseteq A$，则 $A=B$；",
+            "(3) 传递性：若 $A \\subseteq B$ 且 $B \\subseteq C$，则 $A \\subseteq C$.",
+            "由此，对第(3)(4)组集合，$C=D$ 成立；而对第(1)(2)组集合，$C=D$ 不成立. 为此，我们引入真子集的概念."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b3",
+      "kind": "text",
+      "zone": "aside_right",
+      "role": "note",
+      "bbox": [
+        700,
+        280,
+        870,
+        370
+      ],
+      "anchor_id": "p14_b2",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "集合关系中的“若 $A \\subseteq B$ 且 $B \\subseteq A$，则 $A=B$”与实数大小关系中“若 $a \\leqslant b$ 且 $b \\leqslant a$，则 $a=b$”类似."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        95,
+        375,
+        660,
+        465
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "定义 对于两个集合 $A$ 与 $B$，如果 $A \\subseteq B$，且 $B$ 中至少有一个元素不属于 $A$（即 $B$ 不是 $A$ 的子集），那么称集合 $A$ 是集合 $B$ 的真子集(proper subset)，记作 $A \\subset B$（或 $B \\supset A$），读作“$A$ 真包含于 $B$”（或“$B$ 真包含 $A$”）."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        135,
+        470,
+        660,
+        500
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "对第(1)(2)组集合，$C \\subset D$ 成立.",
+            "对于常用的数集，我们有如下的包含关系："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_eq1",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        300,
+        510,
+        450,
+        530
+      ],
+      "anchor_id": "p14_b5",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "\\mathbf{N} \\subset \\mathbf{Z} \\subset \\mathbf{Q} \\subset \\mathbf{R}",
+          "fallback_text": "N ⊂ Z ⊂ Q ⊂ R"
+        },
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        535,
+        600,
+        560
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 6 确定 $x$ 与 $y$，使得集合 $\\{2x, x+y\\} = \\{4, 8\\}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        565,
+        400,
+        590
+      ],
+      "anchor_id": "p14_b6",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "解 由集合相等的定义，可知"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_eq2",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        265,
+        595,
+        485,
+        630
+      ],
+      "anchor_id": "p14_b7",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "\\begin{cases} 2x=4, \\\\ x+y=8 \\end{cases} \\text{ 或 } \\begin{cases} 2x=8, \\\\ x+y=4. \\end{cases}",
+          "fallback_text": "2x=4, x+y=8 或 2x=8, x+y=4"
+        },
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95,
+        635,
+        345,
+        675
+      ],
+      "anchor_id": "p14_eq2",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "分别解得 $\\begin{cases} x=2, \\\\ y=6 \\end{cases}$ 或 $\\begin{cases} x=4, \\\\ y=0.$"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b9",
+      "kind": "text",
+      "zone": "aside_right",
+      "role": "note",
+      "bbox": [
+        700,
+        560,
+        870,
+        620
+      ],
+      "anchor_id": "p14_eq2",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "此处为什么有两种情况？"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        685,
+        550,
+        710
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 7 确定下列每组中两个集合之间的关系："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        715,
+        560,
+        735
+      ],
+      "anchor_id": "p14_b10",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(1) $A=\\{n \\mid n \\text{ 是 } 12 \\text{ 的正约数}\\}$，$B=\\{1,2,3,6\\}$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        740,
+        655,
+        760
+      ],
+      "anchor_id": "p14_b11",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) $C=\\{n \\mid n=3k+1, k \\in \\mathbf{N}\\}$，$D=\\{n \\mid n=3m-2, m \\in \\mathbf{N}\\}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b13",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        765,
+        565,
+        785
+      ],
+      "anchor_id": "p14_b12",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "解 (1) 因为 $A=\\{1,2,3,4,6,12\\}$，所以 $B \\subset A$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b14",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95,
+        790,
+        660,
+        835
+      ],
+      "anchor_id": "p14_b13",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 因为当 $k \\in \\mathbf{N}$ 时，$C$ 中的元素 $n=3k+1=3(k+1)-2$ 必定属于 $D$，所以 $C \\subseteq D$.",
+            "又因为 $-2 \\in D$，而 $-2 \\notin C$，所以 $C \\subset D$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b15",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        850,
+        650,
+        875
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 8 写出集合 $\\{a,b,c\\}$ 的所有子集，并指出哪些是真子集."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b16",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        880,
+        445,
+        900
+      ],
+      "anchor_id": "p14_b15",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "解 可以按照子集的元素个数分类："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_b17",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        905,
+        445,
+        925
+      ],
+      "anchor_id": "p14_b16",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "不含任何元素的子集 1 个：空集 $\\varnothing$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p14_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        880,
+        960,
+        905,
+        985
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "7"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,719 @@
+{
+  "job": "7b33d74bc3d042a0b9836116f8cc3bdf",
+  "page_count": 30,
+  "issue_counts_by_code": {
+    "BARE_UNICODE_MATH": 2,
+    "HTML_TEXT_LOSS": 2,
+    "NO_PARAGRAPHS_RENDERED": 1,
+    "EMPTY_MAIN_ZONE": 1,
+    "TABLE_NOT_RENDERED": 1,
+    "PARAGRAPH_COUNT_LOW": 1,
+    "HTML_MATH_FALLBACK": 1,
+    "BLUEPRINT_RETRY": 1,
+    "NO_RAW_MODEL": 1,
+    "EMPTY_TEXT_BLOCK": 1
+  },
+  "page_audits": [
+    {
+      "page_no": 1,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "text": 6,
+          "figure": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 7,
+        "kinds": {
+          "text": 6,
+          "figure": 1
+        }
+      },
+      "issues": [
+        {
+          "severity": "error",
+          "code": "NO_PARAGRAPHS_RENDERED",
+          "detail": "expected ~6 paragraphs, html has 0 <p>"
+        }
+      ]
+    },
+    {
+      "page_no": 2,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 6,
+        "kinds": {
+          "running": 1,
+          "text": 4,
+          "figure": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 6,
+        "kinds": {
+          "running": 1,
+          "text": 4,
+          "figure": 1
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 3,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 6,
+        "kinds": {
+          "text": 5,
+          "table": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 6,
+        "kinds": {
+          "text": 5,
+          "table": 1
+        }
+      },
+      "issues": [
+        {
+          "severity": "warn",
+          "code": "BARE_UNICODE_MATH",
+          "detail": "raw p3_b5 ¶0: bare math unicode outside $...$"
+        },
+        {
+          "severity": "warn",
+          "code": "BARE_UNICODE_MATH",
+          "detail": "bp p3_b5 ¶0: bare math unicode outside $...$"
+        },
+        {
+          "severity": "error",
+          "code": "HTML_TEXT_LOSS",
+          "detail": "html plain len=90 vs blueprint chars=619 (>65% loss)"
+        },
+        {
+          "severity": "error",
+          "code": "EMPTY_MAIN_ZONE",
+          "detail": "lb-main section is empty but blueprint has content"
+        },
+        {
+          "severity": "error",
+          "code": "TABLE_NOT_RENDERED",
+          "detail": "blueprint has 1 table(s) but HTML has no lb-table-wrap"
+        },
+        {
+          "severity": "warn",
+          "code": "PARAGRAPH_COUNT_LOW",
+          "detail": "expected 14 paras, html has 0 <p>"
+        }
+      ]
+    },
+    {
+      "page_no": 4,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        }
+      },
+      "blueprint": {
+        "blocks": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 5,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        }
+      },
+      "blueprint": {
+        "blocks": 6,
+        "kinds": {
+          "running": 2,
+          "text": 4
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 6,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 3,
+        "kinds": {
+          "running": 2,
+          "text": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 3,
+        "kinds": {
+          "running": 2,
+          "text": 1
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 7,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 4,
+        "kinds": {
+          "running": 2,
+          "text": 2
+        }
+      },
+      "blueprint": {
+        "blocks": 4,
+        "kinds": {
+          "running": 2,
+          "text": 2
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 8,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 3,
+        "kinds": {
+          "figure": 1,
+          "text": 2
+        }
+      },
+      "blueprint": {
+        "blocks": 3,
+        "kinds": {
+          "figure": 1,
+          "text": 2
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 9,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 16,
+        "kinds": {
+          "running": 2,
+          "figure": 1,
+          "text": 13
+        }
+      },
+      "blueprint": {
+        "blocks": 16,
+        "kinds": {
+          "running": 2,
+          "figure": 1,
+          "text": 13
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 10,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 9,
+        "kinds": {
+          "running": 2,
+          "text": 6,
+          "table": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 9,
+        "kinds": {
+          "running": 2,
+          "text": 6,
+          "table": 1
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 11,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        }
+      },
+      "blueprint": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 12,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1,
+          "figure": 2
+        }
+      },
+      "blueprint": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1,
+          "figure": 2
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 13,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 14,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 22,
+        "kinds": {
+          "running": 2,
+          "text": 17,
+          "figure": 1,
+          "equation": 2
+        }
+      },
+      "blueprint": {
+        "blocks": 22,
+        "kinds": {
+          "running": 2,
+          "text": 17,
+          "figure": 1,
+          "equation": 2
+        }
+      },
+      "issues": [
+        {
+          "severity": "error",
+          "code": "HTML_MATH_FALLBACK",
+          "detail": "fallback span: cases x=4, \\ y=0."
+        }
+      ]
+    },
+    {
+      "page_no": 15,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 4,
+          "equation": 1
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 16,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 10,
+          "figure": 2
+        }
+      },
+      "blueprint": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 10,
+          "figure": 2
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 17,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 11,
+          "figure": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 11,
+          "figure": 1
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 18,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 8,
+        "kinds": {
+          "running": 2,
+          "text": 5,
+          "figure": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 8,
+        "kinds": {
+          "running": 2,
+          "text": 5,
+          "figure": 1
+        }
+      },
+      "issues": [
+        {
+          "severity": "error",
+          "code": "HTML_TEXT_LOSS",
+          "detail": "html plain len=437 vs blueprint chars=1291 (>65% loss)"
+        }
+      ]
+    },
+    {
+      "page_no": 19,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 12
+        }
+      },
+      "blueprint": {
+        "blocks": 14,
+        "kinds": {
+          "running": 2,
+          "text": 12
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 20,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        }
+      },
+      "blueprint": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 21,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 9,
+          "equation": 1
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 22,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 5
+        }
+      },
+      "blueprint": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 5
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 23,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 5
+        }
+      },
+      "blueprint": {
+        "blocks": 7,
+        "kinds": {
+          "running": 2,
+          "text": 5
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 24,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 19,
+        "kinds": {
+          "running": 2,
+          "figure": 2,
+          "text": 13,
+          "equation": 1,
+          "table": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 19,
+        "kinds": {
+          "running": 2,
+          "figure": 2,
+          "text": 13,
+          "equation": 1,
+          "table": 1
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 25,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 29,
+        "kinds": {
+          "running": 2,
+          "text": 26,
+          "equation": 1
+        }
+      },
+      "blueprint": {
+        "blocks": 29,
+        "kinds": {
+          "running": 2,
+          "text": 26,
+          "equation": 1
+        }
+      },
+      "issues": [
+        {
+          "severity": "warn",
+          "code": "BLUEPRINT_RETRY",
+          "detail": "attempt 1: 1 validation error for PageBlueprint\nblocks.27.bbox\n  Value error, bbox must be normalized to 0..1000 [type=value_error,"
+        }
+      ]
+    },
+    {
+      "page_no": 26,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        }
+      },
+      "blueprint": {
+        "blocks": 12,
+        "kinds": {
+          "running": 2,
+          "text": 10
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 27,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 4,
+        "kinds": {
+          "running": 2,
+          "text": 2
+        }
+      },
+      "blueprint": {
+        "blocks": 4,
+        "kinds": {
+          "running": 2,
+          "text": 2
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 28,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 20,
+        "kinds": {
+          "running": 2,
+          "text": 18
+        }
+      },
+      "blueprint": {
+        "blocks": 20,
+        "kinds": {
+          "running": 2,
+          "text": 18
+        }
+      },
+      "issues": []
+    },
+    {
+      "page_no": 29,
+      "status": "blank_detected",
+      "truncated": false,
+      "raw": {
+        "blocks": 0,
+        "kinds": {}
+      },
+      "blueprint": {
+        "blocks": 1,
+        "kinds": {
+          "text": 1
+        }
+      },
+      "issues": [
+        {
+          "severity": "info",
+          "code": "BLANK_PAGE",
+          "detail": "PDF blank detection triggered"
+        },
+        {
+          "severity": "warn",
+          "code": "NO_RAW_MODEL",
+          "detail": "raw_model.json missing"
+        },
+        {
+          "severity": "error",
+          "code": "EMPTY_TEXT_BLOCK",
+          "detail": "bp p0029_blank: kind=text but no content"
+        }
+      ]
+    },
+    {
+      "page_no": 30,
+      "status": "ok",
+      "truncated": false,
+      "raw": {
+        "blocks": 4,
+        "kinds": {
+          "figure": 1,
+          "text": 3
+        }
+      },
+      "blueprint": {
+        "blocks": 4,
+        "kinds": {
+          "figure": 1,
+          "text": 3
+        }
+      },
+      "issues": []
+    }
+  ]
+}

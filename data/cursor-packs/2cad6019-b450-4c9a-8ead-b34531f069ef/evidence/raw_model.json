@@ -1,0 +1,459 @@
+{
+  "page_no": 9,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "block_1",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        100,
+        300,
+        250,
+        450
+      ],
+      "anchor_id": "block_1",
+      "figure_group_id": "block_1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "康托(G. Cantor, 1845—1918), 德国数学家, 集合论创始人."
+        }
+      }
+    },
+    {
+      "id": "block_2",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        350,
+        130,
+        670,
+        170
+      ],
+      "anchor_id": "block_2",
+      "figure_group_id": "block_2",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "1.1 集合初步"
+        }
+      }
+    },
+    {
+      "id": "block_3",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        350,
+        240,
+        470,
+        270
+      ],
+      "anchor_id": "block_3",
+      "figure_group_id": "block_3",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "1 集合"
+        }
+      }
+    },
+    {
+      "id": "block_4",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        300,
+        900,
+        350
+      ],
+      "anchor_id": "block_4",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "我们经常需要把满足一定要求或具有一定特征的对象放在一起或归为一类. 例如:"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370,
+        350,
+        700,
+        370
+      ],
+      "anchor_id": "block_5",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(1) 申辉中学高一(1)班的全体学生;"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_6",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370,
+        370,
+        650,
+        390
+      ],
+      "anchor_id": "block_6",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 所有不大于 100 的自然数;"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_7",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370,
+        390,
+        580,
+        410
+      ],
+      "anchor_id": "block_7",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(3) 直线 $l$ 上的所有点;"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_8",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370,
+        410,
+        660,
+        430
+      ],
+      "anchor_id": "block_8",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(4) 不等式 $2x+1 \\leqslant 0$ 的所有解;"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_9",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370,
+        430,
+        580,
+        450
+      ],
+      "anchor_id": "block_9",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(5) 太阳系的所有行星."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_10",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        450,
+        900,
+        490
+      ],
+      "anchor_id": "block_10",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "概括地说, 把一些确定的对象的全体叫做集合(set), 简称集. 集合通常用大写字母 $A$、$B$、$C$……表示."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_11",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        490,
+        900,
+        540
+      ],
+      "anchor_id": "block_11",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "集合所含的各个对象叫做该集合的元素(element). 元素通常用小写字母 $a$、$b$、$c$……表示."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_12",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        540,
+        900,
+        610
+      ],
+      "anchor_id": "block_12",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "如果 $a$ 是集合 $A$ 的元素, 就记作 $a \\in A$, 读作“$a$ 属于 $A$”; 如果 $a$ 不是集合 $A$ 的元素, 就记作 $a \\notin A$, 读作“$a$ 不属于 $A$”. 例如, 若 $A$ 是由数 1、3、5、7、9 组成的集合, 则 $1 \\in A$, $2 \\notin A$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_13",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        610,
+        900,
+        690
+      ],
+      "anchor_id": "block_13",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "集合的元素是确定的. 也就是说, 给定一个集合, 一个对象在不在这个集合中就确定了. 例如, “我国的直辖市”组成一个集合, 北京、上海、天津、重庆在这个集合中, 而杭州、南京、深圳等城市不在这个集合中."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_14",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        690,
+        900,
+        760
+      ],
+      "anchor_id": "block_14",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "一些不确定的对象不能组成一个集合. 例如, “我们班里高个子的同学”不能组成一个集合. 因为“高个子”的标准不够明确、具体, 所以“我们班里高个子的同学”是不确定的."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_15",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        760,
+        900,
+        800
+      ],
+      "anchor_id": "block_15",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "一个给定集合中的各个元素是互不相同的, 即一个元素在同一个集合中是不能重复出现的."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_16",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        800,
+        900,
+        850
+      ],
+      "anchor_id": "block_16",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "如果两个集合 $A$ 与 $B$ 的组成元素完全相同, 就称这两个集合相等, 记作 $A=B$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_17",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330,
+        850,
+        850,
+        870
+      ],
+      "anchor_id": "block_17",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "元素个数有限的集合称为有限集, 否则就称为无限集."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_18",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        390,
+        870,
+        900,
+        890
+      ],
+      "anchor_id": "block_18",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 1 判断下列集合是有限集还是无限集, 并说明理由:"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "block_19",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370,
+        890,
+        700,
+        920
+      ],
+      "anchor_id": "block_19",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(1) 6 的正整数倍的全体组成的集合;"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

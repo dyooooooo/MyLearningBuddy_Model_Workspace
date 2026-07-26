@@ -1,0 +1,566 @@
+{
+  "page_no": 11,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p11_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140.0,
+        95.0,
+        650.0,
+        230.0
+      ],
+      "anchor_id": "p11_b2",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "(2) 末位是 3 的自然数；\n(3) 比较大的苹果.\n2. 用符号“∈”或“∉”填空：\n(1) 1/2 ___ N;\n(2) 5 ___ Z;\n(3) -2 ___ Q;\n(4) π ___ R.",
+        "caption": "习题",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "末位是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 3 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的自然数；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "比较大的苹果",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".\n2. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用符号",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“∈”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“∉”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "填空：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\n(1) 1/2 ___ N;\n(2) 5 ___ Z;\n(3) -2 ___ Q;\n(4) π ___ R.",
+            "latex": "( 1 ) \\frac{1}{2} \\_ \\_ \\_ N ; ( 2 ) 5 \\_ \\_ \\_ Z ; ( 3 ) - 2 \\_ \\_ \\_ Q ; ( 4 ) \\pi \\_ \\_ \\_ R .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p11_b2",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        330.0,
+        255.0,
+        620.0,
+        290.0
+      ],
+      "anchor_id": "p11_b3",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": null,
+        "caption": "2 集合的表示方法",
+        "table_html": null,
+        "latex": null,
+        "asset_key": "corpus/imports/e1d0e8d8d43043b9bd9359970ae47de9/assets/35b/figures/p0011_p11_b2.jpg",
+        "asset_url": "/api/v1/studio/proxy/import/asset?key=corpus%2Fimports%2Fe1d0e8d8d43043b9bd9359970ae47de9%2Fassets%2F35b%2Ffigures%2Fp0011_p11_b2.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p11_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        320.0,
+        900.0,
+        455.0
+      ],
+      "anchor_id": "p11_b4",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "除了用自然语言描述集合，我们还有一些其他方法用来表示集合.\n将集合中的元素不重复地一一列举出来并写在大括号内，这种表示集合的方法叫做列举法. 例如，方程 x^2-3x+2=0 的所有解组成的集合可以表示为 {1,2}，也可以表示为 {2,1}. 这是因为在讨论集合时，不考虑其元素的顺序.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p11_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        460.0,
+        900.0,
+        650.0
+      ],
+      "anchor_id": "p11_b5",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "例 3 用列举法表示下列集合：\n(1) 所有不大于 10 的正整数组成的集合；\n(2) 方程 (x-1)(x-2)(x-3)(x-4)=0 的所有解组成的集合；\n(3) 集合 {1,2,3,4} 中任意两个不同元素之和组成的集合.\n解 (1) 所有不大于 10 的正整数组成的集合是 {1,2,3,4,5,6,7,8,9,10}.\n(2) 该方程的所有解组成的集合是 {1,2,3,4}.\n(3) 该集合中任意两个不同元素之和组成的集合是 {3,4,5,6,7}.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 3 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用列举法表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所有不大于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 10 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的正整数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "方程",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " (x-1)(x-2)(x-3)(x-4)=0 ",
+            "latex": "( x - 1 ) ( x - 2 ) ( x - 3 ) ( x - 4 ) = 0",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的所有解组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " {1,2,3,4} ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中任意两个不同元素之和组成的集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "解",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所有不大于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 10 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的正整数组成的集合是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " {1,2,3,4,5,6,7,8,9,10}.\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "该方程的所有解组成的集合是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " {1,2,3,4}.\n(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "该集合中任意两个不同元素之和组成的集合是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " {3,4,5,6,7}.",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p11_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        675.0,
+        900.0,
+        760.0
+      ],
+      "anchor_id": "p11_b6",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "能用列举法表示的集合一般是有限集，但对于一些有规律的无限集，在不会引起歧义的前提下，也可用列举法表示. 例如，全体正偶数组成的集合可以表示为 {2,4,6,⋯,2n,⋯}.\n集合还有另外一种表示方法.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p11_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        765.0,
+        900.0,
+        840.0
+      ],
+      "anchor_id": "p11_b7",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "在大括号内先写出这个集合中元素的一个记号，再画一条竖线，并在竖线的右边写上集合中所有元素具有的共同特征，即",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p11_b7",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        510.0,
+        835.0,
+        720.0,
+        855.0
+      ],
+      "anchor_id": "p11_b8",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": null,
+        "caption": null,
+        "table_html": null,
+        "latex": "A=\\{x \\mid x \\text{ 满足性质 } p\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "A=\\{x \\mid x \\text{ 满足性质 } p\\}.",
+            "latex": "A=\\{x \\mid x \\text{ 满足性质 } p\\}.",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p11_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        860.0,
+        900.0,
+        925.0
+      ],
+      "anchor_id": "p11_b9",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "这种表示集合的方法叫做描述法. 例如，方程 x^2-3x+2=0 的所有解组成的集合可以表示为 {x | x^2-3x+2=0}. 又如，函数 y=x 图像上的所有点组成的集合可以表示为 {(x,y) | y=x}.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "这种表示集合的方法叫做描述法",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "例如，方程",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " x^2-3x+2=0 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的所有解组成的集合可以表示为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " {x | x^2-3x+2=0}. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "又如，函数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " y=x ",
+            "latex": "y = x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "图像上的所有点组成的集合可以表示为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " {(x,y) | y=x}.",
+            "latex": "\\{ ( x , y ) | y = x \\} .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p11_b9",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        100.0,
+        760.0,
+        280.0,
+        920.0
+      ],
+      "anchor_id": "p11_b8",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "“集合中所有元素具有的共同特征”是指：\n(1) 在该集合中的元素都具有这个特征；\n(2) 不在该集合中的元素不具有这个特征.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p11_b10",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40.0,
+        15.0,
+        200.0,
+        55.0
+      ],
+      "anchor_id": "p11_b1",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "1 集合与逻辑",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p11_b11",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        80.0,
+        960.0,
+        120.0,
+        985.0
+      ],
+      "anchor_id": "p11_b1",
+      "figure_group_id": "p11_fg1",
+      "content": {
+        "text": "4",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

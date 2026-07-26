@@ -1,0 +1,1459 @@
+{
+  "page_no": 24,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p24_hd",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        740.0,
+        30.0,
+        900.0,
+        50.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.2 常用逻辑用语"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_f1",
+      "kind": "figure",
+      "content_type": "figure",
+      "zone": "aside_right",
+      "role": "figure",
+      "bbox": [
+        700.0,
+        225.0,
+        880.0,
+        320.0
+      ],
+      "anchor_id": "p24_b2",
+      "figure_group_id": "p24_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "数学命题中的“所有”也可称为“对任意给定的一个”或“对每一个”."
+        },
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/figures/p0024_p24_f1.jpg",
+        "asset_url": "/api/v1/admin/import35b/asset?key=import35b%2F7b33d74bc3d042a0b9836116f8cc3bdf%2Fassets%2F35b%2Ffigures%2Fp0024_p24_f1.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_b1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        110.0,
+        125.0,
+        260.0,
+        155.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3 反证法"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_b2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90.0,
+        185.0,
+        660.0,
+        225.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "反证法是数学中常用的证明方法之一. 下面，我们学习如何用反证法证明一些命题."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_b3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90.0,
+        230.0,
+        660.0,
+        320.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "在前面已经提到，要判断命题“若 $\\alpha$，则 $\\beta$”是假命题，只要存在一个满足条件 $\\alpha$ 但不满足结论 $\\beta$ 的对象就行了. 但是要判断命题“若 $\\alpha$，则 $\\beta$”是真命题，就需要证明所有满足条件 $\\alpha$ 的对象都满足结论 $\\beta$. 有时直接验证这一点并不是一件容易的事."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "在前面已经提到，要判断命题",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是假命题，只要存在一个满足条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "但不满足结论",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的对象就行了",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "但是要判断命题",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是真命题，就需要证明所有满足条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\alpha",
+            "latex": "\\alpha",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的对象都满足结论",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "有时直接验证这一点并不是一件容易的事",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p24_b4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        325.0,
+        630.0,
+        345.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 5 设 $n \\in \\mathbf{Z}$. 证明：若 $n^{2}$ 是偶数，则 $n$ 也是偶数."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 5 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n \\in \\mathbf{Z}",
+            "latex": "n \\in \\mathbf{Z}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "证明：若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n^{2}",
+            "latex": "n^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是偶数，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "也是偶数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p24_b5",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        90.0,
+        350.0,
+        660.0,
+        395.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "证明 假设结论“$n$ 是偶数”不成立，即假设 $n$ 是奇数. 由 $n$ 是奇数，可设 $n=2k+1$，$k \\in \\mathbf{Z}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "证明",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "假设结论",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是偶数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不成立，即假设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是奇数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "由",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是奇数，可设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n=2k+1",
+            "latex": "n = 2 k + 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "k \\in \\mathbf{Z}",
+            "latex": "k \\in \\mathbf{Z}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p24_b6",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        400.0,
+        180.0,
+        415.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "因为"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_eq1",
+      "kind": "equation",
+      "content_type": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        180.0,
+        420.0,
+        570.0,
+        440.0
+      ],
+      "anchor_id": "p24_b6",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "n^{2}=(2k+1)^{2}=4k^{2}+4k+1=4\\left(k^{2}+k\\right)+1",
+          "fallback_text": "n^2 = (2k+1)^2 = 4k^2 + 4k + 1 = 4(k^2 + k) + 1"
+        },
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "n^{2}=(2k+1)^{2}=4k^{2}+4k+1=4\\left(k^{2}+k\\right)+1",
+            "latex": "n^{2}=(2k+1)^{2}=4k^{2}+4k+1=4\\left(k^{2}+k\\right)+1",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p24_b7",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        90.0,
+        445.0,
+        500.0,
+        465.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "这说明 $n^{2}$ 是奇数，与已知条件 $n^{2}$ 是偶数矛盾."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "这说明",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n^{2}",
+            "latex": "n^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是奇数，与已知条件",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n^{2}",
+            "latex": "n^{2}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是偶数矛盾",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p24_b8",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        470.0,
+        500.0,
+        490.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "所以，一开始的假设不成立，即 $n$ 是偶数."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "所以，一开始的假设不成立，即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "n",
+            "latex": "n",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是偶数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p24_b9",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90.0,
+        500.0,
+        660.0,
+        585.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 5 的证明方法与以前的证明方法不同. 它首先假设结论 $\\beta$ 不成立（$\\beta$ 为假），然后经过正确的逻辑推理得出矛盾，从而说明“$\\beta$ 为假”是不可能发生的，即结论 $\\beta$ 是正确的. 这样的证明方法叫反证法."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 5 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的证明方法与以前的证明方法不同",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "它首先假设结论",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不成立（",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "为假），然后经过正确的逻辑推理得出矛盾，从而说明",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "为假",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是不可能发生的，即结论",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\\beta",
+            "latex": "\\beta",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是正确的",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "这样的证明方法叫反证法",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p24_b10",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90.0,
+        590.0,
+        660.0,
+        655.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "应用反证法证明命题的第一步是假设命题的结论不成立，即否定命题的结论. 这一步是十分关键的. 只有这一步表述对了，接下来的逻辑推理才有意义."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_b11",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        135.0,
+        660.0,
+        440.0,
+        680.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数学上一些常用的否定形式见表 1-2."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_t1",
+      "kind": "table",
+      "content_type": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        90.0,
+        690.0,
+        660.0,
+        855.0
+      ],
+      "anchor_id": "p24_b11",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": {
+          "rows": [
+            [
+              "陈述句 $\\alpha$",
+              "$\\alpha$ 的否定形式"
+            ],
+            [
+              "$x>1$",
+              "$x \\leqslant 1$"
+            ],
+            [
+              "$x>1$ 或 $y>1$",
+              "$x \\leqslant 1$ 且 $y \\leqslant 1$"
+            ],
+            [
+              "集合 $A$ 中满足性质 $p$ 的元素至少有两个",
+              "集合 $A$ 中满足性质 $p$ 的元素最多有一个"
+            ],
+            [
+              "所有的 $a \\in A$ 满足性质 $p$",
+              "至少存在一个 $a \\in A$ 不满足性质 $p$"
+            ],
+            [
+              "所有的 $a \\in A$ 不满足性质 $p$",
+              "至少存在一个 $a \\in A$ 满足性质 $p$"
+            ]
+          ],
+          "caption": "表 1-2 一些常用的否定形式"
+        },
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_f2",
+      "kind": "figure",
+      "content_type": "figure",
+      "zone": "aside_right",
+      "role": "figure",
+      "bbox": [
+        700.0,
+        765.0,
+        880.0,
+        820.0
+      ],
+      "anchor_id": "p24_t1",
+      "figure_group_id": "p24_f2",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "元素个数一般指正整数."
+        },
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/figures/p0024_p24_f2.jpg",
+        "asset_url": "/api/v1/admin/import35b/asset?key=import35b%2F7b33d74bc3d042a0b9836116f8cc3bdf%2Fassets%2F35b%2Ffigures%2Fp0024_p24_f2.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_b12",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        870.0,
+        660.0,
+        895.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 6 设 $x$、$y \\in \\mathbf{R}$. 证明：若 $x+y>2$，则 $x>1$ 或 $y>1$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 6 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "设",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x",
+            "latex": "x",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "、",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y \\in \\mathbf{R}",
+            "latex": "y \\in \\mathbf{R}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "证明：若",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x+y>2",
+            "latex": "x + y > 2",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，则",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "x>1",
+            "latex": "x > 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "y>1",
+            "latex": "y > 1",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p24_b13",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135.0,
+        900.0,
+        320.0,
+        920.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "证明 用反证法证明."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p24_ft",
+      "kind": "running",
+      "content_type": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        890.0,
+        950.0,
+        920.0,
+        980.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "17"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

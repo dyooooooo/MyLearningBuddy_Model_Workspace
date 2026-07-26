@@ -1,0 +1,500 @@
+{
+  "page_no": 28,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p28_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        700,
+        20,
+        900,
+        60
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "复习题"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        90,
+        900,
+        140
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "4. 已知方程 $x^{2}+px+4=0$ 的所有解组成的集合为 $A$，方程 $x^{2}+x+q=0$ 的所有解组成的集合为 $B$，且 $A \\cap B=\\{4\\}$。求集合 $A \\cup B$ 的所有子集。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        140,
+        900,
+        170
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "5. 已知集合 $A=(-2,1)$，$B=(-\\infty,-2) \\cup [1,+\\infty)$。求：$A \\cup B$，$A \\cap B$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        170,
+        900,
+        200
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "6. 已知全集 $U=(-\\infty,1) \\cup [2,+\\infty)$，集合 $A=(-1,1) \\cup [3,+\\infty)$。求 $\\overline{A}$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        200,
+        900,
+        250
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "7. 已知集合 $A=\\{x \\mid x^{2}+px+q=0\\}$，$B=\\{x \\mid x^{2}-x+r=0\\}$，且 $A \\cap B=\\{-1\\}$，$A \\cup B=\\{-1,2\\}$。求实数 $p$、$q$、$r$ 的值。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        250,
+        900,
+        280
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "8. 设 $a$ 是实数。若 $x=1$ 是 $x>a$ 的一个充分条件，则 $a$ 的取值范围为________。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        280,
+        900,
+        330
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "9. 已知陈述句 $\\alpha$ 是 $\\beta$ 的充分非必要条件。若集合 $M=\\{x \\mid x \\text{ 满足 } \\alpha\\}$，$N=\\{x \\mid x \\text{ 满足 } \\beta\\}$，则 $M$ 与 $N$ 的关系为（ ）",
+            "A. $M \\subset N$；",
+            "B. $M \\supset N$；",
+            "C. $M=N$；",
+            "D. $M \\cap N=\\varnothing$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        330,
+        900,
+        360
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "10. 证明：若梯形的对角线不相等，则该梯形不是等腰梯形。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        360,
+        900,
+        390
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "B 组"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        390,
+        900,
+        440
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 若集合 $M=\\{a \\mid a=x+\\sqrt{2}y, x、y \\in \\mathbf{Q}\\}$，则下列结论正确的是（ ）",
+            "A. $M \\subseteq \\mathbf{Q}$；",
+            "B. $M=\\mathbf{Q}$；",
+            "C. $M \\supset \\mathbf{Q}$；",
+            "D. $M \\subset \\mathbf{Q}$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        440,
+        900,
+        490
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 若 $\\alpha$ 是 $\\beta$ 的必要非充分条件，$\\beta$ 是 $\\gamma$ 的充要条件，$\\gamma$ 是 $\\delta$ 的必要非充分条件，则 $\\delta$ 是 $\\alpha$ 的________条件，$\\gamma$ 是 $\\alpha$ 的________条件。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        490,
+        900,
+        540
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3. 已知全集 $U=\\{x \\mid x \\text{ 为不大于 } 20 \\text{ 的素数}\\}$。若 $A \\cap \\overline{B}=\\{3,5\\}$，$\\overline{A} \\cap B=\\{7,19\\}$，$\\overline{A \\cup B}=\\{2,17\\}$，则 $A=$________，$B=$________。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        540,
+        900,
+        590
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "4. 已知集合 $P=\\{x \\mid -2 \\leqslant x \\leqslant 5\\}$，$Q=\\{x \\mid x \\geqslant k+1 \\text{ 且 } x \\leqslant 2k-1\\}$，且 $Q \\subseteq P$。求实数 $k$ 的取值范围。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b13",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        590,
+        900,
+        640
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "5. 已知全集 $U=\\mathbf{R}$，集合 $A=\\{x \\mid x \\leqslant a-1\\}$，$B=\\{x \\mid x > a+2\\}$，$C=\\{x \\mid x < 0 \\text{ 或 } x \\geqslant 4\\}$，且 $\\overline{A \\cup B} \\subseteq C$。求实数 $a$ 的取值范围。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b14",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        640,
+        900,
+        700
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "6. 已知集合 $A=\\{x \\mid (a-1)x^{2}+3x-2=0\\}$。是否存在这样的实数 $a$，使得集合 $A$ 有且仅有两个子集？若存在，求出实数 $a$ 的值及对应的两个子集；若不存在，说明理由。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b15",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        700,
+        900,
+        730
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "7. 证明：$\\sqrt[3]{2}$ 是无理数。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b16",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        730,
+        900,
+        760
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "拓展与思考"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b17",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        760,
+        900,
+        790
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 设 $a$、$b$ 是正整数。求证：若 $ab-1$ 是 $3$ 的倍数，则 $a$ 与 $b$ 被 $3$ 除的余数相同。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_b18",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        100,
+        790,
+        900,
+        870
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 已知非空数集 $S$ 满足：对任意给定的 $x$、$y \\in S$（$x$、$y$ 可以相同），有 $x+y \\in S$ 且 $x-y \\in S$。",
+            "(1) 哪个数一定是 $S$ 中的元素？说明理由；",
+            "(2) 若 $S$ 是有限集，求 $S$；",
+            "(3) 若 $S$ 中最小的正数为 $5$，求 $S$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p28_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        850,
+        950,
+        950,
+        990
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "21"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

@@ -25,6 +25,10 @@ async def system_health() -> HealthResponse:
         vllm_reachable=reachable,
         redis_ok=redis_ok(),
         minio_ok=minio_ok(),
+        openai_lan_proxy=bool(
+            settings.vllm_lan_proxy_enabled and (settings.vllm_lan_token or "").strip()
+        ),
+        openai_lan_proxy_base="/v1",
     )
 
 

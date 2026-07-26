@@ -1,0 +1,27 @@
+{
+  "name": "corpus-studio-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/query-core": "^5.101.4",
+    "@tiptap/core": "^2.11.5",
+    "@tiptap/extension-placeholder": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
+    "html-to-image": "^1.11.13",
+    "marked": "^15.0.6",
+    "mathjax-full": "^3.2.2",
+    "vis-network": "^9.1.9",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

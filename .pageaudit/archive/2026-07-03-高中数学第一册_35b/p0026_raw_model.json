@@ -1,0 +1,309 @@
+{
+  "page_no": 26,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p26_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        740,
+        30,
+        900,
+        55
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.2 常用逻辑用语"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        90,
+        890,
+        160
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3. 如果 $a$、$b$、$c$ 为实数，设 $\beta$: $a=b=c=0$；$\beta$: $a$、$b$、$c$ 中至少有一个为 $0$；$\beta$: $a^{2}+\bar{b}+|c|=0$. 那么 $\beta$ $\beta$；$\beta$ $\beta$；$\beta$ $\beta$.（用符号“$\rightleftharpoons$”“$\rightleftarrows$”或“$\rightleftarrows$”填空）"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        165,
+        730,
+        295
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "4. 下列各组中，$\beta$ 是 $\beta$ 的什么条件？",
+            "(1) $\beta$: 四边形 $ABCD$ 的四条边等长，$\beta$: 四边形 $ABCD$ 是正方形；",
+            "(2) $\beta$: $\triangle ABC$ 与 $\triangle DEF$ 全等，$\beta$: $\triangle ABC$ 与 $\triangle DEF$ 的周长相等；",
+            "(3) $\beta$: $x$ 是 $2$ 的倍数，$\beta$: $x$ 是 $6$ 的倍数；",
+            "(4) $\beta$: 集合 $A \rightleftharpoons B$，$B \rightleftharpoons C$，$C \rightleftharpoons A$，$\beta$: 集合 $A=B=C$；",
+            "(5) $\beta$: $A \rightleftharpoons B=A \rightleftharpoons C$，$\beta$: $B=C$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        300,
+        890,
+        345
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "5. 已知 $l$、$m$ 都是自然数，试判断“$l+m$ 是偶数”与“$l$、$m$ 都是偶数”是否等价，并说明理由."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        350,
+        890,
+        390
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "6. 证明：“四边形 $ABCD$ 是平行四边形”是“四边形 $ABCD$ 的对角线互相平分”的充要条件."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        110,
+        405,
+        155,
+        425
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "B 组"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        440,
+        510,
+        480
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 判断下列命题的真假，并说明理由：",
+            "(1) 若 $A \rightleftharpoons B=\beta$，$C \rightleftharpoons B$，则 $A \rightleftharpoons C=\beta$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        485,
+        755,
+        520
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 若 $a$、$b \rightleftharpoons \beta$，则关于 $x$ 的方程 $(a+1)x+b=0$ 的解为 $x=-\frac{b}{a+1}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        525,
+        890,
+        565
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 已知 $a$ 为实数. 写出关于 $x$ 的方程 $ax^{2}+2x+1=0$ 至少有一个实根的一个充要条件、一个充分非必要条件和一个必要非充分条件."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        570,
+        885,
+        630
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3. 若 $\beta$: $\beta \rightleftharpoons B \rightleftharpoons \beta$，$\beta$: $B=\beta$，则 $\beta$ 是 $\beta$ 的 （ ）",
+            "A. 充分非必要条件；",
+            "B. 必要非充分条件；",
+            "C. 充要条件；",
+            "D. 既非充分又非必要条件."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        140,
+        635,
+        600,
+        700
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "4. 已知 $\beta$: $x<3m-1$ 或 $x>-m$，$\beta$: $x<2$ 或 $x \rightleftharpoons 4$.",
+            "(1) 若 $\beta$ 是 $\beta$ 的充分条件，求实数 $m$ 的取值范围；",
+            "(2) 若 $\beta$ 是 $\beta$ 的必要条件，求实数 $m$ 的取值范围."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p26_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        890,
+        950,
+        930,
+        980
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "19"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

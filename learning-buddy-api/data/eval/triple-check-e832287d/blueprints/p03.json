@@ -1,0 +1,498 @@
+{
+  "page_no": 3,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p3_b1",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        78.0,
+        790.0,
+        143.0
+      ],
+      "anchor_id": "p3_b1",
+      "figure_group_id": "p3_fg1",
+      "content": {
+        "text": "主  编 李大潜  王建磐\n副 主 编 应坚刚  鲍建生\n本册编写人员 王伟叶  傅吉祥  王春明  王志强  潘  奋  吴泉水  高卫国  邱维元",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b2",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        173.0,
+        256.0,
+        190.0
+      ],
+      "anchor_id": "p3_b2",
+      "figure_group_id": "p3_fg2",
+      "content": {
+        "text": "责任编辑 张莹莹",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b3",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        197.0,
+        398.0,
+        214.0
+      ],
+      "anchor_id": "p3_b3",
+      "figure_group_id": "p3_fg3",
+      "content": {
+        "text": "装帧设计 陆  弦  王  捷  周  吉",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b4",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        245.0,
+        833.0,
+        310.0
+      ],
+      "anchor_id": "p3_b4",
+      "figure_group_id": "p3_fg4",
+      "content": {
+        "text": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b5",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        318.0,
+        398.0,
+        335.0
+      ],
+      "anchor_id": "p3_b5",
+      "figure_group_id": "p3_fg5",
+      "content": {
+        "text": "插图绘制 肖征波  周  吉  朱泽宇",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b6",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        350.0,
+        418.0,
+        367.0
+      ],
+      "anchor_id": "p3_b6",
+      "figure_group_id": "p3_fg6",
+      "content": {
+        "text": "普通高中教科书  数学  必修  第一册",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b7",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        374.0,
+        508.0,
+        391.0
+      ],
+      "anchor_id": "p3_b7",
+      "figure_group_id": "p3_fg7",
+      "content": {
+        "text": "上海市中小学（幼儿园）课程改革委员会组织编写",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b8",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        407.0,
+        582.0,
+        614.0
+      ],
+      "anchor_id": "p3_b8",
+      "figure_group_id": "p3_fg8",
+      "content": {
+        "text": "出版 上海教育出版社有限公司（上海市永福路123号）\n发行 上海新华书店\n印刷 上海中华印刷有限公司\n版次 2020年7月第1版\n印次 2021年7月第3次\n开本 890×1240  1/16\n印张 9.5\n字数 164千字\n书号 978-7-5720-0183-3/G·0140\n定价 11.90元",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "出版",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "上海教育出版社有限公司（上海市永福路",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "123",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "号）",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "发行",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "上海新华书店",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "印刷",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "上海中华印刷有限公司",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "版次",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 2020",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "年",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "7",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "月第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "1",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "版",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "印次",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 2021",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "年",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "7",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "月第",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "3",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "次",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "开本",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " 890×1240  1/16\n",
+            "latex": "890 \\cdot 1240 \\frac{1}{16}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "印张",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 9.5\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "字数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 164",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "千字",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "书号",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 978-7-5720-0183-3/G·0140\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "定价",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 11.90",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "元",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p3_b9",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        648.0,
+        755.0,
+        728.0
+      ],
+      "anchor_id": "p3_b9",
+      "figure_group_id": "p3_fg9",
+      "content": {
+        "text": "版权所有 · 未经许可不得采用任何方式擅自复制或使用本产品任何部分 · 违者必究\n如发现内容质量问题，请拨打 021-64319241\n如发现印、装质量问题，影响阅读，请与上海教育出版社有限公司联系. 电话021-64377165\n全国物价举报电话：12315",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b10",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        118.0,
+        759.0,
+        861.0,
+        799.0
+      ],
+      "anchor_id": "p3_b10",
+      "figure_group_id": "p3_fg10",
+      "content": {
+        "text": "声明  按照《中华人民共和国著作权法》第二十五条有关规定，我们已尽量寻找著作权人支付报酬. 著作权人如有关于支付报酬事宜可及时与出版社联系.",
+        "caption": "本册教材图片提供  全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+        "table_html": "<table><tr><td>出  版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr><tr><td>发  行</td><td>上海新华书店</td></tr><tr><td>印  刷</td><td>上海中华印刷有限公司</td></tr><tr><td>版  次</td><td>2020年7月第1版</td></tr><tr><td>印  次</td><td>2021年7月第3次</td></tr><tr><td>开  本</td><td>890×1240  1/16</td></tr><tr><td>印  张</td><td>9.5</td></tr><tr><td>字  数</td><td>164千字</td></tr><tr><td>书  号</td><td>978-7-5720-0183-3/G·0140</td></tr><tr><td>定  价</td><td>11.90元</td></tr></table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

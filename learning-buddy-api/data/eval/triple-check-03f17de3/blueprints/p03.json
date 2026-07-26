@@ -1,0 +1,244 @@
+{
+  "page_no": 3,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p3_b1",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        115.0,
+        75.0,
+        790.0,
+        215.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "主  编 李大潜 王建磐",
+            "副 主 编 应坚刚 鲍建生",
+            "本册编写人员 王伟叶 傅吉祥 王春明 王志强 潘  奋 吴泉水 高卫国 邱维元",
+            "责任编辑 张莹莹",
+            "装帧设计 陆  弦 王  捷 周  吉"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        115.0,
+        245.0,
+        830.0,
+        335.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "本册教材图片提供 全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）",
+            "插图绘制 肖征波 周  吉 朱泽宇"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        115.0,
+        350.0,
+        505.0,
+        390.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "普通高中教科书 数学 必修 第一册",
+            "上海市中小学（幼儿园）课程改革委员会组织编写"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_t1",
+      "kind": "table",
+      "content_type": "table",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        115.0,
+        405.0,
+        580.0,
+        615.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": {
+          "rows": [
+            [
+              "出  版",
+              "上海教育出版社有限公司（上海市永福路123号）"
+            ],
+            [
+              "发  行",
+              "上海新华书店"
+            ],
+            [
+              "印  刷",
+              "上海中华印刷有限公司"
+            ],
+            [
+              "版  次",
+              "2020年7月第1版"
+            ],
+            [
+              "印  次",
+              "2021年7月第3次"
+            ],
+            [
+              "开  本",
+              "890×1240  1/16"
+            ],
+            [
+              "印  张",
+              "9.5"
+            ],
+            [
+              "字  数",
+              "164千字"
+            ],
+            [
+              "书  号",
+              "978-7-5720-0183-3/G·0140"
+            ],
+            [
+              "定  价",
+              "11.90元"
+            ]
+          ],
+          "caption": null
+        },
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        115.0,
+        645.0,
+        825.0,
+        730.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "版权所有 · 未经许可不得采用任何方式擅自复制或使用本产品任何部分 · 违者必究",
+            "如发现内容质量问题，请拨打 021-64319241",
+            "如发现印、装质量问题，影响阅读，请与上海教育出版社有限公司联系. 电话021-64377165",
+            "全国物价举报电话：12315"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p3_b5",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        115.0,
+        755.0,
+        860.0,
+        800.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "声明 按照《中华人民共和国著作权法》第二十五条有关规定，我们已尽量寻找著作权人支付报酬. 著作权人如有关于支付报酬事宜可及时与出版社联系."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

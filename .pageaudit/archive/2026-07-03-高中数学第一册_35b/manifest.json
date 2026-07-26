@@ -1,0 +1,1100 @@
+[
+  {
+    "page_no": 1,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 6560,
+        "completion_tokens": 1011,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 7,
+      "kinds": {
+        "text": 6,
+        "figure": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 7,
+      "kinds": {
+        "text": 6,
+        "figure": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 8955
+  },
+  {
+    "page_no": 2,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 6354,
+        "completion_tokens": 805,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 6,
+      "kinds": {
+        "running": 1,
+        "text": 4,
+        "figure": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 6,
+      "kinds": {
+        "running": 1,
+        "text": 4,
+        "figure": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 7387
+  },
+  {
+    "page_no": 3,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 6907,
+        "completion_tokens": 1358,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 6,
+      "kinds": {
+        "text": 5,
+        "table": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 6,
+      "kinds": {
+        "text": 5,
+        "table": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 10745
+  },
+  {
+    "page_no": 4,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 6829,
+        "completion_tokens": 1280,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 6,
+      "kinds": {
+        "running": 2,
+        "text": 4
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 6,
+      "kinds": {
+        "running": 2,
+        "text": 4
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 10163
+  },
+  {
+    "page_no": 5,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 6753,
+        "completion_tokens": 1204,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 6,
+      "kinds": {
+        "running": 2,
+        "text": 4
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 6,
+      "kinds": {
+        "running": 2,
+        "text": 4
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 9792
+  },
+  {
+    "page_no": 6,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 6246,
+        "completion_tokens": 697,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 3,
+      "kinds": {
+        "running": 2,
+        "text": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 3,
+      "kinds": {
+        "running": 2,
+        "text": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 6076
+  },
+  {
+    "page_no": 7,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 6226,
+        "completion_tokens": 677,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 4,
+      "kinds": {
+        "running": 2,
+        "text": 2
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 4,
+      "kinds": {
+        "running": 2,
+        "text": 2
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 5964
+  },
+  {
+    "page_no": 8,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 6112,
+        "completion_tokens": 563,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 3,
+      "kinds": {
+        "figure": 1,
+        "text": 2
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 3,
+      "kinds": {
+        "figure": 1,
+        "text": 2
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 5719
+  },
+  {
+    "page_no": 9,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5549,
+        "total_tokens": 8248,
+        "completion_tokens": 2699,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 16,
+      "kinds": {
+        "running": 2,
+        "figure": 1,
+        "text": 13
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 16,
+      "kinds": {
+        "running": 2,
+        "figure": 1,
+        "text": 13
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 34095
+  },
+  {
+    "page_no": 10,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7431,
+        "completion_tokens": 1881,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 9,
+      "kinds": {
+        "running": 2,
+        "text": 6,
+        "table": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 9,
+      "kinds": {
+        "running": 2,
+        "text": 6,
+        "table": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 19612
+  },
+  {
+    "page_no": 11,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7858,
+        "completion_tokens": 2308,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 12,
+      "kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 12,
+      "kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 29458
+  },
+  {
+    "page_no": 12,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 8140,
+        "completion_tokens": 2590,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 14,
+      "kinds": {
+        "running": 2,
+        "text": 9,
+        "equation": 1,
+        "figure": 2
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 14,
+      "kinds": {
+        "running": 2,
+        "text": 9,
+        "equation": 1,
+        "figure": 2
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 39522
+  },
+  {
+    "page_no": 13,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7193,
+        "completion_tokens": 1643,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 7,
+      "kinds": {
+        "running": 2,
+        "text": 4,
+        "equation": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 7,
+      "kinds": {
+        "running": 2,
+        "text": 4,
+        "equation": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 29539
+  },
+  {
+    "page_no": 14,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 9615,
+        "completion_tokens": 4065,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 22,
+      "kinds": {
+        "running": 2,
+        "text": 17,
+        "figure": 1,
+        "equation": 2
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 22,
+      "kinds": {
+        "running": 2,
+        "text": 17,
+        "figure": 1,
+        "equation": 2
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 60138
+  },
+  {
+    "page_no": 15,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7336,
+        "completion_tokens": 1786,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 7,
+      "kinds": {
+        "running": 2,
+        "text": 4,
+        "equation": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 7,
+      "kinds": {
+        "running": 2,
+        "text": 4,
+        "equation": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 42154
+  },
+  {
+    "page_no": 16,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 8087,
+        "completion_tokens": 2537,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 14,
+      "kinds": {
+        "running": 2,
+        "text": 10,
+        "figure": 2
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 14,
+      "kinds": {
+        "running": 2,
+        "text": 10,
+        "figure": 2
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 35525
+  },
+  {
+    "page_no": 17,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 8231,
+        "completion_tokens": 2681,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 14,
+      "kinds": {
+        "running": 2,
+        "text": 11,
+        "figure": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 14,
+      "kinds": {
+        "running": 2,
+        "text": 11,
+        "figure": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 43382
+  },
+  {
+    "page_no": 18,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7538,
+        "completion_tokens": 1988,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 8,
+      "kinds": {
+        "running": 2,
+        "text": 5,
+        "figure": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 8,
+      "kinds": {
+        "running": 2,
+        "text": 5,
+        "figure": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 31940
+  },
+  {
+    "page_no": 19,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 8221,
+        "completion_tokens": 2671,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 14,
+      "kinds": {
+        "running": 2,
+        "text": 12
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 14,
+      "kinds": {
+        "running": 2,
+        "text": 12
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 42186
+  },
+  {
+    "page_no": 20,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7711,
+        "completion_tokens": 2161,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 12,
+      "kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 12,
+      "kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 21699
+  },
+  {
+    "page_no": 21,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7903,
+        "completion_tokens": 2353,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 12,
+      "kinds": {
+        "running": 2,
+        "text": 9,
+        "equation": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 12,
+      "kinds": {
+        "running": 2,
+        "text": 9,
+        "equation": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 65078
+  },
+  {
+    "page_no": 22,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7209,
+        "completion_tokens": 1659,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 7,
+      "kinds": {
+        "running": 2,
+        "text": 5
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 7,
+      "kinds": {
+        "running": 2,
+        "text": 5
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 30889
+  },
+  {
+    "page_no": 23,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 7449,
+        "completion_tokens": 1899,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 7,
+      "kinds": {
+        "running": 2,
+        "text": 5
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 7,
+      "kinds": {
+        "running": 2,
+        "text": 5
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 49224
+  },
+  {
+    "page_no": 24,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 8754,
+        "completion_tokens": 3204,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 19,
+      "kinds": {
+        "running": 2,
+        "figure": 2,
+        "text": 13,
+        "equation": 1,
+        "table": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 19,
+      "kinds": {
+        "running": 2,
+        "figure": 2,
+        "text": 13,
+        "equation": 1,
+        "table": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 37477
+  },
+  {
+    "page_no": 25,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 10047,
+        "completion_tokens": 4497,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 29,
+      "kinds": {
+        "running": 2,
+        "text": 26,
+        "equation": 1
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 29,
+      "kinds": {
+        "running": 2,
+        "text": 26,
+        "equation": 1
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [
+      {
+        "page_no": 25,
+        "attempt": 1,
+        "error": "1 validation error for PageBlueprint\nblocks.27.bbox\n  Value error, bbox must be normalized to 0..1000 [type=value_error, input_value=[120, 980, 910, 1005], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+      }
+    ],
+    "elapsed_ms": 93051
+  },
+  {
+    "page_no": 26,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 8006,
+        "completion_tokens": 2456,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 12,
+      "kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 12,
+      "kinds": {
+        "running": 2,
+        "text": 10
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 91542
+  },
+  {
+    "page_no": 27,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 6862,
+        "completion_tokens": 1312,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 4,
+      "kinds": {
+        "running": 2,
+        "text": 2
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 4,
+      "kinds": {
+        "running": 2,
+        "text": 2
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 31462
+  },
+  {
+    "page_no": 28,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 9541,
+        "completion_tokens": 3991,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 20,
+      "kinds": {
+        "running": 2,
+        "text": 18
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 20,
+      "kinds": {
+        "running": 2,
+        "text": 18
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 68432
+  },
+  {
+    "page_no": 29,
+    "status": "blank_detected",
+    "prompt_version": "layout_blueprint_v5",
+    "final": {
+      "blocks": 1,
+      "kinds": {
+        "text": 1
+      },
+      "text_empty": 1
+    },
+    "elapsed_ms": 5,
+    "raw": null
+  },
+  {
+    "page_no": 30,
+    "status": "ok",
+    "prompt_version": "layout_blueprint_v5",
+    "used_json_schema": true,
+    "call": {
+      "used_schema": true,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 5550,
+        "total_tokens": 6289,
+        "completion_tokens": 739,
+        "prompt_tokens_details": null
+      },
+      "max_tokens": 6144
+    },
+    "truncated": false,
+    "raw": {
+      "blocks": 4,
+      "kinds": {
+        "figure": 1,
+        "text": 3
+      },
+      "text_empty": 0
+    },
+    "final": {
+      "blocks": 4,
+      "kinds": {
+        "figure": 1,
+        "text": 3
+      },
+      "text_empty": 0
+    },
+    "attempt_errors": [],
+    "elapsed_ms": 7061
+  }
+]

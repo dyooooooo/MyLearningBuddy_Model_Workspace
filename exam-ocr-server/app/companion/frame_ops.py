@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from app.companion import image_diff, merge, store
 from app.companion.question_timing import refresh_session_question_timings
 from app.config import settings
+from app.math_enrich import enrich_page_parts
 from app.ocr_refine import refine_parts
 from app.schemas import CompanionSession, HomeworkEntry, MergeDiff, PagePart, SchedulerAction
 from app.vllm_client import vllm_client
@@ -28,6 +29,7 @@ def session_lock(session_id: str) -> asyncio.Lock:
 @dataclass
 class OcrRefineResult:
     ocr_parts: list[PagePart]
+    vision_parts: list[PagePart]
     ocr_skipped: bool
     diff_ratio: float | None
     ocr_ms: int
@@ -106,6 +108,7 @@ async def run_ocr_refine_sequential(
         parts = [p.model_copy(deep=True) for p in last_frame_ocr_parts]
         return OcrRefineResult(
             ocr_parts=parts,
+            vision_parts=[p.model_copy(deep=True) for p in parts],
             ocr_skipped=True,
             diff_ratio=diff_ratio,
             ocr_ms=0,
@@ -116,16 +119,19 @@ async def run_ocr_refine_sequential(
 
     store.append_event(session, "OCR_START", {"frame_id": frame_id})
     t_total = time.perf_counter()
-    ocr_parts, ocr_ms = await ocr_frame(image_bytes, mime, img_size=img_size)
+    vision_parts, ocr_ms = await ocr_frame(image_bytes, mime, img_size=img_size)
+    vision_parts = await enrich_page_parts(vision_parts)
+    ocr_parts = vision_parts
     refine_ms = 0
     n_changes = 0
-    if settings.refine_enabled and ocr_parts:
+    if settings.refine_enabled and vision_parts:
         ocr_parts, refine_ms, n_changes = await refine_frame(
-            ocr_parts,
+            vision_parts,
             student_id=student_id,
             subject=subject,
             grade_band=grade_band,
         )
+        ocr_parts = await enrich_page_parts(ocr_parts)
         store.append_event(
             session,
             "OCR_REFINED",
@@ -150,6 +156,7 @@ async def run_ocr_refine_sequential(
     )
     return OcrRefineResult(
         ocr_parts=ocr_parts,
+        vision_parts=[p.model_copy(deep=True) for p in vision_parts],
         ocr_skipped=False,
         diff_ratio=diff_ratio,
         ocr_ms=ocr_ms,

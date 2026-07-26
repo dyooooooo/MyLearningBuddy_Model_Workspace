@@ -1,0 +1,349 @@
+{
+  "page_no": 12,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p12_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770,
+        35,
+        900,
+        55
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.1 集合初步"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        145,
+        100,
+        660,
+        215
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 4 选择适当的方法表示下列集合：",
+            "(1) 大于 $0$ 且小于 $10$ 的全体偶数组成的集合 $A$；",
+            "(2) 被 $3$ 除余 $2$ 的所有自然数组成的集合 $B$；",
+            "(3) 直角坐标平面上由第二象限与第四象限中的所有点组成的集合 $C$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        140,
+        220,
+        660,
+        370
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "解 (1) 用列举法：$A=\\{2,4,6,8\\}$.",
+            "(2) 用描述法：$B=\\{n \\mid n=3k+2, k \\in \\mathbb{N}\\}$.",
+            "(3) 因为第二象限中所有点 $(x,y)$ 具有的特征是 $x<0$ 且 $y>0$，而第四象限中所有点具有的特征是 $x>0$ 且 $y<0$，所以第二象限与第四象限中所有点具有的特征可统一地写为 $xy<0$，于是可用描述法表示该集合："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_eq1",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        280,
+        350,
+        470,
+        370
+      ],
+      "anchor_id": "p12_b2",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "C=\\{(x,y) \\mid xy<0\\}",
+          "fallback_text": "C={(x,y) | xy<0}"
+        },
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90,
+        380,
+        660,
+        530
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数学中，常常需要表示满足一些不等式的全体实数所组成的集合. 为了方便起见，我们引入区间 (interval) 的概念.",
+            "当 $a, b \\in \\mathbf{R}$ 且 $a<b$ 时，规定：",
+            "满足不等式 $a \\leqslant x \\leqslant b$ 的全体实数 $x$ 组成的集合称为一个闭区间，记作 $[a,b]$.",
+            "满足不等式 $a<x<b$ 的全体实数 $x$ 组成的集合称为一个开区间，记作 $(a,b)$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        130,
+        540,
+        580,
+        555
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "闭区间与开区间在数轴上的表示，如图 1-1-1 所示."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_f1",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        160,
+        560,
+        590,
+        620
+      ],
+      "anchor_id": "p12_b4",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "图 1-1-1"
+        }
+      }
+    },
+    {
+      "id": "p12_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90,
+        650,
+        660,
+        695
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "满足不等式 $a \\leqslant x<b$ 或 $a<x \\leqslant b$ 的全体实数 $x$ 所组成的集合称为一个半开半闭区间，分别记作 $[a,b)$ 或 $(a,b]$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        130,
+        700,
+        560,
+        715
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "半开半闭区间在数轴上的表示，如图 1-1-2 所示."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_f2",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        160,
+        720,
+        590,
+        780
+      ],
+      "anchor_id": "p12_b6",
+      "figure_group_id": "p12_f2",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "图 1-1-2"
+        }
+      }
+    },
+    {
+      "id": "p12_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        130,
+        815,
+        490,
+        830
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "这里的实数 $a$、$b$ 统称为这些区间的端点."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90,
+        835,
+        660,
+        920
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "此外，满足不等式 $x \\geqslant a$，$x>a$，$x \\leqslant b$ 或 $x<b$ 的全体实数 $x$ 所组成的集合可分别用区间表示为 $[a,+\\infty)$，$(a,+\\infty)$，$(-\\infty,b]$ 或 $(-\\infty,b)$.",
+            "实数集 $\\mathbf{R}$ 可用区间表示为 $(-\\infty,+\\infty)$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_as1",
+      "kind": "text",
+      "zone": "aside_right",
+      "role": "note",
+      "bbox": [
+        700,
+        840,
+        870,
+        890
+      ],
+      "anchor_id": "p12_b8",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "符号“$\\infty$”读作“无穷大”."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p12_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        880,
+        950,
+        910,
+        980
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "5"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

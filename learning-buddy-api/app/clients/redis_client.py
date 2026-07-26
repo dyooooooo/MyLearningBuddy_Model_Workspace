@@ -60,6 +60,80 @@ def enqueue_graph_run(student_id: str, homework_id: str, subject: str, grade_ban
     return job_id
 
 
+def enqueue_import_job(job_id: str) -> str:
+    payload = {"job_id": job_id, "type": "import"}
+    get_redis().lpush(settings.import_queue, json.dumps(payload))
+    return job_id
+
+
+def enqueue_import35b_job(job_id: str) -> str:
+    """Isolated 35B import queue. Uses a DEDICATED queue (``import35b_queue``),
+    never the MinerU ``import_queue``, so the two lines share no Redis key."""
+    payload = {"job_id": job_id, "type": "import35b"}
+    get_redis().lpush(settings.import35b_queue, json.dumps(payload))
+    return job_id
+
+
+def purge_import_queue(job_id: str) -> int:
+    """Remove pending MinerU import queue entries for ``job_id``. Returns items removed."""
+    r = get_redis()
+    removed = 0
+    try:
+        for raw in r.lrange(settings.import_queue, 0, -1):
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if payload.get("job_id") == job_id and payload.get("type") == "import":
+                if r.lrem(settings.import_queue, 0, raw):
+                    removed += 1
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("purge import queue failed job=%s: %s", job_id, exc)
+    return removed
+
+
+def purge_import35b_queue(job_id: str) -> int:
+    """Remove pending 35B queue entries for ``job_id``. Returns items removed."""
+    r = get_redis()
+    removed = 0
+    try:
+        for raw in r.lrange(settings.import35b_queue, 0, -1):
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if payload.get("job_id") == job_id and payload.get("type") == "import35b":
+                if r.lrem(settings.import35b_queue, 0, raw):
+                    removed += 1
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("purge import35b queue failed job=%s: %s", job_id, exc)
+    return removed
+
+
+def enqueue_scout_run(run_id: str) -> str:
+    payload = {"job_id": run_id, "type": "scout", "run_id": run_id}
+    get_redis().lpush(settings.scout_queue, json.dumps(payload))
+    return run_id
+
+
+REINDEX_KEY_PREFIX = "lb:reindex:"
+
+
+def set_reindex_status(job_id: str, data: dict) -> None:
+    get_redis().set(f"{REINDEX_KEY_PREFIX}{job_id}", json.dumps(data), ex=86400)
+
+
+def get_reindex_status(job_id: str) -> dict | None:
+    raw = get_redis().get(f"{REINDEX_KEY_PREFIX}{job_id}")
+    return json.loads(raw) if raw else None
+
+
+def enqueue_reindex_job(job_id: str, node_ids: list[str]) -> str:
+    payload = {"job_id": job_id, "type": "reindex", "node_ids": node_ids}
+    get_redis().lpush(settings.publish_queue, json.dumps(payload))
+    return job_id
+
+
 def acquire_vllm_slot(timeout_s: float | None = None) -> bool:
     timeout = timeout_s if timeout_s is not None else settings.vllm_acquire_timeout_s
     deadline = time.time() + timeout
@@ -85,3 +159,17 @@ def release_vllm_slot() -> None:
             r.set("lb:vllm:semaphore", 0)
     except Exception as e:
         logger.warning("release vllm slot failed: %s", e)
+
+
+# Studio import job live events (Redis pub/sub → SSE)
+IMPORT_EVENTS_CHANNEL = "lb:events:import"
+
+
+def publish_import_event(event: dict) -> None:
+    """Publish a light-weight import progress event for Studio SSE fans."""
+    try:
+        payload = dict(event)
+        payload.setdefault("ts", time.time())
+        get_redis().publish(IMPORT_EVENTS_CHANNEL, json.dumps(payload, ensure_ascii=False))
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("publish_import_event failed: %s", exc)

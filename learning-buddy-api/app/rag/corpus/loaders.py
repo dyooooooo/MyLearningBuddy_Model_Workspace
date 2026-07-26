@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from app.rag.corpus.schema import CorpusDocument
+from app.services.corpus_locale import apply_corpus_locale, is_english_subject
 from app.services.corpus_graph import add_edge, upsert_node
 from app.db.models import CorpusTagLink
 from app.services.corpus_graph import _now_iso
@@ -64,10 +65,19 @@ def load_syllabus(path: Path, subject: str, grade_band: str) -> list[CorpusDocum
         if not kp_id:
             continue
         label = n.get("label", kp_id)
+        label_en = n.get("label_en") or label
         desc = n.get("description", "")
+        desc_en = n.get("description_en") or desc
+        if is_english_subject(subject):
+            display_label = label_en or label
+            display_desc = desc_en or desc
+            summary = n.get("summary") or f"{display_label}: {display_desc}"[:200]
+        else:
+            display_label = label
+            display_desc = desc
+            summary = n.get("summary") or f"{display_label}：{display_desc}"[:200]
         kws = " ".join(n.get("keywords", []))
-        text = f"{label} {desc} {kws}".strip()
-        summary = n.get("summary") or f"{label}：{desc}"[:200]
+        text = f"{display_label} {display_desc} {kws}".strip()
         tags = n.get("tags") or [f"grade_band:{grade_band}", f"subject:{subject}"]
         links = n.get("links") or {}
         docs.append(
@@ -79,12 +89,12 @@ def load_syllabus(path: Path, subject: str, grade_band: str) -> list[CorpusDocum
                 grade_band=grade_band,
                 kp_id=kp_id,
                 text=text,
-                label=label,
+                label=display_label,
                 summary=summary,
                 parent_id=n.get("parent_id") or "",
                 tags=tags,
                 links=links,
-                meta={"level": str(n.get("level", 1))},
+                meta={"level": str(n.get("level", 1)), "label_en": label_en, "description_en": desc_en},
             )
         )
         for kw in n.get("keywords", []):
@@ -98,9 +108,9 @@ def load_syllabus(path: Path, subject: str, grade_band: str) -> list[CorpusDocum
                         subject=subject,
                         grade_band=grade_band,
                         kp_id=kp_id,
-                        text=f"{label} {kw}",
-                        label=label,
-                        summary=f"{label} 关键词 {kw}",
+                        text=f"{display_label} {kw}",
+                        label=display_label,
+                        summary=f"{display_label} 关键词 {kw}" if not is_english_subject(subject) else f"{display_label} keyword {kw}",
                         parent_id=n.get("parent_id") or "",
                         tags=tags + [f"keyword:{kw}"],
                         meta={"keyword": kw},
@@ -231,12 +241,22 @@ def load_all_corpus(corpus_dir: Path) -> list[CorpusDocument]:
 def kp_labels_from_docs(docs: list[CorpusDocument]) -> dict[str, str]:
     out: dict[str, str] = {}
     for d in docs:
-        if d.label and d.kp_id:
+        if d.label and d.kp_id and d.doc_type == "syllabus":
             out[d.kp_id] = d.label
     return out
 
 
-def sync_docs_to_graph(session, docs: list[CorpusDocument]) -> int:
+def kp_labels_en_from_docs(docs: list[CorpusDocument]) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for d in docs:
+        if d.kp_id and d.doc_type == "syllabus":
+            en = (d.meta or {}).get("label_en") or d.label
+            if en:
+                out[d.kp_id] = str(en)
+    return out
+
+
+def sync_docs_to_graph(session, docs: list[CorpusDocument], *, status: str = "draft") -> int:
     """Persist corpus documents as PG graph nodes + declared links."""
     count = 0
     seen_tags: set[str] = set()
@@ -245,17 +265,26 @@ def sync_docs_to_graph(session, docs: list[CorpusDocument]) -> int:
         ntype = d.node_type or d.doc_type
         if ntype == "keyword":
             continue
+        meta = {**d.meta, "kp_id": d.kp_id, "doc_type": d.doc_type}
+        label, summary, full_text, meta, _ = apply_corpus_locale(
+            d.subject,
+            label=d.label,
+            summary=d.summary,
+            full_text=d.full_text or d.text,
+            meta=meta,
+        )
         upsert_node(
             session,
             node_id=d.node_id,
             node_type=str(ntype),
             subject=d.subject,
             grade_band=d.grade_band,
-            label=d.label,
-            summary=d.summary,
-            full_text=d.full_text or d.text,
+            label=label,
+            summary=summary,
+            full_text=full_text,
             tags_json=d.tags,
-            meta_json={**d.meta, "kp_id": d.kp_id, "doc_type": d.doc_type},
+            meta_json=meta,
+            status=status,
         )
         for tag in dict.fromkeys(d.tags):
             tid = tag if tag.startswith("tag:") else f"tag:{tag}"
@@ -267,6 +296,7 @@ def sync_docs_to_graph(session, docs: list[CorpusDocument]) -> int:
                     subject="*",
                     grade_band="*",
                     label=tid,
+                    status=status,
                 )
                 seen_tags.add(tid)
             link_key = (d.node_id, tid)

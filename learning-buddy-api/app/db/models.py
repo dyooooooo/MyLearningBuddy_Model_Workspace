@@ -70,6 +70,8 @@ class QuestionEntity(Base):
     grade_band: Mapped[str] = mapped_column(String(16), default="hs")
     print_text: Mapped[str] = mapped_column(Text, default="")
     handwriting: Mapped[str] = mapped_column(Text, default="")
+    print_segments_json: Mapped[str] = mapped_column(Text, default="[]")
+    handwriting_segments_json: Mapped[str] = mapped_column(Text, default="[]")
     bbox_print_json: Mapped[str] = mapped_column(Text, default="[]")
     bbox_handwriting_json: Mapped[str] = mapped_column(Text, default="[]")
     is_wrong: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=None)
@@ -132,7 +134,7 @@ class CorpusNode(Base):
     full_text: Mapped[str] = mapped_column(Text, default="")
     tags_json: Mapped[str] = mapped_column(Text, default="[]")
     meta_json: Mapped[str] = mapped_column(Text, default="{}")
-    status: Mapped[str] = mapped_column(String(32), default="published")
+    status: Mapped[str] = mapped_column(String(32), default="draft")
     updated_at: Mapped[str] = mapped_column(String(64), default="")
 
 
@@ -173,3 +175,364 @@ class GraphRun(Base):
     started_at: Mapped[str] = mapped_column(String(64), default="")
     finished_at: Mapped[str] = mapped_column(String(64), default="")
     error: Mapped[str] = mapped_column(Text, default="")
+
+
+class CorpusImportJob(Base):
+    __tablename__ = "corpus_import_jobs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    status: Mapped[str] = mapped_column(String(32), default="uploaded", index=True)
+    source_channel: Mapped[str] = mapped_column(String(32), default="pdf_import")
+    minio_key: Mapped[str] = mapped_column(String(512), default="")
+    markdown: Mapped[str] = mapped_column(Text, default="")
+    textbook_node_id: Mapped[str] = mapped_column(String(256), default="")
+    subject: Mapped[str] = mapped_column(String(32), default="math")
+    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
+    label: Mapped[str] = mapped_column(String(512), default="")
+    edition_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    error: Mapped[str] = mapped_column(Text, default="")
+    meta_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusScoutRun(Base):
+    __tablename__ = "corpus_scout_runs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    query: Mapped[str] = mapped_column(Text, default="")
+    url: Mapped[str] = mapped_column(Text, default="")
+    subject: Mapped[str] = mapped_column(String(32), default="math")
+    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
+    status: Mapped[str] = mapped_column(String(32), default="running", index=True)
+    steps_json: Mapped[str] = mapped_column(Text, default="[]")
+    inbox_count: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[str] = mapped_column(String(64), default="")
+    finished_at: Mapped[str] = mapped_column(String(64), default="")
+    error: Mapped[str] = mapped_column(Text, default="")
+
+
+class CorpusInboxItem(Base):
+    __tablename__ = "corpus_inbox_items"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    scout_run_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+    source_url: Mapped[str] = mapped_column(Text, default="")
+    source_platform: Mapped[str] = mapped_column(String(64), default="")
+    resource_kind: Mapped[str] = mapped_column(String(32), default="article")
+    subject: Mapped[str] = mapped_column(String(32), default="math")
+    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
+    title: Mapped[str] = mapped_column(String(512), default="")
+    snippet: Mapped[str] = mapped_column(Text, default="")
+    proposed_node_ids_json: Mapped[str] = mapped_column(Text, default="[]")
+    agent_confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    agent_notes_json: Mapped[str] = mapped_column(Text, default="{}")
+    reviewer: Mapped[str] = mapped_column(String(128), default="")
+    reviewed_at: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+# ---------------------------------------------------------------------------
+# 35B import line — FULLY ISOLATED storage.
+#
+# These tables belong ONLY to the 35B layout import pipeline. They share NO
+# rows, foreign keys or joins with corpus_nodes / corpus_import_jobs (the
+# MinerU line). The only cross-line dependency in the whole 35B pipeline is
+# the 35B vLLM model service. Do NOT add relationships to corpus tables here.
+# ---------------------------------------------------------------------------
+class Import35bJob(Base):
+    __tablename__ = "import35b_jobs"
+    __table_args__ = (Index("ix_import35b_job_key", "textbook_key", "status"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    textbook_key: Mapped[str] = mapped_column(String(256), index=True, default="")
+    label: Mapped[str] = mapped_column(String(512), default="")
+    subject: Mapped[str] = mapped_column(String(32), default="math")
+    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
+    minio_key: Mapped[str] = mapped_column(String(512), default="")
+    status: Mapped[str] = mapped_column(String(32), default="uploaded", index=True)
+    page_limit: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    page_count: Mapped[int] = mapped_column(Integer, default=0)
+    profile_id: Mapped[str] = mapped_column(String(64), default="hujiao_math_hs_v1")
+    error: Mapped[str] = mapped_column(Text, default="")
+    meta_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class Import35bPage(Base):
+    __tablename__ = "import35b_pages"
+    __table_args__ = (Index("ix_import35b_page_job", "job_id"),)
+
+    textbook_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    page_no: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    html: Mapped[str] = mapped_column(Text, default="")
+    plain_text: Mapped[str] = mapped_column(Text, default="")
+    quality_json: Mapped[str] = mapped_column(Text, default="{}")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class Import35bReviewItem(Base):
+    """v4 校验面 finding → HITL 审核队列（35B 自有表，禁止跨线 join）。"""
+
+    __tablename__ = "import35b_review_items"
+    __table_args__ = (Index("ix_import35b_review_job", "job_id", "status"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    job_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    textbook_key: Mapped[str] = mapped_column(String(256), index=True, default="")
+    page_no: Mapped[int] = mapped_column(Integer, default=0)
+    block_id: Mapped[str] = mapped_column(String(128), default="")
+    suspect_type: Mapped[str] = mapped_column(String(64), index=True, default="")
+    severity: Mapped[str] = mapped_column(String(16), default="medium")
+    evidence_json: Mapped[str] = mapped_column(Text, default="{}")
+    candidates_json: Mapped[str] = mapped_column(Text, default="[]")
+    fingerprint: Mapped[str] = mapped_column(String(32), index=True, default="")
+    fingerprint_exact: Mapped[str] = mapped_column(String(32), index=True, default="")
+    # open | confirmed | false_positive | corrected | reported
+    status: Mapped[str] = mapped_column(String(32), index=True, default="open")
+    verdict_json: Mapped[str] = mapped_column(Text, default="{}")
+    # rule | agent | user_report
+    detector: Mapped[str] = mapped_column(String(32), default="rule")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class Import35bSuppression(Base):
+    """误报抑制（「这不是一个错误」）：exact=仅此处，fingerprint=同指纹。"""
+
+    __tablename__ = "import35b_suppressions"
+    __table_args__ = (Index("ix_import35b_suppr_fp", "fingerprint"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    # exact | fingerprint （「规则太严」只生成提议，不落此表）
+    scope: Mapped[str] = mapped_column(String(16), default="exact")
+    fingerprint: Mapped[str] = mapped_column(String(32), index=True, default="")
+    suspect_type: Mapped[str] = mapped_column(String(64), default="")
+    reason: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class Import35bOverride(Base):
+    """用户修正值叠加层：确定性重编译时应用，可重放可撤销。"""
+
+    __tablename__ = "import35b_overrides"
+    __table_args__ = (Index("ix_import35b_override_page", "textbook_key", "page_no"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    textbook_key: Mapped[str] = mapped_column(String(256), index=True, default="")
+    page_no: Mapped[int] = mapped_column(Integer, default=0)
+    block_id: Mapped[str] = mapped_column(String(128), default="")
+    # latex | text — 目标字段类型
+    target: Mapped[str] = mapped_column(String(32), default="latex")
+    # {"old": "...", "new": "..."} 旧值精确匹配后替换
+    payload_json: Mapped[str] = mapped_column(Text, default="{}")
+    review_item_id: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class Import35bCaseLaw(Base):
+    """v4 判例库 canonical 存储（35B 自有表，禁止跨线 join）。
+
+    「判例法」两速记忆中的慢速层：人对 finding 的每次裁决沉淀为一条判例——
+    误判库（``kind=misjudgment``，来自 false_positive 裁决）与方案库
+    （``kind=solution``，来自 correct 裁决）。此表是唯一事实来源；向量索引
+    落在独立 Milvus collection（``import35b_caselaw``），仅用于模糊检索。
+
+    与规则库（成文法）的边界：判例只「降权/猜选项」，永不静默抑制；晋级为规则
+    须经离线归纳 Agent 提议 + harness 验证 + 人批准（``import35b_suppressions``
+    / ``repair_rules`` 才是执行层，本表不参与编译热路径的确定性判断）。
+    """
+
+    __tablename__ = "import35b_caselaw"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    # misjudgment（误判库）| solution（方案库）
+    kind: Mapped[str] = mapped_column(String(16), index=True, default="")
+    suspect_type: Mapped[str] = mapped_column(String(64), index=True, default="")
+    subject: Mapped[str] = mapped_column(String(32), default="math")
+    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
+    # 指纹继承自 finding：跨页/跨 job 归并同类判例
+    fingerprint: Mapped[str] = mapped_column(String(32), index=True, default="")
+    # 判例的可检索文本（suspect_type + evidence 摘要），也是 embedding 输入
+    case_text: Mapped[str] = mapped_column(Text, default="")
+    # 人的裁决快照：{action, scope, note, old, new, candidate_picked}
+    decision_json: Mapped[str] = mapped_column(Text, default="{}")
+    # 溯源：来自哪个 review item / job / page
+    review_item_id: Mapped[str] = mapped_column(String(64), default="")
+    job_id: Mapped[str] = mapped_column(String(64), default="")
+    page_no: Mapped[int] = mapped_column(Integer, default=0)
+    # 向量索引状态：pending（未入 Milvus）| indexed | skip（无 embedder 时）
+    vector_status: Mapped[str] = mapped_column(String(16), default="pending")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class Import35bFeedback(Base):
+    """User-reported issues on imported pages — feeds Cursor Repair Pack workflow."""
+
+    __tablename__ = "import35b_feedback"
+    __table_args__ = (Index("ix_import35b_feedback_job", "job_id", "status"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    job_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    page_no: Mapped[int] = mapped_column(Integer, default=0)
+    textbook_key: Mapped[str] = mapped_column(String(256), index=True, default="")
+    label: Mapped[str] = mapped_column(String(512), default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    tags_json: Mapped[str] = mapped_column(Text, default="[]")
+    block_id: Mapped[str] = mapped_column(String(128), default="")
+    screenshot_key: Mapped[str] = mapped_column(String(512), default="")
+    input_page_key: Mapped[str] = mapped_column(String(512), default="")
+    t1_snapshot_json: Mapped[str] = mapped_column(Text, default="[]")
+    debug_prefix: Mapped[str] = mapped_column(String(512), default="")
+    prompt_version: Mapped[str] = mapped_column(String(64), default="")
+    # open | ack | fixed | wontfix
+    status: Mapped[str] = mapped_column(String(32), index=True, default="open")
+    pack_path: Mapped[str] = mapped_column(String(512), default="")
+    resolution_note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusImportFeedback(Base):
+    """User-reported issues on MinerU/corpus import pages — Cursor Pack workflow.
+
+    Fully isolated from ``import35b_feedback`` (separate table + MinIO prefix).
+    """
+
+    __tablename__ = "corpus_import_feedback"
+    __table_args__ = (Index("ix_corpus_import_feedback_job", "job_id", "status"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    job_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    page_no: Mapped[int] = mapped_column(Integer, default=0)
+    label: Mapped[str] = mapped_column(String(512), default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    tags_json: Mapped[str] = mapped_column(Text, default="[]")
+    block_id: Mapped[str] = mapped_column(String(128), default="")
+    screenshot_key: Mapped[str] = mapped_column(String(512), default="")
+    input_page_key: Mapped[str] = mapped_column(String(512), default="")
+    t1_snapshot_json: Mapped[str] = mapped_column(Text, default="[]")
+    debug_prefix: Mapped[str] = mapped_column(String(512), default="")
+    # open | ack | fixed | wontfix
+    status: Mapped[str] = mapped_column(String(32), index=True, default="open")
+    pack_path: Mapped[str] = mapped_column(String(512), default="")
+    resolution_note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusBookFingerprint(Base):
+    """Stable book identity for MinerU line — survives delete/re-import.
+
+    Matching uses content features (page count, TOC titles, first-page text),
+    not display title (which users often change).
+    """
+
+    __tablename__ = "corpus_book_fingerprints"
+    __table_args__ = (Index("ix_corpus_book_fp_hash", "fingerprint_hash"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    fingerprint_hash: Mapped[str] = mapped_column(String(64), index=True, default="")
+    subject: Mapped[str] = mapped_column(String(32), default="math")
+    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
+    page_count: Mapped[int] = mapped_column(Integer, default=0)
+    toc_hash: Mapped[str] = mapped_column(String(64), default="")
+    first_page_hash: Mapped[str] = mapped_column(String(64), default="")
+    pdf_bytes_size: Mapped[int] = mapped_column(Integer, default=0)
+    label_hint: Mapped[str] = mapped_column(String(512), default="")
+    features_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusCorrection(Base):
+    """User-driven 35B re-recognize result, keyed by book fingerprint.
+
+    On a later import of the same book (matched by fingerprint), these patches
+    are replayed onto IR so MinerU mistakes need not be fixed again.
+    """
+
+    __tablename__ = "corpus_corrections"
+    __table_args__ = (
+        Index("ix_corpus_corr_fp_page", "fingerprint_hash", "page_no"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    fingerprint_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    fingerprint_hash: Mapped[str] = mapped_column(String(64), index=True, default="")
+    # page | block
+    scope: Mapped[str] = mapped_column(String(16), default="page")
+    page_no: Mapped[int] = mapped_column(Integer, default=0)
+    block_id: Mapped[str] = mapped_column(String(128), default="")
+    user_note: Mapped[str] = mapped_column(Text, default="")
+    before_json: Mapped[str] = mapped_column(Text, default="[]")
+    after_json: Mapped[str] = mapped_column(Text, default="[]")
+    refine_result_json: Mapped[str] = mapped_column(Text, default="{}")
+    source_job_id: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class Edition(Base):
+    """Catalog row for a textbook Edition Bundle."""
+
+    __tablename__ = "editions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(256), default="")
+    base_id: Mapped[str] = mapped_column(String(64), default="_base")
+    subject: Mapped[str] = mapped_column(String(32), default="math")
+    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
+    description: Mapped[str] = mapped_column(Text, default="")
+    published_version: Mapped[str] = mapped_column(String(32), default="seed")
+    status: Mapped[str] = mapped_column(String(32), default="active", index=True)
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class EditionVersion(Base):
+    """Immutable published snapshot of an Edition Bundle."""
+
+    __tablename__ = "edition_versions"
+    __table_args__ = (Index("ix_edition_versions_eid", "edition_id", "version"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    edition_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    version: Mapped[str] = mapped_column(String(32), default="")
+    bundle_json: Mapped[str] = mapped_column(Text, default="{}")
+    note: Mapped[str] = mapped_column(Text, default="")
+    published_by: Mapped[str] = mapped_column(String(128), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class EditionDraft(Base):
+    """Mutable draft bundle edited in the ops console before publish."""
+
+    __tablename__ = "edition_drafts"
+
+    edition_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    bundle_json: Mapped[str] = mapped_column(Text, default="{}")
+    base_version: Mapped[str] = mapped_column(String(32), default="seed")
+    updated_by: Mapped[str] = mapped_column(String(128), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class EditionCorrectionQueue(Base):
+    """Human-gated policy candidates promoted from page feedback."""
+
+    __tablename__ = "edition_correction_queue"
+    __table_args__ = (Index("ix_edition_corr_status", "edition_id", "status"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    edition_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    source: Mapped[str] = mapped_column(String(32), default="feedback")  # feedback|calibration
+    source_ref: Mapped[str] = mapped_column(String(128), default="")  # feedback_id etc.
+    candidate_json: Mapped[str] = mapped_column(Text, default="{}")  # PolicyEntry-shaped
+    status: Mapped[str] = mapped_column(String(32), default="pending")  # pending|approved|rejected
+    reviewer: Mapped[str] = mapped_column(String(128), default="")
+    review_note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")

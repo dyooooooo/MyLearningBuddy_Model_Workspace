@@ -1,0 +1,704 @@
+{
+  "page_no": 25,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p25_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40,
+        20,
+        960,
+        55
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1 集合与逻辑"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b1",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        120,
+        120,
+        280,
+        200
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "结论“$x>1$ 或 $y>1$”不成立，即“$x$ 与 $y$ 中至少有一个大于 $1$”不成立。也就是“$x$ 与 $y$ 都不大于 $1$”。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b2",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        120,
+        210,
+        280,
+        280
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 7 的证明是历史上著名的一个反证法证明。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b3",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "note",
+      "bbox": [
+        120,
+        290,
+        280,
+        420
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "一个实数是有理数当且仅当它可以表示成两个整数的商 $\\frac{m}{n}$。如果 $m$ 与 $n$ 有大于 $1$ 的公因数，总可以进行约分，所以不妨设 $m$ 与 $n$ 是互素的。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        90,
+        910,
+        140
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "假设 $x \\leqslant 1$ 且 $y \\leqslant 1$，则 $x+y \\leqslant 2$，这与已知条件 $x+y>2$ 矛盾。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        145,
+        910,
+        165
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "所以假设不成立，即 $x>1$ 或 $y>1$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        170,
+        910,
+        215
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 5 和例 6 证明的都是“若 $\\alpha$，则 $\\beta$”形式的命题。对一些其他形式的命题，也可用反证法证明。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        220,
+        910,
+        240
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 7 证明：$\\sqrt{2}$ 是无理数。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        245,
+        910,
+        265
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "证明 用反证法证明。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        270,
+        910,
+        290
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "假设 $\\sqrt{2}$ 是有理数。则可设"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_eq1",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        580,
+        295,
+        660,
+        325
+      ],
+      "anchor_id": "p25_b9",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "\\sqrt{2}=\\frac{m}{n}",
+          "fallback_text": "sqrt(2) = m/n"
+        },
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        330,
+        910,
+        450
+      ],
+      "anchor_id": "p25_eq1",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "其中 $m$ 与 $n$ 是互素的正整数。于是 $m=\\sqrt{2}n$。两边平方，得 $m^{2}=2n^{2}$。所以，$m^{2}$ 是偶数。由例 5，知 $m$ 也是偶数。于是，可设 $m=2k$，$k$ 为正整数。将其代入 $m^{2}=2n^{2}$，得 $2n^{2}=4k^{2}$，即 $n^{2}=2k^{2}$，故 $n^{2}$ 是偶数。再根据例 5，知 $n$ 也是偶数。于是 $m$、$n$ 有公因数 2，这与 $m$、$n$ 互素的假设矛盾。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330,
+        455,
+        910,
+        475
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "所以假设不成立，即 $\\sqrt{2}$ 是无理数。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        120,
+        490,
+        230,
+        510
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "练习 1.2(3)"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b13",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        520,
+        910,
+        540
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 设 $n \\in \\mathbf{Z}$。证明：若 $n^{3}$ 是奇数，则 $n$ 是奇数。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b14",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        545,
+        910,
+        565
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 证明：对于三个实数 $a$、$b$、$c$，若 $a \\neq c$，则 $a \\neq b$ 或 $b \\neq c$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b15",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        180,
+        600,
+        295,
+        620
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "习题 1.2"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b16",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        120,
+        670,
+        170,
+        690
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "A 组"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b17",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        700,
+        910,
+        720
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1. 判断下列语句是否为命题："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b18",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        725,
+        910,
+        745
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(1) 有的正方形是三角形；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b19",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        750,
+        910,
+        770
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 任意一个三角形的内角和都为 $180^{\\circ}$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b20",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        775,
+        910,
+        795
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(3) 1 是自然数吗？"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b21",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        800,
+        910,
+        820
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(4) $3>\\pi$；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b22",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        825,
+        910,
+        845
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(5) $2 \\in (0,5)$，且 $2 \\in \\mathbf{Z}$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b23",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        850,
+        910,
+        870
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "2. 判断下列命题的真假，并说明理由："
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b24",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        875,
+        910,
+        895
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(1) 如果 $a$、$b$ 都是奇数，那么 $a+b$ 是偶数；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b25",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        900,
+        910,
+        920
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(2) 一组对边平行且两对角线等长的四边形是平行四边形；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_b26",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        150,
+        925,
+        910,
+        945
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "(3) 如果 $A \\cap B=A$，那么 $A \\cup B=B$。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p25_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40,
+        960,
+        960,
+        990
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "18"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

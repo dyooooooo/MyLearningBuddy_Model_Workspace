@@ -1,0 +1,1055 @@
+{
+  "job_id": "03f17de3-73f4-4af9-a868-9dfe6649d5ba",
+  "label": "35B_v3_schema_pipeline_test_r3",
+  "status": "chunked",
+  "prompt_version": "layout_blueprint_v3",
+  "page_count": 20,
+  "html_block_coverage": {
+    "total_blocks": 128,
+    "rendered_blocks": 128,
+    "coverage": 1.0,
+    "pages_with_drops": []
+  },
+  "content_quality": {
+    "html_block_coverage": {
+      "total_blocks": 128,
+      "rendered_blocks": 128,
+      "coverage": 1.0,
+      "pages_with_drops": []
+    },
+    "polluted_payload_count": 0,
+    "pages_with_payload_errors": [],
+    "avg_json_to_html_token_recall": 0.9738,
+    "pages_with_low_fidelity": [
+      18
+    ]
+  },
+  "pages": [
+    {
+      "page_no": 1,
+      "artifacts": {
+        "image": "pages/p01.jpg",
+        "blueprint": "blueprints/p01.json",
+        "html": "html/p01.html"
+      },
+      "original": {
+        "text_chars": 37,
+        "text_block_count": 5,
+        "sample": "S H U X U E 普通高中教科书 上海教育出版社 必 修 第 一 册"
+      },
+      "blueprint": {
+        "block_count": 1,
+        "zone_counts": {
+          "main": 1
+        },
+        "kind_counts": {
+          "figure": 1
+        },
+        "role_counts": {
+          "figure": 1
+        },
+        "polluted_payload_count": 0,
+        "sample": "普通高中教科书 数学 必修 第一册 上海教育出版社"
+      },
+      "html": {
+        "chars": 704,
+        "plain_chars": 25,
+        "block_id_count": 1,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": false,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "普通高中教科书 数学 必修 第一册 上海教育出版社"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.76,
+        "pdf_to_html_token_recall": 0.76,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 1.0
+      },
+      "issues": []
+    },
+    {
+      "page_no": 2,
+      "artifacts": {
+        "image": "pages/p02.jpg",
+        "blueprint": "blueprints/p02.json",
+        "html": "html/p02.html"
+      },
+      "original": {
+        "text_chars": 0,
+        "text_block_count": 0,
+        "sample": ""
+      },
+      "blueprint": {
+        "block_count": 7,
+        "zone_counts": {
+          "running": 1,
+          "main": 6
+        },
+        "kind_counts": {
+          "running": 1,
+          "figure": 1,
+          "text": 5
+        },
+        "role_counts": {
+          "running_header": 1,
+          "figure": 1,
+          "example": 5
+        },
+        "polluted_payload_count": 0,
+        "sample": "普通高中教科书 火箭发射 SHUXUE 数学 必修 第一册 上海教育出版社"
+      },
+      "html": {
+        "chars": 1034,
+        "plain_chars": 37,
+        "block_id_count": 6,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": false,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "普通高中教科书 SHUXUE 数学 必修 第一册 上海教育出版社 火箭发射"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 1.0,
+        "pdf_to_html_token_recall": 1.0,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 1.0
+      },
+      "issues": []
+    },
+    {
+      "page_no": 3,
+      "artifacts": {
+        "image": "pages/p03.jpg",
+        "blueprint": "blueprints/p03.json",
+        "html": "html/p03.html"
+      },
+      "original": {
+        "text_chars": 719,
+        "text_block_count": 27,
+        "sample": "声明 按照《中华人民共和国著作权法》第二十五条有关规定，我们已尽量寻找著作权人支 付报酬. 著作权人如有关于支付报酬事宜可及时与出版社联系. 主 编 李大潜 王建磐 副 主 编 应坚刚 鲍建生 本册编写人员 王伟叶 傅吉祥 王春明 王志强 潘 奋 吴泉水 高卫国 邱维元 责任编辑 张莹莹 装帧设计 陆 弦 王 捷 周 吉 本册教材图片提供 全景网（封面一幅图"
+      },
+      "blueprint": {
+        "block_count": 6,
+        "zone_counts": {
+          "main": 6
+        },
+        "kind_counts": {
+          "text": 5,
+          "table": 1
+        },
+        "role_counts": {
+          "example": 6
+        },
+        "polluted_payload_count": 0,
+        "sample": "主 编 李大潜 王建磐 副 主 编 应坚刚 鲍建生 本册编写人员 王伟叶 傅吉祥 王春明 王志强 潘 奋 吴泉水 高卫国 邱维元 责任编辑 张莹莹 装帧设计 陆 弦 王 捷 周 吉 本册教材图片提供 全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公"
+      },
+      "html": {
+        "chars": 1708,
+        "plain_chars": 625,
+        "block_id_count": 6,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": false,
+        "has_cases": false,
+        "has_table": true,
+        "has_figure": false,
+        "sample": "主 编 李大潜 王建磐 副 主 编 应坚刚 鲍建生 本册编写人员 王伟叶 傅吉祥 王春明 王志强 潘 奋 吴泉水 高卫国 邱维元 责任编辑 张莹莹 装帧设计 陆 弦 王 捷 周 吉 本册教材图片提供 全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 1.0,
+        "pdf_to_html_token_recall": 1.0,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 1.0
+      },
+      "issues": []
+    },
+    {
+      "page_no": 4,
+      "artifacts": {
+        "image": "pages/p04.jpg",
+        "blueprint": "blueprints/p04.json",
+        "html": "html/p04.html"
+      },
+      "original": {
+        "text_chars": 856,
+        "text_block_count": 4,
+        "sample": "前言 １ 前 言 数学应该是绝大多数人一生中学得最多的一门功课．认真学习数学，努 力学好数学，不仅可以牢固地打好数学的知识基础，掌握一种科学的语言， 为走进科学的大门提供有力的工具和坚实的后盾；更重要地，通过认真而严 格的数学学习和训练，可以领会到数学的思想方法和精神实质，造就一些特 有而重要的素质和能力，形成自己的数学素养，让人变得更加聪明，更有智 慧，更"
+      },
+      "blueprint": {
+        "block_count": 6,
+        "zone_counts": {
+          "running": 2,
+          "main": 4
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 4
+        },
+        "role_counts": {
+          "running_header": 2,
+          "example": 4
+        },
+        "polluted_payload_count": 0,
+        "sample": "前言 前 言 数学应该是绝大多数人一生中学得最多的一门功课. 认真学习数学，努力学好数学，不仅可以牢固地打好数学的知识基础，掌握一种科学的语言，为走进科学的大门提供有力的工具和坚实的后盾；更重要地，通过认真而严格的数学学习和训练，可以领会到数学的思想方法和精神实质，造就一些特有而重要的素质和能力，形成自己的数学素养，让人变得更加聪明，更有智慧，更有竞争力，终"
+      },
+      "html": {
+        "chars": 1490,
+        "plain_chars": 841,
+        "block_id_count": 4,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": false,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": false,
+        "sample": "前言 前 言 数学应该是绝大多数人一生中学得最多的一门功课. 认真学习数学，努力学好数学，不仅可以牢固地打好数学的知识基础，掌握一种科学的语言，为走进科学的大门提供有力的工具和坚实的后盾；更重要地，通过认真而严格的数学学习和训练，可以领会到数学的思想方法和精神实质，造就一些特有而重要的素质和能力，形成自己的数学素养，让人变得更加聪明，更有智慧，更有竞争力，终"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 1.0,
+        "pdf_to_html_token_recall": 1.0,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 1.0
+      },
+      "issues": []
+    },
+    {
+      "page_no": 5,
+      "artifacts": {
+        "image": "pages/p05.jpg",
+        "blueprint": "blueprints/p05.json",
+        "html": "html/p05.html"
+      },
+      "original": {
+        "text_chars": 638,
+        "text_block_count": 4,
+        "sample": "前言 ２ 人三言两语就说清楚了的，自己却颠三倒四、不得要领，能够说真正弄懂了 数学吗？！ 为了帮助学生学好数学，也为了帮助教师教好数学，本教材秉承上述理 念，在编写上做了认真的探索与实践，希望能成为广大师生的良师益友，更 好地发挥引路和示范的作用．书中各章的章首语，虽只有不到一页的篇幅， 但却是该章入门的一个宏观向导，务请认真注意．各章末的内容提要，简明 扼"
+      },
+      "blueprint": {
+        "block_count": 6,
+        "zone_counts": {
+          "running": 2,
+          "main": 4
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 4
+        },
+        "role_counts": {
+          "running_header": 2,
+          "prompt": 4
+        },
+        "polluted_payload_count": 0,
+        "sample": "前言 人三言两语就说清楚了的，自己却颠三倒四、不得要领，能够说真正弄懂了数学吗?! 为了帮助学生学好数学，也为了帮助教师教好数学，本教材秉承上述理念，在编写上做了认真的探索与实践，希望能成为广大师生的良师益友，更好地发挥引路和示范的作用. 书中各章的章首语，虽只有不到一页的篇幅，但却是该章入门的一个宏观向导，务请认真注意. 各章末的内容提要，简明扼要地列出了"
+      },
+      "html": {
+        "chars": 1277,
+        "plain_chars": 628,
+        "block_id_count": 4,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": false,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": false,
+        "sample": "前言 人三言两语就说清楚了的，自己却颠三倒四、不得要领，能够说真正弄懂了数学吗?! 为了帮助学生学好数学，也为了帮助教师教好数学，本教材秉承上述理念，在编写上做了认真的探索与实践，希望能成为广大师生的良师益友，更好地发挥引路和示范的作用. 书中各章的章首语，虽只有不到一页的篇幅，但却是该章入门的一个宏观向导，务请认真注意. 各章末的内容提要，简明扼要地列出了"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 1.0,
+        "pdf_to_html_token_recall": 1.0,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 1.0
+      },
+      "issues": []
+    },
+    {
+      "page_no": 6,
+      "artifacts": {
+        "image": "pages/p06.jpg",
+        "blueprint": "blueprints/p06.json",
+        "html": "html/p06.html"
+      },
+      "original": {
+        "text_chars": 223,
+        "text_block_count": 10,
+        "sample": "目 录 １ 第１章 集合与逻辑 １．１ 集合初步 ２ １．２ 常用逻辑用语 １３ 内容提要 ２０ 复习题 ２０ 第２章 等式与不等式 ２．１ 等式与不等式的性质 ２４ ２．２ 不等式的求解 ３４ ２．３ 基本不等式及其应用 ４６ 内容提要 ５５ 复习题 ５６ 第３章 幂、指数与对数 ３．１ 幂与指数 ６０ ３．２ 对数 ６６ 内容提要 ７６ 复习题 ７６ 第"
+      },
+      "blueprint": {
+        "block_count": 3,
+        "zone_counts": {
+          "running": 2,
+          "main": 1
+        },
+        "kind_counts": {
+          "running": 2,
+          "table": 1
+        },
+        "role_counts": {
+          "running_header": 2,
+          "table": 1
+        },
+        "polluted_payload_count": 0,
+        "sample": "目 录 第 1 章 集合与逻辑 1.1 集合初步 2 1.2 常用逻辑用语 13 内容提要 20 复习题 20 第 2 章 等式与不等式 2.1 等式与不等式的性质 24 2.2 不等式的求解 34 2.3 基本不等式及其应用 46 内容提要 55 复习题 56 第 3 章 幂、指数与对数 3.1 幂与指数 60 3.2 对数 66 内容提要 76 复习题 "
+      },
+      "html": {
+        "chars": 1413,
+        "plain_chars": 225,
+        "block_id_count": 1,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": false,
+        "has_cases": false,
+        "has_table": true,
+        "has_figure": false,
+        "sample": "目 录 第 1 章 集合与逻辑 1.1 集合初步 2 1.2 常用逻辑用语 13 内容提要 20 复习题 20 第 2 章 等式与不等式 2.1 等式与不等式的性质 24 2.2 不等式的求解 34 2.3 基本不等式及其应用 46 内容提要 55 复习题 56 第 3 章 幂、指数与对数 3.1 幂与指数 60 3.2 对数 66 内容提要 76 复习题 "
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 1.0,
+        "pdf_to_html_token_recall": 1.0,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 1.0
+      },
+      "issues": []
+    },
+    {
+      "page_no": 7,
+      "artifacts": {
+        "image": "pages/p07.jpg",
+        "blueprint": "blueprints/p07.json",
+        "html": "html/p07.html"
+      },
+      "original": {
+        "text_chars": 122,
+        "text_block_count": 5,
+        "sample": "目录 ２ ４．３ 对数函数 ９３ 内容提要 １０２ 复习题 １０２ 第５章 函数的概念、性质及应用 ５．１ 函数 １０６ ５．２ 函数的基本性质 １１５ ５．３ 函数的应用 １２７ ５．４ 反函数 １３６ 内容提要 １４１ 复习题 １４２"
+      },
+      "blueprint": {
+        "block_count": 4,
+        "zone_counts": {
+          "running": 2,
+          "main": 2
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 2
+        },
+        "role_counts": {
+          "running_header": 2,
+          "table": 2
+        },
+        "polluted_payload_count": 0,
+        "sample": "目录 4.3 对数函数 93 内容提要 102 复习题 102 第 5 章 函数的概念、性质及应用 5.1 函数 106 5.2 函数的基本性质 115 5.3 函数的应用 127 *5.4 反函数 136 内容提要 141 复习题 142 2"
+      },
+      "html": {
+        "chars": 705,
+        "plain_chars": 120,
+        "block_id_count": 2,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": false,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": false,
+        "sample": "目录 4.3 对数函数 93 内容提要 102 复习题 102 第 5 章 函数的概念、性质及应用 5.1 函数 106 5.2 函数的基本性质 115 5.3 函数的应用 127 *5.4 反函数 136 内容提要 141 复习题 142"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 1.0,
+        "pdf_to_html_token_recall": 1.0,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 1.0
+      },
+      "issues": []
+    },
+    {
+      "page_no": 8,
+      "artifacts": {
+        "image": "pages/p08.jpg",
+        "blueprint": "blueprints/p08.json",
+        "html": "html/p08.html"
+      },
+      "original": {
+        "text_chars": 236,
+        "text_block_count": 3,
+        "sample": "第１章 集合与逻辑 数学语言十分精确，不容易产生歧义．集 合是现代数学语言的重要组成部分．使用集合 的语言，可以准确、简洁地表示所要研究的对 象，更好地描述所研究的对象之间的关系． 数学作为很多其他学科的基础和工具，其 内涵及语言都是按照逻辑的方式来组织的．根 据正确的前提，按照严格的逻辑推理，总是能 够得到正确的结论． 在数学语言的表达方面，有一些公认的特"
+      },
+      "blueprint": {
+        "block_count": 3,
+        "zone_counts": {
+          "main": 3
+        },
+        "kind_counts": {
+          "figure": 1,
+          "text": 2
+        },
+        "role_counts": {
+          "figure": 1,
+          "example": 2
+        },
+        "polluted_payload_count": 0,
+        "sample": "第 1 章 集合与逻辑 数学语言十分精确，不容易产生歧义。集合是现代数学语言的重要组成部分。使用集合的语言，可以准确、简洁地表示所要研究的对象，更好地描述所研究的对象之间的关系。 数学作为很多其他学科的基础和工具，其内涵及语言都是按照逻辑的方式来组织的。根据正确的前提，按照严格的逻辑推理，总是能够得到正确的结论。 在数学语言的表达方面，有一些公认的特殊约定，"
+      },
+      "html": {
+        "chars": 1030,
+        "plain_chars": 227,
+        "block_id_count": 3,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": false,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "第 1 章 数学语言十分精确，不容易产生歧义。集合是现代数学语言的重要组成部分。使用集合的语言，可以准确、简洁地表示所要研究的对象，更好地描述所研究的对象之间的关系。 数学作为很多其他学科的基础和工具，其内涵及语言都是按照逻辑的方式来组织的。根据正确的前提，按照严格的逻辑推理，总是能够得到正确的结论。 在数学语言的表达方面，有一些公认的特殊约定，努力学习并遵"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 1.0,
+        "pdf_to_html_token_recall": 1.0,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 1.0
+      },
+      "issues": []
+    },
+    {
+      "page_no": 9,
+      "artifacts": {
+        "image": "pages/p09.jpg",
+        "blueprint": "blueprints/p09.json",
+        "html": "html/p09.html"
+      },
+      "original": {
+        "text_chars": 701,
+        "text_block_count": 8,
+        "sample": "１ 集合与逻辑 ２ １．１ 集合初步 １集合 我们经常需要把满足一定要求或具有一定特征的对象放在一 起或归为一类．例如： （１）申辉中学高一（１）班的全体学生； （２）所有不大于１００的自然数； （３）直线犾上的所有点； （４）不等式２狓＋１≤０的所有解； （５）太阳系的所有行星． 概括地说，把一些确定的对象的全体叫做集合（ｓｅｔ），简称 集．集合通常用大写"
+      },
+      "blueprint": {
+        "block_count": 15,
+        "zone_counts": {
+          "running": 2,
+          "aside_left": 1,
+          "main": 12
+        },
+        "kind_counts": {
+          "running": 2,
+          "figure": 1,
+          "text": 12
+        },
+        "role_counts": {
+          "running_header": 2,
+          "figure": 1,
+          "example": 12
+        },
+        "polluted_payload_count": 0,
+        "sample": "1 集合与逻辑 康托(G. Cantor, 1845—1918)，德国数学家，集合论创始人。 1.1 集合初步 1 集合 我们经常需要把满足一定要求或具有一定特征的对象放在一起或归为一类. 例如： (1) 申辉中学高一(1)班的全体学生； (2) 所有不大于 100 的自然数； (3) 直线 l 上的所有点； (4) 不等式 2x+1≤0 的所有解； (5)"
+      },
+      "html": {
+        "chars": 2274,
+        "plain_chars": 723,
+        "block_id_count": 13,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "1 集合与逻辑 康托(G. Cantor, 1845—1918)，德国数学家，集合论创始人。 1.1 集合初步 1 集合 我们经常需要把满足一定要求或具有一定特征的对象放在一起或归为一类. 例如： (1) 申辉中学高一(1)班的全体学生； (2) 所有不大于 100 的自然数； (3) 直线 l 上的所有点； (4) 不等式 的所有解； (5) 太阳系的所有"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.9494,
+        "pdf_to_html_token_recall": 0.9476,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9917
+      },
+      "issues": []
+    },
+    {
+      "page_no": 10,
+      "artifacts": {
+        "image": "pages/p10.jpg",
+        "blueprint": "blueprints/p10.json",
+        "html": "html/p10.html"
+      },
+      "original": {
+        "text_chars": 748,
+        "text_block_count": 5,
+        "sample": "１．１ 集合初步 ３ （２）６００的正约数的全体组成的集合； （３）２０１９年在上海出生的所有人组成的集合； （４）给定的一条长度为１的线段上的所有点组成的集合． 解 （１）６的正整数倍可表示为６狀，其中狀是正整数．因为 正整数有无限个，所以６的正整数倍的全体组成的集合是一个无 限集．（２）６００的正约数一定是小于或等于６００的正整数，其个数 不超过６００．"
+      },
+      "blueprint": {
+        "block_count": 8,
+        "zone_counts": {
+          "running": 2,
+          "main": 6
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 5,
+          "table": 1
+        },
+        "role_counts": {
+          "running_header": 2,
+          "example": 2,
+          "definition": 2,
+          "table": 1,
+          "exercise": 1
+        },
+        "polluted_payload_count": 0,
+        "sample": "1.1 集合初步 (2) 600 的正约数的全体组成的集合； (3) 2019 年在上海出生的所有人组成的集合； (4) 给定的一条长度为 1 的线段上的所有点组成的集合. 解 (1) 6 的正整数倍可表示为 6n，其中 n 是正整数. 因为正整数有无限个，所以 6 的正整数倍的全体组成的集合是一个无限集. (2) 600 的正约数一定是小于或等于 600 "
+      },
+      "html": {
+        "chars": 2019,
+        "plain_chars": 695,
+        "block_id_count": 6,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": true,
+        "has_figure": false,
+        "sample": "1.1 集合初步 (2) 600 的正约数的全体组成的集合； (3) 2019 年在上海出生的所有人组成的集合； (4) 给定的一条长度为 1 的线段上的所有点组成的集合. 解 (1) 6 的正整数倍可表示为 6n，其中 n 是正整数. 因为正整数有无限个，所以 6 的正整数倍的全体组成的集合是一个无限集. (2) 600 的正约数一定是小于或等于 600 "
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.964,
+        "pdf_to_html_token_recall": 0.9602,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9858
+      },
+      "issues": []
+    },
+    {
+      "page_no": 11,
+      "artifacts": {
+        "image": "pages/p11.jpg",
+        "blueprint": "blueprints/p11.json",
+        "html": "html/p11.html"
+      },
+      "original": {
+        "text_chars": 800,
+        "text_block_count": 7,
+        "sample": "１ 集合与逻辑 ４ （２）末位是３的自然数； （３）比较大的苹果． ２．用符号“∈”或“”填空： （１）１２ 犖； （２）５ 犣； （３）－２ 犙； （４）π 犚． ２集合的表示方法 除了用自然语言描述集合，我们还有一些其他方法用来表示 集合．将集合中的元素不重复地一一列举出来并写在大括号内，这 种表示集合的方法叫做列举法．例如，方程狓２－３狓＋２＝０的所"
+      },
+      "blueprint": {
+        "block_count": 12,
+        "zone_counts": {
+          "running": 2,
+          "main": 9,
+          "aside_left": 1
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 9,
+          "equation": 1
+        },
+        "role_counts": {
+          "running_header": 2,
+          "exercise": 1,
+          "example": 3,
+          "body": 4,
+          "equation": 1,
+          "note": 1
+        },
+        "polluted_payload_count": 0,
+        "sample": "1 集合与逻辑 (2) 末位是 3 的自然数； (3) 比较大的苹果. 2. 用符号“∈”或“∉”填空： (1) 1/2 ___ N; (2) 5 ___ Z; (3) -2 ___ Q; (4) π ___ R. 2 集合的表示方法 除了用自然语言描述集合，我们还有一些其他方法用来表示集合. 将集合中的元素不重复地一一列举出来并写在大括号内，这种表示集合的"
+      },
+      "html": {
+        "chars": 2320,
+        "plain_chars": 725,
+        "block_id_count": 10,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": false,
+        "sample": "1 集合与逻辑 注释 “集合中所有元素具有的共同特征”是指： (1) 在该集合中的元素都具有这个特征； (2) 不在该集合中的元素不具有这个特征. (2) 末位是 3 的自然数； (3) 比较大的苹果. 2. 用符号“∈”或“∉”填空： 2 集合的表示方法 除了用自然语言描述集合，我们还有一些其他方法用来表示集合. 将集合中的元素不重复地一一列举出来并写在大"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.9527,
+        "pdf_to_html_token_recall": 0.9436,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9639
+      },
+      "issues": []
+    },
+    {
+      "page_no": 12,
+      "artifacts": {
+        "image": "pages/p12.jpg",
+        "blueprint": "blueprints/p12.json",
+        "html": "html/p12.html"
+      },
+      "original": {
+        "text_chars": 709,
+        "text_block_count": 6,
+        "sample": "１．１ 集合初步 ５ 例４ 选择适当的方法表示下列集合： （１）大于０且小于１０的全体偶数组成的集合犃； （２）被３除余２的所有自然数组成的集合犅； （３）直角坐标平面上由第二象限与第四象限中的所有点组成 的集合犆． 解 （１）用列举法：犃＝｛２，４，６，８｝． （２）用描述法：犅＝｛狀｜狀＝３犽＋２，犽∈犖｝． （３）因为第二象限中所有点（狓，狔）具有的特"
+      },
+      "blueprint": {
+        "block_count": 10,
+        "zone_counts": {
+          "running": 2,
+          "main": 7,
+          "aside_right": 1
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 6,
+          "figure": 2
+        },
+        "role_counts": {
+          "running_header": 2,
+          "example": 2,
+          "definition": 3,
+          "figure": 2,
+          "note": 1
+        },
+        "polluted_payload_count": 0,
+        "sample": "1.1 集合初步 例 4 选择适当的方法表示下列集合： (1) 大于 0 且小于 10 的全体偶数组成的集合 A； (2) 被 3 除余 2 的所有自然数组成的集合 B； (3) 直角坐标平面上由第二象限与第四象限中的所有点组成的集合 C. 解 (1) 用列举法：A={2,4,6,8}. (2) 用描述法：B={n|n=3k+2, k∈N}. (3) 因为第"
+      },
+      "html": {
+        "chars": 3635,
+        "plain_chars": 537,
+        "block_id_count": 8,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "1.1 集合初步 例 4 选择适当的方法表示下列集合： (1) 大于 0 且小于 10 的全体偶数组成的集合 A； (2) 被 3 除余 2 的所有自然数组成的集合 B； (3) 直角坐标平面上由第二象限与第四象限中的所有点组成的集合 C. 解 (1) 用列举法： 用描述法： 因为第二象限中所有点(x,y)具有的特征是 且 ，而第四象限中所有点具有的特征是 "
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.8409,
+        "pdf_to_html_token_recall": 0.8153,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9134
+      },
+      "issues": []
+    },
+    {
+      "page_no": 13,
+      "artifacts": {
+        "image": "pages/p13.jpg",
+        "blueprint": "blueprints/p13.json",
+        "html": "html/p13.html"
+      },
+      "original": {
+        "text_chars": 657,
+        "text_block_count": 8,
+        "sample": "１ 集合与逻辑 ６ 例５ 用区间表示下列集合： （１）｛狓｜１≤狓＜２｝； （２）不等式２狓≤６的所有解组成的集合． 解 （１）该集合可用区间［１，２）表示． （２）因为不等式２狓≤６的解是狓≤３，所以它的所有解组成 的集合是（－∞，３］． 练习１．１（２） １．用列举法表示下列集合： （１）能整除１０的所有正整数组成的集合； （２）绝对值小于４的所有整数组"
+      },
+      "blueprint": {
+        "block_count": 6,
+        "zone_counts": {
+          "running": 2,
+          "aside_left": 1,
+          "main": 3
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 4
+        },
+        "role_counts": {
+          "running_header": 2,
+          "note": 1,
+          "example": 1,
+          "exercise": 1,
+          "definition": 1
+        },
+        "polluted_payload_count": 0,
+        "sample": "集合与逻辑 结合例题，试比较分别用自然语言、列举法、描述法和区间表示集合时，其各自的特点和适用对象。 例 5 用区间表示下列集合： (1) {x | 1 ≤ x < 2}; (2) 不等式 2x ≤ 6 的所有解组成的集合. 解 (1) 该集合可用区间 [1, 2) 表示. (2) 因为不等式 2x ≤ 6 的解是 x ≤ 3，所以它的所有解组成的集合是 ("
+      },
+      "html": {
+        "chars": 1983,
+        "plain_chars": 677,
+        "block_id_count": 4,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": false,
+        "sample": "集合与逻辑 注释 结合例题，试比较分别用自然语言、列举法、描述法和区间表示集合时，其各自的特点和适用对象。 例 5 用区间表示下列集合： 不等式 的所有解组成的集合. 解 (1) 该集合可用区间 [1, 2) 表示. (2) 因为不等式 的解是 ，所以它的所有解组成的集合是 练习 1.1(2) 1. 用列举法表示下列集合： (1) 能整除 10 的所有正整数"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.9009,
+        "pdf_to_html_token_recall": 0.8877,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9774
+      },
+      "issues": []
+    },
+    {
+      "page_no": 14,
+      "artifacts": {
+        "image": "pages/p14.jpg",
+        "blueprint": "blueprints/p14.json",
+        "html": "html/p14.html"
+      },
+      "original": {
+        "text_chars": 902,
+        "text_block_count": 7,
+        "sample": "１．１ 集合初步 ７ 我们常用文氏图（Ｖｅｎｎｄｉａｇｒａｍ）来直观表示集合以及集合之 间的关系．图１１３是犃犅的文氏图． 上述四组集合中的每组都有犆犇．但是，第（１）（２）组与第 （３）（４）组是有区别的．在第（１）（２）组中，集合犇中有些元素不属 于集合犆，即犇不是犆的子集；而在第（３）（４）组中，集合犇中 的每个元素都属于集合犆，即犇犆． 对于集"
+      },
+      "blueprint": {
+        "block_count": 12,
+        "zone_counts": {
+          "running": 2,
+          "main": 8,
+          "aside_right": 2
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 9,
+          "figure": 1
+        },
+        "role_counts": {
+          "running_header": 2,
+          "body": 3,
+          "figure": 1,
+          "note": 2,
+          "definition": 1,
+          "example": 3
+        },
+        "polluted_payload_count": 0,
+        "sample": "1.1 集合初步 我们常用文氏图(Venn diagram)来直观表示集合以及集合之间的关系. 图 1-1-3 是 A⊆B 的文氏图. 上述四组集合中的每组都有 C⊆D. 但是，第(1)(2)组与第(3)(4)组是有区别的. 在第(1)(2)组中，集合 D 中有些元素不属于集合 C，即 D 不是 C 的子集；而在第(3)(4)组中，集合 D 中的每个元素都属"
+      },
+      "html": {
+        "chars": 3284,
+        "plain_chars": 896,
+        "block_id_count": 10,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "1.1 集合初步 我们常用文氏图(Venn diagram)来直观表示集合以及集合之间的关系. 图 1-1-3 是 A⊆B 的文氏图. 上述四组集合中的每组都有 C⊆D. 但是，第(1)(2)组与第(3)(4)组是有区别的. 在第(1)(2)组中，集合 D 中有些元素不属于集合 C，即 D 不是 C 的子集；而在第(3)(4)组中，集合 D 中的每个元素都属"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.777,
+        "pdf_to_html_token_recall": 0.7735,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.996
+      },
+      "issues": []
+    },
+    {
+      "page_no": 15,
+      "artifacts": {
+        "image": "pages/p15.jpg",
+        "blueprint": "blueprints/p15.json",
+        "html": "html/p15.html"
+      },
+      "original": {
+        "text_chars": 757,
+        "text_block_count": 8,
+        "sample": "１ 集合与逻辑 ８ 含１个元素的子集３个：｛犪｝，｛犫｝，｛犮｝； 含２个元素的子集３个：｛犪，犫｝，｛犪，犮｝，｛犫，犮｝； 含３个元素的子集１个：｛犪，犫，犮｝． 除集合｛犪，犫，犮｝本身外，其余７个都是真子集． 练习１．１（３） １．判断下列说法是否正确，并简要说明理由： （１）若犪∈犃且犃犅，则犪∈犅； （２）若犃犅且犃犆，则犅＝犆； （３）若"
+      },
+      "blueprint": {
+        "block_count": 6,
+        "zone_counts": {
+          "running": 2,
+          "main": 3,
+          "aside_left": 1
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 4
+        },
+        "role_counts": {
+          "running_header": 2,
+          "example": 1,
+          "exercise": 1,
+          "definition": 1,
+          "note": 1
+        },
+        "polluted_payload_count": 0,
+        "sample": "1 集合与逻辑 含 1 个元素的子集 3 个：$\\{a\\}$，$\\{b\\}$，$\\{c\\}$； 含 2 个元素的子集 3 个：$\\{a,b\\}$，$\\{a,c\\}$，$\\{b,c\\}$； 含 3 个元素的子集 1 个：$\\{a,b,c\\}$. 除集合 $\\{a,b,c\\}$ 本身外，其余 7 个都是真子集. 练习 1.1(3) 1. 判断下列说法是否正确，并"
+      },
+      "html": {
+        "chars": 3360,
+        "plain_chars": 768,
+        "block_id_count": 4,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": false,
+        "sample": "1 集合与逻辑 注释 当集合 $U$、$A$、$B$ 确定时，如何确定集合 $C$、$D$、$E$ 呢？ 含 1 个元素的子集 3 个： ， ， ； 含 2 个元素的子集 3 个： ， ， ； 含 3 个元素的子集 1 个： 除集合 本身外，其余 7 个都是真子集. 练习 1.1(3) 1. 判断下列说法是否正确，并简要说明理由： (1) 若 且 ，则 ； "
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.8255,
+        "pdf_to_html_token_recall": 0.8255,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9548
+      },
+      "issues": []
+    },
+    {
+      "page_no": 16,
+      "artifacts": {
+        "image": "pages/p16.jpg",
+        "blueprint": "blueprints/p16.json",
+        "html": "html/p16.html"
+      },
+      "original": {
+        "text_chars": 626,
+        "text_block_count": 9,
+        "sample": "１．１ 集合初步 ９ 可以用文氏图直观地反映犃∩犅的几种不同情况，如图１１４ 所示． （１） （２） （３） 图１１４ 图１１４（１）表示集合犃与犅既有公共元素又都有非公共元 素的情况，此时阴影部分犃∩犅既是犃的真子集又是犅的 真子集；图１１４（２）表示集合犃是犅的子集的情况，此时 犃∩犅＝犃；图１１４（３）表示集合犃与犅没有公共元素的情况， 此时犃∩犅＝"
+      },
+      "blueprint": {
+        "block_count": 14,
+        "zone_counts": {
+          "running": 2,
+          "main": 9,
+          "aside_right": 3
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 10,
+          "figure": 2
+        },
+        "role_counts": {
+          "running_header": 2,
+          "body": 4,
+          "figure": 2,
+          "note": 3,
+          "example": 2,
+          "definition": 1
+        },
+        "polluted_payload_count": 0,
+        "sample": "1.1 集合初步 可以用文氏图直观地反映 A ∩ B 的几种不同情况，如图 1-1-4 所示. 图 1-1-4 对照图 1-1-4 的三种情况，请各举一实例. 图 1-1-4(1)表示集合 A 与 B 既有公共元素又都有非公共元素的情况，此时阴影部分 A ∩ B 既是 A 的真子集又是 B 的真子集；图 1-1-4(2)表示集合 A 是 B 的子集的情况，此"
+      },
+      "html": {
+        "chars": 3671,
+        "plain_chars": 537,
+        "block_id_count": 12,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "1.1 集合初步 可以用文氏图直观地反映 的几种不同情况，如图 1-1-4 所示. 图 1-1-4 图 1-1-4(1)表示集合 A 与 B 既有公共元素又都有非公共元素的情况，此时阴影部分 既是 A 的真子集又是 B 的真子集；图 1-1-4(2)表示集合 A 是 B 的子集的情况，此时 ；图 1-1-4(3)表示集合 A 与 B 没有公共元素的情况，此时"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.8188,
+        "pdf_to_html_token_recall": 0.7995,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9549
+      },
+      "issues": []
+    },
+    {
+      "page_no": 17,
+      "artifacts": {
+        "image": "pages/p17.jpg",
+        "blueprint": "blueprints/p17.json",
+        "html": "html/p17.html"
+      },
+      "original": {
+        "text_chars": 735,
+        "text_block_count": 7,
+        "sample": "１ 集合与逻辑 １０ 图１１５（１）表示集合犃与犅既有公共元素又都有非公共元 素的情况，此时犃和犅都是犃∪犅的真子集；图１１５（２）表示 集合犃是犅的子集的情况，此时犃∪犅＝犅；图１１５（３）表示集 合犃与犅没有公共元素的情况． 例１０ 已知集合 犃＝（－２，２），犅＝（－３，－１）∪（１，＋∞）． 求犃∩犅及犃∪犅． 解 在数轴上标出集合犃与犅，如图１１６"
+      },
+      "blueprint": {
+        "block_count": 13,
+        "zone_counts": {
+          "running": 2,
+          "main": 11
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 9,
+          "figure": 1,
+          "equation": 1
+        },
+        "role_counts": {
+          "running_header": 2,
+          "example": 5,
+          "figure": 1,
+          "equation": 1,
+          "definition": 4
+        },
+        "polluted_payload_count": 0,
+        "sample": "集合与逻辑 图 1-1-5(1)表示集合 A 与 B 既有公共元素又都有非公共元素的情况，此时 A 和 B 都是 A ∪ B 的真子集；图 1-1-5(2)表示集合 A 是 B 的子集的情况，此时 A ∪ B = B；图 1-1-5(3)表示集合 A 与 B 没有公共元素的情况. 例 10 已知集合 A=(-2,2), B=(-3,-1) ∪ (1,+∞)."
+      },
+      "html": {
+        "chars": 2965,
+        "plain_chars": 709,
+        "block_id_count": 11,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "集合与逻辑 图 1-1-5(1)表示集合 A 与 B 既有公共元素又都有非公共元素的情况，此时 A 和 B 都是 的真子集；图 1-1-5(2)表示集合 A 是 B 的子集的情况，此时 ；图 1-1-5(3)表示集合 A 与 B 没有公共元素的情况. 例 10 已知集合 求 及 解 在数轴上标出集合 A 与 B，如图 1-1-6 所示. 图 1-1-6 例 "
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.8696,
+        "pdf_to_html_token_recall": 0.8424,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9677
+      },
+      "issues": []
+    },
+    {
+      "page_no": 18,
+      "artifacts": {
+        "image": "pages/p18.jpg",
+        "blueprint": "blueprints/p18.json",
+        "html": "html/p18.html"
+      },
+      "original": {
+        "text_chars": 637,
+        "text_block_count": 9,
+        "sample": "１．１ 集合初步 １１ 数组成的集合． 可以用文氏图直观地反映犃，如图１１７，其中阴影部分表 示集合犃在全集犝中的补集犃． 例１２ 设全集犝＝｛犪，犫，犮，犱，犲｝，集合犃＝｛犪，犫，犮｝， 集合犅＝｛犮，犱｝．分别求：犃∪犅，犃∩犅，犃∩犅及犃∪犅． 解 由条件，可得 犃∪犅＝｛犪，犫，犮，犱｝，犃＝｛犱，犲｝，犅＝｛犪，犫，犲｝． 所以 犃∪犅＝｛犲｝，"
+      },
+      "blueprint": {
+        "block_count": 7,
+        "zone_counts": {
+          "running": 2,
+          "main": 5
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 4,
+          "figure": 1
+        },
+        "role_counts": {
+          "running_header": 2,
+          "example": 1,
+          "figure": 1,
+          "exercise": 3
+        },
+        "polluted_payload_count": 0,
+        "sample": "1.1 集合初步 数组成的集合. 可以用文氏图直观地反映 A，如图 1-1-7，其中阴影部分表示集合 A 在全集 U 中的补集 A. 例 12 设全集 U={a,b,c,d,e}，集合 A={a,b,c}，集合 B={c,d}. 分别求：A∪B，A∩B，A∩B 及 A∪B. 解 由条件，可得 A∪B={a,b,c,d}，A={d,e}，B={a,b,e}. "
+      },
+      "html": {
+        "chars": 3546,
+        "plain_chars": 410,
+        "block_id_count": 5,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "1.1 集合初步 数组成的集合. 可以用文氏图直观地反映 A，如图 1-1-7，其中阴影部分表示集合 A 在全集 U 中的补集 A. 例 12 设全集 ，集合 ，集合 分别求： ， ， 及 解 由条件，可得 ， ， 所以 ， 而 ，所以 ， 图 1-1-7 练习 1.1(4) 1. 设 A 为全集 U 的任一子集，则 ；(A 表示 A 的补集 A 的补集 ；"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.7354,
+        "pdf_to_html_token_recall": 0.6718,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.8248
+      },
+      "issues": [
+        "JSON→HTML 保真偏低 0.8248"
+      ]
+    },
+    {
+      "page_no": 19,
+      "artifacts": {
+        "image": "pages/p19.jpg",
+        "blueprint": "blueprints/p19.json",
+        "html": "html/p19.html"
+      },
+      "original": {
+        "text_chars": 622,
+        "text_block_count": 5,
+        "sample": "１ 集合与逻辑 １２ Ｂ．第三象限内的所有点组成的集合； Ｃ．第一象限和第三象限内的所有点组成的集合； Ｄ．不在第二象限也不在第四象限内的所有点组成的集合． ４．用符号“”“＝”或“”连接集合犃与犅： （１）犃＝｛狓｜狓２－２狓＋１＝０｝，犅＝｛狓｜狓２－１＝０｝； （２）犃＝｛１，２，４，８｝，犅＝｛狓｜狓是８的正约数｝． ５．已知集合犃＝｛１｝，犅＝"
+      },
+      "blueprint": {
+        "block_count": 14,
+        "zone_counts": {
+          "running": 2,
+          "main": 12
+        },
+        "kind_counts": {
+          "running": 2,
+          "text": 12
+        },
+        "role_counts": {
+          "running_header": 2,
+          "exercise": 12
+        },
+        "polluted_payload_count": 0,
+        "sample": "1 集合与逻辑 B. 第三象限内的所有点组成的集合； C. 第一象限和第三象限内的所有点组成的集合； D. 不在第二象限也不在第四象限内的所有点组成的集合. 4. 用符号“⊂”“=”或“⊃”连接集合 A 与 B： (1) A={x | x²-2x+1=0}, B={x | x²-1=0}; (2) A={1,2,4,8}, B={x | x 是 8 的正约数"
+      },
+      "html": {
+        "chars": 2896,
+        "plain_chars": 425,
+        "block_id_count": 12,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": false,
+        "sample": "1 集合与逻辑 B. 第三象限内的所有点组成的集合； C. 第一象限和第三象限内的所有点组成的集合； D. 不在第二象限也不在第四象限内的所有点组成的集合. 4. 用符号“⊂”“=”或“⊃”连接集合 A 与 B： (1) A={x | x²-2x+1=0}, B={x | x²-1=0}; (2) A={1,2,4,8}, B={x | x 是 8 的正约数"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.6917,
+        "pdf_to_html_token_recall": 0.6722,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9538
+      },
+      "issues": []
+    },
+    {
+      "page_no": 20,
+      "artifacts": {
+        "image": "pages/p20.jpg",
+        "blueprint": "blueprints/p20.json",
+        "html": "html/p20.html"
+      },
+      "original": {
+        "text_chars": 635,
+        "text_block_count": 6,
+        "sample": "１．２ 常用逻辑用语 １３ １．２ 常用逻辑用语 １命题 在初中时已经知道，用自然语言、符号或式子表达，且可以 判断其真假的语句叫做命题（ｐｒｏｐｏｓｉｔｉｏｎ）．命题通常用陈述句表 述．其含义判断为真的命题叫做真命题，判断为假的命题叫做 假命题．例如，“４能被２整除”是真命题，“３能被２整除”是假 命题． 例１ 下列语句哪些是命题？如果是命题，那么它们是真"
+      },
+      "blueprint": {
+        "block_count": 8,
+        "zone_counts": {
+          "running": 2,
+          "main": 6
+        },
+        "kind_counts": {
+          "running": 2,
+          "figure": 1,
+          "text": 5
+        },
+        "role_counts": {
+          "running_header": 2,
+          "figure": 1,
+          "example": 5
+        },
+        "polluted_payload_count": 0,
+        "sample": "1.2 常用逻辑用语 常用逻辑用语 1.2 常用逻辑用语 1 命题 在初中时已经知道，用自然语言、符号或式子表达，且可以判断其真假的语句叫做命题(proposition). 命题通常用陈述句表述. 其含义判断为真的命题叫做真命题，判断为假的命题叫做假命题. 例如，“4 能被 2 整除”是真命题，“3 能被 2 整除”是假命题. 例 1 下列语句哪些是命题？如"
+      },
+      "html": {
+        "chars": 1829,
+        "plain_chars": 643,
+        "block_id_count": 6,
+        "has_grid": true,
+        "has_aside": true,
+        "has_math": true,
+        "has_cases": false,
+        "has_table": false,
+        "has_figure": true,
+        "sample": "1.2 常用逻辑用语 常用逻辑用语 1.2 常用逻辑用语 1 命题 在初中时已经知道，用自然语言、符号或式子表达，且可以判断其真假的语句叫做命题(proposition). 命题通常用陈述句表述. 其含义判断为真的命题叫做真命题，判断为假的命题叫做假命题. 例如，“4 能被 2 整除”是真命题，“3 能被 2 整除”是假命题. 例 1 下列语句哪些是命题？如"
+      },
+      "alignment": {
+        "pdf_to_blueprint_token_recall": 0.9859,
+        "pdf_to_html_token_recall": 0.9859,
+        "html_block_coverage": 1.0,
+        "json_to_html_token_recall": 0.9926
+      },
+      "issues": []
+    }
+  ]
+}

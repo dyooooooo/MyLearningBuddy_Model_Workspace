@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>伴学 Pipeline · C2 Gateway</title>
-  <link rel="stylesheet" href="/test/app.css?v=20260625" />
+  <link rel="stylesheet" href="/test/app.css?v=20260622evalfinish" />
 </head>
 <body>
   <header class="topbar">
@@ -44,6 +44,13 @@
       <div class="student-banner" id="studentBanner" hidden role="status"></div>
       <button type="button" id="btnNewSession" class="btn ghost sm" title="清空状态，开始新的伴学测试">新建会话</button>
       <button type="button" id="btnExport" class="btn ghost sm" disabled title="下载会话+作业+掌握度 JSON">导出 JSON</button>
+      <label class="locale-toggle" title="考纲/题库/KP 显示语言">
+        语言
+        <select id="localeSelect">
+          <option value="zh">中文</option>
+          <option value="en">English</option>
+        </select>
+      </label>
     </div>
   </div>
 
@@ -141,6 +148,7 @@
         <div class="side-tabs" id="sideTabs">
           <button type="button" class="tab active" data-tab="merged">合并</button>
           <button type="button" class="tab" data-tab="frame">本帧</button>
+          <button type="button" class="tab" data-tab="compare">OCR对比</button>
           <button type="button" class="tab" data-tab="homework">作业库</button>
           <button type="button" class="tab" data-tab="wrongbook">错题本</button>
           <button type="button" class="tab" data-tab="mastery">A⁺</button>
@@ -184,7 +192,8 @@
     <span id="modelInfo"></span>
   </footer>
 
+  <script type="module" src="/test/vite/math.js?v=20260622evalfinish"></script>
   <script type="module" src="/test/vite/main.js"></script>
-  <script src="/test/app.js?v=20260625" type="module"></script>
+  <script src="/test/app.js?v=20260622evalfinish" type="module"></script>
 </body>
 </html>

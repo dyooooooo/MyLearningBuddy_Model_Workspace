@@ -1,0 +1,10 @@
+{"id":"q7_frac_alpha","raw":"(1/2)αr²=6","expect_valid":true,"latex_contains":["\\alpha","frac"]}
+{"id":"q10_neq_sub","raw":"x₁≠x₂","expect_valid":true,"latex_contains":["ne","_{1}"]}
+{"id":"q10_interval","raw":"(9√2/2, +∞)","expect_valid":true,"latex_contains":["sqrt","infty"]}
+{"id":"q_complement","raw":"则 A\u0304 = (-∞,-1]","expect_valid":true,"latex_contains":["overline"]}
+{"id":"cjk_mixed","raw":"由题意得 2r+αr=10","expect_valid":true,"latex_contains":["\\alpha"]}
+{"id":"plain_text","raw":"这是一段纯中文说明","expect_valid":false,"latex_contains":[]}
+{"id":"v4_dollar_in","raw":"因为 $x \\in \\mathbb{N}$ 且 $y \\notin \\mathbb{Q}$.","expect_valid":true,"latex_contains":["\\in","\\notin"]}
+{"id":"v4_dollar_set_builder","raw":"$\\{x \\mid x > 0\\}$","expect_valid":true,"latex_contains":["\\mid"]}
+{"id":"v4_dollar_cap_emptyset","raw":"$A \\cap B = \\emptyset$","expect_valid":true,"latex_contains":["\\cap","\\emptyset"]}
+{"id":"v4_dollar_sqrt","raw":"$\\sqrt{2} \\notin \\mathbb{Q}$","expect_valid":true,"latex_contains":["\\sqrt","\\notin"]}

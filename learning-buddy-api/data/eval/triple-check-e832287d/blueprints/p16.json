@@ -1,0 +1,1089 @@
+{
+  "page_no": 16,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p16_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770.0,
+        35.0,
+        895.0,
+        50.0
+      ],
+      "anchor_id": "p16_b1",
+      "figure_group_id": "p16_f1",
+      "content": {
+        "text": "1.1 集合初步",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p16_b1",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        95.0,
+        95.0,
+        665.0,
+        138.0
+      ],
+      "anchor_id": "p16_b1",
+      "figure_group_id": "p16_f1",
+      "content": {
+        "text": "可以用文氏图直观地反映 A ∩ B 的几种不同情况，如图 1-1-4 所示.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "可以用文氏图直观地反映",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∩ B ",
+            "latex": "A \\cap B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的几种不同情况，如图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-4 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所示",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_f1",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        125.0,
+        145.0,
+        635.0,
+        260.0
+      ],
+      "anchor_id": "p16_b1",
+      "figure_group_id": "p16_f1",
+      "content": {
+        "text": "可以用文氏图直观地反映 A ∩ B 的几种不同情况，如图 1-1-4 所示.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": "corpus/imports/e1d0e8d8d43043b9bd9359970ae47de9/assets/35b/figures/p0016_p16_f1.jpg",
+        "asset_url": "/api/v1/studio/proxy/import/asset?key=corpus%2Fimports%2Fe1d0e8d8d43043b9bd9359970ae47de9%2Fassets%2F35b%2Ffigures%2Fp0016_p16_f1.jpg",
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "可以用文氏图直观地反映",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∩ B ",
+            "latex": "A \\cap B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的几种不同情况，如图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-4 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所示",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b2",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        95.0,
+        290.0,
+        665.0,
+        400.0
+      ],
+      "anchor_id": "p16_b2",
+      "figure_group_id": "p16_f2",
+      "content": {
+        "text": "图 1-1-4(1)表示集合 A 与 B 既有公共元素又都有非公共元素的情况，此时阴影部分 A ∩ B 既是 A 的真子集又是 B 的真子集；图 1-1-4(2)表示集合 A 是 B 的子集的情况，此时 A ∩ B = A；图 1-1-4(3)表示集合 A 与 B 没有公共元素的情况，此时 A ∩ B = ∅.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-4(1)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "表示集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "既有公共元素又都有非公共元素的情况，此时阴影部分",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∩ B ",
+            "latex": "A \\cap B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "既是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的真子集又是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的真子集；图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-4(2)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "表示集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的子集的情况，此时",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∩ B = A",
+            "latex": "A \\cap B = A",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-4(3)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "表示集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "没有公共元素的情况，此时",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∩ B = ∅.",
+            "latex": "A \\cap B = ∅ .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b3",
+      "kind": "table",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        150.0,
+        405.0,
+        295.0,
+        425.0
+      ],
+      "anchor_id": "p16_b3",
+      "figure_group_id": "p16_f3",
+      "content": {
+        "text": "例 9 已知集合",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p16_b4",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        140.0,
+        430.0,
+        605.0,
+        450.0
+      ],
+      "anchor_id": "p16_b4",
+      "figure_group_id": "p16_f4",
+      "content": {
+        "text": "例 9 已知集合",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A = \\{(x, y) | 2x + y = 5\\}, B = \\{(x, y) | 3x + 2y = 8\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "例 9 已知集合",
+            "latex": "例 9 已 知 集 合",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b5",
+      "kind": "table",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95.0,
+        455.0,
+        175.0,
+        475.0
+      ],
+      "anchor_id": "p16_b5",
+      "figure_group_id": "p16_f5",
+      "content": {
+        "text": "求 A ∩ B.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "求",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∩ B.",
+            "latex": "A \\cap B .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b6",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        95.0,
+        480.0,
+        665.0,
+        510.0
+      ],
+      "anchor_id": "p16_b6",
+      "figure_group_id": "p16_f6",
+      "content": {
+        "text": "解 由题意，(x, y) ∈ A ∩ B 表示 (x, y) 既属于 A 又属于 B，即 (x, y) 是方程组",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "解",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "由题意，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "(x, y) ∈ A ∩ B ",
+            "latex": "( x ,  y ) \\in A \\cap B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "表示",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (x, y) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "既属于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "又属于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "，即",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (x, y) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是方程组",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b7",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        320.0,
+        520.0,
+        430.0,
+        560.0
+      ],
+      "anchor_id": "p16_b7",
+      "figure_group_id": "p16_f7",
+      "content": {
+        "text": "解 由题意，(x, y) ∈ A ∩ B 表示 (x, y) 既属于 A 又属于 B，即 (x, y) 是方程组",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "\\begin{cases} 2x + y = 5, \\\\ 3x + 2y = 8 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "解 由题意，(x, y) ∈ A ∩ B 表示 (x, y) 既属于 A 又属于 B，即 (x, y) 是方程组",
+            "latex": "解 由 题 意 , ( x ,  y ) \\in A \\cap B 表 示 ( x ,  y ) 既 属 于 A 又 属 于 B , 即 ( x ,  y ) 是 方 程 组",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b8",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        95.0,
+        565.0,
+        535.0,
+        585.0
+      ],
+      "anchor_id": "p16_b8",
+      "figure_group_id": "p16_f8",
+      "content": {
+        "text": "的解，所以 x = 2, y = 1. 于是，A ∩ B = {(2, 1)}.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "的解，所以",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " x = 2, y = 1. ",
+            "latex": "x = 2 ,  y = 1 .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "于是，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A ∩ B = {(2, 1)}.",
+            "latex": "A \\cap B = \\{ ( 2 ,  1 ) \\} .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b9",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        95.0,
+        600.0,
+        665.0,
+        640.0
+      ],
+      "anchor_id": "p16_b9",
+      "figure_group_id": "p16_f9",
+      "content": {
+        "text": "其次，我们可以把两个已知集合的所有元素放在一起组成一个新的集合.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p16_b10",
+      "kind": "table",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        140.0,
+        645.0,
+        665.0,
+        705.0
+      ],
+      "anchor_id": "p16_b10",
+      "figure_group_id": "p16_f10",
+      "content": {
+        "text": "定义 由所有属于集合 A 或属于集合 B 的元素所组成的集合，叫做集合 A 与 B 的并集（union），记作 A ∪ B（读作“A 并 B”），即",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cup B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "定义",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "由所有属于集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或属于集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的元素所组成的集合，叫做集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的并集（",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "union",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "），记作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∪ B",
+            "latex": "A \\cup B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "（读作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "并",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "），即",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b11",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        250.0,
+        710.0,
+        505.0,
+        730.0
+      ],
+      "anchor_id": "p16_b11",
+      "figure_group_id": "p16_f11",
+      "content": {
+        "text": "定义 由所有属于集合 A 或属于集合 B 的元素所组成的集合，叫做集合 A 与 B 的并集（union），记作 A ∪ B（读作“A 并 B”），即",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cup B = \\{x | x \\in A \\text{ 或 } x \\in B\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "定义 由所有属于集合 A 或属于集合 B 的元素所组成的集合，叫做集合 A 与 B 的并集（union），记作 A ∪ B（读作“A 并 B”），即",
+            "latex": "定 义 由 所 有 属 于 集 合 A 或 属 于 集 合 B 的 元 素 所 组 成 的 集 合 , 叫 做 集 合 A 与 B 的 并 集 （ u n i o n ） , 记 作 A \\cup B （ 读 作 “ A 并 B ” ） , 即",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b12",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        95.0,
+        735.0,
+        665.0,
+        775.0
+      ],
+      "anchor_id": "p16_b12",
+      "figure_group_id": "p16_f12",
+      "content": {
+        "text": "可以用文氏图直观地反映 A ∪ B 的几种不同情况，如图 1-1-5 所示，其中阴影部分表示 A ∪ B.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cup B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "可以用文氏图直观地反映",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∪ B ",
+            "latex": "A \\cup B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的几种不同情况，如图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-5 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所示，其中阴影部分表示",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∪ B.",
+            "latex": "A \\cup B .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_f12",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        125.0,
+        780.0,
+        635.0,
+        920.0
+      ],
+      "anchor_id": "p16_b12",
+      "figure_group_id": "p16_f12",
+      "content": {
+        "text": "可以用文氏图直观地反映 A ∪ B 的几种不同情况，如图 1-1-5 所示，其中阴影部分表示 A ∪ B.",
+        "caption": "图 1-1-5",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cup B",
+        "asset_key": "corpus/imports/e1d0e8d8d43043b9bd9359970ae47de9/assets/35b/figures/p0016_p16_f12.jpg",
+        "asset_url": "/api/v1/studio/proxy/import/asset?key=corpus%2Fimports%2Fe1d0e8d8d43043b9bd9359970ae47de9%2Fassets%2F35b%2Ffigures%2Fp0016_p16_f12.jpg",
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "可以用文氏图直观地反映",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∪ B ",
+            "latex": "A \\cup B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的几种不同情况，如图",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1-1-5 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所示，其中阴影部分表示",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A ∪ B.",
+            "latex": "A \\cup B .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b13",
+      "kind": "table",
+      "zone": "aside_right",
+      "role": "prompt",
+      "bbox": [
+        700.0,
+        145.0,
+        875.0,
+        215.0
+      ],
+      "anchor_id": "p16_b13",
+      "figure_group_id": "p16_f13",
+      "content": {
+        "text": "对照图 1-1-4 的三种情况，请各举一实例.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p16_b14",
+      "kind": "table",
+      "zone": "aside_right",
+      "role": "note",
+      "bbox": [
+        700.0,
+        470.0,
+        875.0,
+        615.0
+      ],
+      "anchor_id": "p16_b14",
+      "figure_group_id": "p16_f14",
+      "content": {
+        "text": "例 9 中，A ∩ B 表示二元一次方程组的所有解组成的集合. 它可以理解为两个一次函数 y = -2x + 5 与 y = -3/2x + 4 的图像的交点组成的集合.",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 9 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A ∩ B ",
+            "latex": "A \\cap B",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "表示二元一次方程组的所有解组成的集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "它可以理解为两个一次函数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " y = -2x + 5 ",
+            "latex": "y = - 2 x + 5",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " y = -3/2x + 4 ",
+            "latex": "y = - \\frac{3}{2} x + 4",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的图像的交点组成的集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p16_b15",
+      "kind": "table",
+      "zone": "aside_right",
+      "role": "prompt",
+      "bbox": [
+        700.0,
+        770.0,
+        875.0,
+        840.0
+      ],
+      "anchor_id": "p16_b15",
+      "figure_group_id": "p16_f15",
+      "content": {
+        "text": "对照图 1-1-5 的三种情况，请各举一实例.",
+        "caption": "图 1-1-5",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cup B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p16_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        885.0,
+        950.0,
+        905.0,
+        980.0
+      ],
+      "anchor_id": "p16_ft",
+      "figure_group_id": "p16_ft",
+      "content": {
+        "text": "9",
+        "caption": "图 1-1-4",
+        "table_html": "<table><tr><td>(1)</td><td>(2)</td><td>(3)</td></tr></table>",
+        "latex": "A \\cap B",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

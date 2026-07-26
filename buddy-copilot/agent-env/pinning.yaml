@@ -1,0 +1,59 @@
+# Buddy Copilot 确定性钉扎（随服务进 Git，换机器可复现）
+# Agent.create 时显式使用这些值，不加载 ambient Cursor 设置。
+
+# 模型不钉扎具体 id：默认 auto（服务端选），会话可从 /models 下拉指定
+model: auto
+runtime: local
+setting_sources: []   # 空 = 不读项目/用户/团队 ambient 设置
+cwd: ${WORKSPACE_ROOT}
+
+mcp:
+  server_name: buddy-copilot
+  transport: stdio
+  module: app.mcp_server
+  # 完整工具清单（canonical 点号名；MCP 挂载名 = 点号转下划线）。
+  # 档位与场景可见性以 permissions.yaml 为唯一权威，此处仅列全集供核对。
+  tools:
+    - editions.overview
+    - editions.bundle
+    - editions.draft
+    - editions.calibrate
+    - editions.fork
+    - editions.save_draft
+    - editions.publish
+    - corpus.list_jobs
+    - corpus.job
+    - corpus.page_context
+    - corpus.page_html
+    - corpus.start_import
+    - corpus.extend_import
+    - corpus.reprocess_page
+    - corpus.get_blocks
+    - corpus.patch_block
+    - corpus.replace_page_blocks
+    - corpus.rerender_page
+    - edition.record_effective_change
+    - edition.finalize_from_session
+    - minio.stat
+    - fs.request_edit
+    - docker.rebuild
+    - harness.run_golden
+    - harness.run_pytest
+    - harness.page_diff
+    - env.resource_map
+    - session.update_todos
+    - corpus.render_preview
+    - layout.judge_35b
+    - layout.anchor_mineru
+    - layout.compare
+    - layout.triad
+
+channels:
+  cheap:
+    - learning-buddy-api/configs/editions/
+  expensive:
+    - learning-buddy-api/data/prompts/
+    - learning-buddy-api/app/import_35b/prompts/
+    - learning-buddy-api/app/
+
+# 文件白名单 / 禁区 / 闸门 / 预算：唯一权威在 permissions.yaml（数据驱动，勿在此重复维护）

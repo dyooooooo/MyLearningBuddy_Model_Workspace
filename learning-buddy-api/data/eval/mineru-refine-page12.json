@@ -1,0 +1,29 @@
+{
+  "page_no": 12,
+  "blocks": [
+    {
+      "id": "a",
+      "zone": "aside_right",
+      "pedagogy_role": "symbol_note",
+      "anchor_block_id": "b"
+    },
+    {
+      "id": "b",
+      "zone": "main",
+      "pedagogy_role": "example"
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "c-main",
+      "label": "例4",
+      "block_ids": ["b"]
+    },
+    {
+      "chunk_id": "c-aside",
+      "label": "符号说明",
+      "block_ids": ["a"],
+      "anchor": "b"
+    }
+  ]
+}

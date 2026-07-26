@@ -1,0 +1,19 @@
+{
+  "profile_id": "hujiao_math_hs_v1",
+  "refine_mode": "skip",
+  "refine_parallel": 1,
+  "zones": {
+    "aside_left_x1_max": 280,
+    "aside_right_x0_min": 680
+  },
+  "features": {
+    "columns": "triple_slots",
+    "running_header_footer": true,
+    "aside": "both",
+    "toc_style": "text_list",
+    "figure_policy": "strict_label",
+    "math_density": "high"
+  },
+  "pedagogy_patterns": {},
+  "figure_group": {"y_tolerance": 35}
+}

@@ -1,7 +1,12 @@
 FROM node:20-alpine AS web
 
-WORKDIR /fe
+WORKDIR /fe-test
 COPY frontend/ ./
+RUN npm install
+RUN npm run build
+
+WORKDIR /fe-studio
+COPY studio-ui/ ./
 RUN npm install
 RUN npm run build
 
@@ -24,7 +29,8 @@ COPY app ./app
 COPY static ./static
 COPY scripts ./scripts
 COPY tests ./tests
-COPY --from=web /fe/dist ./static/vite
+COPY --from=web /fe-test/dist ./static/vite
+COPY --from=web /fe-studio/dist ./static/studio
 
 EXPOSE 8000
 

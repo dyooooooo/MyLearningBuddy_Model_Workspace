@@ -63,16 +63,23 @@ def rag_validate(state: GraphState, session: Session) -> GraphState:
 
 
 def eval_agent_node(state: GraphState, session: Session) -> GraphState:
-    if state.get("status") == "failed":
-        return state
+    """Eval is critical — run even if rag_validate marked state failed."""
+    stats: dict = {}
     n = run_eval_on_homework(
         session,
         state["student_id"],
         state["homework_id"],
         state["subject"],
         state["grade_band"],
+        stats=stats,
     )
-    return {**state, "steps": [_step("eval_agent", f"eval_updated={n}")]}
+    detail = (
+        f"eval_updated={n} traces={stats.get('traces', 0)} "
+        f"avg_ms={stats.get('avg_ms', 0)} log_file={stats.get('log_file', '')}"
+    )
+    steps = list(state.get("steps") or [])
+    steps.append(_step("eval_agent", detail))
+    return {**state, "status": "running", "steps": steps}
 
 
 def observer(state: GraphState, session: Session) -> GraphState:

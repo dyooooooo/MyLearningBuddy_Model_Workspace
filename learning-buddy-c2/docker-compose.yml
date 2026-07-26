@@ -223,7 +223,7 @@ services:
       - --attention-backend
       - flashinfer
       - --max-model-len
-      - "16384"
+      - "32768"
       - --max-num-seqs
       - "2"
       - --max-num-batched-tokens
@@ -244,6 +244,28 @@ services:
       retries: 10
       start_period: 600s
 
+  mfr:
+    container_name: lb-mfr
+    build:
+      context: ../mfr-service
+      dockerfile: Dockerfile
+    networks:
+      - learning_buddy_c2
+    ports:
+      - "127.0.0.1:8503:8503"
+    environment:
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+      MFR_MODEL: ${MFR_MODEL:-breezedeus/pix2text-mfr}
+      MFR_MAX_NEW_TOKENS: ${MFR_MAX_NEW_TOKENS:-512}
+      MFR_NUM_BEAMS: ${MFR_NUM_BEAMS:-1}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8503/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
   buddy-api:
     container_name: buddy-api
     build:
@@ -263,7 +285,14 @@ services:
       - "8100:8100"
     volumes:
       - buddy-data:/data/buddy
+      - ../data/cursor-packs:/data/buddy/cursor-packs
+      - ../learning-buddy-api/logs:/data/buddy/logs
+      - ../.pageaudit:/data/buddy/pageaudit
       - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+      - ../configs/textbook_profiles:/app/configs/textbook_profiles:ro
+      - ../learning-buddy-api/configs/textbook_profiles:/app/configs/textbook_profiles-local:ro
+      - ../learning-buddy-api/configs/editions:/app/configs/editions
+      - ../learning-buddy-api/app/static:/app/app/static:ro
     environment:
       BUDDY_DATA_DIR: /data/buddy
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://buddy:buddy@postgres:5432/buddy}
@@ -271,6 +300,11 @@ services:
       VECTOR_BACKEND: ${VECTOR_BACKEND:-milvus}
       MILVUS_URI: ${MILVUS_URI:-http://milvus:19530}
       MILVUS_COLLECTION: ${MILVUS_COLLECTION:-lb_corpus}
+      MILVUS_STAGING_COLLECTION: ${MILVUS_STAGING_COLLECTION:-lb_corpus_staging}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-companion-frames}
       QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
       NEMO_EMBED_URL: ${NEMO_EMBED_URL:-http://nemo-embed:8000/v1}
       NEMO_RERANK_URL: ${NEMO_RERANK_URL:-http://nemo-rerank:8000/v1}
@@ -293,8 +327,21 @@ services:
       VLLM_MODEL: ${VLLM_MODEL:-qwen36-35b-nvfp4}
       VLLM_MAX_CONCURRENT: ${VLLM_MAX_CONCURRENT:-2}
       VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
+      MFR_ENABLED: ${MFR_ENABLED:-true}
+      MFR_URL: ${MFR_URL:-http://mfr:8503/mfr}
+      MFR_BACKEND: ${MFR_BACKEND:-pix2text}
+      MFR_TIMEOUT_S: ${MFR_TIMEOUT_S:-20}
+      MFR_DPI: ${MFR_DPI:-200}
       EVAL_FALLBACK_RULES: ${EVAL_FALLBACK_RULES:-true}
       EVAL_AGENT_ENABLED: ${EVAL_AGENT_ENABLED:-true}
+      EVAL_USE_BANK_ANSWER: ${EVAL_USE_BANK_ANSWER:-false}
+      EVAL_SOLVE_THINKING: ${EVAL_SOLVE_THINKING:-true}
+      EVAL_TWO_PHASE_SOLVE: ${EVAL_TWO_PHASE_SOLVE:-true}
+      EVAL_HINTS_MAX_PER_SECTION: ${EVAL_HINTS_MAX_PER_SECTION:-2}
+      EVAL_DEBUG_TRACE: ${EVAL_DEBUG_TRACE:-true}
+      EVAL_DEBUG_LOG: ${EVAL_DEBUG_LOG:-true}
+      EVAL_LOG_TO_FILE: ${EVAL_LOG_TO_FILE:-true}
+      EVAL_LOG_DIR: ${EVAL_LOG_DIR:-/data/buddy/logs/eval}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:8100/api/v1/system/health"]
@@ -322,7 +369,14 @@ services:
         condition: service_started
     volumes:
       - buddy-data:/data/buddy
+      - ../data/cursor-packs:/data/buddy/cursor-packs
+      - ../learning-buddy-api/logs:/data/buddy/logs
+      - ../.pageaudit:/data/buddy/pageaudit
       - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+      - ../configs/textbook_profiles:/app/configs/textbook_profiles:ro
+      - ../learning-buddy-api/configs/textbook_profiles:/app/configs/textbook_profiles-local:ro
+      - ../learning-buddy-api/configs/editions:/app/configs/editions
+      - ../learning-buddy-api/app/static:/app/app/static:ro
     environment:
       BUDDY_DATA_DIR: /data/buddy
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://buddy:buddy@postgres:5432/buddy}
@@ -330,6 +384,11 @@ services:
       VECTOR_BACKEND: ${VECTOR_BACKEND:-milvus}
       MILVUS_URI: ${MILVUS_URI:-http://milvus:19530}
       MILVUS_COLLECTION: ${MILVUS_COLLECTION:-lb_corpus}
+      MILVUS_STAGING_COLLECTION: ${MILVUS_STAGING_COLLECTION:-lb_corpus_staging}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-companion-frames}
       QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
       NEMO_EMBED_URL: ${NEMO_EMBED_URL:-http://nemo-embed:8000/v1}
       NEMO_RERANK_URL: ${NEMO_RERANK_URL:-http://nemo-rerank:8000/v1}
@@ -349,6 +408,19 @@ services:
       VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
       EVAL_FALLBACK_RULES: ${EVAL_FALLBACK_RULES:-true}
       EVAL_AGENT_ENABLED: ${EVAL_AGENT_ENABLED:-true}
+      EVAL_USE_BANK_ANSWER: ${EVAL_USE_BANK_ANSWER:-false}
+      EVAL_SOLVE_THINKING: ${EVAL_SOLVE_THINKING:-true}
+      EVAL_TWO_PHASE_SOLVE: ${EVAL_TWO_PHASE_SOLVE:-true}
+      EVAL_HINTS_MAX_PER_SECTION: ${EVAL_HINTS_MAX_PER_SECTION:-2}
+      EVAL_DEBUG_TRACE: ${EVAL_DEBUG_TRACE:-true}
+      EVAL_DEBUG_LOG: ${EVAL_DEBUG_LOG:-true}
+      EVAL_LOG_TO_FILE: ${EVAL_LOG_TO_FILE:-true}
+      EVAL_LOG_DIR: ${EVAL_LOG_DIR:-/data/buddy/logs/eval}
+      MFR_ENABLED: ${MFR_ENABLED:-true}
+      MFR_URL: ${MFR_URL:-http://mfr:8503/mfr}
+      MFR_BACKEND: ${MFR_BACKEND:-pix2text}
+      MFR_TIMEOUT_S: ${MFR_TIMEOUT_S:-20}
+      MFR_DPI: ${MFR_DPI:-200}
     command: ["python", "-m", "app.jobs.worker"]
     restart: unless-stopped
     healthcheck:
@@ -372,15 +444,22 @@ services:
         condition: service_started
     ports:
       - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://vllm-qwen36-35b:8088/v1}
       VLLM_MODEL: ${VLLM_MODEL:-qwen36-35b-nvfp4}
       VLLM_MAX_CONCURRENT: ${VLLM_MAX_CONCURRENT:-2}
       VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
+      VLLM_LAN_PROXY_ENABLED: ${VLLM_LAN_PROXY_ENABLED:-true}
+      VLLM_LAN_TOKEN: ${VLLM_LAN_TOKEN:-}
+      VLLM_LAN_TIMEOUT_S: ${VLLM_LAN_TIMEOUT_S:-600}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       BUDDY_API_URL: ${BUDDY_API_URL:-http://buddy-api:8100}
       BUDDY_API_TOKEN: ${API_TOKEN:-change-me-api}
       BUDDY_ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-admin}
+      # Browser Studio UI token (defaults same as ADMIN_TOKEN in .env.example)
+      STUDIO_TOKEN: ${STUDIO_TOKEN:-change-me-admin}
       REFINE_ENABLED: ${REFINE_ENABLED:-true}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
@@ -388,6 +467,7 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-companion-frames}
       MINIO_SECURE: ${MINIO_SECURE:-false}
       SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-86400}
+      COPILOT_BASE_URL: ${COPILOT_BASE_URL:-http://host.docker.internal:8200}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:8000/api/v1/system/health"]

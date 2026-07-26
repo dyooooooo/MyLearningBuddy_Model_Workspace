@@ -1,0 +1,16 @@
+{"id":"p10_membership","page_no":10,"paragraphs":["(1) $0 \\in \\mathbb{N}$.","(2) $1 \\in \\mathbb{Z}$.","(3) $\\sqrt{2} \\notin \\mathbb{Q}$.","(4) $-\\sqrt{\\pi} \\in \\mathbb{R}$."],"expect":{"min_valid_math_spans":4,"no_math_fallback":true,"no_ascii_in_token":true}}
+{"id":"p11_set_builder_cjk","page_no":11,"paragraphs":["由定义得 $A \\cap B = \\{x \\mid x \\in A \\text{ 且 } x \\in B\\}$ 成立."],"expect":{"min_valid_math_spans":1,"no_math_fallback":true,"latex_must_contain":["\\cap","\\mid","\\in"]}}
+{"id":"p13_leqslant_inline","page_no":13,"paragraphs":["当 $0 \\leqslant x \\leqslant 1$ 时，有 $f(x) \\geqslant 0$."],"expect":{"min_valid_math_spans":2,"no_math_fallback":true,"latex_must_contain":["\\leqslant","\\geqslant"]}}
+{"id":"p14_cap_union","page_no":14,"paragraphs":["已知 $A \\cap B = \\varnothing$，则 $A \\cup B = A$."],"expect":{"min_valid_math_spans":2,"no_math_fallback":true,"no_ascii_in_token":true,"latex_must_contain":["\\varnothing"]}}
+{"id":"p16_subset","page_no":16,"paragraphs":["若 $A \\subseteq B$，则 $A \\cap B = A$."],"expect":{"min_valid_math_spans":2,"no_math_fallback":true,"no_ascii_in_token":true}}
+{"id":"p19_multi_para","page_no":19,"paragraphs":["解 (1) 设 $A=\\{1,2,3\\}$.","(2) 当 $x \\geqslant 0$ 时成立.","(3) 一段没有公式的说明文字."],"expect":{"min_valid_math_spans":2,"no_math_fallback":true,"expected_paragraphs":3,"paragraph_ratio_min":1.0}}
+{"id":"eq_ams_varnothing","page_no":13,"kind":"equation","latex":"A \\cap B = \\varnothing","fallback_text":"A∩B=∅","expect":{"equation_span_contains":"\\varnothing","no_math_fallback":true}}
+{"id":"eq_ams_leqslant","page_no":13,"kind":"equation","latex":"x \\leqslant y \\leqslant z","expect":{"equation_span_contains":"\\leqslant","no_math_fallback":true}}
+{"id":"eq_invalid_latex_fallbacks","page_no":13,"kind":"equation","latex":"\\begin{cases} \\frac{1}{","fallback_text":"分段函数占位","expect":{"forbid_data_latex_substr":"\\begin{cases} \\frac{1}{"}}
+{"id":"fig_caption_body_text","page_no":21,"kind":"figure","caption":"本节我们研究集合的运算性质。首先给出交集的定义，然后讨论并集与补集之间的关系，并通过例题加以说明。最后总结运算律。","expect":{"no_figure_tag":true,"html_must_contain":["集合的运算性质"]}}
+{"id":"fig_caption_short_real","page_no":21,"kind":"figure","caption":"图 1-1-1","expect":{"figure_tag":true}}
+{"id":"p3_text_kind_figure_caption","page_no":3,"kind":"text_with_figure_caption","caption":"主编 李大潜 王建磐","expect":{"html_must_contain":["主编"],"no_main_empty":true,"no_figure_tag":true}}
+{"id":"p6_figure_with_asset_toc_caption","page_no":6,"kind":"figure","caption":"1.1 集合初步","asset_url":"/proxy35b/fake.jpg","expect":{"no_figure_tag":true,"html_must_contain":["集合初步"]}}
+{"id":"p7_toc_as_table","page_no":7,"kind":"table","table_rows":[["第 1 章 集合与逻辑","1"],["1.1 集合初步","2"],["1.2 常用逻辑用语","13"],["1.3 充分条件与必要条件","20"]],"expect":{"no_table_tag":true,"toc_list":true,"html_must_contain":["lb-toc"]}}
+{"id":"p9_aside_gutter","page_no":9,"kind":"aside_gutter","bbox":[80,200,250,600],"paragraphs":["康托(G. Cantor, 1845-1918), 德国数学家, 集合论创始人。"],"expect":{"aside_left":true,"html_must_contain":["康托"]}}
+{"id":"anti_v3_bare_unicode","page_no":10,"paragraphs":["(1) 0∈N. (2) 1∈Z."],"expect_v4_model_output":false,"note":"v3-style bare Unicode — blueprint should NOT look like this after v5 prompt; pipeline may still degrade gracefully"}

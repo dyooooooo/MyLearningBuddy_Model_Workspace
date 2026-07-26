@@ -1,0 +1,336 @@
+{
+  "page_no": 5,
+  "total_changes": 28,
+  "by_transition": {
+    "raw_model→post_repair": {
+      "count": 28,
+      "changes": [
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_1",
+          "path": "blocks.block_1.content.asset_key",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_1 · 新增 blocks.block_1.content.asset_key"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_1",
+          "path": "blocks.block_1.content.asset_url",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_1 · 新增 blocks.block_1.content.asset_url"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_1",
+          "path": "blocks.block_1.content.caption",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_1 · 新增 blocks.block_1.content.caption"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_1",
+          "path": "blocks.block_1.content.latex",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_1 · 新增 blocks.block_1.content.latex"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_1",
+          "path": "blocks.block_1.content.table_html",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_1 · 新增 blocks.block_1.content.table_html"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_1",
+          "path": "blocks.block_1.content.text_segments",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_1 · 新增 blocks.block_1.content.text_segments"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_1",
+          "path": "blocks.block_1.content_type",
+          "kind": "added",
+          "before": "",
+          "after": "text",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_1 · 新增 blocks.block_1.content_type"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_2",
+          "path": "blocks.block_2.content.asset_key",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_2 · 新增 blocks.block_2.content.asset_key"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_2",
+          "path": "blocks.block_2.content.asset_url",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_2 · 新增 blocks.block_2.content.asset_url"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_2",
+          "path": "blocks.block_2.content.caption",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_2 · 新增 blocks.block_2.content.caption"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_2",
+          "path": "blocks.block_2.content.latex",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_2 · 新增 blocks.block_2.content.latex"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_2",
+          "path": "blocks.block_2.content.table_html",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_2 · 新增 blocks.block_2.content.table_html"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_2",
+          "path": "blocks.block_2.content.text_segments",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_2 · 新增 blocks.block_2.content.text_segments"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_2",
+          "path": "blocks.block_2.content_type",
+          "kind": "added",
+          "before": "",
+          "after": "text",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_2 · 新增 blocks.block_2.content_type"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_3",
+          "path": "blocks.block_3.content.asset_key",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_3 · 新增 blocks.block_3.content.asset_key"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_3",
+          "path": "blocks.block_3.content.asset_url",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_3 · 新增 blocks.block_3.content.asset_url"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_3",
+          "path": "blocks.block_3.content.caption",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_3 · 新增 blocks.block_3.content.caption"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_3",
+          "path": "blocks.block_3.content.latex",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_3 · 新增 blocks.block_3.content.latex"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_3",
+          "path": "blocks.block_3.content.table_html",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_3 · 新增 blocks.block_3.content.table_html"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_3",
+          "path": "blocks.block_3.content.text_segments",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_3 · 新增 blocks.block_3.content.text_segments"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_3",
+          "path": "blocks.block_3.content_type",
+          "kind": "added",
+          "before": "",
+          "after": "text",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_3 · 新增 blocks.block_3.content_type"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_4",
+          "path": "blocks.block_4.content.asset_key",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_4 · 新增 blocks.block_4.content.asset_key"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_4",
+          "path": "blocks.block_4.content.asset_url",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_4 · 新增 blocks.block_4.content.asset_url"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_4",
+          "path": "blocks.block_4.content.caption",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_4 · 新增 blocks.block_4.content.caption"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_4",
+          "path": "blocks.block_4.content.latex",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_4 · 新增 blocks.block_4.content.latex"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_4",
+          "path": "blocks.block_4.content.table_html",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_4 · 新增 blocks.block_4.content.table_html"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_4",
+          "path": "blocks.block_4.content.text_segments",
+          "kind": "added",
+          "before": "",
+          "after": "",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_4 · 新增 blocks.block_4.content.text_segments"
+        },
+        {
+          "transition": "raw_model→post_repair",
+          "stage_label": "防腐层修复",
+          "block_id": "block_4",
+          "path": "blocks.block_4.content_type",
+          "kind": "added",
+          "before": "",
+          "after": "text",
+          "reason": "boundary_repair:field",
+          "summary_zh": "块 block_4 · 新增 blocks.block_4.content_type"
+        }
+      ],
+      "stage_label": "防腐层修复"
+    },
+    "post_repair→post_mfr": {
+      "count": 0,
+      "changes": [],
+      "stage_label": "MFR 公式增强"
+    },
+    "post_mfr→post_crop": {
+      "count": 0,
+      "changes": [],
+      "stage_label": "插图裁剪"
+    },
+    "post_crop→blueprint": {
+      "count": 0,
+      "changes": [],
+      "stage_label": "Normalize"
+    }
+  },
+  "summary_zh": "本页共 28 处后处理修改：防腐层修复 28"
+}

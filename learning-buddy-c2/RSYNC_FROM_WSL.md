@@ -5,7 +5,7 @@ Spark cannot access WSL paths directly. Run this **from WSL** (not on Spark):
 ```bash
 rsync -avz --exclude '.gradle' --exclude 'build' --exclude 'node_modules' \
   /mnt/d/01_coding/LearningStack/exam-ocr-server/ \
-  mylearningbuddy@192.168.3.200:~/MyLearningBuddy_Model_Workspace/exam-ocr-server/
+  mylearningbuddy@192.168.1.10:~/MyLearningBuddy_Model_Workspace/exam-ocr-server/
 ```
 
 After sync, on Spark rebuild the gateway:

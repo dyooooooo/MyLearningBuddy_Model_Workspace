@@ -1,0 +1,191 @@
+{
+  "page_no": 22,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p22_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        740,
+        35,
+        900,
+        50
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.2 常用逻辑用语"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p22_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95,
+        95,
+        665,
+        210
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "等. 这是一个真命题. 所以，“$\\alpha \\Rightarrow \\beta$”成立.",
+            "(2) 若 $n$ 是素数，则 $n$ 是奇数. 这是一个假命题，因为 $2$ 是素数，但它是偶数. 所以，“$\\alpha \\Rightarrow \\beta$”不成立.",
+            "(3) 若两个角是对顶角，则这两个角相等. 这是一个真命题. 所以，“$\\alpha \\Rightarrow \\beta$”成立."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p22_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        105,
+        225,
+        665,
+        465
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "练习 1.2(1)",
+            "1. 举几个生活中的命题的例子，并判断其真假.",
+            "2. 判断下列命题的真假，并说明理由：",
+            "(1) 所有偶数都不是素数；",
+            "(2) $\\{1\\}$ 是 $\\{0,1,2\\}$ 的真子集；",
+            "(3) $0$ 是 $\\{0,1,2\\}$ 的真子集；",
+            "(4) 如果集合 $A$ 是集合 $B$ 的子集，那么 $B$ 不是 $A$ 的子集.",
+            "3. 用“$\\Rightarrow$”表示下列陈述句 $\\alpha$ 与 $\\beta$ 之间的推出关系：",
+            "(1) $\\alpha$: $\\triangle ABC$ 是等边三角形，$\\beta$: $\\triangle ABC$ 是轴对称图形；",
+            "(2) $\\alpha$: $x^{2}=4$，$\\beta$: $x=2$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p22_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        95,
+        560,
+        665,
+        745
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "先看一个例子：我们要培养的是德智体美劳全面发展的社会主义建设者和接班人. 显然，对于这样“全面发展”的学生来说，其学习成绩一定是好的；反过来，学习成绩好的学生不一定是“全面发展”的，因为可能其他方面不是很好. 也就是说，“学习成绩好”对于“全面发展”是不可缺少的，但只有“学习成绩好”还不够.",
+            "定义 对于两个陈述句 $\\alpha$ 与 $\\beta$，如果 $\\alpha \\Rightarrow \\beta$，就称 $\\alpha$ 是 $\\beta$ 的充分条件(sufficient condition)，亦称 $\\beta$ 是 $\\alpha$ 的必要条件(necessary condition)."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p22_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        95,
+        750,
+        665,
+        925
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "由例 2 知道，“一个三角形是等腰三角形”是“一个三角形有两个角相等”的充分条件，“两个角相等”是“两个角是对顶角”的必要条件，而“一个数是素数”不是“一个数是奇数”的充分条件.",
+            "例 3 判断下列各组中的 $\\alpha$ 分别是 $\\beta$ 的什么条件，并说明理由.",
+            "(1) $\\alpha$: 四边形 $ABCD$ 是正方形，$\\beta$: 四边形 $ABCD$ 的四个内角都是直角；"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p22_b5",
+      "kind": "text",
+      "zone": "aside_right",
+      "role": "note",
+      "bbox": [
+        700,
+        695,
+        865,
+        780
+      ],
+      "anchor_id": "p22_b3",
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "该定义中，“充分”二字说明“$\\alpha$ 成立时，$\\beta$ 一定成立”；而“必要”二字说明“$\\beta$ 不成立时，$\\alpha$ 一定不成立”."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p22_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        890,
+        955,
+        925,
+        980
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "15"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

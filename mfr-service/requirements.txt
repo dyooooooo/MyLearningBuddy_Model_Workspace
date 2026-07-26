@@ -1,0 +1,10 @@
+# MFR (Math-Formula-Recognition) side service.
+# Pinned to a transformers/tokenizers combo that loads breezedeus/pix2text-mfr
+# (XLM-R sentencepiece tokenizer + VisionEncoderDecoder ONNX weights).
+# torch / pillow / numpy / fastapi / uvicorn come from the buddy-api base image.
+transformers==4.46.3
+tokenizers==0.20.3
+optimum==1.23.3
+onnxruntime
+onnx
+python-multipart

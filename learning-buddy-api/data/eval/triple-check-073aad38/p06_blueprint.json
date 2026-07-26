@@ -1,0 +1,492 @@
+{
+  "page_no": 6,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p6_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        820.0,
+        60.0,
+        940.0,
+        100.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "目录",
+        "caption": "目录",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        90.0,
+        160.0,
+        360.0,
+        190.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "第 1 章 集合与逻辑",
+        "caption": "第 1 章 集合与逻辑",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        210.0,
+        890.0,
+        230.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "1.1 集合初步 2",
+        "caption": "1.1 集合初步 2",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        235.0,
+        890.0,
+        255.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "1.2 常用逻辑用语 13",
+        "caption": "1.2 常用逻辑用语 13",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370.0,
+        280.0,
+        890.0,
+        300.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "内容提要 20",
+        "caption": "内容提要 20",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370.0,
+        305.0,
+        890.0,
+        325.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "复习题 20",
+        "caption": "复习题 20",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        90.0,
+        370.0,
+        390.0,
+        400.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "第 2 章 等式与不等式",
+        "caption": "第 2 章 等式与不等式",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        420.0,
+        890.0,
+        440.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "2.1 等式与不等式的性质 24",
+        "caption": "2.1 等式与不等式的性质 24",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        445.0,
+        890.0,
+        465.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "2.2 不等式的求解 34",
+        "caption": "2.2 不等式的求解 34",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        470.0,
+        890.0,
+        490.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "2.3 基本不等式及其应用 46",
+        "caption": "2.3 基本不等式及其应用 46",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370.0,
+        515.0,
+        890.0,
+        535.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "内容提要 55",
+        "caption": "内容提要 55",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370.0,
+        540.0,
+        890.0,
+        560.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "复习题 56",
+        "caption": "复习题 56",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b13",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        90.0,
+        610.0,
+        420.0,
+        640.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "第 3 章 幂、指数与对数",
+        "caption": "第 3 章 幂、指数与对数",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b14",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        660.0,
+        890.0,
+        680.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "3.1 幂与指数 60",
+        "caption": "3.1 幂与指数 60",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b15",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        685.0,
+        890.0,
+        705.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "3.2 对数 66",
+        "caption": "3.2 对数 66",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b16",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370.0,
+        730.0,
+        890.0,
+        750.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "内容提要 76",
+        "caption": "内容提要 76",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b17",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        370.0,
+        755.0,
+        890.0,
+        775.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "复习题 76",
+        "caption": "复习题 76",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b18",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        90.0,
+        820.0,
+        610.0,
+        850.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "第 4 章 幂函数、指数函数与对数函数",
+        "caption": "第 4 章 幂函数、指数函数与对数函数",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b19",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        870.0,
+        890.0,
+        890.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "4.1 幂函数 80",
+        "caption": "4.1 幂函数 80",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b20",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        310.0,
+        895.0,
+        890.0,
+        915.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "4.2 指数函数 86",
+        "caption": "4.2 指数函数 86",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b21",
+      "kind": "running",
+      "zone": "running",
+      "role": "body",
+      "bbox": [
+        880.0,
+        960.0,
+        900.0,
+        990.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "1",
+        "caption": "1",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

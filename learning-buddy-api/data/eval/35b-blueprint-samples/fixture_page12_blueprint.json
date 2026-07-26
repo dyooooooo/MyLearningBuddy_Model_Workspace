@@ -1,0 +1,38 @@
+{
+  "page_no": 12,
+  "page_size": [1000, 1000],
+  "column_count_hint": "2",
+  "blocks": [
+    {
+      "id": "p12_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [120, 100, 650, 210],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {"text": "例4 选择适当的方法表示下列集合 $A$。"}
+    },
+    {
+      "id": "p12_b2",
+      "kind": "text",
+      "zone": "aside_right",
+      "role": "symbol_note",
+      "bbox": [710, 120, 900, 210],
+      "anchor_id": "p12_b1",
+      "figure_group_id": null,
+      "content": {"text": "符号“∞”读作“无穷大”。"}
+    },
+    {
+      "id": "p12_b3",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [160, 560, 590, 640],
+      "anchor_id": null,
+      "figure_group_id": "figgrp_1",
+      "content": {"caption": "图1-1-1", "asset_url": "/api/v1/studio/proxy/import/asset?key=corpus/imports/demo/assets/35b/figures/p0012_p12_b3.jpg"}
+    }
+  ]
+}
+

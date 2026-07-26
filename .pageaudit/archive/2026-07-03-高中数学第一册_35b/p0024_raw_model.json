@@ -1,0 +1,484 @@
+{
+  "page_no": 24,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p24_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        740,
+        30,
+        900,
+        50
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "1.2 常用逻辑用语"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_f1",
+      "kind": "figure",
+      "zone": "aside_right",
+      "role": "figure",
+      "bbox": [
+        700,
+        225,
+        880,
+        320
+      ],
+      "anchor_id": "p24_b2",
+      "figure_group_id": "p24_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "数学命题中的“所有”也可称为“对任意给定的一个”或“对每一个”."
+        }
+      }
+    },
+    {
+      "id": "p24_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        110,
+        125,
+        260,
+        155
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "3 反证法"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90,
+        185,
+        660,
+        225
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "反证法是数学中常用的证明方法之一. 下面，我们学习如何用反证法证明一些命题."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90,
+        230,
+        660,
+        320
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "在前面已经提到，要判断命题“若 $\\alpha$，则 $\\beta$”是假命题，只要存在一个满足条件 $\\alpha$ 但不满足结论 $\\beta$ 的对象就行了. 但是要判断命题“若 $\\alpha$，则 $\\beta$”是真命题，就需要证明所有满足条件 $\\alpha$ 的对象都满足结论 $\\beta$. 有时直接验证这一点并不是一件容易的事."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        325,
+        630,
+        345
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 5 设 $n \\in \\mathbf{Z}$. 证明：若 $n^{2}$ 是偶数，则 $n$ 也是偶数."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        90,
+        350,
+        660,
+        395
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "证明 假设结论“$n$ 是偶数”不成立，即假设 $n$ 是奇数. 由 $n$ 是奇数，可设 $n=2k+1$，$k \\in \\mathbf{Z}$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        400,
+        180,
+        415
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "因为"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_eq1",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        180,
+        420,
+        570,
+        440
+      ],
+      "anchor_id": "p24_b6",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": {
+          "latex": "n^{2}=(2k+1)^{2}=4k^{2}+4k+1=4\\left(k^{2}+k\\right)+1",
+          "fallback_text": "n^2 = (2k+1)^2 = 4k^2 + 4k + 1 = 4(k^2 + k) + 1"
+        },
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        90,
+        445,
+        500,
+        465
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "这说明 $n^{2}$ 是奇数，与已知条件 $n^{2}$ 是偶数矛盾."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        470,
+        500,
+        490
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "所以，一开始的假设不成立，即 $n$ 是偶数."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90,
+        500,
+        660,
+        585
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 5 的证明方法与以前的证明方法不同. 它首先假设结论 $\\beta$ 不成立（$\\beta$ 为假），然后经过正确的逻辑推理得出矛盾，从而说明“$\\beta$ 为假”是不可能发生的，即结论 $\\beta$ 是正确的. 这样的证明方法叫反证法."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        90,
+        590,
+        660,
+        655
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "应用反证法证明命题的第一步是假设命题的结论不成立，即否定命题的结论. 这一步是十分关键的. 只有这一步表述对了，接下来的逻辑推理才有意义."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        135,
+        660,
+        440,
+        680
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数学上一些常用的否定形式见表 1-2."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_t1",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        90,
+        690,
+        660,
+        855
+      ],
+      "anchor_id": "p24_b11",
+      "figure_group_id": null,
+      "content": {
+        "text": null,
+        "table": {
+          "rows": [
+            [
+              "陈述句 $\\alpha$",
+              "$\\alpha$ 的否定形式"
+            ],
+            [
+              "$x>1$",
+              "$x \\leqslant 1$"
+            ],
+            [
+              "$x>1$ 或 $y>1$",
+              "$x \\leqslant 1$ 且 $y \\leqslant 1$"
+            ],
+            [
+              "集合 $A$ 中满足性质 $p$ 的元素至少有两个",
+              "集合 $A$ 中满足性质 $p$ 的元素最多有一个"
+            ],
+            [
+              "所有的 $a \\in A$ 满足性质 $p$",
+              "至少存在一个 $a \\in A$ 不满足性质 $p$"
+            ],
+            [
+              "所有的 $a \\in A$ 不满足性质 $p$",
+              "至少存在一个 $a \\in A$ 满足性质 $p$"
+            ]
+          ],
+          "caption": "表 1-2 一些常用的否定形式"
+        },
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_f2",
+      "kind": "figure",
+      "zone": "aside_right",
+      "role": "figure",
+      "bbox": [
+        700,
+        765,
+        880,
+        820
+      ],
+      "anchor_id": "p24_t1",
+      "figure_group_id": "p24_f2",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "元素个数一般指正整数."
+        }
+      }
+    },
+    {
+      "id": "p24_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        870,
+        660,
+        895
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "例 6 设 $x$、$y \\in \\mathbf{R}$. 证明：若 $x+y>2$，则 $x>1$ 或 $y>1$."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_b13",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        135,
+        900,
+        320,
+        920
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "证明 用反证法证明."
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    },
+    {
+      "id": "p24_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        890,
+        950,
+        920,
+        980
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "17"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "page_no": 3,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p3_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        115.0,
+        78.0,
+        790.0,
+        215.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": "主 编 李大潜 王建磐\n副 主 编 应坚刚 鲍建生\n本册编写人员 王伟叶 傅吉祥 王春明 王志强 潘 奋 吴泉水 高卫国 邱维元\n责任编辑 张莹莹\n装帧设计 陆 弦 王 捷 周 吉",
+        "caption": "普通高中教科书 数学 必修 第一册\n上海市中小学（幼儿园）课程改革委员会组织编写",
+        "table_html": "<table>\n<tr><td>出 版</td><td>上海教育出版社有限公司（上海市永福路123号）</td></tr>\n<tr><td>发 行</td><td>上海新华书店</td></tr>\n<tr><td>印 刷</td><td>上海中华印刷有限公司</td></tr>\n<tr><td>版 次</td><td>2020年7月第1版</td></tr>\n<tr><td>印 次</td><td>2021年7月第3次</td></tr>\n<tr><td>开 本</td><td>890×1240 1/16</td></tr>\n<tr><td>印 张</td><td>9.5</td></tr>\n<tr><td>字 数</td><td>164千字</td></tr>\n<tr><td>书 号</td><td>978-7-5720-0183-3/G·0140</td></tr>\n<tr><td>定 价</td><td>11.90元</td></tr>\n</table>",
+        "latex": "890 \\times 1240 \\quad 1/16",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

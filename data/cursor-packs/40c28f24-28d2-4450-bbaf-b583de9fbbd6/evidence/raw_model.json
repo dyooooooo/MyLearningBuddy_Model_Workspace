@@ -1,0 +1,537 @@
+{
+  "page_no": 3,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        80,
+        330,
+        100
+      ],
+      "anchor_id": "b1",
+      "figure_group_id": "b1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "主编 李大潜 王建磐"
+        }
+      }
+    },
+    {
+      "id": "b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        105,
+        330,
+        125
+      ],
+      "anchor_id": "b2",
+      "figure_group_id": "b2",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "副主编 应坚刚 鲍建生"
+        }
+      }
+    },
+    {
+      "id": "b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        130,
+        790,
+        150
+      ],
+      "anchor_id": "b3",
+      "figure_group_id": "b3",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "本册编写人员 王伟叶 傅吉祥 王春明 王志强 潘 奋 吴泉水 高卫国 邱维元"
+        }
+      }
+    },
+    {
+      "id": "b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        175,
+        260,
+        195
+      ],
+      "anchor_id": "b4",
+      "figure_group_id": "b4",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "责任编辑 张莹莹"
+        }
+      }
+    },
+    {
+      "id": "b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        200,
+        400,
+        220
+      ],
+      "anchor_id": "b5",
+      "figure_group_id": "b5",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "装帧设计 陆 弦 王 捷 周 吉"
+        }
+      }
+    },
+    {
+      "id": "b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        245,
+        830,
+        315
+      ],
+      "anchor_id": "b6",
+      "figure_group_id": "b6",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "本册教材图片提供 全景网（封面一幅图，P1一幅图，封底一幅图）；图虫网（P23一幅图，P98一幅图，P105一幅图，P128一幅图）；壹图网（P75一幅图）；上海教育出版社有限公司（P70一幅图）"
+        }
+      }
+    },
+    {
+      "id": "b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        320,
+        400,
+        340
+      ],
+      "anchor_id": "b7",
+      "figure_group_id": "b7",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "插图绘制 肖征波 周 吉 朱泽宇"
+        }
+      }
+    },
+    {
+      "id": "b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        350,
+        420,
+        370
+      ],
+      "anchor_id": "b8",
+      "figure_group_id": "b8",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "普通高中教科书 数学 必修 第一册"
+        }
+      }
+    },
+    {
+      "id": "b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        375,
+        510,
+        395
+      ],
+      "anchor_id": "b9",
+      "figure_group_id": "b9",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "上海市中小学（幼儿园）课程改革委员会组织编写"
+        }
+      }
+    },
+    {
+      "id": "b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        410,
+        580,
+        430
+      ],
+      "anchor_id": "b10",
+      "figure_group_id": "b10",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "出版 上海教育出版社有限公司（上海市永福路123号）"
+        }
+      }
+    },
+    {
+      "id": "b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        435,
+        310,
+        455
+      ],
+      "anchor_id": "b11",
+      "figure_group_id": "b11",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "发行 上海新华书店"
+        }
+      }
+    },
+    {
+      "id": "b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        460,
+        380,
+        480
+      ],
+      "anchor_id": "b12",
+      "figure_group_id": "b12",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "印刷 上海中华印刷有限公司"
+        }
+      }
+    },
+    {
+      "id": "b13",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        485,
+        320,
+        505
+      ],
+      "anchor_id": "b13",
+      "figure_group_id": "b13",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "版次 2020年7月第1版"
+        }
+      }
+    },
+    {
+      "id": "b14",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        510,
+        330,
+        530
+      ],
+      "anchor_id": "b14",
+      "figure_group_id": "b14",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "印次 2021年7月第3次"
+        }
+      }
+    },
+    {
+      "id": "b15",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        535,
+        320,
+        555
+      ],
+      "anchor_id": "b15",
+      "figure_group_id": "b15",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "开本 890×1240 1/16"
+        }
+      }
+    },
+    {
+      "id": "b16",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        560,
+        230,
+        580
+      ],
+      "anchor_id": "b16",
+      "figure_group_id": "b16",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "印张 9.5"
+        }
+      }
+    },
+    {
+      "id": "b17",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        585,
+        270,
+        605
+      ],
+      "anchor_id": "b17",
+      "figure_group_id": "b17",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "字数 164千字"
+        }
+      }
+    },
+    {
+      "id": "b18",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        610,
+        410,
+        630
+      ],
+      "anchor_id": "b18",
+      "figure_group_id": "b18",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "书号 978-7-5720-0183-3/G·0140"
+        }
+      }
+    },
+    {
+      "id": "b19",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        635,
+        270,
+        655
+      ],
+      "anchor_id": "b19",
+      "figure_group_id": "b19",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "定价 11.90元"
+        }
+      }
+    },
+    {
+      "id": "b20",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        680,
+        750,
+        700
+      ],
+      "anchor_id": "b20",
+      "figure_group_id": "b20",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "版权所有·未经许可不得采用任何方式擅自复制或使用本产品任何部分·违者必究"
+        }
+      }
+    },
+    {
+      "id": "b21",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        705,
+        460,
+        725
+      ],
+      "anchor_id": "b21",
+      "figure_group_id": "b21",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "如发现内容质量问题，请拨打 021-64319241"
+        }
+      }
+    },
+    {
+      "id": "b22",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        730,
+        820,
+        750
+      ],
+      "anchor_id": "b22",
+      "figure_group_id": "b22",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "如发现印、装质量问题，影响阅读，请与上海教育出版社有限公司联系. 电话021-64377165"
+        }
+      }
+    },
+    {
+      "id": "b23",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        755,
+        320,
+        775
+      ],
+      "anchor_id": "b23",
+      "figure_group_id": "b23",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "全国物价举报电话：12315"
+        }
+      }
+    },
+    {
+      "id": "b24",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        120,
+        800,
+        860,
+        840
+      ],
+      "anchor_id": "b24",
+      "figure_group_id": "b24",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "声明 按照《中华人民共和国著作权法》第二十五条有关规定，我们已尽量寻找著作权人支付报酬. 著作权人如有关于支付报酬事宜可及时与出版社联系."
+        }
+      }
+    }
+  ]
+}

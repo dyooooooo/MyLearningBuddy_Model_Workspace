@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "entries": [
+    {
+      "id": "base.running.chrome",
+      "facet": "running_chrome",
+      "severity": "should",
+      "statement": "Identify page headers, footers, and page numbers as running chrome.",
+      "tags": ["chrome"]
+    },
+    {
+      "id": "base.geom.normalized",
+      "facet": "layout_geometry",
+      "severity": "may",
+      "statement": "Use 0–1000 normalized page coordinates unless otherwise specified.",
+      "tags": ["geometry"]
+    }
+  ]
+}

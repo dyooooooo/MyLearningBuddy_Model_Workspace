@@ -1,0 +1,118 @@
+# Buddy Copilot 资源地图（机器可读）
+# 每条记录：what（是什么）/ where（路径|表|前缀|端点）/ how（怎么访问）/ mutability（能不能改）
+# mutability: readonly | cheap（改后即时生效，无需 rebuild） | expensive（打进镜像，须 rebuild buddy-api+buddy-worker）
+# 本文件随 buddy-copilot 版本化；路径漂移由一致性守护检测（app/agent_env.py verify_resource_paths）
+
+configs:
+  - what: 教材方案（Edition Bundle）种子与已发布文件（meta/config/policy.json + assets/）
+    where: learning-buddy-api/configs/editions/
+    how: 文件系统直读；bind-mount 进容器 /app/configs/editions
+    mutability: cheap
+    note: 草稿不在这里！草稿存 Postgres edition_drafts，读写走 editions API / save_draft 工具
+
+  - what: 方案历史版本（publish 时物化）
+    where: learning-buddy-api/configs/editions/{edition_id}/versions/{version}/
+    how: 文件系统直读
+    mutability: readonly
+
+  - what: MinerU 线 prompt 模板（refine/rerecognize/content_correct/layout_rebuild/unit_judge）
+    where: learning-buddy-api/data/prompts/
+    how: 文件系统直读
+    mutability: expensive
+    note: 槽位映射见 learning-buddy-api/app/services/editions/slots.py
+
+  - what: 35B 线 prompt 模板（layout blueprint，槽位用 v6）
+    where: learning-buddy-api/app/import_35b/prompts/
+    how: 文件系统直读
+    mutability: expensive
+
+  - what: 教材画像（textbook profile）
+    where: configs/textbook_profiles/
+    how: 文件系统直读；容器内 /app/configs/textbook_profiles（只读挂载）
+    mutability: readonly
+
+  - what: buddy-api 服务配置字段清单（值在 learning-buddy-c2/.env，禁读！）
+    where: learning-buddy-api/app/config.py
+    how: 只读字段名，不读取值
+    mutability: readonly
+
+intermediate:
+  - what: 页中间表示（IR）与重识别上下文（ir_blocks/profile/指纹/stages）
+    where: "buddy-api GET /api/v1/admin/corpus/import/jobs/{job_id}/pages/{page_no}/rerecognize-context"
+    how: 只读工具 get_page_context
+    mutability: readonly
+    note: 全书 IR blocks.json 在 MinIO（meta.blocks_key），勿直连；页级用工具
+
+  - what: 页渲染 HTML（草稿 chunk 优先）
+    where: "buddy-api GET /api/v1/admin/corpus/import/jobs/{job_id}/page/{page_no}/html"
+    how: 只读工具 get_page_html
+    mutability: readonly
+
+  - what: 导入任务状态（status/pipeline_phase/pages_ready/edition_id）
+    where: Postgres 表 corpus_import_jobs（经 API）
+    how: 只读工具 get_import_job / list_import_jobs
+    mutability: readonly
+
+  - what: 语料节点/边（结构化结果）
+    where: Postgres 表 corpus_nodes / corpus_edges（经 API /admin/corpus/nodes）
+    how: 只读（如需，让编排器扩工具）
+    mutability: readonly
+
+  - what: 原始 PDF / 页图 / 渲染产物
+    where: "MinIO 前缀：corpus/imports/（MinerU 线）与 import35b/（35B 线，双线隔离）"
+    how: 经 buddy-api API，勿直连 MinIO
+    mutability: readonly
+
+  - what: 任务队列
+    where: "Redis：MinerU 默认导入队列 与 import35b 队列（隔离，勿混）"
+    how: 经 API 观察任务状态，勿直连 Redis
+    mutability: readonly
+
+acceptance:
+  - what: 方案 golden-lite（slot 装配 + config sha）
+    where: "buddy-api POST /api/v1/admin/editions/{edition_id}/golden"
+    how: 只读工具 run_golden / 步骤工具 harness.run_golden
+    mutability: readonly
+
+  - what: golden 快照与评测数据
+    where: learning-buddy-api/data/eval/
+    how: 文件系统直读
+    mutability: readonly
+
+  - what: 单元测试（分栏/TOC/adapter 等）
+    where: learning-buddy-api/tests/
+    how: 步骤工具 harness.run_pytest（在 learning-buddy-api/.venv 运行）
+    mutability: cheap
+
+  - what: 验收脚本
+    where: learning-buddy-api/scripts/
+    how: 编排器执行（不直接给 Agent）
+    mutability: readonly
+
+logs:
+  - what: buddy-api / buddy-worker 容器日志
+    where: docker compose logs（learning-buddy-c2 目录）
+    how: 编排器 compose_logs 工具
+    mutability: readonly
+
+pipeline_code:
+  - what: MinerU Cloud 到 IR 适配
+    where: learning-buddy-api/app/services/ir/mineru_adapter.py
+    how: 文件系统直读
+    mutability: expensive
+  - what: 分栏与侧栏落位
+    where: learning-buddy-api/app/services/ir/column_detect.py
+    how: 文件系统直读
+    mutability: expensive
+  - what: HTML 骨架 / 目录 / 页眉渲染
+    where: learning-buddy-api/app/services/document_ir.py
+    how: 文件系统直读
+    mutability: expensive
+  - what: 页重处理调度（各 mode 语义）
+    where: learning-buddy-api/app/services/corpus_reprocess_service.py
+    how: 文件系统直读
+    mutability: expensive
+  - what: 方案 schema 与生命周期
+    where: learning-buddy-api/app/services/editions/schema.py
+    how: 文件系统直读
+    mutability: expensive

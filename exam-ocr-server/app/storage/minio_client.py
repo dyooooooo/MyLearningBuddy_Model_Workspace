@@ -62,3 +62,15 @@ def get_frame(student_id: str, session_id: str, frame_id: str) -> bytes | None:
             resp.release_conn()
     except S3Error:
         return None
+
+
+def put_import_bytes(key: str, data: bytes, content_type: str = "application/pdf") -> str:
+    client = get_minio()
+    client.put_object(
+        settings.minio_bucket,
+        key,
+        io.BytesIO(data),
+        length=len(data),
+        content_type=content_type,
+    )
+    return key

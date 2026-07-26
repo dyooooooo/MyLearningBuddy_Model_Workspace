@@ -1,0 +1,31 @@
+{
+  "name": "content_correct_formula_sample",
+  "mode": "content_correct",
+  "page_no": 1,
+  "before_blocks": [
+    {
+      "id": "eq1",
+      "type": "list",
+      "page_no": 1,
+      "order": 1,
+      "text": "（1）\\frac{1}{2}____ N;",
+      "meta": {"layout_zone": "main", "pedagogy_role": "body"}
+    }
+  ],
+  "patch": {
+    "page_no": 1,
+    "blocks": [
+      {
+        "id": "eq1",
+        "zone": "aside_left",
+        "pedagogy_role": "note",
+        "text": "（1）$\\frac{1}{2}$____ N;"
+      }
+    ]
+  },
+  "expect": {
+    "text": "（1）$\\frac{1}{2}$____ N;",
+    "zone": "main",
+    "role": "body"
+  }
+}

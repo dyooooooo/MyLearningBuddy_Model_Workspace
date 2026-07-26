@@ -6,8 +6,16 @@ from app.rag.vector.milvus_store import MilvusVectorStore
 from app.rag.vector.qdrant_store import QdrantVectorStore
 
 
-def get_vector_store() -> VectorStore:
+def get_vector_store(collection: str | None = None) -> VectorStore:
     backend = (settings.vector_backend or "milvus").lower()
     if backend == "qdrant":
         return QdrantVectorStore()
-    return MilvusVectorStore()
+    name = collection or settings.milvus_collection
+    return MilvusVectorStore(collection_name=name)
+
+
+def get_staging_vector_store() -> VectorStore:
+    backend = (settings.vector_backend or "milvus").lower()
+    if backend == "qdrant":
+        return QdrantVectorStore()
+    return MilvusVectorStore(collection_name=settings.milvus_staging_collection)

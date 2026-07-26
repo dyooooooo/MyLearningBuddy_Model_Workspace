@@ -1,0 +1,13 @@
+{
+  "page_no": 29,
+  "status": "blank_detected",
+  "prompt_version": "layout_blueprint_v5",
+  "final": {
+    "blocks": 1,
+    "kinds": {
+      "text": 1
+    },
+    "text_empty": 1
+  },
+  "elapsed_ms": 5
+}

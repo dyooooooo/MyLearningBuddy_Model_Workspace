@@ -1,0 +1,18 @@
+[
+  {
+    "suspect_type": "MAIN_EMPTY",
+    "severity": "high",
+    "page_no": 4,
+    "block_id": "",
+    "evidence": {
+      "main_blocks": 4
+    },
+    "candidates": [
+      "整页内容丢失（模型误标 role/zone）",
+      "本页本来就是空白页/纯图页"
+    ],
+    "fingerprint": "6282c36d15a8cdb1",
+    "fingerprint_exact": "80247de4422f4f33",
+    "detector": "rule"
+  }
+]

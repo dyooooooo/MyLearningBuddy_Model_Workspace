@@ -1,0 +1,28 @@
+{
+  "description": "Layout golden pages for 沪教版数学必修第一册",
+  "profile_id": "hujiao_math_hs_v1",
+  "pages": {
+    "9": {
+      "min_aside_left": 1,
+      "notes": "人物侧栏页 — 左 gutter 批注必须 aside_left"
+    },
+    "12": {
+      "min_aside_right": 1,
+      "min_fig_groups": 1,
+      "html_contains": ["lb-callout", "lb-fig-group"]
+    },
+    "16": {
+      "min_aside_right": 2,
+      "html_contains": ["data-anchor", "lb-aside--right"]
+    }
+  },
+  "engines": {
+    "mineru_cloud": {
+      "layout_confidence_low_max": 8
+    },
+    "vision_ocr": {
+      "layout_confidence_low_max": 15,
+      "zone_count_slack": 3
+    }
+  }
+}

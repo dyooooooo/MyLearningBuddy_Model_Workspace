@@ -1,0 +1,96 @@
+{
+  "version": "1",
+  "entries": [
+    {
+      "id": "hj.zone.aside_right",
+      "facet": "zone_hints",
+      "severity": "should",
+      "statement": "右侧批注栏通常位于 x0≳680（0–1000 归一化）；窄且与主栏 Y 重叠的块标 aside_right。",
+      "tags": ["aside"]
+    },
+    {
+      "id": "hj.zone.aside_left",
+      "facet": "zone_hints",
+      "severity": "should",
+      "statement": "左侧人物/旁注通常位于 x1≲280；勿把短主栏标题误判为 aside_left。",
+      "tags": ["aside"]
+    },
+    {
+      "id": "hj.aside.both",
+      "facet": "aside_policy",
+      "severity": "should",
+      "statement": "本教材支持左右双旁注；宽块始终留在 main。",
+      "tags": ["aside"]
+    },
+    {
+      "id": "hj.running.header",
+      "facet": "running_chrome",
+      "severity": "must",
+      "statement": "页眉/页脚/页码标 running；融合时允许 dedupe 重复页眉。",
+      "tags": ["chrome"]
+    },
+    {
+      "id": "hj.toc.text_list",
+      "facet": "toc_style",
+      "severity": "should",
+      "statement": "目录多为纯文本列表：章标题「第N章」+ 带页码条目；VLM 可能把整页 TOC 压成一段。",
+      "tags": ["toc"]
+    },
+    {
+      "id": "hj.figure.strict",
+      "facet": "figure_policy",
+      "severity": "must",
+      "statement": "图注以「图 X-Y」开头；同 Y 容差内的图与图注归为一组。",
+      "tags": ["figure"]
+    },
+    {
+      "id": "hj.math.high",
+      "facet": "math_density",
+      "severity": "should",
+      "statement": "公式密度高：保留 LaTeX；内容校正时修复未包裹的 \\frac 等。",
+      "tags": ["math"]
+    },
+    {
+      "id": "hj.pedagogy.roles",
+      "facet": "pedagogy_roles",
+      "severity": "should",
+      "statement": "常见角色：example/exercise/review/explore/definition/note/think/summary。",
+      "tags": ["role"]
+    },
+    {
+      "id": "hj.content.formula",
+      "facet": "content_correct",
+      "severity": "must",
+      "statement": "校正公式与 OCR 草稿，不擅自改 zone/pedagogy_role（除非明显错误）。",
+      "tags": ["correct"]
+    },
+    {
+      "id": "hj.rebuild.merge",
+      "facet": "layout_rebuild",
+      "severity": "should",
+      "statement": "用户要求结构性调整时允许合并栏、去重页眉；不满意可回滚 MinerU baseline。",
+      "tags": ["rebuild"]
+    },
+    {
+      "id": "hj.judge.honor_drop",
+      "facet": "unit_judge",
+      "severity": "should",
+      "statement": "有 baseline 回滚时，可对重复页眉/冗余块给出 drop / keep_35b。",
+      "tags": ["judge"]
+    },
+    {
+      "id": "hj.vision.triple",
+      "facet": "vision_layout",
+      "severity": "should",
+      "statement": "版式为 triple_slots（左旁注/主栏/右旁注）；输出 PageBlueprint 时尊重 MinerU layout hints。",
+      "tags": ["35b"]
+    },
+    {
+      "id": "hj.geom.page",
+      "facet": "layout_geometry",
+      "severity": "may",
+      "statement": "页面坐标空间为 0–1000 归一化；主栏宽块阈值约 ≥380。",
+      "tags": ["geometry"]
+    }
+  ]
+}

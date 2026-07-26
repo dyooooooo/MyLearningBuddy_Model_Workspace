@@ -1,0 +1,78 @@
+{
+  "page_no": 6,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p6_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        820.0,
+        60.0,
+        940.0,
+        100.0
+      ],
+      "anchor_id": "p6_b1",
+      "figure_group_id": "p6_fg1",
+      "content": {
+        "text": "目录",
+        "caption": "目录",
+        "table_html": "<table>\n  <tr>\n    <td>第 1 章 集合与逻辑</td>\n  </tr>\n  <tr>\n    <td>1.1 集合初步 2</td>\n  </tr>\n  <tr>\n    <td>1.2 常用逻辑用语 13</td>\n  </tr>\n  <tr>\n    <td>内容提要 20</td>\n  </tr>\n  <tr>\n    <td>复习题 20</td>\n  </tr>\n  <tr>\n    <td>第 2 章 等式与不等式</td>\n  </tr>\n  <tr>\n    <td>2.1 等式与不等式的性质 24</td>\n  </tr>\n  <tr>\n    <td>2.2 不等式的求解 34</td>\n  </tr>\n  <tr>\n    <td>2.3 基本不等式及其应用 46</td>\n  </tr>\n  <tr>\n    <td>内容提要 55</td>\n  </tr>\n  <tr>\n    <td>复习题 56</td>\n  </tr>\n  <tr>\n    <td>第 3 章 幂、指数与对数</td>\n  </tr>\n  <tr>\n    <td>3.1 幂与指数 60</td>\n  </tr>\n  <tr>\n    <td>3.2 对数 66</td>\n  </tr>\n  <tr>\n    <td>内容提要 76</td>\n  </tr>\n  <tr>\n    <td>复习题 76</td>\n  </tr>\n  <tr>\n    <td>第 4 章 幂函数、指数函数与对数函数</td>\n  </tr>\n  <tr>\n    <td>4.1 幂函数 80</td>\n  </tr>\n  <tr>\n    <td>4.2 指数函数 86</td>\n  </tr>\n</table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_b1",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        100.0,
+        160.0,
+        900.0,
+        950.0
+      ],
+      "anchor_id": "p6_b1",
+      "figure_group_id": "p6_fg1",
+      "content": {
+        "text": "第 1 章 集合与逻辑\n\n1.1 集合初步 2\n1.2 常用逻辑用语 13\n\n内容提要 20\n复习题 20\n\n第 2 章 等式与不等式\n\n2.1 等式与不等式的性质 24\n2.2 不等式的求解 34\n2.3 基本不等式及其应用 46\n\n内容提要 55\n复习题 56\n\n第 3 章 幂、指数与对数\n\n3.1 幂与指数 60\n3.2 对数 66\n\n内容提要 76\n复习题 76\n\n第 4 章 幂函数、指数函数与对数函数\n\n4.1 幂函数 80\n4.2 指数函数 86",
+        "caption": "目录",
+        "table_html": "<table>\n  <tr>\n    <td>第 1 章 集合与逻辑</td>\n  </tr>\n  <tr>\n    <td>1.1 集合初步 2</td>\n  </tr>\n  <tr>\n    <td>1.2 常用逻辑用语 13</td>\n  </tr>\n  <tr>\n    <td>内容提要 20</td>\n  </tr>\n  <tr>\n    <td>复习题 20</td>\n  </tr>\n  <tr>\n    <td>第 2 章 等式与不等式</td>\n  </tr>\n  <tr>\n    <td>2.1 等式与不等式的性质 24</td>\n  </tr>\n  <tr>\n    <td>2.2 不等式的求解 34</td>\n  </tr>\n  <tr>\n    <td>2.3 基本不等式及其应用 46</td>\n  </tr>\n  <tr>\n    <td>内容提要 55</td>\n  </tr>\n  <tr>\n    <td>复习题 56</td>\n  </tr>\n  <tr>\n    <td>第 3 章 幂、指数与对数</td>\n  </tr>\n  <tr>\n    <td>3.1 幂与指数 60</td>\n  </tr>\n  <tr>\n    <td>3.2 对数 66</td>\n  </tr>\n  <tr>\n    <td>内容提要 76</td>\n  </tr>\n  <tr>\n    <td>复习题 76</td>\n  </tr>\n  <tr>\n    <td>第 4 章 幂函数、指数函数与对数函数</td>\n  </tr>\n  <tr>\n    <td>4.1 幂函数 80</td>\n  </tr>\n  <tr>\n    <td>4.2 指数函数 86</td>\n  </tr>\n</table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p6_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        880.0,
+        950.0,
+        920.0,
+        990.0
+      ],
+      "anchor_id": "p6_b1",
+      "figure_group_id": "p6_fg1",
+      "content": {
+        "text": "1",
+        "caption": "目录",
+        "table_html": "<table>\n  <tr>\n    <td>第 1 章 集合与逻辑</td>\n  </tr>\n  <tr>\n    <td>1.1 集合初步 2</td>\n  </tr>\n  <tr>\n    <td>1.2 常用逻辑用语 13</td>\n  </tr>\n  <tr>\n    <td>内容提要 20</td>\n  </tr>\n  <tr>\n    <td>复习题 20</td>\n  </tr>\n  <tr>\n    <td>第 2 章 等式与不等式</td>\n  </tr>\n  <tr>\n    <td>2.1 等式与不等式的性质 24</td>\n  </tr>\n  <tr>\n    <td>2.2 不等式的求解 34</td>\n  </tr>\n  <tr>\n    <td>2.3 基本不等式及其应用 46</td>\n  </tr>\n  <tr>\n    <td>内容提要 55</td>\n  </tr>\n  <tr>\n    <td>复习题 56</td>\n  </tr>\n  <tr>\n    <td>第 3 章 幂、指数与对数</td>\n  </tr>\n  <tr>\n    <td>3.1 幂与指数 60</td>\n  </tr>\n  <tr>\n    <td>3.2 对数 66</td>\n  </tr>\n  <tr>\n    <td>内容提要 76</td>\n  </tr>\n  <tr>\n    <td>复习题 76</td>\n  </tr>\n  <tr>\n    <td>第 4 章 幂函数、指数函数与对数函数</td>\n  </tr>\n  <tr>\n    <td>4.1 幂函数 80</td>\n  </tr>\n  <tr>\n    <td>4.2 指数函数 86</td>\n  </tr>\n</table>",
+        "latex": "f(x)=\\begin{cases} x+1, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

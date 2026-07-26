@@ -38,11 +38,13 @@ class _PendingFrame:
     seq: int
     captured_at: str
     ocr_parts: list
+    vision_parts: list
     ocr_skipped: bool
     diff_ratio: float | None
     ocr_ms: int
     refine_ms: int
     total_ms: int
+    n_refine_changes: int = 0
 
 
 async def _refine_task(
@@ -97,6 +99,8 @@ async def _commit_pending_frame(
             captured_at=pending.captured_at,
             scheduler_action=merge_result.scheduler_action,
             ocr_parts=pending.ocr_parts,
+            vision_parts=pending.vision_parts,
+            n_refine_changes=pending.n_refine_changes,
             merge_diff=merge_result.merge_diff,
             same_page_score=merge_result.same_page_score,
             duration_ms=pending.ocr_ms,
@@ -129,9 +133,11 @@ async def _flush_refine_prev(
     results: list[FrameBatchItem],
     homework_finalized: list[HomeworkEntry],
 ) -> None:
-    refined_parts, refine_ms, _ = await refine_prev
+    refined_parts, refine_ms, n_changes = await refine_prev
+    pending_prev.vision_parts = [p.model_copy(deep=True) for p in pending_prev.ocr_parts]
     pending_prev.ocr_parts = refined_parts
     pending_prev.refine_ms = refine_ms
+    pending_prev.n_refine_changes = n_changes
     pending_prev.total_ms = pending_prev.ocr_ms + refine_ms
     store.append_event(
         session,
@@ -204,16 +210,23 @@ async def run_batch_pipeline(
                 "OCR_SKIPPED",
                 {"frame_id": frame_id, "reason": "no_image_change", "diff_ratio": diff_ratio},
             )
+            last_vision = (
+                (last_frame.vision_parts or last_frame.ocr_parts)
+                if last_frame
+                else last_ocr_parts
+            )
             pending = _PendingFrame(
                 frame_id=frame_id,
                 seq=seq,
                 captured_at=captured_at,
                 ocr_parts=[p.model_copy(deep=True) for p in last_ocr_parts],
+                vision_parts=[p.model_copy(deep=True) for p in last_vision],
                 ocr_skipped=True,
                 diff_ratio=diff_ratio,
                 ocr_ms=0,
                 refine_ms=0,
                 total_ms=0,
+                n_refine_changes=0,
             )
             item, hw = await _commit_pending_frame(session, pending)
             results.append(item)
@@ -247,11 +260,13 @@ async def run_batch_pipeline(
                 seq=seq,
                 captured_at=captured_at,
                 ocr_parts=ocr_parts,
+                vision_parts=[],
                 ocr_skipped=False,
                 diff_ratio=diff_ratio,
                 ocr_ms=ocr_ms,
                 refine_ms=0,
                 total_ms=ocr_ms,
+                n_refine_changes=0,
             )
         else:
             ocr_parts, ocr_ms = await frame_ops.ocr_frame(
@@ -272,11 +287,13 @@ async def run_batch_pipeline(
                 seq=seq,
                 captured_at=captured_at,
                 ocr_parts=ocr_parts,
+                vision_parts=[],
                 ocr_skipped=False,
                 diff_ratio=diff_ratio,
                 ocr_ms=ocr_ms,
                 refine_ms=0,
                 total_ms=ocr_ms,
+                n_refine_changes=0,
             )
 
     if refine_prev is not None and pending_prev is not None:

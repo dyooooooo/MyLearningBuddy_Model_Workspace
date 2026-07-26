@@ -92,6 +92,8 @@ async def add_frame(
             captured_at=captured_at,
             scheduler_action=merge_result.scheduler_action,
             ocr_parts=ocr_result.ocr_parts,
+            vision_parts=ocr_result.vision_parts,
+            n_refine_changes=ocr_result.n_refine_changes,
             merge_diff=merge_result.merge_diff,
             same_page_score=merge_result.same_page_score,
             duration_ms=ocr_result.ocr_ms,

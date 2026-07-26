@@ -1,0 +1,132 @@
+{
+  "page_no": 30,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p30_b1",
+      "kind": "figure",
+      "content_type": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        0.0,
+        0.0,
+        1000.0,
+        500.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": "p30_f1",
+      "content": {
+        "text": null,
+        "table": null,
+        "equation": null,
+        "figure": {
+          "caption": "第 2 章"
+        },
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": "import35b/7b33d74bc3d042a0b9836116f8cc3bdf/assets/35b/figures/p0030_p30_b1.jpg",
+        "asset_url": "/api/v1/admin/import35b/asset?key=import35b%2F7b33d74bc3d042a0b9836116f8cc3bdf%2Fassets%2F35b%2Ffigures%2Fp0030_p30_b1.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p30_b2",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        50.0,
+        550.0,
+        350.0,
+        680.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "等式",
+            "与不等式"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p30_b3",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        500.0,
+        530.0,
+        920.0,
+        620.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "数量关系是数学重要的研究对象，相等关系与不等关系是最基本的数量关系，而等式与不等式则是表示相应数量关系的基本工具。等式与不等式的知识，在日常生活中也有着广泛的应用。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p30_b4",
+      "kind": "text",
+      "content_type": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        500.0,
+        630.0,
+        920.0,
+        830.0
+      ],
+      "anchor_id": null,
+      "figure_group_id": null,
+      "content": {
+        "text": {
+          "paragraphs": [
+            "我们将通过类比方法，学习有关等式与不等式的性质，并借助集合和逻辑的语言，求解和证明一些基本的不等式。求解不等式通常有两种方法，一种是代数方法，另一种是用函数观点求解。在本章中，我们采用代数方法求解不等式，而用函数观点求解将在后续章节加以学习。在学习过程中，要注意等式与不等式之间的共性和差异，掌握等价变形的方法，并特别注意不等式取到等号的条件。"
+          ]
+        },
+        "table": null,
+        "equation": null,
+        "figure": null,
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

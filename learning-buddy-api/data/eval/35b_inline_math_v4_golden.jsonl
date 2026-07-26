@@ -1,0 +1,6 @@
+{"id":"p10_membership","page_no":10,"paragraphs":["(1) $0 \\in \\mathbb{N}$.","(2) $1 \\in \\mathbb{Z}$.","(3) $\\sqrt{2} \\notin \\mathbb{Q}$.","(4) $-\\sqrt{\\pi} \\in \\mathbb{R}$."],"expect":{"min_valid_math_spans":4,"no_math_fallback":true,"no_ascii_in_token":true}}
+{"id":"p11_set_builder_cjk","page_no":11,"paragraphs":["由定义得 $A \\cap B = \\{x \\mid x \\in A \\text{ 且 } x \\in B\\}$ 成立."],"expect":{"min_valid_math_spans":1,"no_math_fallback":true,"latex_must_contain":["\\cap","\\mid","\\in"]}}
+{"id":"p14_cap_union","page_no":14,"paragraphs":["已知 $A \\cap B = \\emptyset$，则 $A \\cup B = A$."],"expect":{"min_valid_math_spans":2,"no_math_fallback":true,"no_ascii_in_token":true}}
+{"id":"p16_subset","page_no":16,"paragraphs":["若 $A \\subseteq B$，则 $A \\cap B = A$."],"expect":{"min_valid_math_spans":2,"no_math_fallback":true,"no_ascii_in_token":true}}
+{"id":"p19_multi_para","page_no":19,"paragraphs":["解 (1) 设 $A=\\{1,2,3\\}$.","(2) 当 $x \\geq 0$ 时成立.","(3) 一段没有公式的说明文字."],"expect":{"min_valid_math_spans":2,"no_math_fallback":true,"expected_paragraphs":3,"paragraph_ratio_min":1.0}}
+{"id":"anti_v3_bare_unicode","page_no":10,"paragraphs":["(1) 0∈N. (2) 1∈Z."],"expect_v4_model_output":false,"note":"v3-style bare Unicode — blueprint should NOT look like this after v4 prompt; pipeline may still degrade gracefully"}

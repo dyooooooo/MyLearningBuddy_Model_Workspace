@@ -1,0 +1,36 @@
+{
+  "page_no": 6,
+  "status": "ok",
+  "prompt_version": "layout_blueprint_v5",
+  "used_json_schema": true,
+  "call": {
+    "used_schema": true,
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 5549,
+      "total_tokens": 6246,
+      "completion_tokens": 697,
+      "prompt_tokens_details": null
+    },
+    "max_tokens": 6144
+  },
+  "truncated": false,
+  "raw": {
+    "blocks": 3,
+    "kinds": {
+      "running": 2,
+      "text": 1
+    },
+    "text_empty": 0
+  },
+  "final": {
+    "blocks": 3,
+    "kinds": {
+      "running": 2,
+      "text": 1
+    },
+    "text_empty": 0
+  },
+  "attempt_errors": [],
+  "elapsed_ms": 6076
+}

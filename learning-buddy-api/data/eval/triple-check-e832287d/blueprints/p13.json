@@ -1,0 +1,687 @@
+{
+  "page_no": 13,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p13_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        40.0,
+        20.0,
+        280.0,
+        70.0
+      ],
+      "anchor_id": "p13_b1",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "1 集合与逻辑",
+        "caption": "1 集合与逻辑",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p13_b1",
+      "kind": "text",
+      "zone": "aside_left",
+      "role": "prompt",
+      "bbox": [
+        100.0,
+        100.0,
+        280.0,
+        200.0
+      ],
+      "anchor_id": "p13_b1",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "结合例题，试比较分别用自然语言、列举法、描述法和区间表示集合时，其各自的特点和适用对象。",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p13_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        350.0,
+        100.0,
+        900.0,
+        230.0
+      ],
+      "anchor_id": "p13_b2",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "例 5 用区间表示下列集合：\n(1) {x | 1 ≤ x < 2}；\n(2) 不等式 2x ≤ 6 的所有解组成的集合。\n解 (1) 该集合可用区间 [1, 2) 表示。\n(2) 因为不等式 2x ≤ 6 的解是 x ≤ 3，所以它的所有解组成的集合是 (-∞, 3]。",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "例",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 5 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用区间表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\n(1) {x | 1 ≤ x < 2}",
+            "latex": "( 1 ) \\{ x | 1 \\le x < 2 \\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不等式",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " 2x ≤ 6 ",
+            "latex": "2 x \\le 6",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的所有解组成的集合。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "解",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "该集合可用区间",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " [1, 2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "表示。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "因为不等式",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " 2x ≤ 6 ",
+            "latex": "2 x \\le 6",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的解是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " x ≤ 3",
+            "latex": "x \\le 3",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，所以它的所有解组成的集合是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " (-∞, 3]",
+            "latex": "( - \\infty ,  3 ]",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p13_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "exercise",
+      "bbox": [
+        120.0,
+        250.0,
+        900.0,
+        490.0
+      ],
+      "anchor_id": "p13_b3",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "练习 1.1(2)\n\n1. 用列举法表示下列集合：\n(1) 能整除 10 的所有正整数组成的集合；\n(2) 绝对值小于 4 的所有整数组成的集合。\n\n2. 用描述法表示下列集合：\n(1) 全体偶数组成的集合；\n(2) 平面直角坐标系中 x 轴上所有点组成的集合。\n\n3. 用区间表示下列集合：\n(1) {x | -1 < x ≤ 5}；\n(2) 不等式 -2x > 6 的所有解组成的集合。",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "练习",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 1.1(2)\n\n1. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用列举法表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "能整除",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 10 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的所有正整数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "绝对值小于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 4 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的所有整数组成的集合。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n2. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用描述法表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "全体偶数组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "平面直角坐标系中",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " x ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "轴上所有点组成的集合。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n\n3. ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用区间表示下列集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\n(1) {x | -1 < x ≤ 5}",
+            "latex": "( 1 ) \\{ x | - 1 < x \\le 5 \\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不等式",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " -2x > 6 ",
+            "latex": "- 2 x > 6",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的所有解组成的集合。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p13_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        350.0,
+        520.0,
+        900.0,
+        550.0
+      ],
+      "anchor_id": "p13_b4",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "3 集合之间的关系",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p13_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        350.0,
+        580.0,
+        900.0,
+        800.0
+      ],
+      "anchor_id": "p13_b5",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "考察以下四组集合：\n(1) C 是申辉中学高一(1)班的全体学生组成的集合，D 是申辉中学全体学生组成的集合；\n(2) C 是一平面上所有矩形组成的集合，D 是该平面上所有平行四边形组成的集合；\n(3) C = {2, 3}, D = {x | x² - 5x + 6 = 0}；\n(4) C = {x | x = 2k + 1, k ∈ Z}, D = {x | x 是奇数}。\n容易发现，在上述每组集合中，集合 C 中的每个元素都属于集合 D。两个集合之间的这种关系是十分常见的。",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "考察以下四组集合：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(1) C ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是申辉中学高一",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "班的全体学生组成的集合，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "D ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是申辉中学全体学生组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n(2) C ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是一平面上所有矩形组成的集合，",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "D ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是该平面上所有平行四边形组成的集合；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\n(3) C = {2, 3}, D = {x | x² - 5x + 6 = 0}",
+            "latex": "( 3 ) C = \\{ 2 ,  3 \\} ,  D = \\{ x | x ² - 5 x + 6 = 0 \\}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "；",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "\n(4) C = {x | x = 2k + 1, k ∈ Z}, D = {x | x ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "是奇数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "}",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "容易发现，在上述每组集合中，集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " C ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "中的每个元素都属于集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " D",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "。两个集合之间的这种关系是十分常见的。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p13_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "definition",
+      "bbox": [
+        350.0,
+        800.0,
+        900.0,
+        870.0
+      ],
+      "anchor_id": "p13_b6",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "定义 对于两个集合 A 与 B，如果集合 A 的每个元素都是集合 B 的元素，那么集合 A 叫做集合 B 的子集(subset)，记作 A ⊆ B (或 B ⊇ A)，读作“A 包含于 B”(或“B 包含 A”)。",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p13_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        350.0,
+        870.0,
+        900.0,
+        890.0
+      ],
+      "anchor_id": "p13_b7",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "对任何集合 A，规定",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p13_b8",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        580.0,
+        890.0,
+        650.0,
+        920.0
+      ],
+      "anchor_id": "p13_b8",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": null,
+        "caption": null,
+        "table_html": null,
+        "latex": "\\varnothing \\subseteq A.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "\\varnothing \\subseteq A.",
+            "latex": "\\varnothing \\subseteq A.",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p13_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        90.0,
+        950.0,
+        120.0,
+        980.0
+      ],
+      "anchor_id": "p13_ft",
+      "figure_group_id": "p13_fg1",
+      "content": {
+        "text": "6",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

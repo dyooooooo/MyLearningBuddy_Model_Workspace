@@ -1,0 +1,27 @@
+{
+  "prompt_before": "layout_blueprint_v3",
+  "prompt_target": "layout_blueprint_v4",
+  "problem_pages": [10, 11, 13, 14, 16, 18, 19, 21, 24],
+  "root_causes": [
+    "v3 prompt allowed bare Unicode inline math in text paragraphs",
+    "normalize_plain routed bare Unicode through AsciiMath producing 0inN-style garbage",
+    "MathJax valid=True on semantically wrong latex (in/nn tokens)",
+    "CJK split shattered unprotected set-builder notation",
+    "equation blocks with malformed matrix/cases latex",
+    "table cells escaped raw $\\\\alpha$ without normalize",
+    "oversized inline-math spans from merged sub-items"
+  ],
+  "acceptance": {
+    "html_block_coverage_min": 1.0,
+    "polluted_payload_count_max": 0,
+    "min_json_to_html_token_recall": 0.85,
+    "min_avg_paragraph_ratio": 0.9,
+    "pages_with_oversized_inline_math": [],
+    "toc_must_not_render_table_tag": true,
+    "inline_math_forbid_ascii_in_token": true,
+    "inline_math_forbid_bare_unicode_in_paragraphs": ["∈", "∩", "∪", "√", "∉", "⊆", "≥", "≤"],
+    "inline_math_min_valid_rate": 0.9,
+    "forbid_data_latex_patterns": [" in ", " !in ", " nn ", " uu "],
+    "known_gaps": ["table cell $...$ LaTeX not yet normalized in page_compiler._render_table"]
+  }
+}

@@ -331,6 +331,7 @@ C2 OCR 草稿 → C2 ocr_refine（或 C1）→ A 通用库 RAG 对齐 → ③ �
 - **A**：世界知识（题库、考纲）。
 - **C2**：检索与切题 API。
 - **A⁺**：检索结果 × 该生掌握边界 → 「对此生而言的题意与薄弱点」。
+- **外部 OCR 选型**：PP-OCRv6 可作草稿字识别；**按题切分 + 印/写 bbox** 非其内置能力，见 [paddleocr-v6-capabilities.md](paddleocr-v6-capabilities.md)。
 
 ### 4.4 多智能体 → ③（+ ①②④ 节点）
 
@@ -507,6 +508,7 @@ M7 视频习惯 ████████████  ⑥ 视频/行为、(b)(c)
 | 伴学 Pipeline 计划 | [doc/plans/伴学_pipeline_前台_05e58a7a.plan.md](plans/伴学_pipeline_前台_05e58a7a.plan.md) |
 | vLLM 显存优化计划 | [doc/plans/vllm_显存优化_351d642a.plan.md](plans/vllm_显存优化_351d642a.plan.md) |
 | OCR 融合规划 | `~/.cursor/plans/多次ocr融合方案_d3a9c441.plan.md`（仅 Cursor 本地） |
+| PaddleOCR v6 能力（切题 / 印写分离） | [doc/paddleocr-v6-capabilities.md](paddleocr-v6-capabilities.md) |
 
 ### 7.3 M0 验收命令（Spark）
 
@@ -519,7 +521,7 @@ curl -s http://localhost:8000/api/v1/system/health
 ```
 
 ```bash
-curl -s http://192.168.3.200:8000/api/v1/system/health
+curl -s http://192.168.1.10:8000/api/v1/system/health
 ```
 
 ```bash
@@ -549,6 +551,8 @@ cd ~/exam-ocr
 ## 7.4 M2 升级：知识图谱 · NVIDIA 检索栈 · 能力模型 · 变现
 
 > 2026-06 落地于 `learning-buddy-api` + `learning-buddy-c2` Docker 栈。
+
+运营契约（分章仅 PDF 导入；KB 消费定稿）：见 [corpus-three-layer-ops.md](corpus-three-layer-ops.md)。
 
 ### A 通用库 = 知识图谱
 

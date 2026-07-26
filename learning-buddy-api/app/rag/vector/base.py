@@ -19,7 +19,14 @@ class VectorHit:
 
 class VectorStore(ABC):
     @abstractmethod
-    def upsert_documents(self, docs: list[CorpusDocument], vectors: list[list[float]]) -> None:
+    def upsert_documents(
+        self,
+        docs: list[CorpusDocument],
+        vectors: list[list[float]],
+        *,
+        status: str = "published",
+        source_channel: str = "manual",
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -30,6 +37,7 @@ class VectorStore(ABC):
         subject: str,
         grade_band: str,
         top_k: int = 5,
+        status_filter: str | None = "published",
     ) -> list[VectorHit]:
         raise NotImplementedError
 
@@ -44,3 +52,7 @@ class VectorStore(ABC):
     @abstractmethod
     def health_ok(self) -> bool:
         raise NotImplementedError
+
+    def delete_by_node_ids(self, node_ids: list[str]) -> None:
+        """Remove vectors for given node ids (optional override)."""
+        del node_ids

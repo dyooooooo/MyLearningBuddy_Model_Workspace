@@ -1,0 +1,811 @@
+{
+  "page_no": 12,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p12_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        770.0,
+        35.0,
+        895.0,
+        50.0
+      ],
+      "anchor_id": "p12_b1",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "1.1 集合初步",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p12_b1",
+      "kind": "table",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        145.0,
+        100.0,
+        660.0,
+        215.0
+      ],
+      "anchor_id": "p12_b1",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "例 4 选择适当的方法表示下列集合：\n(1) 大于 0 且小于 10 的全体偶数组成的集合 A；\n(2) 被 3 除余 2 的所有自然数组成的集合 B；\n(3) 直角坐标平面上由第二象限与第四象限中的所有点组成的集合 C.",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p12_b2",
+      "kind": "table",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        140.0,
+        220.0,
+        660.0,
+        370.0
+      ],
+      "anchor_id": "p12_b2",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "解 (1) 用列举法：A={2, 4, 6, 8}.\n(2) 用描述法：B={n | n=3k+2, k \\in \\mathbf{N}}.\n(3) 因为第二象限中所有点 (x, y) 具有的特征是 x<0 且 y>0，而第四象限中所有点具有的特征是 x>0 且 y<0，所以第二象限与第四象限中所有点具有的特征可统一地写为 xy<0，于是可用描述法表示该集合：",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "解",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "用列举法：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "A={2, 4, 6, 8}.\n(2) ",
+            "latex": "A = \\{ 2 ,  4 ,  6 ,  8 \\} . ( 2 )",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "用描述法：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "B={n | n=3k+2, k \\in \\mathbf{N}}.\n(3) ",
+            "latex": "B = \\{ n | n = 3 k + 2 ,  k \\ \\in \\ \\mathbf{N} \\} . ( 3 )",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "因为第二象限中所有点",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (x, y) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "具有的特征是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " x<0 ",
+            "latex": "x < 0",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " y>0",
+            "latex": "y > 0",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，而第四象限中所有点具有的特征是",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " x>0 ",
+            "latex": "x > 0",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " y<0",
+            "latex": "y < 0",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，所以第二象限与第四象限中所有点具有的特征可统一地写为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " xy<0",
+            "latex": "x y < 0",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "，于是可用描述法表示该集合：",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p12_b3",
+      "kind": "equation",
+      "zone": "main",
+      "role": "equation",
+      "bbox": [
+        280.0,
+        350.0,
+        470.0,
+        370.0
+      ],
+      "anchor_id": "p12_b3",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "C=\\{(x, y) \\mid x y<0\\}.",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "math",
+            "raw": "C=\\{(x, y) \\mid x y<0\\}.",
+            "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p12_b4",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        90.0,
+        380.0,
+        660.0,
+        490.0
+      ],
+      "anchor_id": "p12_b4",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "数学中，常常需要表示满足一些不等式的全体实数所组成的集合. 为了方便起见，我们引入区间 (interval) 的概念.\n当 a, b \\in \\mathbf{R} 且 a<b 时，规定：\n满足不等式 a \\leqslant x \\leqslant b 的全体实数 x 组成的集合称为一个闭区间，记作 [a, b].",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "数学中，常常需要表示满足一些不等式的全体实数所组成的集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "为了方便起见，我们引入区间",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (interval) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的概念",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "当",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " a, b \\in \\mathbf{R} ",
+            "latex": "a ,  b \\ \\in \\ \\mathbf{R}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "且",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " a<b ",
+            "latex": "a < b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "时，规定：",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "\n",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "满足不等式",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " a \\leqslant x \\leqslant b ",
+            "latex": "a \\ \\le q s l a n t x \\ \\le q s l a n t b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的全体实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " x ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组成的集合称为一个闭区间，记作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " [a, b].",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p12_b5",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        90.0,
+        500.0,
+        660.0,
+        535.0
+      ],
+      "anchor_id": "p12_b5",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "满足不等式 a<x<b 的全体实数 x 组成的集合称为一个开区间，记作 (a, b).",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "满足不等式",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " a<x<b ",
+            "latex": "a < x < b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的全体实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " x ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "组成的集合称为一个开区间，记作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (a, b).",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p12_b6",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        130.0,
+        540.0,
+        585.0,
+        555.0
+      ],
+      "anchor_id": "p12_b6",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "闭区间与开区间在数轴上的表示，如图 1-1-1 所示.",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p12_f1",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        160.0,
+        560.0,
+        590.0,
+        625.0
+      ],
+      "anchor_id": "p12_f1",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "图 1-1-1",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": "corpus/imports/e1d0e8d8d43043b9bd9359970ae47de9/assets/35b/figures/p0012_p12_f1.jpg",
+        "asset_url": "/api/v1/studio/proxy/import/asset?key=corpus%2Fimports%2Fe1d0e8d8d43043b9bd9359970ae47de9%2Fassets%2F35b%2Ffigures%2Fp0012_p12_f1.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p12_b7",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        90.0,
+        655.0,
+        660.0,
+        695.0
+      ],
+      "anchor_id": "p12_b7",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "满足不等式 a \\leqslant x<b 或 a<x \\leqslant b 的全体实数 x 所组成的集合称为一个半开半闭区间，分别记作 [a, b) 或 (a, b].",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "满足不等式",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " a \\leqslant x<b ",
+            "latex": "a \\ \\le q s l a n t x < b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " a<x \\leqslant b ",
+            "latex": "a < x \\ \\le q s l a n t b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的全体实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " x ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所组成的集合称为一个半开半闭区间，分别记作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " [a, b) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " (a, b].",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p12_b8",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        130.0,
+        700.0,
+        565.0,
+        715.0
+      ],
+      "anchor_id": "p12_b8",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "半开半闭区间在数轴上的表示，如图 1-1-2 所示.",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p12_f2",
+      "kind": "figure",
+      "zone": "main",
+      "role": "figure",
+      "bbox": [
+        160.0,
+        720.0,
+        590.0,
+        785.0
+      ],
+      "anchor_id": "p12_f2",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "图 1-1-2",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": "corpus/imports/e1d0e8d8d43043b9bd9359970ae47de9/assets/35b/figures/p0012_p12_f2.jpg",
+        "asset_url": "/api/v1/studio/proxy/import/asset?key=corpus%2Fimports%2Fe1d0e8d8d43043b9bd9359970ae47de9%2Fassets%2F35b%2Ffigures%2Fp0012_p12_f2.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p12_b9",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        130.0,
+        815.0,
+        495.0,
+        835.0
+      ],
+      "anchor_id": "p12_b9",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "这里的实数 a、b 统称为这些区间的端点.",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p12_b10",
+      "kind": "table",
+      "zone": "main",
+      "role": "table",
+      "bbox": [
+        90.0,
+        835.0,
+        660.0,
+        900.0
+      ],
+      "anchor_id": "p12_b10",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "此外，满足不等式 x \\geqslant a, x>a, x \\leqslant b 或 x<b 的全体实数 x 所组成的集合可分别用区间表示为 [a, +\\infty), (a, +\\infty), (-\\infty, b] 或 (-\\infty, b).\n实数集 \\mathbf{R} 可用区间表示为 (-\\infty, +\\infty).",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "此外，满足不等式",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " x \\geqslant a, x>a, x \\leqslant b ",
+            "latex": "x \\ \\ge q s l a n t a ,  x > a ,  x \\ \\le q s l a n t b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " x<b ",
+            "latex": "x < b",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的全体实数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " x ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所组成的集合可分别用区间表示为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " [a, +\\infty), (a, +\\infty), (-\\infty, b] ",
+            "latex": "[ a ,  + \\ \\infty ) ,  ( a ,  + \\ \\infty ) ,  ( - \\ \\infty ,  b ]",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "或",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " (-\\infty, b).\n",
+            "latex": "( - \\ \\infty ,  b ) .",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "实数集",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " \\mathbf{R} ",
+            "latex": "\\ \\mathbf{R}",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "可用区间表示为",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " (-\\infty, +\\infty).",
+            "latex": "( - \\ \\infty ,  + \\ \\infty ) .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p12_b11",
+      "kind": "table",
+      "zone": "aside_right",
+      "role": "symbol_note",
+      "bbox": [
+        700.0,
+        830.0,
+        870.0,
+        890.0
+      ],
+      "anchor_id": "p12_b11",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "符号“∞”读作“无穷大”。",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "符号",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": "“∞”",
+            "latex": "“ \\infty ”",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "读作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "“",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "无穷大",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "”",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "。",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p12_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        880.0,
+        950.0,
+        910.0,
+        980.0
+      ],
+      "anchor_id": "p12_ft",
+      "figure_group_id": "p12_f1",
+      "content": {
+        "text": "5",
+        "caption": "图 1-1-1",
+        "table_html": "<table><tr><td>图 1-1-1</td></tr></table>",
+        "latex": "C=\\{(x, y) \\mid x y<0\\}.",
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

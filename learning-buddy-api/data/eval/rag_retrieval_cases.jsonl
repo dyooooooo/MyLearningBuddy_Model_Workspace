@@ -1,0 +1,3 @@
+{"query": "集合的补集定义", "subject": "math", "grade_band": "hs", "expect_kp_prefix": "math.hs.sets", "expect_node_type": "chunk"}
+{"query": "分式不等式穿根法", "subject": "math", "grade_band": "hs", "expect_kp_prefix": "math.hs.inequality", "expect_node_type": "method"}
+{"query": "区间补集求解", "subject": "math", "grade_band": "hs", "expect_kp_prefix": "math.hs.sets", "expect_node_type": "method"}

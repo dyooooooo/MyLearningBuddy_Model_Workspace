@@ -1,0 +1,524 @@
+{
+  "page_no": 9,
+  "page_size": [
+    1000,
+    1000
+  ],
+  "blocks": [
+    {
+      "id": "p9_hd",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        30.0,
+        15.0,
+        290.0,
+        80.0
+      ],
+      "anchor_id": "p9_b1",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "1 集合与逻辑",
+        "caption": "1 集合与逻辑",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b1",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        130.0,
+        670.0,
+        170.0
+      ],
+      "anchor_id": "p9_b1",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "1.1 集合初步",
+        "caption": "1.1 集合初步",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b2",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        240.0,
+        470.0,
+        265.0
+      ],
+      "anchor_id": "p9_b2",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "1 集合",
+        "caption": "1 集合",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_f1",
+      "kind": "figure",
+      "zone": "aside_left",
+      "role": "figure",
+      "bbox": [
+        120.0,
+        300.0,
+        260.0,
+        410.0
+      ],
+      "anchor_id": "p9_b2",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": null,
+        "caption": "康托(G. Cantor, 1845—1918)，德国数学家，集合论创始人。",
+        "table_html": null,
+        "latex": null,
+        "asset_key": "corpus/imports/e1d0e8d8d43043b9bd9359970ae47de9/assets/35b/figures/p0009_p9_f1.jpg",
+        "asset_url": "/api/v1/studio/proxy/import/asset?key=corpus%2Fimports%2Fe1d0e8d8d43043b9bd9359970ae47de9%2Fassets%2F35b%2Ffigures%2Fp0009_p9_f1.jpg",
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b3",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        300.0,
+        910.0,
+        450.0
+      ],
+      "anchor_id": "p9_b3",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "我们经常需要把满足一定要求或具有一定特征的对象放在一起或归为一类. 例如:\n(1) 申辉中学高一(1)班的全体学生;\n(2) 所有不大于 100 的自然数;\n(3) 直线 l 上的所有点;\n(4) 不等式 2x+1≤0 的所有解;\n(5) 太阳系的所有行星.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "我们经常需要把满足一定要求或具有一定特征的对象放在一起或归为一类",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ". ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "例如",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ":\n(1) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "申辉中学高一",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "(1)",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "班的全体学生",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ";\n(2) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "所有不大于",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " 100 ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的自然数",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ";\n(3) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "直线",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " l ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "上的所有点",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ";\n(4) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "不等式",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " 2x+1≤0 ",
+            "latex": "2 x + 1 \\le 0",
+            "valid": true
+          },
+          {
+            "kind": "text",
+            "raw": "的所有解",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ";\n(5) ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "太阳系的所有行星",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": ".",
+            "latex": null,
+            "valid": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "p9_b4",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        455.0,
+        910.0,
+        495.0
+      ],
+      "anchor_id": "p9_b4",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "概括地说，把一些确定的对象的全体叫做集合(set)，简称集. 集合通常用大写字母 A、B、C……表示.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b5",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        500.0,
+        910.0,
+        540.0
+      ],
+      "anchor_id": "p9_b5",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "集合所含的各个对象叫做该集合的元素(element). 元素通常用小写字母 a、b、c……表示.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b6",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        545.0,
+        910.0,
+        605.0
+      ],
+      "anchor_id": "p9_b6",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "如果 a 是集合 A 的元素，就记作 a∈A，读作“a 属于 A”；如果 a 不是集合 A 的元素，就记作 a∉A，读作“a 不属于 A”. 例如，若 A 是由数 1、3、5、7、9 组成的集合，则 1∈A，2∉A.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b7",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        610.0,
+        910.0,
+        695.0
+      ],
+      "anchor_id": "p9_b7",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "集合的元素是确定的. 也就是说，给定一个集合，一个对象在不在这个集合中就确定了. 例如，“我国的直辖市”组成一个集合，北京、上海、天津、重庆在这个集合中，而杭州、南京、深圳等城市不在这个集合中.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b8",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        700.0,
+        910.0,
+        760.0
+      ],
+      "anchor_id": "p9_b8",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "一些不确定的对象不能组成一个集合. 例如，“我们班里高个子的同学”不能组成一个集合. 因为“高个子”的标准不够明确、具体，所以“我们班里高个子的同学”是不确定的.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b9",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        765.0,
+        910.0,
+        805.0
+      ],
+      "anchor_id": "p9_b9",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "一个给定集合中的各个元素是互不相同的，即一个元素在同一个集合中是不能重复出现的.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b10",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        810.0,
+        910.0,
+        850.0
+      ],
+      "anchor_id": "p9_b10",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "如果两个集合 A 与 B 的组成元素完全相同，就称这两个集合相等，记作 A=B.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": [
+          {
+            "kind": "text",
+            "raw": "如果两个集合",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " A ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "与",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": " B ",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "text",
+            "raw": "的组成元素完全相同，就称这两个集合相等，记作",
+            "latex": null,
+            "valid": false
+          },
+          {
+            "kind": "math",
+            "raw": " A=B.",
+            "latex": "A = B .",
+            "valid": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "p9_b11",
+      "kind": "text",
+      "zone": "main",
+      "role": "body",
+      "bbox": [
+        330.0,
+        855.0,
+        850.0,
+        875.0
+      ],
+      "anchor_id": "p9_b11",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "元素个数有限的集合称为有限集，否则就称为无限集.",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_b12",
+      "kind": "text",
+      "zone": "main",
+      "role": "example",
+      "bbox": [
+        330.0,
+        880.0,
+        900.0,
+        925.0
+      ],
+      "anchor_id": "p9_b12",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "例 1 判断下列集合是有限集还是无限集，并说明理由：\n(1) 6 的正整数倍的全体组成的集合;",
+        "caption": null,
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    },
+    {
+      "id": "p9_ft",
+      "kind": "running",
+      "zone": "running",
+      "role": "running_header",
+      "bbox": [
+        80.0,
+        960.0,
+        120.0,
+        990.0
+      ],
+      "anchor_id": "p9_b12",
+      "figure_group_id": "p9_f1",
+      "content": {
+        "text": "2",
+        "caption": "2",
+        "table_html": null,
+        "latex": null,
+        "asset_key": null,
+        "asset_url": null,
+        "text_segments": null
+      }
+    }
+  ]
+}

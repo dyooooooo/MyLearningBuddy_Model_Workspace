@@ -1,0 +1,39 @@
+{
+  "id": "cdfa7daf-4c20-48df-b02a-91a4d0a6280f",
+  "job_id": "b9cf8767-5a90-4d7e-8b56-37275252a345",
+  "page_no": 5,
+  "textbook_key": "tb35b:math:hs:高一数学上-35b:e8357c46",
+  "label": "高一数学上_35b",
+  "body": "同第三页",
+  "tags": [
+    "blank_page"
+  ],
+  "block_id": "",
+  "screenshot_key": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/feedback/cdfa7daf-4c20-48df-b02a-91a4d0a6280f/screenshot.jpg",
+  "input_page_key": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/debug/p0005/page.jpg",
+  "t1_snapshot": [
+    {
+      "suspect_type": "MAIN_EMPTY",
+      "severity": "high",
+      "page_no": 5,
+      "block_id": "",
+      "evidence": {
+        "main_blocks": 4
+      },
+      "candidates": [
+        "整页内容丢失（模型误标 role/zone）",
+        "本页本来就是空白页/纯图页"
+      ],
+      "fingerprint": "6282c36d15a8cdb1",
+      "fingerprint_exact": "5d113a5445e139ac",
+      "detector": "rule"
+    }
+  ],
+  "debug_prefix": "import35b/7fbff6107f1a4d61851dc5ae260e37fa/assets/35b/debug/p0005",
+  "prompt_version": "layout_blueprint_v5",
+  "status": "open",
+  "pack_path": "",
+  "resolution_note": "",
+  "created_at": "2026-07-09T08:23:01.623997+00:00",
+  "updated_at": "2026-07-09T08:23:01.624006+00:00"
+}

@@ -45,7 +45,19 @@ def run_rag_validate_on_homework(
             ]
         if tags:
             q.kp_tags_json = dumps(tags)
-            q.rag_evidence_json = dumps(evidence + [{"graph": ctx.to_dict()}])
+            top_kp = tags[0].get("kp_id", "graph")
+            graph_summary = {
+                "kp_id": str(top_kp),
+                "score": float(tags[0].get("score", 0.5)),
+                "source": "graph_context",
+                "text": dumps(
+                    {
+                        "tags": ctx.tags[:8],
+                        "kps": [k.get("label") or k.get("id") for k in ctx.kps[:5]],
+                    },
+                )[:480],
+            }
+            q.rag_evidence_json = dumps(evidence + [graph_summary])
             updated += 1
     session.flush()
     return updated

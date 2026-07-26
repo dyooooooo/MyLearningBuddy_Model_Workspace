@@ -22,6 +22,16 @@
       "question_type": "set-complement",
       "tags": ["grade_band:hs", "question_type:set-complement"],
       "links": {"applies_to_kp": ["math.hs.sets.complement", "math.hs.sets.interval"]}
+    },
+    {
+      "id": "method:hs:calculus:extreme-range",
+      "label": "函数最值与取值范围",
+      "summary": "配方法/基本不等式求最值，再写取值范围或解集",
+      "text": "1. 配方或基本不等式求最小/最大值 2. 核对定义域 3. 用区间或不等式写出取值范围",
+      "kp_id": "math.hs.calculus.extreme",
+      "question_type": "extreme-value",
+      "tags": ["grade_band:hs", "question_type:extreme-value"],
+      "links": {"applies_to_kp": ["math.hs.calculus.extreme", "math.hs.functions.quadratic"]}
     }
   ]
 }

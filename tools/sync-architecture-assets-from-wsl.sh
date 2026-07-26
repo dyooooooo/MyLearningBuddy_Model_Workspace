@@ -3,7 +3,7 @@
 # Run this script ON WSL (not on Spark).
 set -euo pipefail
 
-SPARK_HOST="${SPARK_HOST:-mylearningbuddy@192.168.3.200}"
+SPARK_HOST="${SPARK_HOST:-mylearningbuddy@192.168.1.10}"
 WORKSPACE="${WORKSPACE:-MyLearningBuddy_Model_Workspace}"
 DEST="${DEST:-~/${WORKSPACE}/doc/assets}"
 SRC_CANDIDATES=(
