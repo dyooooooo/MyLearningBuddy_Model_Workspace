@@ -449,7 +449,7 @@ class CorpusBookFingerprint(Base):
 
 
 class CorpusCorrection(Base):
-    """User-driven 35B re-recognize result, keyed by book fingerprint.
+    """Book-scoped IR patch keyed by fingerprint (from accepted Improvement Points).
 
     On a later import of the same book (matched by fingerprint), these patches
     are replayed onto IR so MinerU mistakes need not be fixed again.
@@ -472,6 +472,138 @@ class CorpusCorrection(Base):
     after_json: Mapped[str] = mapped_column(Text, default="[]")
     refine_result_json: Mapped[str] = mapped_column(Text, default="{}")
     source_job_id: Mapped[str] = mapped_column(String(64), default="")
+    ip_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    procedure_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusImprovementPoint(Base):
+    """First-class improvement point: converged accepted fix with procedure."""
+
+    __tablename__ = "corpus_improvement_points"
+    __table_args__ = (
+        Index("ix_corpus_ip_fp_status", "fingerprint_hash", "status"),
+        Index("ix_corpus_ip_job", "source_job_id"),
+        Index("ix_corpus_ip_locus", "locus_key"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    fingerprint_hash: Mapped[str] = mapped_column(String(64), index=True, default="")
+    source_job_id: Mapped[str] = mapped_column(String(64), default="")
+    source_session_id: Mapped[str] = mapped_column(String(64), default="")
+    locus_key: Mapped[str] = mapped_column(String(256), default="")
+    page_no: Mapped[int] = mapped_column(Integer, default=0)
+    category: Mapped[str] = mapped_column(String(64), default="")
+    authority: Mapped[str] = mapped_column(String(32), default="edition")
+    status: Mapped[str] = mapped_column(String(32), index=True, default="observed")
+    claim_json: Mapped[str] = mapped_column(Text, default="{}")
+    evidence_json: Mapped[str] = mapped_column(Text, default="{}")
+    procedure_json: Mapped[str] = mapped_column(Text, default="{}")
+    concrete_json: Mapped[str] = mapped_column(Text, default="{}")
+    pattern_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    pattern_status: Mapped[str] = mapped_column(String(32), default="none")
+    superseded_by: Mapped[str] = mapped_column(String(64), default="")
+    merged_into_id: Mapped[str] = mapped_column(String(64), default="")
+    # 来源闭集：ai_auto | user_ask（见 improvement_points.IP_ORIGINS）
+    origin: Mapped[str] = mapped_column(String(32), default="", index=True)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    kind: Mapped[str] = mapped_column(String(64), default="")
+    # 多主题 / 跨页待拆标记（内容质量，不是生命周期状态）
+    needs_split: Mapped[int] = mapped_column(Integer, default=0)
+    # 预抽象整理状态：needs_triage | needs_split | needs_aggregate | ready
+    prep_status: Mapped[str] = mapped_column(String(32), default="needs_triage")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusImprovementLink(Base):
+    """Directed relation between improvement points."""
+
+    __tablename__ = "corpus_improvement_links"
+    __table_args__ = (Index("ix_corpus_ip_link_from", "from_id"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    from_id: Mapped[str] = mapped_column(String(64), default="")
+    to_id: Mapped[str] = mapped_column(String(64), default="")
+    rel: Mapped[str] = mapped_column(String(32), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusImprovementPattern(Base):
+    """Reusable abstracted pattern (mode track) across books/pages."""
+
+    __tablename__ = "corpus_improvement_patterns"
+    __table_args__ = (Index("ix_corpus_ip_pat_cat", "category", "status"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    category: Mapped[str] = mapped_column(String(64), default="")
+    abstract_text: Mapped[str] = mapped_column(Text, default="")
+    procedure_template_json: Mapped[str] = mapped_column(Text, default="{}")
+    # 粗分层，保留只读兼容；真正决定写哪个生效面的是 landing_target。
+    target_layer: Mapped[str] = mapped_column(String(8), default="L1")
+    # 闭集，取值见 app.services.improvement_points.LANDING_TARGETS。空 = 尚未定路由。
+    landing_target: Mapped[str] = mapped_column(String(32), default="")
+    landing_note: Mapped[str] = mapped_column(Text, default="")
+    edition_family_id: Mapped[str] = mapped_column(String(64), default="")
+    status: Mapped[str] = mapped_column(String(32), default="draft")
+    member_count: Mapped[int] = mapped_column(Integer, default=0)
+    landed_ref: Mapped[str] = mapped_column(String(512), default="")
+    # ── 映射面：让这条模式能在新书里被认出来 ──────────────────────────────
+    # 症状名（闭集，与 configs/checks/*.yaml 的 suspect_type 同名）。跨书对齐的锚点。
+    suspect_type: Mapped[str] = mapped_column(String(64), default="")
+    # 指向哪份检测器声明；空 = 这条模式还查不出来，只能靠人发现。
+    detector_ref: Mapped[str] = mapped_column(String(256), default="")
+    # rule = 命中即可确定性修复；playbook = 只能查出来，按手册修。
+    remediation_kind: Mapped[str] = mapped_column(String(16), default="")
+    playbook_ref: Mapped[str] = mapped_column(Text, default="")
+    # 成员的症状指纹集合，用于「同症状同证据」的精确复用。
+    fingerprints_json: Mapped[str] = mapped_column(Text, default="[]")
+    # 检测器质量：命中数、真阳、误报。误报率过高自动降级。
+    hits: Mapped[int] = mapped_column(Integer, default=0)
+    true_positive: Mapped[int] = mapped_column(Integer, default=0)
+    false_positive: Mapped[int] = mapped_column(Integer, default=0)
+    # 跨了几本书。晋级门的核心指标：只在一本书里出现的不算规律。
+    book_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusSymptomFalsePositive(Base):
+    """检测器报了、但人裁决「这不是问题」。
+
+    只降权不屏蔽：同指纹再出现时把严重度降一档并标注，但仍然显示。真正的屏蔽
+    是人的权力，要靠改检测器 YAML 收紧判据来完成，不能由统计悄悄决定。
+    """
+
+    __tablename__ = "corpus_symptom_false_positives"
+    __table_args__ = (
+        Index("ix_corpus_symptom_fp_fingerprint", "fingerprint"),
+        Index("ix_corpus_symptom_fp_suspect", "suspect_type"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    suspect_type: Mapped[str] = mapped_column(String(64), default="")
+    fingerprint: Mapped[str] = mapped_column(String(64), default="")
+    pattern_id: Mapped[str] = mapped_column(String(64), default="")
+    job_id: Mapped[str] = mapped_column(String(64), default="")
+    fingerprint_hash: Mapped[str] = mapped_column(String(64), default="")
+    page_no: Mapped[int] = mapped_column(Integer, default=0)
+    block_id: Mapped[str] = mapped_column(String(64), default="")
+    evidence_json: Mapped[str] = mapped_column(Text, default="{}")
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class CorpusBookEditionBind(Base):
+    """Bind book fingerprint to a book-specific Edition (L2)."""
+
+    __tablename__ = "corpus_book_edition_bind"
+
+    fingerprint_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    edition_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    source_job_id: Mapped[str] = mapped_column(String(64), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[str] = mapped_column(String(64), default="")
     updated_at: Mapped[str] = mapped_column(String(64), default="")
 
@@ -534,5 +666,51 @@ class EditionCorrectionQueue(Base):
     status: Mapped[str] = mapped_column(String(32), default="pending")  # pending|approved|rejected
     reviewer: Mapped[str] = mapped_column(String(128), default="")
     review_note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+# ---------------------------------------------------------------------------
+# Knowledge-base line — isolated from corpus_import_jobs.
+# PDF + MinerU page markdown only. Textbook Agent reads the original PDF.
+# ---------------------------------------------------------------------------
+class KbBook(Base):
+    __tablename__ = "kb_books"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
+    label: Mapped[str] = mapped_column(String(512), default="")
+    filename: Mapped[str] = mapped_column(String(512), default="")
+    subject: Mapped[str] = mapped_column(String(32), default="math")
+    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
+    textbook_hint: Mapped[str] = mapped_column(String(512), default="")
+    minio_key: Mapped[str] = mapped_column(String(512), default="")
+    status: Mapped[str] = mapped_column(String(32), default="uploaded", index=True)
+    page_count: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str] = mapped_column(Text, default="")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    toc_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class KbPage(Base):
+    __tablename__ = "kb_pages"
+    __table_args__ = (Index("ix_kb_page_book", "book_id"),)
+
+    book_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    page_no: Mapped[int] = mapped_column(Integer, primary_key=True)
+    markdown: Mapped[str] = mapped_column(Text, default="")
+    image_key: Mapped[str] = mapped_column(String(512), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class TextbookEvalRequest(Base):
+    __tablename__ = "textbook_eval_requests"
+
+    request_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    question_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    homework_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    student_id: Mapped[str] = mapped_column(String(64), default="")
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
     created_at: Mapped[str] = mapped_column(String(64), default="")
     updated_at: Mapped[str] = mapped_column(String(64), default="")

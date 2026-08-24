@@ -1,0 +1,24 @@
+{
+  "page_no": 61,
+  "html": "<article><section class=\"lb-main\"><p>stem with blank</p></section></article>",
+  "blocks": [
+    {
+      "id": "stem_ok",
+      "type": "paragraph",
+      "page_no": 61,
+      "order": 1,
+      "text": "（2）真命题为（　）",
+      "bbox": [100, 180, 820, 220],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "choice",
+      "type": "list",
+      "page_no": 61,
+      "order": 2,
+      "text": "A. 命题甲　B. 命题乙",
+      "bbox": [100, 240, 800, 300],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

@@ -46,6 +46,27 @@ export const editionOps = {
     if (edition_id) q.edition_id = edition_id;
     return call<{ items: Array<Record<string, unknown>> }>("GET", "corrections/queue", undefined, q);
   },
+  /** 将改进点写入方案待审队列（不直接改正式方案，需 Edition Ops 审阅后 publish）。 */
+  enqueueCorrection: (
+    edition_id: string,
+    candidate: {
+      id: string;
+      facet: string;
+      severity?: string;
+      statement: string;
+      tags?: string[];
+      /** edition=非越权（可进方案数据）；pipeline=越权（需改核心代码） */
+      authority?: "edition" | "pipeline";
+    },
+    source = "ai_page_edit",
+    source_ref = "",
+  ) =>
+    call<{ id?: string; corr_id?: string; status?: string }>("POST", "corrections/enqueue", {
+      edition_id,
+      candidate,
+      source,
+      source_ref,
+    }),
   reviewCorrection: (id: string, action: "approve" | "reject", reviewer = "", review_note = "") =>
     call("POST", `corrections/${encodeURIComponent(id)}/review`, { action, reviewer, review_note }),
   calibrate: (edition_id: string, display_name = "", persist_fork = false, sample_bboxes?: number[][]) =>

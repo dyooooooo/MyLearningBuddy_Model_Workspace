@@ -2,6 +2,10 @@ const NARROW_BP = 1080;
 const LEFT_COLLAPSED_KEY = "studio-left-panel-collapsed";
 const RIGHT_COLLAPSED_KEY = "studio-right-panel-collapsed";
 const BOTTOM_COLLAPSED_KEY = "studio-bottom-dock-collapsed";
+/** 属性栏停靠：right=右栏 · bottom=中栏下栏 */
+const INSPECTOR_DOCK_KEY = "studio-inspector-dock";
+
+export type InspectorDockPlacement = "right" | "bottom";
 
 export interface LayoutShellOptions {
   layout: HTMLElement;
@@ -28,6 +32,24 @@ function saveCollapsed(key: string, collapsed: boolean): void {
   }
 }
 
+function loadDockPlacement(): InspectorDockPlacement | null {
+  try {
+    const v = localStorage.getItem(INSPECTOR_DOCK_KEY);
+    if (v === "right" || v === "bottom") return v;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function saveDockPlacement(placement: InspectorDockPlacement): void {
+  try {
+    localStorage.setItem(INSPECTOR_DOCK_KEY, placement);
+  } catch {
+    /* ignore */
+  }
+}
+
 function createDockToggle(side: "left" | "right", collapsed: boolean): HTMLButtonElement {
   const btn = document.createElement("button");
   btn.type = "button";
@@ -37,6 +59,11 @@ function createDockToggle(side: "left" | "right", collapsed: boolean): HTMLButto
   return btn;
 }
 
+/** 当前属性栏是否停在下栏（供 AI 打开逻辑读取）。 */
+export function isInspectorDockBottom(): boolean {
+  return document.documentElement.classList.contains("studio-inspector-dock-bottom");
+}
+
 export function initLayoutShell(opts: LayoutShellOptions): void {
   const { layout, leftSidebar, sidePanelWrap, rightDock, rightBody, bottomDock } = opts;
 
@@ -44,6 +71,11 @@ export function initLayoutShell(opts: LayoutShellOptions): void {
   let rightCollapsed = loadCollapsed(RIGHT_COLLAPSED_KEY);
   let bottomCollapsed = loadCollapsed(BOTTOM_COLLAPSED_KEY);
   let narrowOverride = { left: false, right: false };
+
+  // 用户手动停靠优先；未设置时随页宽默认（窄→下栏，宽→右栏）
+  let dockPlacement: InspectorDockPlacement =
+    loadDockPlacement() ??
+    (window.matchMedia(`(max-width: ${NARROW_BP}px)`).matches ? "bottom" : "right");
 
   const leftToggle = createDockToggle("left", leftCollapsed);
   const rightToggle = createDockToggle("right", rightCollapsed);
@@ -71,7 +103,7 @@ export function initLayoutShell(opts: LayoutShellOptions): void {
 
   layout.append(leftExpandRail, rightExpandRail);
 
-  // 窄屏底部属性栏的标题栏 + 折叠按钮
+  // 窄屏 / 下栏模式：底部属性栏的标题栏 + 折叠按钮
   const bottomBar = document.createElement("div");
   bottomBar.className = "studio-bottom-dock__bar";
   const bottomTitle = document.createElement("span");
@@ -100,7 +132,18 @@ export function initLayoutShell(opts: LayoutShellOptions): void {
     bottomDock.classList.toggle("studio-bottom-dock--collapsed", bottomCollapsed);
   }
 
-  /** 宽屏：属性栏在右栏；窄屏：属性栏整体搬迁到中栏底部。 */
+  function emitDockPlacement(): void {
+    document.documentElement.classList.toggle(
+      "studio-inspector-dock-bottom",
+      dockPlacement === "bottom",
+    );
+    layout.dataset.inspectorDock = dockPlacement;
+    document.dispatchEvent(
+      new CustomEvent("studio:inspector-dock", { detail: { placement: dockPlacement } }),
+    );
+  }
+
+  /** 把属性栏 DOM 放到右栏或中栏下栏。 */
   function relocateRightBody(toBottom: boolean): void {
     if (toBottom) {
       if (rightBody.parentElement !== bottomDock) bottomDock.appendChild(rightBody);
@@ -112,23 +155,55 @@ export function initLayoutShell(opts: LayoutShellOptions): void {
     }
   }
 
+  function applyDockPlacement(): void {
+    const toBottom = dockPlacement === "bottom";
+    relocateRightBody(toBottom);
+
+    if (toBottom) {
+      // 下栏模式：收起右栏占位，主区拉宽
+      rightCollapsed = true;
+      bottomCollapsed = false;
+      syncBottom();
+    } else {
+      // 右栏模式：展开右栏，隐藏下栏
+      if (isNarrow()) {
+        narrowOverride.right = true;
+        rightCollapsed = false;
+      } else {
+        rightCollapsed = loadCollapsed(RIGHT_COLLAPSED_KEY);
+      }
+    }
+    syncToggleLabels();
+    emitDockPlacement();
+  }
+
+  function setDockPlacement(next: InspectorDockPlacement, persist = true): void {
+    dockPlacement = next;
+    if (persist) saveDockPlacement(next);
+    applyDockPlacement();
+  }
+
+  function toggleDockPlacement(): void {
+    setDockPlacement(dockPlacement === "bottom" ? "right" : "bottom");
+  }
+
   function applyLayout(): void {
     const narrow = isNarrow();
     layout.classList.toggle("studio-layout--narrow", narrow);
 
     if (narrow) {
       leftCollapsed = !narrowOverride.left;
-      // 窄屏不再保留右栏：属性栏迁到底部展示
-      rightCollapsed = true;
-      relocateRightBody(true);
     } else {
       narrowOverride = { left: false, right: false };
       leftCollapsed = loadCollapsed(LEFT_COLLAPSED_KEY);
-      rightCollapsed = loadCollapsed(RIGHT_COLLAPSED_KEY);
-      relocateRightBody(false);
     }
 
-    syncToggleLabels();
+    // 未手动选过停靠时，随页宽给默认；已有偏好则 resize 不抢
+    if (loadDockPlacement() == null) {
+      dockPlacement = narrow ? "bottom" : "right";
+    }
+
+    applyDockPlacement();
   }
 
   function setLeftCollapsed(next: boolean, persist = true): void {
@@ -142,6 +217,11 @@ export function initLayoutShell(opts: LayoutShellOptions): void {
   }
 
   function setRightCollapsed(next: boolean, persist = true): void {
+    // 下栏模式下右栏本来就是收起的；若用户点展开右栏，先切回右栏停靠
+    if (!next && dockPlacement === "bottom") {
+      setDockPlacement("right");
+      return;
+    }
     rightCollapsed = next;
     if (isNarrow()) {
       narrowOverride.right = !next;
@@ -164,18 +244,22 @@ export function initLayoutShell(opts: LayoutShellOptions): void {
 
   bottomToggle.addEventListener("click", () => setBottomCollapsed(!bottomCollapsed));
 
-  // AI 终端 / 页码条等：需要保证右栏展开
+  /** 展开当前属性栏所在停靠位（不改变右/下位置）。 */
+  function expandInspectorDock(): void {
+    if (dockPlacement === "bottom") setBottomCollapsed(false);
+    else setRightCollapsed(false);
+  }
+
   document.addEventListener("studio:expand-right-dock", () => {
-    if (isNarrow()) {
-      setBottomCollapsed(false);
-      return;
-    }
-    setRightCollapsed(false);
+    expandInspectorDock();
   });
 
-  // 窄屏下 Ctrl+` 等诉求：展开底部属性栏（AI 在其中的页签里）
   document.addEventListener("studio:expand-bottom-dock", () => {
-    setBottomCollapsed(false);
+    expandInspectorDock();
+  });
+
+  document.addEventListener("studio:toggle-inspector-dock", () => {
+    toggleDockPlacement();
   });
 
   window.addEventListener("resize", applyLayout);

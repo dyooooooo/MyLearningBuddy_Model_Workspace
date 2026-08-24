@@ -154,6 +154,7 @@ export async function mountTextbookScrollReader(
   const pageByNo = new Map(pages.map((p) => [p.source_page, p]));
   const pageBodies = new Map<number, HTMLElement>();
   const pageReady = new Map<number, Promise<void>>();
+  const contentLoaded = new Set<number>();
   let activePageNo = 0;
   let highlightObserver: IntersectionObserver | null = null;
   let loadObserver: IntersectionObserver | null = null;
@@ -197,10 +198,14 @@ export async function mountTextbookScrollReader(
         const html = node.full_text || node.summary || "";
         if (isHtmlContent(html, node.meta as Record<string, unknown>)) {
           body.innerHTML = sanitizeHtml(html);
+          body.classList.remove("is-unloaded");
           typesetTextbookMathIdle(body);
         } else {
+          body.classList.remove("is-unloaded");
           body.textContent = html || "（空页）";
         }
+        body.closest(".import-page-block")?.classList.remove("is-shell");
+        contentLoaded.add(pageNo);
         // Needs full scroller so TOC page can be found for page-number links.
         decoratePageNumbersBackToToc(scroller);
       } catch (e) {
@@ -209,6 +214,36 @@ export async function mountTextbookScrollReader(
     })();
     pageReady.set(pageNo, ready);
     return ready;
+  }
+
+  function unloadFarPages(centerPageNo: number): void {
+    const keep = new Set<number>();
+    for (const p of pages) {
+      if (Math.abs(p.source_page - centerPageNo) <= PREFETCH_RADIUS) {
+        keep.add(p.source_page);
+      }
+    }
+    const center = pages.findIndex((p) => p.source_page === centerPageNo);
+    if (center >= 0) {
+      for (
+        let i = Math.max(0, center - PREFETCH_RADIUS);
+        i <= Math.min(pages.length - 1, center + PREFETCH_RADIUS);
+        i++
+      ) {
+        keep.add(pages[i].source_page);
+      }
+    }
+    for (const pageNo of [...contentLoaded]) {
+      if (keep.has(pageNo)) continue;
+      const body = pageBodies.get(pageNo);
+      if (!body) continue;
+      body.replaceChildren();
+      body.classList.add("is-unloaded");
+      body.textContent = "滚回此处加载…";
+      body.closest(".import-page-block")?.classList.add("is-shell");
+      contentLoaded.delete(pageNo);
+      pageReady.delete(pageNo);
+    }
   }
 
   async function ensureWindowAround(pageNo: number): Promise<void> {
@@ -225,6 +260,7 @@ export async function mountTextbookScrollReader(
       }
     }
     await Promise.all([...new Set(idxs)].map((n) => ensurePageContent(n)));
+    unloadFarPages(pageNo);
   }
 
   function bindObservers(): void {
@@ -270,8 +306,9 @@ export async function mountTextbookScrollReader(
 
     const tag = el("div", "import-page-tag muted", `第 ${p.source_page} 页`);
     wrap.appendChild(tag);
-    const body = el("div", "lb-page textbook-preview");
-    body.textContent = "加载中…";
+    const body = el("div", "lb-page textbook-preview is-unloaded");
+    body.textContent = "滚入视口后加载…";
+    wrap.classList.add("is-shell");
     wrap.appendChild(body);
     scroller.appendChild(wrap);
     pageBodies.set(p.source_page, body);

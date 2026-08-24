@@ -1,0 +1,28 @@
+suspect_type: ORPHAN_ANSWER_BLANK_MERGE
+title: 游离答题括号应并入题干
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_plain_main_text
+    and char_count <= 6
+    and matches(text, '^[（(]\\s*[）)]$')
+  min_hits: 1
+
+evidence: [type, zone, char_count, prev_type, next_type, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L3.book_patch
+  # 孤立答题横线要并回题干：前后两块都得看见
+  locate_by: [zone, prev_type, next_type, text_preview]
+  playbook: |
+    1. 定位仅含空括号「（　）」/「( )」的游离块。
+    2. 并入对应选择题/填空题干末尾；删除错位空括号块。
+    3. rebuild_ir 核对阅读序与答题空位。
+
+examples:
+  positive: [configs/checks/fixtures/orphan_answer_blank_merge_pos.json]
+  negative: [configs/checks/fixtures/orphan_answer_blank_merge_neg.json]

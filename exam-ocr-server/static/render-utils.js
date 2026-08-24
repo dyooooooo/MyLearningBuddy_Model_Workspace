@@ -71,6 +71,9 @@ export function agentVerdictBadge(q, locale = "zh") {
       ? { eval_wrong: "Agent wrong", eval_ok: "Agent OK", manual: "Manual", pending: "Pending", failed: "Eval failed" }
       : { eval_wrong: "Agent 错题", eval_ok: "Agent 正确", manual: "人工改判", pending: "待评测", failed: "评测失败" };
   if (src === "manual") return `<span class="badge source-manual">${labels.manual}</span>`;
+  if (q.eval_status === "pending_textbook" || q.eval_status === "pending_grok") {
+    return `<span class="badge source-pending">${locale === "en" ? "Pending textbook" : "待教材批改"}</span>`;
+  }
   if (q.eval_status === "failed") return `<span class="badge source-failed">${labels.failed}</span>`;
   if (agent === true) return `<span class="badge source-agent-wrong">${labels.eval_wrong}</span>`;
   if (agent === false) return `<span class="badge source-agent-ok">${labels.eval_ok}</span>`;
@@ -132,6 +135,19 @@ export function renderQuestionCard(q, opts = {}) {
   if (evalObj && typeof evalObj === "object") {
     const bits = [];
     if (evalObj.error_type) bits.push(`${locale === "en" ? "Error" : "错因"}: ${evalObj.error_type}`);
+    if (evalObj.verdict) bits.push(`${locale === "en" ? "Verdict" : "判定"}: ${evalObj.verdict}`);
+    if (evalObj.book_missing) bits.push(locale === "en" ? "Textbook missing" : "教材未覆盖");
+    const tb = evalObj.textbook;
+    if (tb && typeof tb === "object") {
+      const chap = [tb.title, tb.chapter, tb.section].filter(Boolean).join(" · ");
+      if (chap) bits.push(`${locale === "en" ? "Textbook" : "教材"}: ${chap}`);
+      if (Array.isArray(tb.examples) && tb.examples.length) {
+        bits.push(`${locale === "en" ? "Examples" : "例题"}: ${tb.examples.join("、")}`);
+      }
+    }
+    if (evalObj.eval_status === "pending_textbook" || evalObj.eval_status === "pending_grok") {
+      bits.push(locale === "en" ? "Waiting for textbook agent" : "待教材批改");
+    }
     if (evalObj.reference_answer) {
       bits.push(`${locale === "en" ? "Standard" : "标准答"}: ${String(evalObj.reference_answer).slice(0, 120)}`);
     }

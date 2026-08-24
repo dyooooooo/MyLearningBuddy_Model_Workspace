@@ -1,0 +1,28 @@
+suspect_type: CIRCLED_SUBITEM_TO_PAREN
+title: 带圈小题序号应规范为全角括号序号
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_main_prose
+    and char_count >= 8
+    and matches(text, '[①②③④⑤⑥⑦⑧⑨⑩]')
+  min_hits: 1
+
+evidence: [type, zone, char_count, has_math, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L1.theme_css
+  # 换小题标号样式：认哪一块，看原文里的标号长什么样
+  locate_by: [zone, text_preview]
+  playbook: |
+    1. 定位题干/小问中的带圈序号①②③④。
+    2. 规范为全角（1）（2）…；题干冒号后换行，多小问可横排折行。
+    3. rebuild_ir 核对小题阅读序。
+
+examples:
+  positive: [configs/checks/fixtures/circled_subitem_to_paren_pos.json]
+  negative: [configs/checks/fixtures/circled_subitem_to_paren_neg.json]

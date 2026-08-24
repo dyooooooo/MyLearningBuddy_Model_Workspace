@@ -1,0 +1,24 @@
+{
+  "page_no": 38,
+  "html": "<article><section class=\"lb-main\"><ul><li>（3）公式</li></ul></section></article>",
+  "blocks": [
+    {
+      "id": "list_ok",
+      "type": "list",
+      "page_no": 38,
+      "order": 1,
+      "text": "（3）$a\\sin\\alpha + b\\cos\\alpha = \\sqrt{a^{2}+b^{2}}\\left(\\dfrac{a}{\\sqrt{a^{2}+b^{2}}}\\sin\\alpha + \\dfrac{b}{\\sqrt{a^{2}+b^{2}}}\\cos\\alpha\\right).$",
+      "bbox": [100, 220, 900, 320],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "eq_plain",
+      "type": "equation",
+      "page_no": 38,
+      "order": 2,
+      "text": "\\cos(\\alpha-\\beta)=\\cos\\alpha\\cos\\beta+\\sin\\alpha\\sin\\beta",
+      "bbox": [120, 360, 880, 420],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "page_no": 12,
+  "html": "<article><section class=\"lb-main\"><p>换算</p><div class=\"math\">$1^{\\circ}=\\frac{\\pi}{180}$</div><p>弧度，</p></section></article>",
+  "blocks": [
+    {
+      "id": "lead",
+      "type": "paragraph",
+      "page_no": 12,
+      "order": 1,
+      "text": "角度与弧度可以互相换算：",
+      "bbox": [100, 120, 900, 160],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "good_eq",
+      "type": "equation",
+      "page_no": 12,
+      "order": 2,
+      "text": "1^{\\circ}=\\frac{\\pi}{180}",
+      "bbox": [120, 180, 700, 240],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "unit_text",
+      "type": "paragraph",
+      "page_no": 12,
+      "order": 3,
+      "text": "弧度，",
+      "bbox": [710, 190, 820, 230],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

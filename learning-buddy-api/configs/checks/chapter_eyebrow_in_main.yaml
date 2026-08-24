@@ -1,0 +1,28 @@
+suspect_type: CHAPTER_EYEBROW_IN_MAIN
+title: 章眉短标题误入主栏正文
+severity: low
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_main_heading and level >= 2
+    and char_count <= 2 and width_ratio <= 0.14
+    and height_ratio >= 0.04 and rel_y0 < 0.18
+  min_hits: 1
+
+evidence: [type, zone, level, char_count, width_ratio, height_ratio, rel_y0, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L1.layout_rule
+  # 写版式规则要知道归错到哪个区、标题层级、在页面上多高
+  locate_by: [zone, level, rel_y0, text_preview]
+  playbook: |
+    1. 确认短 heading 是章首页极窄高字碎片（如「第」与侧栏章名拆开），不是居中短篇名/练习组标题。
+    2. 与章题合并，或并入 running_header；勿把正常「前言」「目录」「A组」当章眉删掉。
+    3. rebuild_ir 后核对章首页主栏不再残留单字 heading。
+
+examples:
+  positive: [configs/checks/fixtures/chapter_eyebrow_in_main_pos.json]
+  negative: [configs/checks/fixtures/chapter_eyebrow_in_main_neg.json]

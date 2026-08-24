@@ -5,6 +5,7 @@ const ITEMS: { id: RibbonSection; icon: string; label: string }[] = [
   { id: "textbook", icon: "📚", label: "教材" },
   { id: "import", icon: "📥", label: "导入" },
   { id: "edition-ops", icon: "🧩", label: "方案" },
+  { id: "improvements", icon: "✨", label: "改进点" },
   { id: "search", icon: "🔍", label: "搜索" },
   { id: "todo", icon: "📋", label: "待办" },
 ];

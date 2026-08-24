@@ -69,10 +69,18 @@ def find_placeholders(obj: Any, path: str = "") -> list[str]:
 
 
 class CreateSessionRequest(BaseModel):
-    kind: Literal["import_advice", "page_assist"]
+    kind: Literal[
+        "import_advice",
+        "pattern_abstract",
+        "ip_book",
+        "ip_triage",  # 兼容：创建时归一为 ip_book
+        "ip_split",  # 兼容：创建时归一为 ip_book
+    ]
     payload: dict[str, Any] = Field(default_factory=dict)
     # 空 / "auto" = 自动（服务端选）；否则须为 /models 列表中的模型 id
     model: str = ""
+    # False：只建会话并绑定 import_job（空对话），不跑简报/全书导入编排
+    auto_start: bool = True
 
 
 class UserMessageRequest(BaseModel):

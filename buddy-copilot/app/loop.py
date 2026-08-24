@@ -12,6 +12,7 @@ blocked 时等用户输入后继续 send，直到 done / failed / 取消。
 
 from __future__ import annotations
 
+import ast
 import logging
 import queue
 import threading
@@ -22,6 +23,7 @@ from typing import Any, Callable
 from .agent_env import build_context_pack
 from .agent_runner import AgentRunError, SessionAgent, extract_final_report
 from .bridge_cleanup import close_sdk_bridge, sweep_orphan_bridges
+from .sdk_patches import is_bridge_auth_token_argv_error
 from .brief_intent import classify_brief_message
 from .config import Settings
 from .continue_intent import is_continue_request
@@ -31,6 +33,13 @@ from .next_steps import (
     next_steps_message,
 )
 from .permissions import Permissions, load_permissions
+from .pattern_batch import (
+    PATTERN_ABSTRACT_BATCH,
+    PATTERN_ABSTRACT_MAX_ROUNDS,
+    batch_instruction as pattern_batch_instruction,
+    progress_text as pattern_progress_text,
+    unassigned_count,
+)
 from .layout_triad.triad import merged_to_page_plan_hints, run_triad
 from .preview_batch import (
     PREVIEW_PAGES_PER_RUN,
@@ -44,11 +53,13 @@ from .preview_batch import (
 )
 from .schemas import FinalReport, PagePlanEntry
 from .segment_state import (
-    IMPORT_PAGES_PER_SEGMENT,
-    advance_past_gate_batch,
+    AUTOFIX_MAX_ROUNDS,
     apply_qa_report_to_payload,
+    autofix_may_finish,
+    batch_actionable_findings,
     extract_qa_report,
     fix_instruction,
+    fullbook_analyze_and_fix_instruction,
     has_blocking_open_issues,
     has_layout_or_effective_ledger,
     import_batch_ready,
@@ -60,19 +71,34 @@ from .segment_state import (
     open_issue_pages,
     page_range_str,
     mentioned_open_pages,
-    qa_instruction,
-    qa_through,
-    segment_batches,
-    set_gate_batch,
+    remaining_actionable_findings,
+    remaining_as_open_issues,
     user_accepts_suggestions,
     user_confirms_effective,
     user_wants_skip_and_continue,
 )
+from .pipeline_tick import pages_ready_n, symptom_rows_for_tick
 from .store import Store
 from .tools.buddy_api import BuddyApiClient
 from .tools.fs_guard import WorktreeSnapshot
 
 log = logging.getLogger("copilot.loop")
+
+
+def wall_elapsed(
+    started: float,
+    *,
+    now: float,
+    paused: float = 0.0,
+    pause_start: float | None = None,
+) -> float:
+    """单轮墙钟：等人点批准卡的时间不计入 ``run_timeout_s``。
+
+    上次全书导入卡在 ``fs.request_edit`` 待批时，900 秒墙钟先于 1800 秒闸门超时
+    把整轮掐死。待决批准期间停表，只统计 Agent 真正在跑的时间。
+    """
+    extra = (now - pause_start) if pause_start is not None else 0.0
+    return max(0.0, now - started - paused - extra)
 
 _BRIEF_INSTRUCTION = (
     "\n\n请阅读以上环境与任务上下文，先产出一份**行动简报**（markdown，不要 json）：\n"
@@ -87,7 +113,8 @@ _EXECUTE_INSTRUCTION = (
     "每完成/跳过一步就更新一次状态（in_progress/done/skipped），让用户实时看到进度；\n"
     "- 自主调用工具完成任务；工具报错就地诊断、修复、重试（同一失败最多 3 次）；\n"
     "- 看预览图时每看完 3 张就 session.update_todos 打心跳（防空转误判）；\n"
-    "- 修改文件前必须先 fs.request_edit 申请并获批；闸门工具会弹批准卡，被拒绝时按用户理由调整；\n"
+            "- 修改白名单内 .css/.html（前台显示）可直接编辑；改 prompt/测试/其它文件须先 "
+            "fs.request_edit 获批；闸门被拒绝时按用户理由调整；\n"
     "- 完成前必须有验证证据（golden / page_diff / pytest / 重新拉数据核实）；\n"
     "- 结束时输出最终报告 ```json 块（status=done/blocked/failed + summary + evidence）。"
 )
@@ -172,6 +199,8 @@ class LoopEngine:
         self._agents: dict[str, SessionAgent] = {}
         #  已被用户「停止」的会话：状态不再被残余流程改回 awaiting_user / executing
         self._cancelled: set[str] = set()
+        # 本轮执行结束后待用户「保留 / 放弃」的文件快照（类似 Cursor Agent Undo）
+        self._checkpoints: dict[str, WorktreeSnapshot] = {}
         self._lock = threading.Lock()
 
     # ---------- 对外接口（由 FastAPI 调用） ----------
@@ -210,7 +239,7 @@ class LoopEngine:
         if rt:
             rt.approval_event.set()
 
-    def cancel(self, sid: str) -> None:
+    def cancel(self, sid: str, *, discard_files: bool = True) -> None:
         with self._lock:
             self._cancelled.add(sid)
         rt = self._runtimes.get(sid)
@@ -223,6 +252,21 @@ class LoopEngine:
         agent = self._agents.get(sid)
         if agent:
             agent.cancel_current()
+        # 已挂起的检查点：停止 ≈ Cursor 放弃，默认回退文件
+        if discard_files:
+            self.discard_files(sid, reason="用户停止会话")
+
+    def keep_files(self, sid: str, *, reason: str = "") -> dict[str, Any]:
+        """保留本轮文件改动（释放检查点，不回滚）。"""
+        return self._release_checkpoint(sid, discard=False, reason=reason)
+
+    def discard_files(self, sid: str, *, reason: str = "") -> dict[str, Any]:
+        """放弃本轮文件改动，回退到本轮执行前（类似 git checkout / Cursor Undo）。"""
+        return self._release_checkpoint(sid, discard=True, reason=reason)
+
+    def has_pending_checkpoint(self, sid: str) -> bool:
+        with self._lock:
+            return sid in self._checkpoints
 
     def is_running(self, sid: str) -> bool:
         return sid in self._runtimes
@@ -280,26 +324,22 @@ class LoopEngine:
         self._say(sid, "status", {"status": status})
 
     def _unfinished_pipeline(self, session: dict[str, Any]) -> str | None:
-        """若有未完成的 MinerU 分段导入/质检，返回原因标签；否则 None。"""
+        """若有未完成的 MinerU 全书导入/自动改/finalize，返回原因标签；否则 None。"""
         if session.get("kind") != "import_advice":
             return None
         payload = session.get("payload") or {}
         if not payload.get("minio_key"):
             return None
+        if not payload.get("fullbook_autofix_done"):
+            return "segment"
         if has_blocking_open_issues(payload):
             return "segment_issues"
-        nxt = int(payload.get("segment_next_page") or payload.get("preview_next_page") or 0)
-        pc = int(payload.get("page_count") or 0)
-        if 0 < nxt <= pc:
-            return "segment"
         if (
-            (nxt > pc or (pc > 0 and imported_through(payload) >= pc))
-            and payload.get("import_job_id")
+            payload.get("import_job_id")
             and not payload.get("result_edition_id")
+            and has_layout_or_effective_ledger(payload)
         ):
-            # 全书分段完成，有账本则待沉淀新排版方案
-            if has_layout_or_effective_ledger(payload):
-                return "finalize_edition"
+            return "finalize_edition"
         return None
 
     def _open_agent(
@@ -331,22 +371,42 @@ class LoopEngine:
                 recreate_on_fail=recreate_on_fail,
             )
 
-        try:
-            agent = _new_agent()
-        except AgentRunError:
-            # SDK 默认客户端缓存着已死的桥端点（桥进程早退后 _DEFAULT_CLIENT
-            # 不会自愈），resume/create 都打在同一具尸体上。重置默认客户端，
-            # 下一次创建会重新拉起桥进程，然后重试一次。
-            log.warning("open_agent 失败，重置 SDK 默认桥后重试 sid=%s", sid)
+        agent: SessionAgent | None = None
+        last_err: BaseException | None = None
+        # 最多 3 次：死桥重置 + token 以 '-' 开头的已知 SDK 桥参数 bug
+        for attempt in range(3):
             try:
-                close_sdk_bridge()
-            except Exception:  # noqa: BLE001
-                log.warning("close_sdk_bridge during open_agent retry failed", exc_info=True)
-            try:
-                sweep_orphan_bridges(grace_s=1.0)
-            except Exception:  # noqa: BLE001
-                pass
-            agent = _new_agent()
+                agent = _new_agent()
+                break
+            except AgentRunError as e:
+                last_err = e
+                log.warning(
+                    "open_agent 失败 attempt=%s/%s sid=%s: %s",
+                    attempt + 1,
+                    3,
+                    sid,
+                    e,
+                )
+                try:
+                    close_sdk_bridge()
+                except Exception:  # noqa: BLE001
+                    log.warning(
+                        "close_sdk_bridge during open_agent retry failed",
+                        exc_info=True,
+                    )
+                try:
+                    sweep_orphan_bridges(grace_s=1.0)
+                except Exception:  # noqa: BLE001
+                    pass
+                # 非「死桥 / token argv」类错误：重试一次后仍失败则抛出
+                if attempt == 0:
+                    continue
+                if is_bridge_auth_token_argv_error(e) and attempt + 1 < 3:
+                    continue
+                raise
+        if agent is None:
+            assert last_err is not None
+            raise last_err
         self._agents[sid] = agent
         recreated = bool(getattr(agent, "recreated", False))
         if recreated or not session.get("agent_id"):
@@ -439,7 +499,7 @@ class LoopEngine:
         )
 
         payload = dict(session.get("payload") or {})
-        # 分段导入：处理「全文继续 / 接受建议 / 继续 / 任意输入」与门闸
+        # 全书导入续聊：finalize / 跳过遗留 / 定点修 / 断点继续
         if session.get("kind") == "import_advice" and payload.get("minio_key"):
             if looks_like_refuse_principle(text):
                 self._say_next_steps(
@@ -465,38 +525,25 @@ class LoopEngine:
                 )
                 self._say_next_steps(sid)
                 return
-            # 不修 / 跳过 / 下一批 → 标跳过，立刻进下一批 MinerU
-            if user_wants_skip_and_continue(text) and (
-                has_blocking_open_issues(payload) or unfinished == "segment_issues"
-            ):
+            # 跳过遗留问题 → finalize 或结束
+            if user_wants_skip_and_continue(text) and has_blocking_open_issues(payload):
                 n = len(open_issue_pages(payload))
-                if n:
-                    payload["open_issues"] = mark_issues_status(
-                        payload, status="skipped_by_user"
-                    )
-                gate_end = int(payload.get("segment_gate_end") or 0)
-                if gate_end > 0:
-                    note_qa_through(payload, gate_end)
-                nxt = advance_past_gate_batch(payload)
+                payload["open_issues"] = mark_issues_status(
+                    payload, status="skipped_by_user"
+                )
                 self.store.update_session(sid, payload=payload)
                 self._say(
                     sid,
                     "system",
-                    {
-                        "text": (
-                            (f"已跳过 {n} 个问题页（不修），" if n else "本批无待修问题，")
-                            + f"从第 {nxt} 页继续下一批。"
-                        )
-                    },
+                    {"text": f"已跳过 {n} 个遗留问题页；进入收尾。"},
                 )
-                self._mineru_segmented_execution(sid, rt, perms)
+                self._mineru_fullbook_finalize_or_done(sid, rt, perms)
                 return
-            # 修指定页 / 按建议改 → 只改点名的页（「按建议改」= 全部待办）
+            # 修指定页 / 按建议改（事后定点优化）
             open_pages = open_issue_pages(payload)
             named_pages = mentioned_open_pages(text, open_pages)
             wants_fix = (
-                unfinished == "segment_issues"
-                and has_blocking_open_issues(payload)
+                has_blocking_open_issues(payload)
                 and not user_wants_skip_and_continue(text)
                 and (user_accepts_suggestions(text) or bool(named_pages))
             )
@@ -508,7 +555,7 @@ class LoopEngine:
                 )
                 if not pages:
                     self._say_next_steps(
-                        sid, preface="未识别要修的页。请点「按建议改」或说明修哪几页。"
+                        sid, preface="未识别要修的页。请说明修哪几页，或点「继续自动改」。"
                     )
                     self._status(sid, "awaiting_user")
                     return
@@ -518,38 +565,17 @@ class LoopEngine:
                         payload, status="skipped_by_user", pages=skipped
                     )
                     self.store.update_session(sid, payload=payload)
-                    self._say(
-                        sid,
-                        "system",
-                        {"text": f"未点名的问题页 {skipped} 已跳过；只修 {pages}。"},
-                    )
+                from .segment_state import procedure_hints_instruction
+
                 instr = fix_instruction(
                     job_id=str(payload.get("import_job_id") or ""),
                     pages=pages,
                     edition_id=str(payload.get("edition_id") or ""),
+                    procedure_block=procedure_hints_instruction(payload),
                 )
                 self._execution_phase(sid, rt, instr, perms, soft_chat=True)
                 self._sync_issues_from_last_report(sid)
-                session2 = self.store.get_session(sid)
-                pl2 = dict((session2 or {}).get("payload") or {})
-                if not has_blocking_open_issues(pl2):
-                    gate_end = int(pl2.get("segment_gate_end") or 0)
-                    if gate_end > 0:
-                        note_qa_through(pl2, gate_end)
-                    nxt = advance_past_gate_batch(pl2)
-                    self.store.update_session(sid, payload=pl2)
-                    self._say(
-                        sid,
-                        "system",
-                        {"text": f"指定页已处理，从第 {nxt} 页继续下一批。"},
-                    )
-                    self._mineru_segmented_execution(sid, rt, perms)
-                else:
-                    self._say_next_steps(
-                        sid,
-                        preface=f"仍有待办页 {open_issue_pages(pl2)}。",
-                    )
-                    self._status(sid, "awaiting_user")
+                self._mineru_fullbook_finalize_or_done(sid, rt, perms)
                 return
             if want_continue and unfinished:
                 self._say(
@@ -557,25 +583,24 @@ class LoopEngine:
                     "system",
                     {
                         "text": (
-                            "已重连，从 MinerU 分段导入断点继续。"
+                            "已重连，从 MinerU 全书导入断点继续。"
                             + (self._preview_progress_hint(sid) or "")
                         )
                     },
                 )
-                self._mineru_segmented_execution(sid, rt, perms)
+                self._mineru_fullbook_execution(sid, rt, perms)
                 return
-            # 自由文本：一等公民 — 白名单内执行后刷新下一步选择
+            # 自由文本：事后逐页优化
             if not want_continue:
                 instruction = (
                     text
                     + "\n\n（会话续聊：直接处理这条用户消息。"
                     "若用户在问问题/看页面：用 page_html、必要时 render_preview，不要擅自改页。"
                     "若用户明确要求修改某页：才可用 get_blocks/replace_page_blocks/"
-                    "patch_block/rerender_page，并以最终 HTML 验收。"
-                    "禁止 35B reprocess refine。"
-                    "合理请求在工具白名单内执行；违背原则须拒绝并说明。"
+                    "patch_block/rerender_page/rebuild_ir，并以最终 HTML 验收。"
+                    "优先读 layout_escalate_pages 与 layout_rule_id；禁止 35B reprocess refine。"
                     "确认有效的改动用 edition.record_effective_change 记账。"
-                    "做完后不要假装全书已结束；用户可继续下一批或再提要求。）"
+                    "全书导入已完成时不要再 start_import。）"
                 )
                 if user_confirms_effective(text):
                     instruction += (
@@ -588,6 +613,11 @@ class LoopEngine:
                 self._status(sid, "awaiting_user")
                 return
 
+        if session.get("kind") == "pattern_abstract" and want_continue:
+            self._say(sid, "system", {"text": "已重连，接着抽象下一批改进点。"})
+            self._pattern_abstract_execution(sid, rt, perms)
+            return
+
         if want_continue and unfinished:
             self._say(
                 sid,
@@ -595,7 +625,7 @@ class LoopEngine:
                 {"text": "已重连，从断点继续。" + (self._preview_progress_hint(sid) or "")},
             )
             if unfinished in ("segment", "segment_issues", "finalize_edition"):
-                self._mineru_segmented_execution(sid, rt, perms)
+                self._mineru_fullbook_execution(sid, rt, perms)
             else:
                 self._full_book_preview_execution(sid, rt, perms)
             return
@@ -616,7 +646,7 @@ class LoopEngine:
             if unfinished:
                 self._say_continue_cta(
                     sid,
-                    "检测到未完成的分段导入断点。点「继续」或发送「继续」即可重连并从断点接着做。"
+                    "检测到未完成的全书导入断点。点「继续」或发送「继续」即可重连并从断点接着做。"
                     + (self._preview_progress_hint(sid) or ""),
                 )
             if user_confirms_effective(text):
@@ -657,18 +687,146 @@ class LoopEngine:
         if not self._confirm_brief(sid, rt, perms):
             return  # cancelled
 
-        # ---- 阶段 2~4：MinerU 分段导入（20 页/批）或普通执行 ----
+        # ---- 阶段 2~4：MinerU 全书导入 + Cursor 自动改（或普通执行）----
         if kind == "import_advice" and self._should_mineru_segment(sid):
-            self._mineru_segmented_execution(sid, rt, perms)
+            self._mineru_fullbook_execution(sid, rt, perms)
+            return
+        if kind == "pattern_abstract":
+            self._pattern_abstract_execution(sid, rt, perms)
             return
         self._execution_phase(sid, rt, _EXECUTE_INSTRUCTION, perms)
 
+    def _pattern_abstract_execution(
+        self, sid: str, rt: SessionRuntime, perms: Permissions
+    ) -> None:
+        """改进点抽象：按「还剩多少条没挂模式」分批推进，一轮一批。
+
+        单轮预算超限会整轮回滚，所以不让 Agent 一口气扫完 343 条。每批由
+        _execution_phase 承担快照、越权检查与排队消息，批间只做进度与终止判断。
+        """
+        session = self.store.get_session(sid)
+        assert session is not None
+        payload = dict(session.get("payload") or {})
+        fp = str(payload.get("fingerprint_hash") or "").strip()
+        batch_size = int(payload.get("batch_size") or PATTERN_ABSTRACT_BATCH)
+        client = BuddyApiClient(self.settings)
+
+        def _remaining() -> tuple[int, int]:
+            try:
+                listing = client.ip_list(
+                    fingerprint_hash=fp, status="accepted", prep_status="ready", limit=2000
+                )
+            except Exception as e:  # noqa: BLE001 - 取不到就退回单轮，不阻断会话
+                log.warning("session %s ip_list failed: %s", sid, e)
+                return -1, -1
+            return unassigned_count(listing)
+
+        remaining, total = _remaining()
+        if remaining < 0:
+            # 数不出剩余量（接口不通）：退回单轮执行，别把会话卡死在计数上
+            self._execution_phase(sid, rt, _EXECUTE_INSTRUCTION, perms)
+            return
+        if remaining == 0:
+            # 全挂完之后这条轨还要用来维护检测器（降噪、补反例、重跑），
+            # 所以只在没给具体目标时才收工，否则按目标跑一轮。
+            goal = str(payload.get("user_goal") or "").strip()
+            if not goal:
+                self._say(sid, "system", {"text": f"{total} 条改进点已全部挂到模式，无需抽象。"})
+                self._say(
+                    sid,
+                    "result",
+                    {"ok": True, "report": {"status": "done", "summary": "无待抽象改进点"}},
+                )
+                self._status(sid, "done")
+                return
+            self._say(
+                sid,
+                "system",
+                {"text": f"{total} 条改进点已全部挂到模式，转为按目标执行检测器维护。"},
+            )
+            self._execution_phase(
+                sid,
+                rt,
+                goal
+                + "\n\n（抽象队列已清空，本轮不抽新改进点，只按上面的目标维护检测器："
+                "改 YAML、补正反例、跑 checks.run_examples 与 harness.run_pytest、"
+                "再 checks.dry_run 对比命中数。收尾按契约输出最终报告 JSON。）",
+                perms,
+            )
+            return
+
+        for round_no in range(1, PATTERN_ABSTRACT_MAX_ROUNDS + 1):
+            if rt.cancelled.is_set() or sid in self._cancelled:
+                self._status(sid, "cancelled")
+                return
+            self._say(
+                sid,
+                "system",
+                {"text": pattern_progress_text(round_no=round_no, remaining=remaining, total=total)},
+            )
+            self.store.audit(
+                sid,
+                "orchestrator",
+                "pattern_batch_start",
+                {"round": round_no, "remaining": remaining, "total": total},
+            )
+            self._execution_phase(
+                sid,
+                rt,
+                pattern_batch_instruction(
+                    round_no=round_no,
+                    remaining=remaining,
+                    total=total,
+                    batch_size=batch_size,
+                ),
+                perms,
+            )
+            after = self.store.get_session(sid) or {}
+            if str(after.get("status") or "") != "done":
+                # failed / blocked / cancelled / awaiting_user：状态与提示已由执行阶段给出
+                return
+
+            before = remaining
+            remaining, total = _remaining()
+            if remaining < 0:
+                return
+            self.store.audit(
+                sid,
+                "orchestrator",
+                "pattern_batch_done",
+                {"round": round_no, "assigned": max(0, before - remaining), "remaining": remaining},
+            )
+            if remaining == 0:
+                self._say(sid, "system", {"text": f"抽象完成：{total} 条改进点全部有归属。"})
+                return
+            if remaining >= before:
+                # 这一批一条都没挂上去，再推也是空转，交回给用户判断
+                self._say_next_steps(
+                    sid,
+                    preface=(
+                        f"第 {round_no} 批没有新增归属（仍剩 {remaining} 条）。"
+                        "可能是剩下的条目抽不出跨书症状。请指示下一步。"
+                    ),
+                )
+                self._status(sid, "awaiting_user")
+                return
+
+        self._say_continue_cta(
+            sid,
+            f"已推进 {PATTERN_ABSTRACT_MAX_ROUNDS} 批，还剩 {remaining} 条未挂模式。"
+            "点「继续」或发送「继续」可接着抽象。",
+        )
+        self._status(sid, "awaiting_user")
+
     def _should_mineru_segment(self, sid: str) -> bool:
-        """有 PDF + edition → 走 MinerU 分段质检（替代旧 35B 三角预览）。"""
+        """有 PDF + edition → 走 MinerU 全书导入 + Cursor 自动改。"""
         session = self.store.get_session(sid)
         if not session:
             return False
         payload = session.get("payload") or {}
+        # 已有导入任务的空绑定会话：只供聚焦改页，禁止再跑全书导入
+        if payload.get("attach_existing_job") or payload.get("fullbook_autofix_done"):
+            return False
         return bool(payload.get("minio_key") and str(payload.get("edition_id") or "").strip())
 
     def _should_batch_full_preview(self, sid: str) -> bool:
@@ -685,20 +843,51 @@ class LoopEngine:
             return True
         return page_count > PREVIEW_PAGES_PER_RUN
 
+    def _emit_mineru_pipeline(
+        self, sid: str, job_id: str, **fields: Any
+    ) -> None:
+        """中栏实时流水线：走既有 import_event，不另开通道。"""
+        body: dict[str, Any] = {
+            "event": "import_progress",
+            "line": "mineru",
+            "job_id": job_id,
+        }
+        for key, value in fields.items():
+            if value is not None:
+                body[key] = value
+        self.store.add_message(sid, "import_event", body)
+
     def _wait_import_job(
         self,
         client: BuddyApiClient,
         job_id: str,
         *,
+        sid: str = "",
         page_ranges: str | None = None,
         page_limit: int | None = None,
         timeout_s: float = 1800,
     ) -> dict[str, Any]:
         deadline = time.monotonic() + timeout_s
         last: dict[str, Any] = {}
+        last_sig = ""
         while time.monotonic() < deadline:
             last = client.get_import_job(job_id)
             status = str(last.get("status") or "")
+            meta = last.get("meta") if isinstance(last.get("meta"), dict) else {}
+            ready_n = pages_ready_n(meta)
+            phase = str(meta.get("pipeline_phase") or "")
+            sig = f"{status}:{phase}:{ready_n}"
+            if sid and sig != last_sig:
+                last_sig = sig
+                self._emit_mineru_pipeline(
+                    sid,
+                    job_id,
+                    status=status,
+                    pages_ready=ready_n,
+                    pipeline_phase=phase or "mineru_parse",
+                    page_limit=page_limit,
+                    page_ranges=page_ranges,
+                )
             if status == "failed":
                 return last
             if import_batch_ready(last, page_ranges=page_ranges, page_limit=page_limit):
@@ -711,7 +900,7 @@ class LoopEngine:
     ) -> None:
         """绑定的导入任务若不是本会话这本 PDF，立即解绑并清进度。
 
-        否则 extend_import 会把本书页码写进别人的任务（曾把「第二册」写进「第一册」）。
+        否则会把本书写进别人的任务（曾把「第二册」页写进「第一册」job）。
         """
         job_id = str(payload.get("import_job_id") or payload.get("job_id") or "").strip()
         mine = _pdf_identity(payload.get("minio_key"), payload.get("label"))
@@ -757,10 +946,10 @@ class LoopEngine:
             },
         )
 
-    def _mineru_segmented_execution(
+    def _mineru_fullbook_execution(
         self, sid: str, rt: SessionRuntime, perms: Permissions
     ) -> None:
-        """MinerU 每批 20 页实导入 → Agent 文本质检 → 有 open_issues 则停；清债后 extend。"""
+        """MinerU 全书一次导入 → 读 escalate → Cursor 自动改 → finalize（无用户门闸）。"""
         self._status(sid, "executing")
         session = self.store.get_session(sid)
         assert session is not None
@@ -770,7 +959,11 @@ class LoopEngine:
         edition_id = str(payload.get("edition_id") or "").strip()
         page_count = int(payload.get("page_count") or 0)
         if not edition_id:
-            self._say(sid, "system", {"text": "必须先选择教材方案（edition_id）才能 AI 分段导入。"})
+            self._say(
+                sid,
+                "system",
+                {"text": "必须先选择教材方案（edition_id）才能 AI 全书导入。"},
+            )
             self._status(sid, "failed")
             return
         payload.setdefault("source_edition_id", edition_id)
@@ -778,326 +971,519 @@ class LoopEngine:
         snapshot = self._new_snapshot(perms)
         try:
             if page_count <= 0:
-                # 轻探：让 Agent 不必要；用 start 1-1 不划算。要求 payload 带 page_count。
                 self._say(
                     sid,
                     "system",
-                    {"text": "缺少 page_count。请在导入面板重新选择 PDF（会探测页数）后再开 AI 导入。"},
+                    {
+                        "text": (
+                            "缺少 page_count。请在导入面板重新选择 PDF"
+                            "（会探测页数）后再开 AI 导入。"
+                        )
+                    },
                 )
                 self._status(sid, "failed")
                 return
 
-            batches = segment_batches(page_count, IMPORT_PAGES_PER_SEGMENT)
-            resume_from = int(payload.get("segment_next_page") or 1)
-            start_idx = 0
-            for i, (a, b) in enumerate(batches):
-                if b < resume_from:
-                    start_idx = i + 1
-                    continue
-                if a <= resume_from <= b:
-                    start_idx = i
-                    break
-                if a >= resume_from:
-                    start_idx = i
-                    break
+            wait_ranges = f"1-{page_count}"
+            timeout_s = float(max(1800, min(page_count * 90, 7200)))
+            job_id = str(payload.get("import_job_id") or "").strip()
 
-            self._say(
-                sid,
-                "system",
-                {
-                    "text": (
-                        f"开始 MinerU 分段导入：全书 {page_count} 页，每批 "
-                        f"{IMPORT_PAGES_PER_SEGMENT} 页；方案 `{edition_id}`。"
-                        f"从第 {batches[start_idx][0] if batches else 1} 页继续。"
-                    )
-                },
-            )
+            # Resume: already autofixed → finalize/done only
+            if payload.get("fullbook_autofix_done") and job_id:
+                self._mineru_fullbook_finalize_or_done(sid, rt, perms)
+                return
 
-            for idx in range(start_idx, len(batches)):
-                if rt.cancelled.is_set():
-                    self._status(sid, "cancelled")
-                    return
-                if has_blocking_open_issues(payload):
-                    self.store.update_session(sid, payload=payload)
-                    self._say_next_steps(
-                        sid,
-                        preface=f"待办问题页未清：{open_issue_pages(payload)}。",
-                    )
-                    self._status(sid, "awaiting_user")
-                    return
+            already_ready = False
+            if job_id:
+                try:
+                    job0 = client.get_import_job(job_id)
+                    already_ready = import_batch_ready(
+                        job0, page_ranges=wait_ranges
+                    ) and str(job0.get("status") or "") != "failed"
+                except Exception:  # noqa: BLE001
+                    already_ready = False
 
-                start, end = batches[idx]
-                pr = page_range_str(start, end)
-                run_no, total = idx + 1, len(batches)
-                job_id = str(payload.get("import_job_id") or "")
-                already = imported_through(payload) >= end and bool(job_id)
-                qa_done = qa_through(payload) >= end
-                if already and qa_done:
-                    if has_blocking_open_issues(payload):
-                        set_gate_batch(payload, start, end)
-                        self.store.update_session(sid, payload=payload)
-                        self._say_next_steps(
-                            sid,
-                            preface=(
-                                f"第 {start}–{end} 页已导入，仍有待办页 "
-                                f"{open_issue_pages(payload)}。请选择修哪些或不修。"
-                            ),
+            if not already_ready:
+                self._say(
+                    sid,
+                    "system",
+                    {
+                        "text": (
+                            f"开始 MinerU 全书导入：共 {page_count} 页；"
+                            f"方案 `{edition_id}`。导入完成后将按 escalate 清单自动修改。"
                         )
-                        self._status(sid, "awaiting_user")
-                        return
-                    # 已导入且质检过 → 不重跑，直接下一批
-                    payload["segment_next_page"] = end + 1
-                    payload.pop("segment_gate_end", None)
-                    self.store.update_session(sid, payload=payload)
-                    self._say(
-                        sid,
-                        "system",
-                        {
-                            "text": (
-                                f"📄 分段进度 {run_no}/{total}：第 {start}–{end} 页已导入且已质检，"
-                                "跳过重复识别与质检。"
-                            )
-                        },
-                    )
-                    continue
-                if already and not qa_done:
-                    self._say(
-                        sid,
-                        "system",
-                        {
-                            "text": (
-                                f"📄 分段进度 {run_no}/{total}：第 {start}–{end} 页已导入，"
-                                "跳过重复 MinerU，开始质检…"
-                            )
-                        },
-                    )
-                else:
-                    self._say(
-                        sid,
-                        "system",
-                        {"text": f"📄 分段进度 {run_no}/{total}：MinerU 识别第 {start}–{end} 页…"},
-                    )
-                    try:
-                        if not job_id:
-                            out = client.start_pdf_import(
-                                minio_key=minio_key,
-                                edition_id=edition_id,
-                                label=str(payload.get("label") or ""),
-                                page_ranges=pr,
-                            )
-                            job_id = str(out.get("id") or "")
-                            payload["import_job_id"] = job_id
-                            payload["job_id"] = job_id
-                            self.store.update_session(sid, payload=payload)
-                            try:
-                                self.store.bind_import_job(sid, job_id)
-                            except Exception:  # noqa: BLE001
-                                log.exception("bind_import_job failed sid=%s job=%s", sid, job_id)
-                            self.store.add_message(
-                                sid,
-                                "import_event",
-                                {
-                                    "event": "import_started",
-                                    "line": "mineru",
-                                    "job_id": job_id,
-                                    "page_ranges": pr,
-                                    "edition_id": edition_id,
-                                },
-                            )
-                        else:
-                            if has_blocking_open_issues(payload):
-                                raise RuntimeError("open_issues 未清，拒绝 extend")
-                            out = client.extend_pdf_import(job_id, pr)
-                            self.store.add_message(
-                                sid,
-                                "import_event",
-                                {
-                                    "event": "import_started",
-                                    "line": "mineru",
-                                    "job_id": job_id,
-                                    "page_ranges": pr,
-                                    "edition_id": edition_id,
-                                },
-                            )
-                        job = self._wait_import_job(client, job_id, page_ranges=pr)
-                        if str(job.get("status") or "") == "failed":
-                            self._say_continue_cta(
-                                sid,
-                                f"MinerU 分段失败（{pr}）：{job.get('error')}\n点「继续」可重试本批。",
-                            )
-                            payload["segment_next_page"] = start
-                            self.store.update_session(sid, payload=payload)
-                            self._status(sid, "failed")
-                            return
-                        if not import_batch_ready(job, page_ranges=pr):
-                            self._say_continue_cta(
-                                sid,
-                                f"MinerU 分段等待超时（{pr}），本批页尚未全部就绪。"
-                                "点「继续」可重试本批。",
-                            )
-                            payload["segment_next_page"] = start
-                            self.store.update_session(sid, payload=payload)
-                            self._status(sid, "failed")
-                            return
-                        note_imported_through(payload, end)
+                    },
+                )
+                try:
+                    if not job_id:
+                        out = client.start_pdf_import(
+                            minio_key=minio_key,
+                            edition_id=edition_id,
+                            label=str(payload.get("label") or ""),
+                            # Full book: no page_ranges / page_limit
+                        )
+                        job_id = str(out.get("id") or "")
+                        payload["import_job_id"] = job_id
+                        payload["job_id"] = job_id
                         self.store.update_session(sid, payload=payload)
+                        try:
+                            self.store.bind_import_job(sid, job_id)
+                        except Exception:  # noqa: BLE001
+                            log.exception(
+                                "bind_import_job failed sid=%s job=%s", sid, job_id
+                            )
                         self.store.add_message(
                             sid,
                             "import_event",
                             {
-                                "event": "import_done",
+                                "event": "import_started",
                                 "line": "mineru",
                                 "job_id": job_id,
-                                "page_ranges": pr,
-                                "status": job.get("status"),
-                                "ok": True,
+                                "page_ranges": wait_ranges,
+                                "fullbook": True,
+                                "edition_id": edition_id,
                             },
                         )
-                        self._say(
-                            sid,
-                            "system",
-                            {
-                                "text": (
-                                    f"✅ MinerU 第 {start}–{end} 页已就绪（job `{job_id}`）。"
-                                    "中栏可浏览；右栏开始质检…"
-                                )
-                            },
-                        )
-                    except Exception as e:  # noqa: BLE001
-                        log.exception("segment import failed sid=%s pages=%s", sid, pr)
+                    job = self._wait_import_job(
+                        client,
+                        job_id,
+                        sid=sid,
+                        page_ranges=wait_ranges,
+                        timeout_s=timeout_s,
+                    )
+                    if str(job.get("status") or "") == "failed":
                         self._say_continue_cta(
-                            sid, f"分段导入异常：{e}\n点「继续」可重试本批 {pr}。"
+                            sid,
+                            f"MinerU 全书导入失败：{job.get('error')}\n"
+                            "点「继续」可重试。",
                         )
-                        payload["segment_next_page"] = start
                         self.store.update_session(sid, payload=payload)
                         self._status(sid, "failed")
                         return
-
-                open_pages = open_issue_pages(payload)
-                instr = qa_instruction(
-                    job_id=job_id,
-                    start=start,
-                    end=end,
-                    page_count=page_count,
-                    run_index=run_no,
-                    run_total=total,
-                    open_pages=open_pages,
-                    edition_id=edition_id,
-                )
-                text = self._ask(sid, rt, instr, perms)
-                if text is None or rt.cancelled.is_set():
-                    set_gate_batch(payload, start, end)
+                    if not import_batch_ready(job, page_ranges=wait_ranges):
+                        self._say_continue_cta(
+                            sid,
+                            "MinerU 全书导入等待超时，页尚未全部就绪。"
+                            "点「继续」可重试等待。",
+                        )
+                        self.store.update_session(sid, payload=payload)
+                        self._status(sid, "failed")
+                        return
+                    note_imported_through(payload, page_count)
+                    note_qa_through(payload, page_count)
+                    payload["segment_next_page"] = page_count + 1
                     self.store.update_session(sid, payload=payload)
-                    if rt.cancelled.is_set():
-                        self._status(sid, "cancelled")
-                    return
-                # 每批质检结束即查越权：本批就地拦下，不带着改动继续导入下一批
-                if self._fs_violation_stop(sid, snapshot):
-                    set_gate_batch(payload, start, end)
-                    self.store.update_session(sid, payload=payload)
-                    return
-                report = extract_qa_report(text)
-                if report is None:
-                    set_gate_batch(payload, start, end)
-                    self.store.update_session(sid, payload=payload)
-                    self._say_continue_cta(
+                    self.store.add_message(
                         sid,
-                        f"第 {start}–{end} 页质检未交出问题清单 JSON，本批不算完成。"
-                        "点「继续」可重跑本批质检。",
+                        "import_event",
+                        {
+                            "event": "import_done",
+                            "line": "mineru",
+                            "job_id": job_id,
+                            "page_ranges": wait_ranges,
+                            "fullbook": True,
+                            "status": job.get("status"),
+                            "ok": True,
+                        },
                     )
+                    self._say(
+                        sid,
+                        "system",
+                        {
+                            "text": (
+                                f"✅ MinerU 全书 {page_count} 页已就绪（job `{job_id}`）。"
+                                "中栏可浏览；开始读 escalate 并自动修改…"
+                            )
+                        },
+                    )
+                except Exception as e:  # noqa: BLE001
+                    log.exception("fullbook import failed sid=%s", sid)
+                    self._say_continue_cta(
+                        sid, f"全书导入异常：{e}\n点「继续」可重试。"
+                    )
+                    self.store.update_session(sid, payload=payload)
                     self._status(sid, "failed")
                     return
-                apply_qa_report_to_payload(payload, report, batch=pr)
-                note_imported_through(payload, end)
-                note_qa_through(payload, end)  # 质检轮已完成（无论有无问题）
-                needs_user = bool(report.get("needs_user")) or has_blocking_open_issues(payload)
-                if needs_user and has_blocking_open_issues(payload):
-                    set_gate_batch(payload, start, end)
-                    self.store.update_session(sid, payload=payload)
-                    self._say_next_steps(
-                        sid,
-                        preface=(
-                            "本批已根据最终页面列出问题，已暂停。"
-                            "请选择：不修进下一批、按建议改全部，或说明修哪几页。"
-                        ),
-                    )
-                    self._status(sid, "awaiting_user")
-                    return
-
-                payload["segment_next_page"] = end + 1
-                payload.pop("segment_gate_end", None)
-                note_imported_through(payload, end)
+            else:
+                note_imported_through(payload, page_count)
+                note_qa_through(payload, page_count)
+                payload["segment_next_page"] = page_count + 1
                 self.store.update_session(sid, payload=payload)
                 self._say(
                     sid,
                     "system",
                     {
                         "text": (
-                            f"✅ 质检通过 {run_no}/{total}（页 {start}–{end}）。"
-                            + (
-                                f"下一批：{batches[idx + 1][0]}–{batches[idx + 1][1]}。"
-                                if idx + 1 < total
-                                else "全书分段完成。"
-                            )
+                            f"全书已导入（job `{job_id}`），跳过重复 MinerU，"
+                            "继续 escalate 分析与自动修改…"
                         )
                     },
                 )
 
-            # 收尾：排版账本 / 有效变更 → fork 新排版方案
-            payload = dict((self.store.get_session(sid) or {}).get("payload") or payload)
-            if has_layout_or_effective_ledger(payload) and not payload.get(
-                "result_edition_id"
-            ):
-                self._say_next_steps(
-                    sid,
-                    preface="全书 MinerU 分段已完成，存在排版改动账本，可生成新排版方案。",
-                )
-                self._say(sid, "system", {"text": "正在根据账本沉淀新排版方案草稿…"})
-                fin = self._ask(
-                    sid,
-                    rt,
-                    "全书 MinerU 分段已完成。请调用 edition.finalize_from_session"
-                    "（会写入 layout_change_log），"
-                    "然后输出最终报告 ```json（含 job_id、import_line=mineru、result_edition_id）。",
-                    perms,
-                )
-                if fin is None:
-                    self._status(sid, "awaiting_user")
-                    return
-                payload = dict((self.store.get_session(sid) or {}).get("payload") or payload)
-            self.store.update_session(sid, payload=payload)
-            self._say_next_steps(
+            if rt.cancelled.is_set():
+                self._status(sid, "cancelled")
+                return
+
+            # Pull escalate signals (A-layer cost cascade) + IP procedures
+            escalate_pages: list[int] = []
+            escalate_summary: dict = {}
+            try:
+                job = client.get_import_job(job_id)
+                meta = job.get("meta") if isinstance(job.get("meta"), dict) else {}
+                escalate_pages = [
+                    int(p) for p in (meta.get("layout_escalate_pages") or []) if p
+                ]
+                raw_sum = meta.get("layout_escalate_summary") or {}
+                if isinstance(raw_sum, dict):
+                    escalate_summary = raw_sum
+                procs = meta.get("improvement_procedures") or []
+                if isinstance(procs, list) and procs:
+                    payload["improvement_procedures"] = procs
+                bf = meta.get("book_fingerprint") or {}
+                if isinstance(bf, dict) and bf.get("hash"):
+                    payload["book_fingerprint"] = bf
+                if meta.get("bound_edition_id"):
+                    payload["bound_edition_id"] = str(meta["bound_edition_id"])
+                self.store.update_session(sid, payload=payload)
+            except Exception as exc:  # noqa: BLE001
+                log.info("fullbook escalate fetch failed job=%s: %s", job_id, exc)
+
+            esc_hint = self._layout_escalate_hint(job_id)
+            if esc_hint:
+                self._say(sid, "system", {"text": esc_hint})
+
+            finished = self._fullbook_autofix_until_verified(
                 sid,
-                preface=(
-                    f"MinerU 分段导入完成。job_id=`{payload.get('import_job_id')}`。"
-                    + (
-                        f" 新排版方案草稿：`{payload.get('result_edition_id')}`。"
-                        if payload.get("result_edition_id")
-                        else " 无新沉淀，沿用原方案。"
-                    )
-                ),
+                rt,
+                perms,
+                client,
+                snapshot,
+                payload,
+                job_id=job_id,
+                page_count=page_count,
+                edition_id=edition_id,
+                escalate_pages=escalate_pages,
+                escalate_summary=escalate_summary,
+                wait_ranges=wait_ranges,
             )
-            self._say(
-                sid,
-                "result",
-                {
-                    "ok": True,
-                    "report": {
-                        "status": "done",
-                        "summary": "MinerU 分段导入完成",
-                        "job_id": payload.get("import_job_id"),
-                        "import_line": "mineru",
-                        "result_edition_id": payload.get("result_edition_id") or "",
-                    },
-                },
-            )
-            self._status(sid, "done")
+            if not finished:
+                return
+            if payload.get("fullbook_autofix_done"):
+                self._mineru_fullbook_finalize_or_done(sid, rt, perms)
         finally:
-            snapshot.cleanup()
+            if rt.cancelled.is_set() or sid in self._cancelled:
+                self._discard_inflight_snapshot(sid, snapshot, reason="已停止")
+            else:
+                try:
+                    ok_files, _bad = snapshot.changed_since()
+                except Exception:  # noqa: BLE001
+                    ok_files = []
+                if ok_files:
+                    self._emit_pending_diff(sid, snapshot, ok_files)
+                    self._arm_checkpoint(sid, snapshot)
+                else:
+                    snapshot.cleanup()
             try:
                 client.close()
             except Exception:  # noqa: BLE001
                 pass
+
+    def _fullbook_autofix_until_verified(
+        self,
+        sid: str,
+        rt: SessionRuntime,
+        perms: Permissions,
+        client: BuddyApiClient,
+        snapshot: WorktreeSnapshot,
+        payload: dict[str, Any],
+        *,
+        job_id: str,
+        page_count: int,
+        edition_id: str,
+        escalate_pages: list[int],
+        escalate_summary: dict[str, Any],
+        wait_ranges: str,
+    ) -> bool:
+        """自动改直到活清单没有可改症状。交 JSON 报告不能收口。
+
+        返回 False 表示中途取消/失败，调用方应直接 return。
+        """
+        from .segment_state import procedure_hints_instruction, symptom_hints_instruction
+
+        last_left: int | None = None
+        stall = 0
+        for round_no in range(1, AUTOFIX_MAX_ROUNDS + 1):
+            if rt.cancelled.is_set():
+                self.store.update_session(sid, payload=payload)
+                self._status(sid, "cancelled")
+                return False
+            data = self._load_live_symptoms(client, job_id, refresh=True)
+            actionable = remaining_actionable_findings(data)
+            left = len(actionable)
+            rows = symptom_rows_for_tick(data)
+            payload["autofix_round"] = round_no
+            payload["autofix_remaining"] = left
+            self.store.update_session(sid, payload=payload)
+            self._emit_mineru_pipeline(
+                sid,
+                job_id,
+                pipeline_phase="symptom_scan" if left else "verify",
+                autofix_round=round_no,
+                autofix_remaining=left,
+                symptom_rows=rows,
+                known_n=len(data.get("known") or []) if isinstance(data, dict) else 0,
+                unknown_n=len(data.get("unknown") or []) if isinstance(data, dict) else 0,
+            )
+
+            if autofix_may_finish(data):
+                payload["fullbook_autofix_done"] = True
+                self.store.update_session(sid, payload=payload)
+                self._sync_issues_from_last_report(sid)
+                self._emit_mineru_pipeline(
+                    sid,
+                    job_id,
+                    pipeline_phase="close",
+                    autofix_round=round_no,
+                    autofix_remaining=0,
+                    autofix_done=True,
+                    symptom_rows=rows,
+                )
+                self._say(
+                    sid,
+                    "system",
+                    {"text": f"活清单已无有手册可改的症状（第 {round_no} 轮核验）。"},
+                )
+                return True
+
+            if last_left is not None and left >= last_left:
+                stall += 1
+            else:
+                stall = 0
+            last_left = left
+            if stall >= 2:
+                self._park_autofix_leftovers(
+                    sid,
+                    payload,
+                    actionable,
+                    wait_ranges,
+                    reason="连续两轮数量没降",
+                )
+                return True
+
+            batch = batch_actionable_findings(actionable)
+            types = sorted({str(f.get("suspect_type") or "") for f in batch if f})
+            type_hint = f"：{', '.join(types)}" if types else ""
+            self._emit_mineru_pipeline(
+                sid,
+                job_id,
+                pipeline_phase="autofix",
+                autofix_round=round_no,
+                autofix_remaining=left,
+                batch_types=types,
+                batch_n=len(batch),
+                symptom_rows=rows,
+            )
+            self._say(
+                sid,
+                "system",
+                {
+                    "text": (
+                        f"自动改第 {round_no} 轮：活清单还剩 {left} 处有手册可改"
+                        f"（本批 {len(batch)} 处{type_hint}）。"
+                        "交报告后会重跑检测，剩的再开一轮。"
+                    )
+                },
+            )
+            instr = fullbook_analyze_and_fix_instruction(
+                job_id=job_id,
+                page_count=page_count,
+                edition_id=edition_id,
+                escalate_pages=escalate_pages,
+                escalate_summary=escalate_summary,
+                open_pages=open_issue_pages(payload),
+                procedure_block=procedure_hints_instruction(payload),
+                symptom_block=symptom_hints_instruction(
+                    data, batch=batch, round_no=round_no, remaining_n=left
+                ),
+            )
+            fix_wall = max(
+                int(perms.budgets.run_timeout_s), min(int(page_count) * 20, 1800)
+            )
+            text = self._ask(sid, rt, instr, perms, run_timeout_s=fix_wall)
+            if text is None or rt.cancelled.is_set():
+                self.store.update_session(sid, payload=payload)
+                if rt.cancelled.is_set():
+                    self._status(sid, "cancelled")
+                return False
+            if self._fs_violation_stop(sid, snapshot):
+                self.store.update_session(sid, payload=payload)
+                return False
+            report = extract_qa_report(text)
+            if report:
+                apply_qa_report_to_payload(payload, report, batch=wait_ranges)
+                self.store.update_session(sid, payload=payload)
+
+        data = self._load_live_symptoms(client, job_id, refresh=True)
+        if autofix_may_finish(data):
+            payload["fullbook_autofix_done"] = True
+            self.store.update_session(sid, payload=payload)
+            self._sync_issues_from_last_report(sid)
+            self._emit_mineru_pipeline(
+                sid,
+                job_id,
+                pipeline_phase="close",
+                autofix_round=AUTOFIX_MAX_ROUNDS,
+                autofix_remaining=0,
+                autofix_done=True,
+                symptom_rows=symptom_rows_for_tick(data),
+            )
+            return True
+        self._park_autofix_leftovers(
+            sid,
+            payload,
+            remaining_actionable_findings(data),
+            wait_ranges,
+            reason=f"已跑满 {AUTOFIX_MAX_ROUNDS} 轮",
+        )
+        return True
+
+    def _load_live_symptoms(
+        self, client: BuddyApiClient, job_id: str, *, refresh: bool
+    ) -> dict[str, Any]:
+        try:
+            if refresh:
+                return client.refresh_job_symptoms(job_id)
+            return client.job_symptoms(job_id)
+        except Exception as exc:  # noqa: BLE001
+            log.info(
+                "fullbook symptoms %s failed job=%s: %s",
+                "refresh" if refresh else "get",
+                job_id,
+                exc,
+            )
+            if refresh:
+                try:
+                    return client.job_symptoms(job_id)
+                except Exception as exc2:  # noqa: BLE001
+                    log.info(
+                        "fullbook symptoms fallback failed job=%s: %s", job_id, exc2
+                    )
+            return {}
+
+    def _park_autofix_leftovers(
+        self,
+        sid: str,
+        payload: dict[str, Any],
+        leftover: list[dict[str, Any]],
+        wait_ranges: str,
+        *,
+        reason: str,
+    ) -> None:
+        issues = remaining_as_open_issues(leftover, batch=wait_ranges)
+        if issues:
+            payload["open_issues"] = merge_open_issues(payload, issues)
+        payload["fullbook_autofix_done"] = False
+        self.store.update_session(sid, payload=payload)
+        self._sync_issues_from_last_report(sid)
+        job_id = str(payload.get("import_job_id") or payload.get("job_id") or "")
+        if job_id:
+            self._emit_mineru_pipeline(
+                sid,
+                job_id,
+                pipeline_phase="parked",
+                autofix_remaining=len(leftover),
+                autofix_done=False,
+                park_reason=reason,
+                symptom_rows=symptom_rows_for_tick({"known": leftover, "unknown": []}),
+            )
+        self._say(
+            sid,
+            "system",
+            {
+                "text": (
+                    f"自动改未收口：还剩 {len(leftover)} 处有手册可改（{reason}）。"
+                    "点「继续」会按活清单再跑，不会把交报告当成全书改完。"
+                )
+            },
+        )
+        self._say_next_steps(sid)
+        self._status(sid, "awaiting_user")
+
+    def _mineru_fullbook_finalize_or_done(
+        self, sid: str, rt: SessionRuntime, perms: Permissions
+    ) -> None:
+        """账本 → finalize；否则直接 done。无手册的未知疑点不挡结束。"""
+        session = self.store.get_session(sid)
+        if not session:
+            self._status(sid, "failed")
+            return
+        payload = dict(session.get("payload") or {})
+        if (
+            has_layout_or_effective_ledger(payload)
+            and not payload.get("result_edition_id")
+            and not rt.cancelled.is_set()
+        ):
+            self._say(
+                sid,
+                "system",
+                {"text": "正在根据账本沉淀新排版方案草稿…"},
+            )
+            fin = self._ask(
+                sid,
+                rt,
+                "全书 MinerU 导入与自动修改已完成。请调用 edition.finalize_from_session"
+                "（会写入 layout_change_log），"
+                "然后输出最终报告 ```json（含 job_id、import_line=mineru、"
+                "result_edition_id）。",
+                perms,
+            )
+            if fin is None and not rt.cancelled.is_set():
+                self._say_next_steps(
+                    sid, preface="finalize 未完成，可点「生成新排版方案」重试。"
+                )
+                self._status(sid, "awaiting_user")
+                return
+            payload = dict((self.store.get_session(sid) or {}).get("payload") or payload)
+
+        self.store.update_session(sid, payload=payload)
+        leftover = open_issue_pages(payload)
+        leftover_hint = (
+            f" 仍有遗留页 {leftover}（可事后在对话里逐页优化）。"
+            if leftover
+            else ""
+        )
+        result_eid = str(payload.get("result_edition_id") or "").strip()
+        forked = bool(payload.get("result_edition_forked"))
+        if result_eid and forked:
+            edition_hint = f" 已新建方案草稿：`{result_eid}`。"
+        elif result_eid:
+            edition_hint = f" 关联方案草稿：`{result_eid}`（非本轮新建，请核对待审议）。"
+        else:
+            edition_hint = " 无新沉淀，沿用原方案。"
+        self._say_next_steps(
+            sid,
+            preface=(
+                f"MinerU 全书导入完成。job_id=`{payload.get('import_job_id')}`。"
+                + edition_hint
+                + leftover_hint
+            ),
+        )
+        self._say(
+            sid,
+            "result",
+            {
+                "ok": True,
+                "report": {
+                    "status": "done",
+                    "summary": "MinerU 全书导入完成",
+                    "job_id": payload.get("import_job_id"),
+                    "import_line": "mineru",
+                    "result_edition_id": payload.get("result_edition_id") or "",
+                    "leftover_pages": leftover,
+                },
+            },
+        )
+        self._status(sid, "done")
 
     def _full_book_preview_execution(
         self, sid: str, rt: SessionRuntime, perms: Permissions
@@ -1419,7 +1805,11 @@ class LoopEngine:
                 perms,
             )
         finally:
-            snapshot.cleanup()
+            # 预览外层快照：仅在停止时回退；成功收尾的挂起由 _execution_phase 负责
+            if rt.cancelled.is_set() or sid in self._cancelled:
+                self._discard_inflight_snapshot(sid, snapshot, reason="已停止")
+            else:
+                snapshot.cleanup()
 
     def _execution_phase(
         self,
@@ -1437,13 +1827,19 @@ class LoopEngine:
         soft_chat：续聊允许无 FinalReport JSON（纯问答也算 done）。
         """
         self._status(sid, "executing")
+        self._auto_keep_pending(sid)
         snapshot = self._new_snapshot(perms)
+        # cleanup | arm（成功挂起待用户确认）| cancel（停止并回退）
+        outcome = "cleanup"
         try:
             instruction = first_instruction
             while True:
                 report = self._run_round(sid, rt, instruction, perms, soft_chat=soft_chat)
                 if report is None:
-                    return  # 终止状态（cancelled/failed）由 _ask 内部置好，不在此覆盖
+                    # 终止状态（cancelled/failed）由 _ask 内部置好
+                    if rt.cancelled.is_set() or sid in self._cancelled:
+                        outcome = "cancel"
+                    return
 
                 if self._fs_violation_stop(sid, snapshot):
                     return
@@ -1469,6 +1865,7 @@ class LoopEngine:
                     self._say(sid, "result", {"ok": True, "report": report.model_dump()})
                     self._status(sid, "done")
                     self.store.audit(sid, "orchestrator", "session_done", report.model_dump())
+                    outcome = "arm"
                     return
                 if report.status == "failed":
                     self._say(sid, "system", {"text": self._rollback(snapshot, "任务失败")})
@@ -1476,18 +1873,32 @@ class LoopEngine:
                     self._status(sid, "failed")
                     return
 
-                # blocked：等用户输入后继续
+                # blocked：等用户输入后继续（快照保持，便于最终回退）
                 self._say(sid, "result", {"ok": False, "blocked": True, "report": report.model_dump()})
                 self._status(sid, "awaiting_user")
                 text = self._wait_user(rt)
                 if text is None:
                     self._status(sid, "cancelled")
+                    outcome = "cancel"
                     return
                 self._say(sid, "user", {"text": text})
                 self._status(sid, "executing")
                 instruction = text + "\n\n（请继续自主执行，收尾时按契约输出最终报告 JSON。）"
         finally:
-            snapshot.cleanup()
+            if outcome == "arm":
+                try:
+                    ok_files, _bad = snapshot.changed_since()
+                except Exception:  # noqa: BLE001
+                    ok_files = []
+                if ok_files:
+                    self._emit_pending_diff(sid, snapshot, ok_files)
+                    self._arm_checkpoint(sid, snapshot)
+                else:
+                    snapshot.cleanup()
+            elif outcome == "cancel":
+                self._discard_inflight_snapshot(sid, snapshot, reason="已停止")
+            else:
+                snapshot.cleanup()
 
     # ---------- 子流程 ----------
 
@@ -1497,6 +1908,8 @@ class LoopEngine:
         rt: SessionRuntime,
         prompt: str,
         perms: Permissions,
+        *,
+        run_timeout_s: int | None = None,
     ) -> str | None:
         """带预算护栏的一轮 send（自愈版）：
 
@@ -1513,7 +1926,9 @@ class LoopEngine:
         force = False
         for attempt in (1, 2):
             try:
-                return self._ask_once(sid, rt, prompt, perms, force=force)
+                return self._ask_once(
+                    sid, rt, prompt, perms, force=force, run_timeout_s=run_timeout_s
+                )
             except (_RoundHang, AgentRunError) as e:
                 # 空转挂死 / 桥接断连（RemoteProtocol、Connection refused…）都走同路径自愈
                 if isinstance(e, AgentRunError) and not _is_recoverable_agent_error(e):
@@ -1639,6 +2054,29 @@ class LoopEngine:
         apply_qa_report_to_payload(payload, report, batch=batch)
         self.store.update_session(sid, payload=payload)
 
+    def _layout_escalate_hint(self, job_id: str) -> str:
+        """Job meta 里低置信页清单 → Cursor SDK 升级入口文案。"""
+        if not job_id:
+            return ""
+        try:
+            job = BuddyApiClient(self.settings).get_import_job(job_id)
+        except Exception as exc:  # noqa: BLE001
+            log.info("layout escalate hint skipped job=%s: %s", job_id, exc)
+            return ""
+        meta = job.get("meta") if isinstance(job, dict) else None
+        if not isinstance(meta, dict):
+            return ""
+        pages = [int(p) for p in (meta.get("layout_escalate_pages") or []) if p]
+        if not pages:
+            return ""
+        head = ", ".join(str(p) for p in pages[:24])
+        more = f" …共 {len(pages)} 页" if len(pages) > 24 else f"（{len(pages)} 页）"
+        return (
+            f"低置信页待 Cursor 判定{more}：{head}。"
+            "请按 page-diagnosis 通道 0 优先处理；"
+            "默认改规则 YAML / patch_block，禁止 35B refine。"
+        )
+
     def _preview_progress_hint(self, sid: str) -> str:
         """全书预览断点文案（重连/失败时告诉用户卡在哪）。"""
         session = self.store.get_session(sid)
@@ -1654,18 +2092,12 @@ class LoopEngine:
         if done <= 0 and nxt <= 0 and page_count <= 0:
             return ""
         if done <= 0 and nxt <= 0:
-            return f"当前全书共 {page_count} 页，分段导入尚未写入断点。"
-        extra = f"；待办问题页 {open_n} 个" if open_n else ""
-        gate = int(payload.get("segment_gate_end") or 0)
-        if open_n and gate:
-            return (
-                f"MinerU 分段断点：已导入约 {done}/{page_count} 页"
-                f"（门闸停在 {nxt}–{gate}）{extra}。"
-            )
-        return (
-            f"MinerU 分段断点：已导入约 {done}/{page_count} 页"
-            f"（下一页 {max(nxt, done + 1)}）{extra}。"
-        )
+            return f"当前全书共 {page_count} 页，全书导入尚未写入断点。"
+        extra = f"；遗留问题页 {open_n} 个" if open_n else ""
+        if page_count > 0 and done >= page_count:
+            autofix = "；自动改已完成" if payload.get("fullbook_autofix_done") else ""
+            return f"MinerU 全书断点：已导入 {done}/{page_count} 页（全书已齐）{autofix}{extra}。"
+        return f"MinerU 全书断点：已导入约 {done}/{page_count} 页{extra}。"
 
     def _idle_seconds(self, sid: str, stream_ts: float) -> float:
         """距最近一次活动的秒数。活动 = 流式文本 / 新消息落库；
@@ -1689,6 +2121,7 @@ class LoopEngine:
         perms: Permissions,
         *,
         force: bool = False,
+        run_timeout_s: int | None = None,
     ) -> str | None:
         agent = self._agents[sid]
         chunks: list[str] = []
@@ -1721,11 +2154,13 @@ class LoopEngine:
             except Exception as e:  # noqa: BLE001
                 result["err"] = e
 
-        wall = perms.budgets.run_timeout_s or self.settings.agent_run_timeout
+        wall = run_timeout_s or perms.budgets.run_timeout_s or self.settings.agent_run_timeout
         idle_limit = perms.budgets.idle_timeout_s
         th = threading.Thread(target=target, daemon=True, name=f"copilot-ask-{sid}")
         started = time.time()
         last_heartbeat = started
+        paused = 0.0
+        pause_start: float | None = None
         th.start()
         while True:
             th.join(5)
@@ -1735,20 +2170,25 @@ class LoopEngine:
                 agent.cancel_current()  # 已限时
                 th.join(10)
                 break
-            elapsed = time.time() - started
-            # 第二轮及以后也要有可见心跳：每 45s 报一次仍在跑（挂了也能看到最后卡在哪）
+            if self.store.has_pending_approval(sid):
+                if pause_start is None:
+                    pause_start = time.time()
+            elif pause_start is not None:
+                paused += time.time() - pause_start
+                pause_start = None
+            elapsed = wall_elapsed(
+                started, now=time.time(), paused=paused, pause_start=pause_start
+            )
+            # 心跳只打服务端日志，不写入对话气泡（文案易陈旧/张冠李戴，干扰阅读）
             if time.time() - last_heartbeat >= 45:
                 idle = self._idle_seconds(sid, activity["ts"])
                 hint = self._preview_progress_hint(sid)
-                self._say(
+                log.info(
+                    "copilot run heartbeat sid=%s elapsed=%ss idle=%ss %s",
                     sid,
-                    "system",
-                    {
-                        "text": (
-                            f"⏳ Run 仍在进行（已 {int(elapsed)}s，距上次活动约 {int(idle)}s）。"
-                            + (hint if hint else "等待 Agent 工具/文本输出…")
-                        )
-                    },
+                    int(elapsed),
+                    int(idle),
+                    hint or "waiting agent output",
                 )
                 last_heartbeat = time.time()
             if elapsed > wall:
@@ -1958,15 +2398,179 @@ class LoopEngine:
             perms.forbidden,
             perms.guarded_roots,
             perms.backup_suffixes,
+            perms.gated_subpaths,
         )
         snapshot.backup_guarded()
         return snapshot
 
+    def _auto_keep_pending(self, sid: str) -> None:
+        """续跑前：上一轮待确认改动视为用户已接受（继续对话 = 保留）。"""
+        with self._lock:
+            snap = self._checkpoints.pop(sid, None)
+        if snap is None:
+            return
+        try:
+            snap.cleanup()
+        except Exception:  # noqa: BLE001
+            log.exception("auto-keep cleanup failed sid=%s", sid)
+        self._say(
+            sid,
+            "system",
+            {"text": "继续对话：上一轮文件改动已自动保留。"},
+        )
+        self._say(sid, "diff_resolved", {"action": "keep", "auto": True})
+        self.store.audit(sid, "orchestrator", "fs_auto_keep", {})
+
+    def _arm_checkpoint(self, sid: str, snapshot: WorktreeSnapshot) -> None:
+        """挂起快照，等待用户保留/放弃（勿 cleanup）。"""
+        with self._lock:
+            old = self._checkpoints.pop(sid, None)
+            self._checkpoints[sid] = snapshot
+        if old is not None:
+            try:
+                old.cleanup()
+            except Exception:  # noqa: BLE001
+                log.exception("replace checkpoint cleanup failed sid=%s", sid)
+
+    def _emit_pending_diff(self, sid: str, snapshot: WorktreeSnapshot, files: list[str]) -> None:
+        """可操作的 diff 卡：保留 / 放弃并回退。"""
+        try:
+            patch = snapshot.diff_patch(files[:20])
+        except Exception:  # noqa: BLE001
+            log.warning("diff_patch failed", exc_info=True)
+            patch = ""
+        try:
+            stat = snapshot.diff_stat(files)[:2000]
+        except Exception:  # noqa: BLE001
+            stat = ""
+        self._say(
+            sid,
+            "diff",
+            {
+                "files": files[:20],
+                "stat": stat,
+                "patch": patch,
+                "pending": True,
+                "hint": "类似 Cursor：可保留本轮改动，或回退到本轮执行前的版本",
+            },
+        )
+
+    def _release_checkpoint(
+        self, sid: str, *, discard: bool, reason: str = ""
+    ) -> dict[str, Any]:
+        with self._lock:
+            snap = self._checkpoints.pop(sid, None)
+        if snap is None:
+            return {
+                "ok": False,
+                "error": "没有待确认的文件改动",
+                "action": "discard" if discard else "keep",
+                "restored": [],
+                "failed": [],
+            }
+        restored: list[str] = []
+        failed: list[str] = []
+        try:
+            if discard:
+                try:
+                    ok, bad = snap.changed_since()
+                except Exception:  # noqa: BLE001
+                    ok, bad = [], []
+                files = ok + bad
+                if files:
+                    r1, f1 = snap.rollback_all_violations(files)
+                    restored.extend(r1)
+                    failed.extend(f1)
+                r2, f2 = snap.rollback_whitelist()
+                restored.extend(r2)
+                failed.extend(f2)
+                text = f"已放弃改动并回退到本轮执行前（{len(restored)} 处）。"
+                if reason:
+                    text = f"{reason}：{text}"
+            else:
+                text = "已保留本轮文件改动。"
+                if reason:
+                    text = f"{text}（{reason}）"
+            self._say(sid, "system", {"text": text})
+            self._say(
+                sid,
+                "diff_resolved",
+                {
+                    "action": "discard" if discard else "keep",
+                    "restored": restored[:40],
+                    "failed": failed[:10],
+                    "reason": reason,
+                },
+            )
+            self.store.audit(
+                sid,
+                "user" if reason != "用户停止会话" else "user",
+                "fs_discard" if discard else "fs_keep",
+                {"restored": len(restored), "failed": len(failed), "reason": reason},
+            )
+            return {
+                "ok": True,
+                "action": "discard" if discard else "keep",
+                "restored": restored,
+                "failed": failed,
+            }
+        finally:
+            try:
+                snap.cleanup()
+            except Exception:  # noqa: BLE001
+                log.exception("checkpoint cleanup failed sid=%s", sid)
+
+    def _discard_inflight_snapshot(
+        self, sid: str, snapshot: WorktreeSnapshot, *, reason: str
+    ) -> None:
+        """执行中取消：从内存快照回退，不经过 _checkpoints。"""
+        try:
+            ok, bad = snapshot.changed_since()
+        except Exception:  # noqa: BLE001
+            ok, bad = [], []
+        files = ok + bad
+        restored: list[str] = []
+        failed: list[str] = []
+        if files:
+            restored, failed = snapshot.rollback_all_violations(files)
+        r2, f2 = snapshot.rollback_whitelist()
+        restored.extend(r2)
+        failed.extend(f2)
+        if restored or failed or files:
+            self._say(
+                sid,
+                "system",
+                {"text": f"{reason}：已回退文件改动（{len(restored)} 处）。"},
+            )
+            self._say(
+                sid,
+                "diff_resolved",
+                {
+                    "action": "discard",
+                    "reason": reason,
+                    "restored": restored[:40],
+                    "failed": failed[:10],
+                },
+            )
+        try:
+            snapshot.cleanup()
+        except Exception:  # noqa: BLE001
+            log.exception("inflight discard cleanup failed sid=%s", sid)
+
     def _fs_violation_stop(self, sid: str, snapshot: WorktreeSnapshot) -> bool:
         """每轮/每批查一次越权改动：命中即回滚并终止会话。返回 True 表示已终止。"""
-        violation = self._fs_check(sid, snapshot)
+        violation, bad_paths = self._fs_check(sid, snapshot)
         if not violation:
             return False
+        # 回滚前已记下路径：落入方案「越权」待审议，便于后期集中改 Pipeline
+        self._record_authority_item(
+            sid,
+            authority="pipeline",
+            summary="检测到越权文件改动（已回滚）",
+            paths=bad_paths,
+            mode="fs_violation",
+            detail=violation[:800],
+        )
         self._say(sid, "system", {"text": violation})
         self._say(
             sid,
@@ -1976,25 +2580,265 @@ class LoopEngine:
         self._status(sid, "failed")
         return True
 
-    def _fs_check(self, sid: str, snapshot: WorktreeSnapshot) -> str | None:
-        """终检：白名单外改动，或有改动但从未获批 fs.request_edit → 全部回滚。
+    def _record_authority_item(
+        self,
+        sid: str,
+        *,
+        authority: str,
+        summary: str,
+        paths: list[str] | None = None,
+        mode: str = "",
+        detail: str = "",
+    ) -> None:
+        """把改动记入会话账本；若有绑定方案则 enqueue 待审议（带 authority）。"""
+        from .authority import authority_label, classify_authority, stamp_authority
+        from .segment_state import append_effective_change
 
-        返回违规说明（None = 通过）。
+        auth = classify_authority(
+            mode=mode, paths=paths, explicit=authority
+        )
+        sess = self.store.get_session(sid) or {}
+        pl = dict(sess.get("payload") or {})
+        edition_id = str(
+            pl.get("result_edition_id")
+            or pl.get("edition_id")
+            or pl.get("source_edition_id")
+            or ""
+        ).strip()
+        entry = stamp_authority(
+            {
+                "summary": summary,
+                "paths": list(paths or [])[:20],
+                "mode": mode,
+                "detail": (detail or "")[:800],
+                "proposer": "system",
+                "authority": auth,
+            }
+        )
+        # Upstream cause: user request → AI actions (not just the guard effect)
+        chain: dict = {}
+        if mode == "fs_violation" or auth == "pipeline":
+            try:
+                from .causal_trace import trace_fs_violation
+
+                chain = trace_fs_violation(
+                    self.store.get_messages(sid),
+                    paths=list(paths or []),
+                    detail=detail or "",
+                )
+                if chain.get("user_input"):
+                    # Keep full user text — do not truncate dialogue
+                    entry["user_input"] = str(chain["user_input"])
+                # Page comes from user「聚焦目标」dialogue — never invent p0 for a page chat
+                if int(chain.get("page_no") or 0) > 0:
+                    entry["page"] = int(chain["page_no"])
+                entry["causal_chain"] = {
+                    "user_requests": [str(x) for x in (chain.get("user_requests") or [])],
+                    "ai_summary": str(chain.get("ai_summary") or "")[:1500],
+                    "ai_tools": list(chain.get("ai_tools") or [])[:12],
+                    "narrative": str(chain.get("narrative") or "")[:2500],
+                    "guard_seq": int(chain.get("guard_seq") or 0),
+                    "page_no": int(chain.get("page_no") or 0),
+                    "block_id": str(chain.get("block_id") or ""),
+                    "job_id": str(chain.get("job_id") or ""),
+                    "dialogue_slot": str(chain.get("dialogue_slot") or ""),
+                    "user_input_display": str(chain.get("user_input_display") or ""),
+                }
+            except Exception:  # noqa: BLE001
+                log.exception("causal_trace failed sid=%s", sid)
+                chain = {}
+        pl["effective_changes"] = append_effective_change(pl, entry)
+        self.store.update_session(sid, payload=pl)
+
+        if not edition_id:
+            self._say(
+                sid,
+                "system",
+                {
+                    "text": (
+                        f"已标注为「{authority_label(auth)}」，但会话未绑定方案，"
+                        "未能写入待审议队列。"
+                    )
+                },
+            )
+            return
+        try:
+            client = BuddyApiClient(self.settings)
+            import time as _time
+
+            page_no = int(entry.get("page") or chain.get("page_no") or 0)
+            block_id = str(chain.get("block_id") or "")
+            job_id = str(
+                chain.get("job_id")
+                or pl.get("import_job_id")
+                or pl.get("job_id")
+                or ""
+            ).strip()
+            cand = {
+                "id": f"ai.{auth}.{int(_time.time()) % 10_000_000}",
+                "facet": "content_correct" if auth == "pipeline" else "layout_rebuild",
+                "severity": "should",
+                "statement": (summary + (" | " + detail if detail else ""))[:500],
+                "authority": auth,
+                "mode": mode,
+                "paths": list(paths or [])[:20],
+                "page": page_no,
+                "page_no": page_no,
+                "block_ids": [block_id] if block_id else [],
+                "user_input": entry.get("user_input") or "",
+                "causal_chain": entry.get("causal_chain") or {},
+                "tags": [f"authority:{auth}", authority_label(auth), "ai_change"],
+            }
+            out = client.enqueue_correction(
+                edition_id, cand, source="ai_authority", source_ref=sid[:16]
+            )
+            # One dialogue → one improvement point, page from user focus
+            if mode == "fs_violation" and job_id:
+                try:
+                    dlg_slot = str(
+                        chain.get("dialogue_slot")
+                        or f"fs:{int(chain.get('guard_seq') or _time.time())}"
+                    )
+                    client.ip_confirm(
+                        {
+                            "job_id": job_id,
+                            "session_id": sid,
+                            "page_no": page_no,
+                            "summary": summary,
+                            "authority": auth,
+                            "kind": mode or "fs_violation",
+                            "block_ids": [block_id] if block_id else [],
+                            "slot": dlg_slot,
+                            "procedure": {
+                                "steps": [
+                                    {
+                                        "tool": mode or "fs_guard",
+                                        "args_summary": (detail or summary)[:300],
+                                    }
+                                ],
+                                "verify": "fs_guard_rollback",
+                            },
+                            "concrete": {
+                                "origin": "pipeline_event",
+                                "scope": "page" if page_no else "session",
+                                "page_no": page_no,
+                                "block_id": block_id,
+                                "paths": list(paths or [])[:20],
+                                "detail": (detail or "")[:2000],
+                                "mode": mode,
+                                "proposer": "system",
+                                "user_input": entry.get("user_input") or "",
+                                "causal_chain": entry.get("causal_chain") or {},
+                            },
+                            "write_correction": False,
+                            "origin": "pipeline_event",
+                        }
+                    )
+                except Exception:  # noqa: BLE001
+                    log.exception("ip_confirm after fs_violation failed sid=%s", sid)
+            corr = str(out.get("id") or "")[:8]
+            self._say(
+                sid,
+                "system",
+                {
+                    "text": (
+                        f"已记入方案 `{edition_id}` 待审议（{authority_label(auth)}"
+                        + (f"；{corr}…" if corr else "")
+                        + "）。"
+                    ),
+                    "actions": [
+                        {
+                            "id": "open_corrections",
+                            "label": "打开待审议",
+                            "send": f"__ui:open_corrections:{edition_id}",
+                        }
+                    ],
+                },
+            )
+        except Exception:  # noqa: BLE001
+            log.exception("enqueue authority correction failed sid=%s", sid)
+
+    def _approved_edit_paths(self, sid: str) -> list[str]:
+        """本会话已获批的写盘路径清单（去重、保序）。
+
+        两张批准卡都算：``fs.request_edit`` 管声明文件，
+        ``vocab.request_plugin_edit`` 管 vocab_ext/ 下会被执行的受限 Python。
+        后者是唯一能让 ``covered_by_approval`` 放行 gated 子路径的入口。
         """
+        paths: list[str] = []
+        for tool in ("fs.request_edit", "vocab.request_plugin_edit", "tool_write_scope"):
+            for a in self.store.list_approvals(sid, tool):
+                if a["status"] != "approved":
+                    continue
+                action = a.get("action") or {}
+                scope = action.get("scope_paths")
+                if isinstance(scope, list):
+                    paths.extend(str(p) for p in scope)
+                    continue
+                # 旧会话没有 scope_paths：退回解析 args 摘要里的 paths 字面量。
+                raw = str((action.get("args") or {}).get("paths") or "")
+                if raw and not raw.endswith("…"):
+                    try:
+                        parsed = ast.literal_eval(raw)
+                    except (ValueError, SyntaxError):
+                        parsed = None
+                    if isinstance(parsed, (list, tuple)):
+                        paths.extend(str(p) for p in parsed)
+        return list(dict.fromkeys(paths))
+
+    def _fs_check(self, sid: str, snapshot: WorktreeSnapshot) -> tuple[str | None, list[str]]:
+        """终检：白名单外改动、未获批改动、超出爆炸半径的改动 → 回滚。
+
+        批准按路径求交，不按会话整体放行：批了一个 prompt 模板不等于整个白名单
+        开闸，这是「越权」最常见的入口。CSS/HTML 等前台显示资产
+        （permissions.yaml auto_allow_suffixes）在白名单内免闸门。
+        返回 (违规说明 | None, 相关路径)。
+        """
+        from .authority import classify_authority
+        from .tools.fs_guard import covered_by_approval, is_auto_allowed
+
         ok_files, bad_files = snapshot.changed_since()
-        approved_edits = [
-            a
-            for a in self.store.list_approvals(sid, "fs.request_edit")
-            if a["status"] == "approved"
+        perms = load_permissions(self.settings.agent_env_dir)
+        auto_files = [
+            f
+            for f in ok_files
+            if is_auto_allowed(
+                f,
+                perms.write_whitelist,
+                perms.forbidden,
+                perms.auto_allow_suffixes,
+                perms.gated_subpaths,
+            )
+        ]
+        gated_files = [f for f in ok_files if f not in auto_files]
+        approved_paths = self._approved_edit_paths(sid)
+        unapproved = [
+            f
+            for f in gated_files
+            if not covered_by_approval(f, approved_paths, perms.gated_subpaths)
         ]
         violation_files = list(bad_files)
         labels = list(bad_files)
-        if ok_files and not approved_edits:
-            violation_files += ok_files
-            labels += [f"{f}（未经 fs.request_edit 批准）" for f in ok_files]
+        if unapproved:
+            violation_files += unapproved
+            scope_hint = "、".join(approved_paths[:5]) or "（本会话尚无获批路径）"
+            labels += [
+                f"{f}（不在已批准范围内；已批准：{scope_hint}）" for f in unapproved
+            ]
+
+        blast = self._blast_radius_violation(snapshot, ok_files, perms)
+        if blast and not violation_files:
+            violation_files = list(ok_files)
+            labels = [blast]
+        elif blast:
+            labels.append(blast)
+
         if violation_files:
             msg = "fs_guard 查到越权文件改动：\n- " + "\n- ".join(labels[:20])
-            return msg + "\n" + self._rollback_violations(snapshot, violation_files)
+            return (
+                msg + "\n" + self._rollback_violations(snapshot, violation_files),
+                list(dict.fromkeys(violation_files)),
+            )
         if ok_files:
             # diff 卡：文件清单 + 补丁摘要，前端渲染为可折叠 diff 视图
             try:
@@ -2005,8 +2849,44 @@ class LoopEngine:
             self._say(
                 sid,
                 "diff",
-                {"files": ok_files[:20], "stat": snapshot.diff_stat()[:2000], "patch": patch},
+                {"files": ok_files[:20], "stat": snapshot.diff_stat(ok_files[:20])[:2000], "patch": patch},
             )
+            # 获批的核心代码改动 → 标为「越权」落入待审议，便于后期集中改 Pipeline
+            pipeline_files = [
+                f
+                for f in ok_files
+                if classify_authority(paths=[f], mode="fs_edit") == "pipeline"
+            ]
+            if pipeline_files:
+                self._record_authority_item(
+                    sid,
+                    authority="pipeline",
+                    summary="已批准的 Pipeline 核心代码改动",
+                    paths=pipeline_files,
+                    mode="fs_edit",
+                )
+        return None, []
+
+    def _blast_radius_violation(
+        self,
+        snapshot: WorktreeSnapshot,
+        files: list[str],
+        perms: Permissions,
+    ) -> str | None:
+        """一轮改动面是否超出预算。超限说明 Agent 在大范围重写，不是在修一处。"""
+        max_files = perms.budgets.max_changed_files
+        if max_files and len(files) > max_files:
+            return f"改动面超限：本轮改了 {len(files)} 个文件（上限 {max_files}）"
+        max_lines = perms.budgets.max_changed_lines
+        if not max_lines:
+            return None
+        try:
+            lines = snapshot.changed_line_count(files)
+        except Exception:  # noqa: BLE001 - 统计失败不该顶替真实违规判定
+            log.warning("changed_line_count failed", exc_info=True)
+            return None
+        if lines > max_lines:
+            return f"改动面超限：本轮改了 {lines} 行（上限 {max_lines}）"
         return None
 
     def _rollback_violations(self, snapshot: WorktreeSnapshot, files: list[str]) -> str:

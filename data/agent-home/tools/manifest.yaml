@@ -1,0 +1,10 @@
+tools:
+- id: search_md
+  path: search_md.py
+  description: 在 textbooks/ 下按关键词搜索 Markdown 文件
+- id: open_pdf_page
+  path: open_pdf_page.py
+  description: 按路径或书名定位原版 PDF，并给出要打开的页码
+- id: clear_traces
+  path: clear_traces.py
+  description: 清空工作区 traces/ 目录下所有轨迹文件

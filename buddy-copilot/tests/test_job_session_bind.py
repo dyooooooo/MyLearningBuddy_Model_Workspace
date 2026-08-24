@@ -38,7 +38,7 @@ def test_list_filter_by_job():
         store = Store(Path(td) / "t.db")
         store.create_session("import_advice", {"import_job_id": "j1"})
         store.create_session("import_advice", {"import_job_id": "j2"})
-        store.create_session("page_assist", {"job_id": "j1"})
+        store.create_session("import_advice", {"job_id": "j1"})
         only = store.list_sessions(import_job_id="j1")
         assert len(only) == 2
         assert all(r["import_job_id"] == "j1" for r in only)

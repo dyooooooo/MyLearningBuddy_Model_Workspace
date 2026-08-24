@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from app.services.document_ir import DocumentBlock, blocks_for_page
+from app.services.document_ir import DocumentBlock, blocks_for_page, render_page_markdown
 from app.services.import_blocks_service import patch_job_block, replace_page_blocks
 
 
@@ -39,6 +39,17 @@ def test_blocks_for_page_sorts_by_order_not_storage():
     page = blocks_for_page(blocks, 6)
     assert [b.id for b in page] == ["toc_title", "b2", "b3"]
     assert [b.order for b in page] == [1, 2, 3]
+
+
+def test_rendered_page_follows_order_after_a_single_block_patch():
+    """改一个块的 order 就要改渲染顺序——补丁只写字段，不动存储数组位置。"""
+    blocks = [_block(1, order=1), _block(2, order=2), _block(3, order=3)]
+    moved = blocks[0].model_copy(update={"order": 9, "meta": {"reading_order": 9}})
+    patched = [moved] + blocks[1:]
+
+    assert [b.id for b in blocks_for_page(patched, 1)] == ["b2", "b3", "b1"]
+    md = render_page_markdown(patched, 1)
+    assert md.index("t2") < md.index("t3") < md.index("t1")
 
 
 def test_patch_job_block_accepts_order():

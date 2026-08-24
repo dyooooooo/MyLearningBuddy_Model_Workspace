@@ -260,15 +260,21 @@ def cancel_active_imports_for_subtree(session: Session, ids: list[str]) -> list[
     return canceled
 
 
-def delete_import_job(session: Session, job_id: str) -> dict:
+def delete_import_job(session: Session, job_id: str, *, force: bool = False) -> dict:
     """Hard-delete an import job row and stop any in-flight worker for it.
 
     Always sets the Redis cancel flag *before* deleting the row, and leaves that
     flag in place (TTL) so a busy worker can still see it. Do **not** clear the
     cancel key here — the worker clears it in its ``finally`` after aborting.
     """
+    from app.clients.minio_client import delete_objects_by_prefix
     from app.clients.redis_client import purge_import_queue
     from app.services import pipeline_telemetry
+    from app.services.corpus_finalize import (
+        is_finalized,
+        owned_minio_prefix,
+        prefix_still_in_use,
+    )
 
     job = session.get(CorpusImportJob, job_id)
     if job is None:
@@ -277,32 +283,44 @@ def delete_import_job(session: Session, job_id: str) -> dict:
         purge_import_queue(job_id)
         return {"job_id": job_id, "deleted": False, "reason": "not_found"}
 
+    if is_finalized(job) and not force:
+        raise ValueError("这本书已定稿，是该教材唯一保留版本；要删请先撤销定稿（unfinalize）")
+
     was_active = job.status in ACTIVE_IMPORT_STATUSES
     # Always cancel first — worker may still be finishing after status drift.
     pipeline_telemetry.request_cancel(job_id)
     queue_removed = purge_import_queue(job_id)
 
+    prefix = owned_minio_prefix(job)
     session.delete(job)
     session.flush()
     session.commit()
 
+    objects_removed = 0
+    if prefix and not prefix_still_in_use(session, prefix, exclude_job_id=job_id):
+        objects_removed = delete_objects_by_prefix(prefix)
+
     # Keep cancel flag; only clear live telemetry so the dashboard drops the card.
     pipeline_telemetry.clear_job_live(job_id)
     logger.info(
-        "import job deleted id=%s was_active=%s queue_removed=%d",
+        "import job deleted id=%s was_active=%s queue_removed=%d objects_removed=%d",
         job_id,
         was_active,
         queue_removed,
+        objects_removed,
     )
     return {
         "job_id": job_id,
         "deleted": True,
         "was_active": was_active,
         "queue_removed": queue_removed,
+        "objects_removed": objects_removed,
     }
 
 
-def delete_node(session: Session, node_id: str, *, cascade: bool = False) -> dict:
+def delete_node(
+    session: Session, node_id: str, *, cascade: bool = False, force: bool = False
+) -> dict:
     import time as _time
 
     from sqlalchemy import text as _text
@@ -328,6 +346,16 @@ def delete_node(session: Session, node_id: str, *, cascade: bool = False) -> dic
         if child_edges > 0:
             raise ValueError("节点含子节点，请勾选「连同子树删除」或先删子节点")
         ids = [node_id]
+
+    if not force:
+        from app.services.corpus_finalize import finalized_job_for_node
+
+        locked = finalized_job_for_node(session, ids)
+        if locked is not None:
+            raise ValueError(
+                f"教材已定稿（导入任务 {locked.id[:8]}），是唯一保留版本；"
+                "要删请先撤销定稿（unfinalize）"
+            )
 
     # Stop any import worker still writing into this subtree so its row locks
     # release; otherwise the batch DELETE below blocks and the UI times out.
@@ -443,53 +471,15 @@ def import_pdf_start(session: Session, body: ImportPdfRequest) -> ImportJobOut:
         page_limit=body.page_limit,
         page_ranges=body.page_ranges,
         edition_id=body.edition_id,
+        inherit_from_job_id=body.inherit_from_job_id,
     )
     logger.info(
-        "import pdf queued id=%s label=%r minio_key=%s",
+        "import pdf queued id=%s label=%r minio_key=%s inherit_from=%s",
         job.id,
         job.label,
         job.minio_key,
+        body.inherit_from_job_id or "-",
     )
-    return _job_out(job, session)
-
-
-class ImportJobConflictError(RuntimeError):
-    """Extend rejected: the job is running or already has a pending extend."""
-
-
-def import_job_extend(session: Session, job_id: str, page_ranges: str) -> ImportJobOut:
-    """Queue MinerU segment append on an existing job (AI 分段导入)."""
-    from app.util.json_util import dumps, loads
-
-    job = session.get(CorpusImportJob, job_id)
-    if job is None:
-        raise ValueError(f"import job not found: {job_id}")
-    pr = (page_ranges or "").strip()
-    if not pr:
-        raise ValueError("page_ranges is required")
-    if job.status in ("canceled",):
-        raise ValueError(f"cannot extend job in status={job.status}")
-    meta = loads(job.meta_json, {})
-    if job.status in ACTIVE_IMPORT_STATUSES:
-        raise ImportJobConflictError(
-            f"job is running (status={job.status}); wait for it to finish before extending"
-        )
-    pending = str(meta.get("pending_page_ranges") or "").strip()
-    if pending:
-        raise ImportJobConflictError(
-            f"job already has a pending extend page_ranges={pending!r}; refusing to overwrite it"
-        )
-    # Record the real status so worker logs can show it after we reset below.
-    meta["prev_status"] = job.status
-    meta["pending_page_ranges"] = pr
-    meta["extend_mode"] = True
-    job.meta_json = dumps(meta)
-    # Allow worker to pick up even if previously chunked/parsed
-    job.status = "uploaded"
-    job.error = ""
-    job.updated_at = datetime.now(timezone.utc).isoformat()
-    session.flush()
-    logger.info("import extend queued id=%s page_ranges=%s", job_id, pr)
     return _job_out(job, session)
 
 

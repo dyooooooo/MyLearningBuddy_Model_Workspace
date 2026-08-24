@@ -15,6 +15,11 @@ import threading
 from pathlib import Path
 from typing import Callable
 
+# 必须在 import cursor_sdk 使用 Bridge 之前打补丁（token 以 '-' 开头会炸桥）
+from .sdk_patches import apply_cursor_sdk_patches
+
+apply_cursor_sdk_patches()
+
 from cursor_sdk import (
     Agent,
     AgentOptions,

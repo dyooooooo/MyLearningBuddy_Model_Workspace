@@ -1,0 +1,10 @@
+textbooks/
+.cursor/projects/
+logs/
+.title-scratch/
+surfaces/.last-good/
+node_modules/
+.checkpoints.git/
+__pycache__/
+.venv_tmp/
+*.libs/

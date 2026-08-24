@@ -1,0 +1,27 @@
+suspect_type: ASIDE_FIGURE_MISPLACED_IN_MAIN
+title: 右侧旁注图被判进主栏
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_main_figure and width_ratio <= 0.38
+    and rel_x0 >= 0.55 and page_aside_count >= 0
+  min_hits: 1
+
+evidence: [type, zone, width_ratio, rel_x0, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L1.layout_rule
+  # 侧栏图误判进正文：靠归属区 + 横向位置与宽度定位
+  locate_by: [zone, rel_x0, width_ratio, text_preview]
+  playbook: |
+    1. 确认窄 figure 偏右，实质是 aside_right 插图/装饰，不是主栏插图。
+    2. 写 page override 或 edition layout_rules 判 zone=aside_right；伴生注释放回侧栏。
+    3. rebuild_ir 后核对主栏不再插入该图。
+
+examples:
+  positive: [configs/checks/fixtures/aside_figure_misplaced_in_main_pos.json]
+  negative: [configs/checks/fixtures/aside_figure_misplaced_in_main_neg.json]

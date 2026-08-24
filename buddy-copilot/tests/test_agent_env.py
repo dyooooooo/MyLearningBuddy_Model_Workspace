@@ -21,12 +21,11 @@ def test_required_agent_env_files():
         "pinning.yaml",
         "permissions.yaml",
         "rules/00-copilot-core.md",
+        "rules/40-layout-rules-first.md",
         "skills/edition-tuning.md",
         "skills/page-diagnosis.md",
-        "skills/verify-loop.md",
         "context/editions.md",
         "context/import-pipeline.md",
-        "context/reprocess.md",
     ):
         assert (env / rel).is_file(), rel
 
@@ -38,11 +37,12 @@ def test_resource_paths_not_stale():
 
 def test_context_pack_injects_rules_skills_map():
     s = get_settings()
-    pack = build_context_pack(s.agent_env_dir, "page_assist", "TASK")
+    pack = build_context_pack(s.agent_env_dir, "import_advice", "TASK")
     assert "最终报告" in pack  # 自主执行收尾契约
     assert "fs.request_edit" in pack  # 文件修改协议
     assert "资源地图" in pack
-    assert "分诊" in pack or "page-diagnosis" in load_skills(s.agent_env_dir, "page_assist")
+    skills = load_skills(s.agent_env_dir, "import_advice")
+    assert "page-diagnosis" in skills or "坏页" in skills
     assert "TASK" in pack
     assert "双线隔离" in load_rules(s.agent_env_dir)
 
@@ -67,14 +67,14 @@ def test_pinning_tools_match_permissions():
 
 def test_mcp_server_config_pinned_with_session_injection():
     s = get_settings()
-    servers = build_mcp_servers(s, session_id="sid-1", kind="page_assist")
+    servers = build_mcp_servers(s, session_id="sid-1", kind="import_advice")
     assert "buddy-copilot" in servers
     cfg = servers["buddy-copilot"]
     assert "-m" in (cfg.args or [])
     assert "app.mcp_server" in (cfg.args or [])
     env = cfg.env or {}
     assert env.get("COPILOT_SESSION_ID") == "sid-1"
-    assert env.get("COPILOT_SESSION_KIND") == "page_assist"
+    assert env.get("COPILOT_SESSION_KIND") == "import_advice"
     assert "ADMIN_TOKEN" in env
 
 

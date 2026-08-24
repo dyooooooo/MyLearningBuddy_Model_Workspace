@@ -64,6 +64,19 @@ def rag_validate(state: GraphState, session: Session) -> GraphState:
 
 def eval_agent_node(state: GraphState, session: Session) -> GraphState:
     """Eval is critical — run even if rag_validate marked state failed."""
+    from app.services.textbook_eval import enqueue_homework_for_eval, textbook_eval_enabled
+
+    if textbook_eval_enabled():
+        n = enqueue_homework_for_eval(
+            session,
+            student_id=state["student_id"],
+            homework_id=state["homework_id"],
+            subject=state["subject"],
+            grade_band=state["grade_band"],
+        )
+        steps = list(state.get("steps") or [])
+        steps.append(_step("eval_agent", f"textbook_enqueued={n}"))
+        return {**state, "status": "running", "steps": steps}
     stats: dict = {}
     n = run_eval_on_homework(
         session,

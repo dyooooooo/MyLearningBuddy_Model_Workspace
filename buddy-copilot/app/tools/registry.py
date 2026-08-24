@@ -47,6 +47,10 @@ class ToolSpec:
     title: str                      # 展示文案（step 行 / 批准卡标题）
     fn: Callable[..., Any]          # handler（闭包持有 ToolContext）
     description: str = ""           # MCP 工具描述（缺省取 fn.__doc__）
+    # 闸门前的只读自检：入参 → 附加参数键，并进批准卡的「参数」块。
+    # 给「批的东西人眼看不出对不对」的闸门用（例如词插件的正反例结果），
+    # 让人不必盲签。只在 tier=gated 时调用，抛异常不阻断闸门。
+    preflight: Callable[[dict[str, Any]], dict[str, Any]] | None = None
 
     @property
     def mcp_name(self) -> str:

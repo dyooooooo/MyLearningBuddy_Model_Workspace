@@ -1,26 +1,41 @@
 import { store } from "../state/store";
 import { el } from "../util/dom";
-import { describeImportJob, getActiveImportJobId } from "../services/importProgress";
+import {
+  describeImportJob,
+  getActiveImportJobId,
+  IMPORT_JOB_TERMINAL,
+} from "../services/importProgress";
 
 let bannerEl: HTMLElement | null = null;
 
 export function mountImportBanner(container: HTMLElement): void {
   store.subscribeSelector(
-    (s) => s.activeImportJob,
+    (s) => `${s.activeImportJob?.id || ""}|${s.activeImportJob?.status || ""}|${s.activeRibbon}`,
     () => render(container),
   );
   document.addEventListener("studio:import-progress", () => render(container));
 }
 
-function render(container: HTMLElement): void {
+/** 横幅只表示「还在跑」：终态（chunked/done/…）或离开导入区时不显示。 */
+function shouldShowBanner(): boolean {
   const job = store.activeImportJob;
-  const polling = getActiveImportJobId();
-  if (!job && !polling) {
+  // 终态优先：打开已完成任务时 observer 可能尚未把 activeJobId 清掉，
+  // 不能因为「还在轮询」就把横幅钉死。
+  if (job && IMPORT_JOB_TERMINAL.has(String(job.status || ""))) return false;
+  // 非导入 Ribbon 时不打扰（改进点 / 方案 / 教材等）
+  if (store.activeRibbon !== "import") return false;
+  if (getActiveImportJobId()) return true;
+  return !!job;
+}
+
+function render(container: HTMLElement): void {
+  if (!shouldShowBanner()) {
     bannerEl?.remove();
     bannerEl = null;
     return;
   }
 
+  const job = store.activeImportJob;
   if (!bannerEl) {
     bannerEl = el("div", "import-banner");
     container.prepend(bannerEl);

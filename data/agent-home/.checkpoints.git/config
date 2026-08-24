@@ -1,0 +1,9 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	worktree = /data/agent
+[user]
+	email = textbook-agent@local
+	name = textbook-agent

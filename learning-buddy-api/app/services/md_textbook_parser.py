@@ -13,12 +13,7 @@ from app.services.corpus_locale import is_english_subject
 _HEADING_MD_RE = re.compile(r"^(#{1,4})\s+(.+)$")
 _CHAPTER_RE = re.compile(r"^第[０-９0-9一二三四五六七八九十百千]+章\s*.+")
 _LESSON_RE = re.compile(r"^[０-９0-9]+[\.．][０-９0-9]+\s+\S")
-_EXAMPLE_RE = re.compile(r"^(例\s*[０-９0-9]+|复习题|内容提要|犃组|B组|A组)")
-_TABLE_ROW_RE = re.compile(r"^\|.+\|$")
 _COVER_NOISE_RE = re.compile(r"定价|易文网|ISBN|版权所有|上海教育出版社")
-
-TARGET_CHUNK_MIN = 600
-TARGET_CHUNK_MAX = 1200
 
 
 @dataclass
@@ -57,84 +52,6 @@ def _is_lesson_line(line: str) -> bool:
 def _line_title(line: str) -> str:
     m = _HEADING_MD_RE.match(line.strip())
     return m.group(2).strip() if m else line.strip()
-
-
-def _split_blocks(body: str) -> list[tuple[str, str]]:
-    """Split section body into (kind, text) blocks: table | example | paragraph."""
-    lines = body.splitlines()
-    blocks: list[tuple[str, str]] = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        if _TABLE_ROW_RE.match(line.strip()):
-            tbl_lines = [line]
-            i += 1
-            while i < len(lines) and (_TABLE_ROW_RE.match(lines[i].strip()) or not lines[i].strip()):
-                if lines[i].strip():
-                    tbl_lines.append(lines[i])
-                i += 1
-            blocks.append(("table", "\n".join(tbl_lines).strip()))
-            continue
-        if _EXAMPLE_RE.match(line.strip()):
-            ex_lines = [line]
-            i += 1
-            while i < len(lines):
-                nxt = lines[i]
-                if _TABLE_ROW_RE.match(nxt.strip()):
-                    break
-                if _is_chapter_line(nxt) or _is_lesson_line(nxt):
-                    break
-                ex_lines.append(nxt)
-                i += 1
-            blocks.append(("example", "\n".join(ex_lines).strip()))
-            continue
-        if not line.strip():
-            i += 1
-            continue
-        para_lines = [line]
-        i += 1
-        while i < len(lines):
-            nxt = lines[i]
-            if not nxt.strip():
-                i += 1
-                break
-            if _TABLE_ROW_RE.match(nxt.strip()) or _EXAMPLE_RE.match(nxt.strip()):
-                break
-            if _is_chapter_line(nxt) or _is_lesson_line(nxt):
-                break
-            para_lines.append(nxt)
-            i += 1
-        blocks.append(("paragraph", "\n".join(para_lines).strip()))
-    return [b for b in blocks if b[1].strip()]
-
-
-def _merge_paragraph_chunks(blocks: list[tuple[str, str]]) -> list[tuple[str, str, dict]]:
-    """Merge paragraphs to target size; keep table/example atomic."""
-    out: list[tuple[str, str, dict]] = []
-    buf = ""
-    buf_kind = "paragraph"
-    for kind, text in blocks:
-        meta: dict = {"doc_type": kind if kind != "paragraph" else "chunk"}
-        if kind in ("table", "example"):
-            if buf.strip():
-                out.append((buf_kind, buf.strip(), {"doc_type": "chunk"}))
-                buf = ""
-            out.append((kind, text, meta))
-            continue
-        if len(buf) + len(text) + 2 <= TARGET_CHUNK_MAX:
-            buf = f"{buf}\n\n{text}".strip() if buf else text
-        else:
-            if buf.strip():
-                out.append(("paragraph", buf.strip(), {"doc_type": "chunk"}))
-            if len(text) <= TARGET_CHUNK_MAX:
-                buf = text
-            else:
-                for j in range(0, len(text), TARGET_CHUNK_MAX):
-                    out.append(("paragraph", text[j : j + TARGET_CHUNK_MAX], {"doc_type": "chunk"}))
-                buf = ""
-    if buf.strip():
-        out.append(("paragraph", buf.strip(), {"doc_type": "chunk"}))
-    return out
 
 
 def _chunk_section_body(body: str, section: ParsedSection, prefix: str) -> list[dict]:

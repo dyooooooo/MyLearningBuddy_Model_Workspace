@@ -79,6 +79,9 @@ SLOTS: dict[str, PromptSlot] = {
 
 # Map refine_mode → slot id
 REFINE_MODE_SLOT: dict[str, str] = {
+    # ``auto`` escalates with the layout prompt — it only fires on pages the
+    # geometry/rule pass flagged as uncertain.
+    "auto": "mineru.refine_layout",
     "layout_only": "mineru.refine_layout",
     "full": "mineru.refine_full",
     "rerecognize": "mineru.rerecognize",

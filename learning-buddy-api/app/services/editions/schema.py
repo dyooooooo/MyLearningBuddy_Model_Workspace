@@ -26,6 +26,11 @@ PolicyFacet = Literal[
 
 PolicySeverity = Literal["must", "should", "may"]
 
+# 改动权限类：后期集中处理用
+# - edition（非越权）：可只靠方案数据吸收（geometry / layout_rules / page override / policy）
+# - pipeline（越权）：需要改 Pipeline 核心代码才能系统性修好
+AuthorityClass = Literal["edition", "pipeline"]
+
 
 class PolicyEntry(BaseModel):
     id: str
@@ -34,6 +39,8 @@ class PolicyEntry(BaseModel):
     statement: str
     # Optional tags for filtering / ops — never pipeline mode names.
     tags: list[str] = Field(default_factory=list)
+    # 非越权=edition；越权=pipeline（需改核心代码）
+    authority: AuthorityClass = "edition"
 
 
 class PolicyDocument(BaseModel):

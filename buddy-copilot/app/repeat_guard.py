@@ -1,6 +1,6 @@
 """空转熔断：同一动作反复重试 / 反复写盘却不生效时，拦下来让 Agent 汇报。
 
-背景：MinerU 分段导入曾出现 `get_blocks → patch_block → rerender_page → page_html`
+背景：MinerU 导入自动改曾出现 `get_blocks → patch_block → rerender_page → page_html`
 的盲循环——写盘看起来成功、HTML 却没动，Agent 就换个写法再试，20 页烧掉整轮
 120 次工具预算。判定「已经在原地打转」是编排器的职责，不能只靠 prompt 约束。
 """

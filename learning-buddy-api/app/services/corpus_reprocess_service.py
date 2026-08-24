@@ -424,8 +424,49 @@ def reprocess_page(
             durable=True,
         )
         if mode in _REFINE_MODES:
+            from app.services import improvement_points as ip_svc
             from app.services.corpus_corrections import save_correction
 
+            summary = (user_note or "").strip() or f"reprocess refine page {page_no}"
+            after_blocks = [b.model_dump(mode="json") for b in page_blocks]
+            ip_out = ip_svc.confirm_improvement(
+                session,
+                job_id=job.id,
+                fingerprint_hash="",
+                page_no=page_no,
+                summary=summary,
+                authority="edition",
+                kind="reprocess_refine",
+                attempts=[
+                    {
+                        "id": f"reprocess-p{page_no}",
+                        "page": page_no,
+                        "tool": "corpus.reprocess_page",
+                        "op": "reprocess_page",
+                        "summary": summary[:300],
+                        "args_summary": summary[:300],
+                    }
+                ],
+                procedure={
+                    "steps": [
+                        {
+                            "tool": "corpus.reprocess_page",
+                            "args_summary": summary[:300],
+                        }
+                    ],
+                    "verify": "user_confirm",
+                    "avoid": [],
+                },
+                concrete={
+                    "scope": "page",
+                    "page_no": page_no,
+                    "block_id": "",
+                    "before": "",
+                    "after": summary[:500],
+                },
+                write_correction=False,
+            )
+            ip_id = str((ip_out.get("ip") or {}).get("id") or "")
             corr = save_correction(
                 session,
                 job=job,
@@ -435,8 +476,12 @@ def reprocess_page(
                 block_id="",
                 user_note=user_note,
                 before_blocks=before_page,
-                after_blocks=[b.model_dump(mode="json") for b in page_blocks],
+                after_blocks=after_blocks,
                 refine_result=refine_result_dump,
+                ip_id=ip_id,
+                procedure=ip_out.get("ip", {}).get("procedure")
+                if isinstance(ip_out.get("ip"), dict)
+                else None,
             )
             _commit_durable(
                 session,
@@ -445,6 +490,7 @@ def reprocess_page(
                 job=job,
             )
             out["correction_id"] = corr.id
+            out["ip_id"] = ip_id
             out["fingerprint_hash"] = corr.fingerprint_hash
             out["persisted"] = True
     finally:
@@ -545,11 +591,46 @@ def refine_block(
             cache=cache,
             durable=True,
         )
+        from app.services import improvement_points as ip_svc
         from app.services.corpus_corrections import save_correction
 
         after_focus = [
             b.model_dump(mode="json") for b in page_blocks if b.id == block_id
         ]
+        summary = (user_note or "").strip() or f"reprocess refine block {block_id}"
+        ip_out = ip_svc.confirm_improvement(
+            session,
+            job_id=job.id,
+            fingerprint_hash="",
+            page_no=page_no,
+            summary=summary,
+            authority="edition",
+            kind="reprocess_refine_block",
+            block_ids=[block_id] if block_id else [],
+            attempts=[
+                {
+                    "id": f"reprocess-b-{block_id or page_no}",
+                    "page": page_no,
+                    "tool": "corpus.reprocess_block",
+                    "op": "reprocess_block",
+                    "summary": summary[:300],
+                    "args_summary": summary[:300],
+                    "block_ids": [block_id] if block_id else [],
+                }
+            ],
+            procedure={
+                "steps": [
+                    {
+                        "tool": "corpus.reprocess_block",
+                        "args_summary": summary[:300],
+                    }
+                ],
+                "verify": "user_confirm",
+                "avoid": [],
+            },
+            write_correction=False,
+        )
+        ip_id = str((ip_out.get("ip") or {}).get("id") or "")
         corr = save_correction(
             session,
             job=job,
@@ -563,6 +644,10 @@ def refine_block(
                 b.model_dump(mode="json") for b in page_blocks
             ],
             refine_result=page_result.model_dump(mode="json"),
+            ip_id=ip_id,
+            procedure=ip_out.get("ip", {}).get("procedure")
+            if isinstance(ip_out.get("ip"), dict)
+            else None,
         )
         _commit_durable(
             session,
@@ -571,6 +656,7 @@ def refine_block(
             job=job,
         )
         out["correction_id"] = corr.id
+        out["ip_id"] = ip_id
         out["fingerprint_hash"] = corr.fingerprint_hash
     finally:
         cache.close()

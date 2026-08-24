@@ -36,7 +36,7 @@ class StudioAuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path or ""
         if request.method == "OPTIONS":
             return await call_next(request)
-        if not path.startswith("/api/v1/studio"):
+        if not (path.startswith("/api/v1/studio") or path.startswith("/api/v1/kb")):
             return await call_next(request)
         expected = _expected_token()
         if not expected:

@@ -1,0 +1,28 @@
+suspect_type: DECOR_FIGURE_IN_MAIN
+title: 主栏小装饰图应并入页眉/页脚 chrome
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_main_figure and not has_caption
+    and height_ratio <= 0.14 and width_ratio <= 0.30
+    and char_count <= 2 and (rel_y0 < 0.22 or rel_y1 > 0.88)
+  min_hits: 1
+
+evidence: [type, zone, rel_y0, rel_y1, height_ratio, width_ratio, has_caption, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L1.layout_rule
+  # 装饰图误进正文：靠归属区 + 纵向位置与图高定位
+  locate_by: [zone, rel_y0, height_ratio, text_preview]
+  playbook: |
+    1. 确认主栏小 figure 是页眉/页脚装饰，不是正文插图。
+    2. 改 layout_zone=running（或 OCR 并入 running_header），去掉主栏装饰块。
+    3. rebuild_ir 后核对正文不再夹装饰图。
+
+examples:
+  positive: [configs/checks/fixtures/decor_figure_in_main_pos.json]
+  negative: [configs/checks/fixtures/decor_figure_in_main_neg.json]

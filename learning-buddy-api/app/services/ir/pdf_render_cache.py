@@ -30,6 +30,12 @@ class PdfRenderCache:
             self._doc = fitz.open(stream=self._pdf_bytes, filetype="pdf")
         return self._doc
 
+    def page_count(self) -> int:
+        if not self._pdf_bytes:
+            return 0
+        doc = self._document()
+        return int(len(doc))
+
     def page_jpeg(self, page_no: int, *, dpi: int = 150) -> bytes:
         """Render one page to JPEG bytes (1-based page_no), cached by (page, dpi)."""
         key = (page_no, dpi)

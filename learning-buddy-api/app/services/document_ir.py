@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -341,7 +343,15 @@ def render_block_markdown(block: DocumentBlock) -> str:
 
 
 def blocks_for_page(blocks: list[DocumentBlock], page_no: int) -> list[DocumentBlock]:
-    return [b for b in blocks if b.page_no == page_no]
+    """Blocks of one page in reading order.
+
+    ``order`` is the authority — that is the field page edits and reorder writes
+    touch. The stored array can be out of step with it (a page-level write appends
+    its blocks at the end, and some older jobs hold a scrambled array), so sort
+    here instead of trusting storage. Ties keep their stored position.
+    """
+    page = [b for b in blocks if b.page_no == page_no]
+    return sorted(page, key=lambda b: b.order)
 
 
 def render_page_markdown(blocks: list[DocumentBlock], page_no: int) -> str:
@@ -756,6 +766,160 @@ def _render_equation_block_html(block: DocumentBlock) -> str:
     return _render_equation_html(text)
 
 
+@dataclass(frozen=True)
+class BlockRenderContext:
+    """Everything a block renderer is allowed to look at."""
+
+    block: DocumentBlock
+    role: str
+    zone: str
+    bid_attr: str
+    anchor_attr: str
+    print_to_pdf: dict[int, int] | None = None
+
+
+# Two registries, both ordered by descending priority:
+#   standalone → emits a finished fragment (its own <figure>, TOC list, ...)
+#   body       → emits inner HTML that the shared wrapper puts in a container
+# New block kinds plug in here instead of growing the if/elif chain, and the
+# wrapper below stays the single place that decides callout vs lb-block.
+_StandaloneRenderer = Callable[[BlockRenderContext], str | None]
+_BodyRenderer = Callable[[BlockRenderContext], list[str]]
+
+_STANDALONE_RENDERERS: list[tuple[int, str, _StandaloneRenderer]] = []
+_BODY_RENDERERS: list[tuple[int, str, _BodyRenderer]] = []
+
+
+def register_standalone_renderer(
+    name: str, fn: _StandaloneRenderer, *, priority: int = 0
+) -> None:
+    """Register a renderer that returns a complete HTML fragment (or None)."""
+    _STANDALONE_RENDERERS.append((priority, name, fn))
+    _STANDALONE_RENDERERS.sort(key=lambda item: -item[0])
+
+
+def register_body_renderer(name: str, fn: _BodyRenderer, *, priority: int = 0) -> None:
+    """Register a renderer producing inner HTML for the shared block wrapper."""
+    _BODY_RENDERERS.append((priority, name, fn))
+    _BODY_RENDERERS.sort(key=lambda item: -item[0])
+
+
+def _render_toc_standalone(ctx: BlockRenderContext) -> str | None:
+    meta = ctx.block.meta or {}
+    if not (
+        ctx.role == "toc"
+        or meta.get("mineru_type") == "index"
+        or meta.get("toc_entries")
+    ):
+        return None
+    return _render_toc_html(ctx.block, print_to_pdf=ctx.print_to_pdf) or None
+
+
+def _render_figure_standalone(ctx: BlockRenderContext) -> str | None:
+    block = ctx.block
+    if not (block.type == "figure" and block.asset_url):
+        return None
+    cap = normalize_figure_caption(block.caption)
+    alt = _escape_html(cap or "插图")
+    img = (
+        f'<div class="lb-fig-cell">'
+        f'<img src="{_escape_html(block.asset_url)}" alt="{alt}" />'
+        f"</div>"
+    )
+    if cap:
+        return (
+            f'<figure class="lb-fig-item"{ctx.bid_attr}><div>{img}</div>'
+            f"<figcaption>{_escape_html(cap)}</figcaption></figure>"
+        )
+    return f'<figure class="lb-fig-item"{ctx.bid_attr}>{img}</figure>'
+
+
+def _render_heading_body(ctx: BlockRenderContext) -> list[str]:
+    block = ctx.block
+    if block.type not in ("heading", "title") or not block.text:
+        return []
+    level = min(4, max(1, block.level or 2))
+    title_text = block.text.strip()
+    if block.type == "title":
+        title_text = normalize_chapter_title(title_text)
+    return [f"<h{level}>{_escape_html(title_text)}</h{level}>"]
+
+
+def _render_table_body(ctx: BlockRenderContext) -> list[str]:
+    block = ctx.block
+    if block.type != "table":
+        return []
+    if block.table_html and block.table_html.strip().startswith("<"):
+        return [f'<div class="lb-table-wrap">{block.table_html.strip()}</div>']
+    if block.text:
+        return [_render_paragraph_html(block.text)]
+    # A table block with neither HTML nor text still owns the block: stop here
+    # rather than falling through to the paragraph renderer.
+    return [""]
+
+
+def _render_equation_body(ctx: BlockRenderContext) -> list[str]:
+    block = ctx.block
+    if block.type != "equation" or not block.text:
+        return []
+    return [_render_equation_block_html(block)]
+
+
+def _render_text_body(ctx: BlockRenderContext) -> list[str]:
+    block = ctx.block
+    if not block.text:
+        return []
+    solution_role = str((block.meta or {}).get("solution_role") or "")
+    if solution_role == "lead":
+        return [_render_solution_lead_html(block.text)]
+
+    item_cls = "lb-solution-item" if solution_role == "item" else None
+    # Glued （3）…(4)… blobs: always split on markers (ignore stale segments).
+    multi = split_multi_numbered_items(block.text)
+    if len(multi) > 1:
+        return [_render_paragraph_html(chunk, css_class=item_cls) for chunk in multi]
+
+    segments = (block.meta or {}).get("text_segments")
+    if segments and solution_role != "item":
+        return [_render_paragraph_segments_html(segments)]
+    if segments and solution_role == "item":
+        return [_render_paragraph_segments_html(segments, css_class=item_cls)]
+
+    parts: list[str] = []
+    for para in normalize_block_text(block.text).split("\n\n"):
+        p = normalize_block_text(para)
+        if p:
+            parts.append(_render_paragraph_html(p, css_class=item_cls))
+    return parts
+
+
+register_standalone_renderer("toc", _render_toc_standalone, priority=100)
+register_standalone_renderer("figure", _render_figure_standalone, priority=90)
+register_body_renderer("heading", _render_heading_body, priority=100)
+register_body_renderer("table", _render_table_body, priority=90)
+register_body_renderer("equation", _render_equation_body, priority=80)
+register_body_renderer("text", _render_text_body, priority=10)
+
+
+def _wrap_block_html(ctx: BlockRenderContext, body: str) -> str:
+    """Single decision point for callout vs plain block container."""
+    role, zone = ctx.role, ctx.zone
+    if zone in ("aside_right", "aside_left") and role not in ("body", "running_header"):
+        label = {
+            "think": "思考",
+            "note": "注释",
+            "prompt": "提示",
+            "symbol_note": "注释",
+        }.get(role, "")
+        label_html = f'<span class="lb-callout-label">{label}</span>' if label else ""
+        return (
+            f'<div class="{_callout_class(role)}"{ctx.bid_attr}{ctx.anchor_attr}>'
+            f"{label_html}{body}</div>"
+        )
+    cls = "lb-block lb-full-bleed" if zone == "full_bleed" else "lb-block"
+    return f'<div class="{cls}"{ctx.bid_attr}{ctx.anchor_attr}>{body}</div>'
+
+
 def render_block_html(
     block: DocumentBlock,
     *,
@@ -764,95 +928,40 @@ def render_block_html(
     if _should_skip_render(block):
         return ""
 
-    role = _pedagogy_role(block)
     anchor = (block.meta or {}).get("anchor_block_id") or ""
-    anchor_attr = f' data-anchor="{_escape_html(str(anchor))}"' if anchor else ""
-    bid = f' data-block-id="{_escape_html(block.id)}"'
+    ctx = BlockRenderContext(
+        block=block,
+        role=_pedagogy_role(block),
+        zone=_layout_zone(block),
+        bid_attr=f' data-block-id="{_escape_html(block.id)}"',
+        anchor_attr=(
+            f' data-anchor="{_escape_html(str(anchor))}"' if anchor else ""
+        ),
+        print_to_pdf=print_to_pdf,
+    )
 
-    # Index / TOC — dedicated layout with optional page jump links
-    if (
-        role == "toc"
-        or (block.meta or {}).get("mineru_type") == "index"
-        or (block.meta or {}).get("toc_entries")
-    ):
-        toc = _render_toc_html(block, print_to_pdf=print_to_pdf)
-        if toc:
-            return toc
-
-    if block.type == "figure" and block.asset_url:
-        cap = normalize_figure_caption(block.caption)
-        alt = _escape_html(cap or "插图")
-        img = (
-            f'<div class="lb-fig-cell">'
-            f'<img src="{_escape_html(block.asset_url)}" alt="{alt}" />'
-            f"</div>"
-        )
-        if cap:
-            return f'<figure class="lb-fig-item"{bid}><div>{img}</div><figcaption>{_escape_html(cap)}</figcaption></figure>'
-        return f'<figure class="lb-fig-item"{bid}>{img}</figure>'
+    for _priority, _name, renderer in _STANDALONE_RENDERERS:
+        fragment = renderer(ctx)
+        if fragment:
+            return fragment
 
     inner_parts: list[str] = []
-    if block.type in ("heading", "title") and block.text:
-        level = min(4, max(1, block.level or 2))
-        title_text = block.text.strip()
-        if block.type == "title":
-            title_text = normalize_chapter_title(title_text)
-        inner_parts.append(f"<h{level}>{_escape_html(title_text)}</h{level}>")
-    elif block.type == "table":
-        if block.table_html and block.table_html.strip().startswith("<"):
-            inner_parts.append(f'<div class="lb-table-wrap">{block.table_html.strip()}</div>')
-        elif block.text:
-            inner_parts.append(_render_paragraph_html(block.text))
-    elif block.type == "equation" and block.text:
-        inner_parts.append(_render_equation_block_html(block))
-    elif block.text:
-        solution_role = str((block.meta or {}).get("solution_role") or "")
-        if solution_role == "lead":
-            inner_parts.append(_render_solution_lead_html(block.text))
-        else:
-            item_cls = "lb-solution-item" if solution_role == "item" else None
-            # Glued （3）…(4)… blobs: always split on markers (ignore stale segments).
-            multi = split_multi_numbered_items(block.text)
-            if len(multi) > 1:
-                for chunk in multi:
-                    inner_parts.append(_render_paragraph_html(chunk, css_class=item_cls))
-            else:
-                segments = (block.meta or {}).get("text_segments")
-                if segments and solution_role != "item":
-                    inner_parts.append(_render_paragraph_segments_html(segments))
-                elif segments and solution_role == "item":
-                    inner_parts.append(
-                        _render_paragraph_segments_html(segments, css_class=item_cls)
-                    )
-                else:
-                    for para in normalize_block_text(block.text).split("\n\n"):
-                        p = normalize_block_text(para)
-                        if p:
-                            inner_parts.append(
-                                _render_paragraph_html(p, css_class=item_cls)
-                            )
+    for _priority, _name, body_renderer in _BODY_RENDERERS:
+        parts = body_renderer(ctx)
+        if parts:
+            inner_parts = parts
+            break
 
-    if not inner_parts and block.asset_url:
+    if not any(p.strip() for p in inner_parts) and block.asset_url:
         alt = normalize_figure_caption(block.caption) or "图"
-        inner_parts.append(
+        inner_parts = [
             f'<img src="{_escape_html(block.asset_url)}" alt="{_escape_html(alt)}" />'
-        )
+        ]
 
     body = "".join(inner_parts)
     if not body.strip():
         return ""
-
-    zone = _layout_zone(block)
-    if zone in ("aside_right", "aside_left") and role not in ("body", "running_header"):
-        label = {"think": "思考", "note": "注释", "prompt": "提示", "symbol_note": "注释"}.get(role, "")
-        label_html = f'<span class="lb-callout-label">{label}</span>' if label else ""
-        return (
-            f'<div class="{_callout_class(role)}"{bid}{anchor_attr}>'
-            f"{label_html}{body}</div>"
-        )
-
-    cls = "lb-block lb-full-bleed" if zone == "full_bleed" else "lb-block"
-    return f'<div class="{cls}"{bid}{anchor_attr}>{body}</div>'
+    return _wrap_block_html(ctx, body)
 
 
 def _group_figure_blocks(blocks: list[DocumentBlock]) -> list[DocumentBlock | list[DocumentBlock]]:
@@ -881,25 +990,99 @@ def _group_figure_blocks(blocks: list[DocumentBlock]) -> list[DocumentBlock | li
     return out
 
 
+def _figure_axis(block: DocumentBlock, idx: int, default: float = 0.0) -> float:
+    bb = block.bbox or []
+    if len(bb) > idx:
+        return float(bb[idx])
+    return default
+
+
+def _cluster_figure_rows(
+    group: list[DocumentBlock], *, y_tol: float = 40.0
+) -> list[list[DocumentBlock]]:
+    """Split a figure group into visual rows by bbox y0 (for 2×2 grids)."""
+    ordered = sorted(
+        group,
+        key=lambda b: (
+            _figure_axis(b, 1, float(b.order)),
+            _figure_axis(b, 0, float(b.order)),
+            b.order,
+        ),
+    )
+    rows: list[list[DocumentBlock]] = []
+    current: list[DocumentBlock] = []
+    row_y: float | None = None
+    for fig in ordered:
+        y0 = _figure_axis(fig, 1, float(fig.order))
+        if current and row_y is not None and abs(y0 - row_y) > y_tol:
+            rows.append(current)
+            current = [fig]
+            row_y = y0
+        else:
+            if row_y is None:
+                row_y = y0
+            current.append(fig)
+    if current:
+        rows.append(current)
+    return rows
+
+
 def _render_figure_group_html(group: list[DocumentBlock]) -> str:
-    imgs: list[str] = []
-    caption = ""
+    """Render multi-panel figures: per-cell labels + optional shared 图 X-X caption.
+
+    Prefer meta.figure_group_caption / a 图-label caption as the group figcaption.
+    Do **not** promote the last panel's sub-label (e.g. ``cos α``) to the title.
+    """
+    group_caption = ""
     for fig in group:
-        if fig.asset_url:
-            alt = normalize_figure_caption(fig.caption) or "插图"
-            imgs.append(
-                f'<div class="lb-fig-cell">'
-                f'<img src="{_escape_html(fig.asset_url)}" alt="{_escape_html(alt)}" />'
-                f"</div>"
-            )
-        cap = normalize_figure_caption(fig.caption)
-        if cap:
-            caption = cap
+        meta_cap = (fig.meta or {}).get("figure_group_caption")
+        if meta_cap and str(meta_cap).strip():
+            group_caption = str(meta_cap).strip()
+            break
+    if not group_caption:
+        for fig in group:
+            cap = normalize_figure_caption(fig.caption)
+            if cap and _FIG_LABEL_RE.match(cap):
+                group_caption = cap
+                break
+
+    rows_html: list[str] = []
+    for row in _cluster_figure_rows(group):
+        cells: list[str] = []
+        for fig in row:
+            if not fig.asset_url:
+                continue
+            cell_cap = normalize_figure_caption(fig.caption)
+            if cell_cap and (
+                (group_caption and cell_cap == group_caption)
+                or _FIG_LABEL_RE.match(cell_cap)
+            ):
+                if not group_caption and _FIG_LABEL_RE.match(cell_cap):
+                    group_caption = cell_cap
+                cell_cap = None
+            alt = _escape_html(cell_cap or group_caption or "插图")
+            inner = f'<img src="{_escape_html(fig.asset_url)}" alt="{alt}" />'
+            if cell_cap:
+                inner += f'<div class="lb-fig-cell-cap">{_escape_html(cell_cap)}</div>'
+            cells.append(f'<div class="lb-fig-cell">{inner}</div>')
+        if cells:
+            rows_html.append(f'<div class="lb-fig-row">{"".join(cells)}</div>')
+
+    if not group_caption:
+        caps = [normalize_figure_caption(f.caption) for f in group]
+        uniq = {c for c in caps if c}
+        if len(uniq) == 1:
+            group_caption = next(iter(uniq))
+
     gid = (group[0].meta or {}).get("figure_group_id") or group[0].id
-    cap_html = f"<figcaption>{_escape_html(caption)}</figcaption>" if caption else ""
+    cap_html = (
+        f"<figcaption>{_escape_html(group_caption)}</figcaption>"
+        if group_caption
+        else ""
+    )
     return (
         f'<figure class="lb-fig-group" data-figure-group="{_escape_html(str(gid))}">'
-        f'<div class="lb-fig-row">{"".join(imgs)}</div>{cap_html}</figure>'
+        f'{"".join(rows_html)}{cap_html}</figure>'
     )
 
 

@@ -18,6 +18,11 @@ class ColumnGeometry:
     min_companion_width: float = 200.0
     aside_left_x1_max: float = 280.0
     aside_right_x0_min: float = 680.0
+    # Half-height of the vertical window used for band-local companion checks.
+    # Pages that are two-column at the top and single-column at the bottom have
+    # no single page-wide main edge; band-local features look at neighbours
+    # within this window instead.
+    band_pad_min: float = 60.0
 
 
 def geometry_from_edition(edition_id: str | None) -> ColumnGeometry:

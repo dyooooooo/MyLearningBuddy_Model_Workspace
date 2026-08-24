@@ -1,0 +1,27 @@
+suspect_type: EXERCISE_LIST_WITHOUT_STEM
+title: 练习选项列表缺少前置题干
+severity: low
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    type == 'list' and zone == 'main' and has_math and char_count <= 80
+    and (prev_type == '' or prev_type == 'figure')
+  min_hits: 1
+
+evidence: [type, zone, prev_type, char_count, has_math, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L3.book_patch
+  # 小题列表缺题干：得知道前一块是什么，才能判断题干丢在哪
+  locate_by: [zone, prev_type, text_preview]
+  playbook: |
+    1. 确认 list 紧跟页首空前驱或插图，且缺少独立题干段落（非 list 接 list 的续题）。
+    2. 在列表前插入/恢复题干；跨页续题需对照上页，勿误补。
+    3. 补回后 rerender；同书回放，勿把具体题干写进跨书规则。
+
+examples:
+  positive: [configs/checks/fixtures/exercise_list_without_stem_pos.json]
+  negative: [configs/checks/fixtures/exercise_list_without_stem_neg.json]

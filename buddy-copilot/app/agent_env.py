@@ -12,8 +12,12 @@ from pathlib import Path
 
 # 意图 → 技能文件
 SKILL_BY_KIND = {
-    "import_advice": ["edition-tuning.md", "verify-loop.md"],
-    "page_assist": ["page-diagnosis.md", "edition-tuning.md", "verify-loop.md"],
+    "import_advice": ["page-diagnosis.md", "edition-tuning.md"],
+    "pattern_abstract": ["pattern-abstract.md", "edition-tuning.md"],
+    # 一书指纹一对话：旧 kind 亦注入统一技能
+    "ip_book": ["ip-book.md"],
+    "ip_triage": ["ip-book.md"],
+    "ip_split": ["ip-book.md"],
 }
 
 

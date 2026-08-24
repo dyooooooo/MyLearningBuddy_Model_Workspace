@@ -26,12 +26,12 @@ mcp:
     - corpus.page_context
     - corpus.page_html
     - corpus.start_import
-    - corpus.extend_import
     - corpus.reprocess_page
     - corpus.get_blocks
     - corpus.patch_block
     - corpus.replace_page_blocks
     - corpus.rerender_page
+    - corpus.rebuild_ir
     - edition.record_effective_change
     - edition.finalize_from_session
     - minio.stat
@@ -47,6 +47,31 @@ mcp:
     - layout.anchor_mineru
     - layout.compare
     - layout.triad
+    - patterns.list
+    - patterns.get
+    - patterns.merge
+    - patterns.split
+    - patterns.route
+    - patterns.land
+    - patterns.bind_detector
+    - patterns.promotion_check
+    - checks.list
+    - checks.dry_run
+    - checks.run_examples
+    - checks.report_false_positive
+    - vocab.check_plugin
+    - vocab.request_plugin_edit
+    - symptoms.for_job
+    - symptoms.refresh
+    - ip.list_ready
+    - ip.set_pattern
+    - ip.list_for_triage
+    - ip.list_for_split
+    - ip.conflict_hints
+    - ip.triage_apply
+    - ip.split_propose
+    - ip.split_apply
+    - ip.aggregate_resolve
 
 channels:
   cheap:

@@ -1,0 +1,25 @@
+{
+  "page_no": 14,
+  "html": "<article><section class=\"lb-main\"><p>练习题</p><figure></figure><p>|OM|旁注</p></section></article>",
+  "blocks": [
+    {
+      "id": "ex",
+      "type": "paragraph",
+      "page_no": 14,
+      "order": 1,
+      "text": "练习 1. 化简下列各角。",
+      "bbox": [80, 120, 700, 170],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "fig",
+      "type": "figure",
+      "page_no": 14,
+      "order": 2,
+      "text": "图6-1-6",
+      "caption": "图6-1-6",
+      "bbox": [720, 200, 940, 420],
+      "meta": {"layout_zone": "main", "layout_confidence": "medium"}
+    }
+  ]
+}

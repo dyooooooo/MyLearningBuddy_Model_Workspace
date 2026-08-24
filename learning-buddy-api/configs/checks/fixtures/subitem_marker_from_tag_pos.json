@@ -1,0 +1,15 @@
+{
+  "page_no": 38,
+  "html": "<article><section class=\"lb-main\"><div class=\"math\">eq</div></section></article>",
+  "blocks": [
+    {
+      "id": "tag_bad",
+      "type": "equation",
+      "page_no": 38,
+      "order": 1,
+      "text": "a \\sin \\alpha + b \\cos \\alpha = \\sqrt{a^{2}+b^{2}}\\left(\\frac{a}{\\sqrt{a^{2}+b^{2}}}\\sin\\alpha + \\frac{b}{\\sqrt{a^{2}+b^{2}}}\\cos\\alpha\\right). \\tag{（3）}",
+      "bbox": [100, 220, 900, 320],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

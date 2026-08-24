@@ -251,7 +251,8 @@ def test_render_page_header_and_number():
         ),
     ]
     html = render_page_html(blocks, 1)
-    assert '<header class="lb-running-hd">前言</header>' in html
+    assert '<header class="lb-running-hd">' in html
+    assert '<span class="lb-chrome-hit" data-block-id="h1">前言</span>' in html
     assert "lb-page-number" in html
     assert ">1</span>" in html
     assert 'data-print-page="1"' in html
@@ -299,7 +300,9 @@ def test_multiple_page_headers_all_kept():
         ),
     ]
     html = render_page_html(blocks, 8)
-    assert '<header class="lb-running-hd">1 集合与逻辑</header>' in html
+    assert '<header class="lb-running-hd">' in html
+    assert '<span class="lb-chrome-hit" data-block-id="h1">1</span>' in html
+    assert '<span class="lb-chrome-hit" data-block-id="h2">集合与逻辑</span>' in html
     assert "lb-running-hd--split" not in html
 
 
@@ -407,6 +410,75 @@ def test_sanitize_keeps_figure():
     clean = sanitize_page_html(raw)
     assert "figure" in clean
     assert "img" in clean
+
+
+def test_figure_group_cell_caps_and_shared_caption():
+    """2×2 panel group: sub-labels under cells; 图 X-X as figcaption (not last panel)."""
+    gid = "fig-6-1-8"
+    blocks = [
+        DocumentBlock(
+            id="p1",
+            type="paragraph",
+            page_no=16,
+            order=1,
+            text="上表的结果可用图 6-1-8 直观表示。",
+            meta={"layout_zone": "main", "pedagogy_role": "body"},
+        ),
+        DocumentBlock(
+            id="f1",
+            type="figure",
+            page_no=16,
+            order=2,
+            bbox=[243.0, 129.0, 361.0, 214.0],
+            asset_url="/api/v1/studio/proxy/import/asset?key=a.jpg",
+            caption="sin α",
+            meta={
+                "layout_zone": "main",
+                "figure_group_id": gid,
+                "figure_group_caption": "图 6-1-8",
+            },
+        ),
+        DocumentBlock(
+            id="f2",
+            type="figure",
+            page_no=16,
+            order=3,
+            bbox=[394.0, 130.0, 514.0, 214.0],
+            asset_url="/api/v1/studio/proxy/import/asset?key=b.jpg",
+            caption="cos α",
+            meta={"layout_zone": "main", "figure_group_id": gid},
+        ),
+        DocumentBlock(
+            id="f3",
+            type="figure",
+            page_no=16,
+            order=4,
+            bbox=[243.0, 252.0, 361.0, 336.0],
+            asset_url="/api/v1/studio/proxy/import/asset?key=c.jpg",
+            caption="tan α",
+            meta={"layout_zone": "main", "figure_group_id": gid},
+        ),
+        DocumentBlock(
+            id="f4",
+            type="figure",
+            page_no=16,
+            order=5,
+            bbox=[396.0, 252.0, 514.0, 336.0],
+            asset_url="/api/v1/studio/proxy/import/asset?key=d.jpg",
+            caption="cot α",
+            meta={"layout_zone": "main", "figure_group_id": gid},
+        ),
+    ]
+    html = render_page_html(blocks, 16)
+    assert html.count('class="lb-fig-group"') == 1
+    assert html.count('class="lb-fig-row"') == 2
+    assert 'class="lb-fig-cell-cap">sin α</div>' in html
+    assert 'class="lb-fig-cell-cap">cos α</div>' in html
+    assert 'class="lb-fig-cell-cap">tan α</div>' in html
+    assert 'class="lb-fig-cell-cap">cot α</div>' in html
+    assert "<figcaption>图 6-1-8</figcaption>" in html
+    assert "<figcaption>cos α</figcaption>" not in html
+    assert "<figcaption>cot α</figcaption>" not in html
 
 
 def test_page_number_links_back_to_toc():

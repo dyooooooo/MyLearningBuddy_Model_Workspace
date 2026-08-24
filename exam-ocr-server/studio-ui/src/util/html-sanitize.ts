@@ -7,7 +7,7 @@
 
 export const TEXTBOOK_CSS_HREF = "/api/v1/studio/proxy/import/textbook.css";
 /** Bump to force browsers to drop a stale textbook stylesheet. */
-export const TEXTBOOK_CSS_VERSION = "20260710-page-uniform";
+export const TEXTBOOK_CSS_VERSION = "20260728-fig-row-align";
 
 const DANGEROUS_TAGS = ["script", "style", "iframe", "object", "embed", "link", "meta", "base", "form"];
 

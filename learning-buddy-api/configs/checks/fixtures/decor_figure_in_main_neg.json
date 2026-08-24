@@ -1,0 +1,25 @@
+{
+  "page_no": 19,
+  "html": "<article><section class=\"lb-main\"><figure><figcaption>图6-1-9</figcaption></figure><p>正文</p></section></article>",
+  "blocks": [
+    {
+      "id": "fig",
+      "type": "figure",
+      "page_no": 19,
+      "order": 1,
+      "text": "图6-1-9",
+      "caption": "图6-1-9",
+      "bbox": [200, 180, 720, 620],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "body",
+      "type": "paragraph",
+      "page_no": 19,
+      "order": 2,
+      "text": "正文说明单位圆与角的对应关系。",
+      "bbox": [120, 650, 900, 900],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

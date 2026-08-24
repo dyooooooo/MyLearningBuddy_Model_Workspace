@@ -129,6 +129,8 @@ export async function studioFetch<T = unknown>(
       headers,
       body,
       signal: ctrl.signal,
+      // Studio admin UI must not show stale draft HTML / job meta from HTTP cache.
+      cache: "no-store",
     });
     if (res.status === 401) {
       promptRelogin("Studio 令牌无效或已过期");

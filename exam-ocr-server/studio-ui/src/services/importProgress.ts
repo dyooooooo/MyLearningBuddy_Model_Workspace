@@ -1,4 +1,4 @@
-/** @deprecated import from importJobObserver — kept as re-export for existing imports. */
+/** Re-export import job observer helpers for existing imports. */
 export {
   clearImportJobObserver as stopImportProgressPolling,
   describeImportJob,

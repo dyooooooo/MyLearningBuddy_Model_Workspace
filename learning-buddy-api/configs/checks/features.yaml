@@ -1,0 +1,26 @@
+# 派生特征：用原子词组合出的命名特征，检测器的 when 里可以直接当名字用。
+#
+# 为什么要有这一层：原子词（zone、is_figure、width_ratio…）写死在 Python 里，加一个
+# 要改代码重建镜像；而绝大多数新症状其实是老词的新组合。组合写在这里，改完保存，
+# 下一次 rebuild-ir 即时生效，和检测器一样不用重建镜像。
+#
+# 规则：
+#   - 名字小写下划线，不能和原子词重名
+#   - 可以引用别的派生特征，但不能互相引用成环（加载期会报错）
+#   - 同样不准写绝对页码、块 ID、具体正文文字——换一本教材要还成立
+#   - 引用了块级字段的特征，在 scope: page 的检测器里用不了（加载期会报错）
+#
+# 当前可用清单看 GET /api/v1/admin/corpus/checks 的 vocabulary.derived。
+
+features:
+  # 正文栏里的文字块：排掉图和表，剩下的才是「正文」。
+  is_main_prose: "zone == 'main' and not is_figure and not is_table"
+
+  # 正文栏里不含公式的纯文字块：标号粘连、孤立空括号这类症状的共同前提。
+  is_plain_main_text: "is_main_prose and not has_math"
+
+  # 正文栏里的插图：图幅、配图缺失、分栏错位这几类症状的共同前提。
+  is_main_figure: "is_figure and zone == 'main'"
+
+  # 正文栏里的标题：章眉误判、表标题误判都从这里出发。
+  is_main_heading: "is_heading and zone == 'main' and not has_math"

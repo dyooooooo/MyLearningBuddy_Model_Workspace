@@ -1,0 +1,49 @@
+# serializer version: 1
+# name: test_snapshot_chapter_opener_keeps_title_in_main
+  '''
+  <article class="lb-page" data-page="43" data-profile="hujiao_math_hs_v1">
+  <div class="lb-grid lb-grid--m">
+  <section class="lb-main" data-zone="main"><div class="lb-block" data-block-id="t1"><h2>第二章 等式与不等式</h2></div><div class="lb-block" data-block-id="p1"><p>本章学习等式与不等式的基本性质.</p></div></section>
+  </div>
+  </article>
+  '''
+# ---
+# name: test_snapshot_figure_group_two_rows
+  '''
+  <article class="lb-page" data-page="44" data-profile="hujiao_math_hs_v1">
+  <div class="lb-grid lb-grid--m">
+  <section class="lb-main" data-zone="main"><figure class="lb-fig-group" data-figure-group="grp-1"><div class="lb-fig-row"><div class="lb-fig-cell"><img alt="sin α" src="/api/v1/studio/proxy/import/asset?key=1.jpg"><div class="lb-fig-cell-cap">sin α</div></div><div class="lb-fig-cell"><img alt="cos α" src="/api/v1/studio/proxy/import/asset?key=2.jpg"><div class="lb-fig-cell-cap">cos α</div></div></div><div class="lb-fig-row"><div class="lb-fig-cell"><img alt="tan α" src="/api/v1/studio/proxy/import/asset?key=3.jpg"><div class="lb-fig-cell-cap">tan α</div></div><div class="lb-fig-cell"><img alt="cot α" src="/api/v1/studio/proxy/import/asset?key=4.jpg"><div class="lb-fig-cell-cap">cot α</div></div></div></figure><div class="lb-block" data-block-id="p1"><p>四个三角函数的图像如上.</p></div></section>
+  </div>
+  </article>
+  '''
+# ---
+# name: test_snapshot_left_aside_with_figure
+  '''
+  <article class="lb-page" data-page="42" data-print-page="2" data-profile="hujiao_math_hs_v1">
+  <div class="lb-grid lb-grid--l">
+  <aside class="lb-aside lb-aside--left" data-zone="aside_left"><div class="lb-aside-item" data-lb-gap="9.70" style="--lb-gap:9.70"><figure class="lb-fig-item" data-block-id="fig"><div><div class="lb-fig-cell"><img alt="康托(G. Cantor，1845—1918)，德国数学家." src="/api/v1/studio/proxy/import/asset?key=cantor.jpg"/></div></div><figcaption>康托(G. Cantor，1845—1918)，德国数学家.</figcaption></figure></div></aside>
+  <section class="lb-main" data-zone="main"><div class="lb-block" data-block-id="t1"><h2>1.1 集合初步</h2></div><div class="lb-block" data-block-id="p1"><p>我们经常需要把满足一定要求的对象放在一起.</p></div></section>
+  </div>
+  <footer class="lb-running-ft-row lb-running-ft-row--pn-left"><span class="lb-page-number lb-chrome-hit lb-page-number--left" data-block-id="pn">2</span></footer>
+  </article>
+  '''
+# ---
+# name: test_snapshot_right_margin_note_rescued
+  '''
+  <article class="lb-page" data-page="41" data-profile="hujiao_math_hs_v1">
+  <div class="lb-grid lb-grid--r">
+  <section class="lb-main" data-zone="main"><div class="lb-block" data-block-id="p1"><p>命题的否定与反证法.</p></div><div class="lb-block" data-block-id="p2"><p>若 p 则 q 的逆否命题与原命题等价.</p></div><div class="lb-block" data-block-id="p3"><p>由此可得证明思路.</p></div></section>
+  <aside class="lb-aside lb-aside--right" data-zone="aside_right"><div class="lb-aside-item" data-lb-gap="9.60" style="--lb-gap:9.60"><div class="lb-callout lb-callout--prompt" data-block-id="tip"><span class="lb-callout-label">提示</span><p>提示：先假设结论不成立.</p></div></div></aside>
+  </div>
+  </article>
+  '''
+# ---
+# name: test_snapshot_single_column_body
+  '''
+  <article class="lb-page" data-page="40" data-profile="hujiao_math_hs_v1">
+  <div class="lb-grid lb-grid--m">
+  <section class="lb-main" data-zone="main"><div class="lb-block" data-block-id="p1"><p>集合是数学中最基本的概念之一.</p></div><div class="lb-block" data-block-id="p2"><p>不含有任何元素的集合称为空集，记作∅.</p></div><div class="lb-block" data-block-id="p3"><p>引进空集是有必要的.</p></div></section>
+  </div>
+  </article>
+  '''
+# ---

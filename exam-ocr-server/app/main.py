@@ -12,6 +12,7 @@ from app.config import settings
 from app.routes import router
 from app.companion.routes import router as companion_router
 from app.studio.routes import router as studio_router
+from app.kb.routes import router as kb_router
 from app.studio.photo_import import router as studio_photo_router
 from app.studio_auth import StudioAuthMiddleware
 from app.openai_proxy import router as openai_proxy_router
@@ -41,15 +42,19 @@ app.add_middleware(StudioAuthMiddleware)
 app.include_router(router)
 app.include_router(companion_router)
 app.include_router(studio_router)
+app.include_router(kb_router)
 app.include_router(studio_photo_router, prefix="/api/v1/studio")
 # WSL WTR etc.: OpenAI-compatible LAN entry (auth via VLLM_LAN_TOKEN)
 app.include_router(openai_proxy_router, prefix="/v1")
 
 STUDIO_DIR = STATIC_DIR / "studio"
+KB_DIR = STATIC_DIR / "kb"
 if STATIC_DIR.is_dir():
     app.mount("/test", StaticFiles(directory=str(STATIC_DIR), html=True), name="test-ui")
 if STUDIO_DIR.is_dir():
     app.mount("/studio", StaticFiles(directory=str(STUDIO_DIR), html=True), name="studio-ui")
+if KB_DIR.is_dir():
+    app.mount("/kb", StaticFiles(directory=str(KB_DIR), html=True), name="kb-ui")
 
 
 @app.get("/", response_model=None)

@@ -1,0 +1,72 @@
+# 配置词（L2）：检测器 when / evidence 里可以直接当名字用的词，定义在这里。
+#
+# 为什么要有这一层：过去每个词都对应 corpus_symptoms.py 里一个 Python 函数，而那个
+# 文件被 COPY 进镜像，所以「加一只眼睛」= 改代码 + 重建镜像 + 重启服务。词搬到这里
+# 之后，加眼睛只是往这个文件写几行，保存即生效。
+#
+# 一条词 = 名字 + scope + doc + expr + examples，五样都必填：
+#   scope     block（一块一算）或 page（一页一算）。page 的 expr 只能引用页级名字。
+#   doc       中文释义。界面上那条判据要给人复核，没有释义等于没人读得懂。
+#   expr      表达式。可用的名字 = L0 事实字段 + 算子 + 别的配置词 + 词插件。
+#   examples  双极性样例，**加载期就会跑**：正例必须命中、反例必须不命中，
+#             有一条对不上这个词就不加载，并出现在 load_errors 里。
+#             写法：字符串 = 一个块的正文；{type: equation, text: '…'} = 指定字段；
+#             {blocks: [...], html: '…'} = 造一整页（页级词用）。
+#
+# 规则：
+#   - 名字小写下划线，不能和 L0 字段、算子、词插件、别的配置词重名
+#   - 可以引用别的配置词，但不能成环（加载期报错）
+#   - 不准写死绝对页码、块 ID、成句正文——换一本教材要还成立；
+#     需要一批中文词就写进 lexicons.yaml，这里用 lexicon('名字') 引用
+#
+# 一条表达式真写不出来时（例如要跨行遍历表格单元格），才写受限 Python 插件，
+# 放 vocab_ext/，那条路要另外的批准闸——见 vocab_ext/README.md。
+#
+# 当前可用清单看 GET /api/v1/admin/corpus/checks 的 vocabulary.words。
+
+words:
+  has_math:
+    scope: block
+    doc: 是否含公式：块本身是公式块，或正文里出现了 LaTeX 排版标记。
+    # 标记清单在 lexicons.yaml 的 math_markers 里，加一个标记不用动这条表达式。
+    # 只比 type == 'equation'：mineru_type 才是 MinerU 的原始类型名，归一之后
+    # 公式块只有 equation 这一种。
+    expr: >
+      type == 'equation'
+      or any([contains(text, marker) for marker in lexicon('math_markers')])
+    examples:
+      positive:
+        - '1^{\circ}=\frac{\pi}{180}'
+        - '$x^2$ 的图象'
+        - {type: equation, text: ''}
+      negative:
+        # 有 LaTeX 命令但没有任何排版标记：判据认标记，不认命令名
+        - 'S = \pi r^{2}'
+        - '这一段是纯文字，没有任何公式标记'
+        - {type: figure, text: ''}
+
+  cjk_text_in_math:
+    scope: block
+    doc: >
+      公式里是否有中文正文被 \text{…} 包着。\text{原式}\text{左边} 等推导对齐标签、
+      \text{cm} 等拉丁单位都是合法排版，不算——例外词在 lexicons.yaml 的
+      math_label_words 里。
+    expr: >
+      any([has_cjk(inner) and not (inner in lexicon('math_label_words'))
+           for inner in latex_texts(text)])
+    examples:
+      positive:
+        # 中文单位黏进公式
+        - '1^{\circ}=\frac{\pi}{180}\text{弧度}'
+        # 整句中文塞进公式（例 8「cot α 不存在」）
+        - '\sin\alpha=0,\ \text{cot }\alpha\text{ 不存在}'
+        - 'x=\textrm{每千米收费}'
+      negative:
+        # 第 20/22/35 页的真实内容：推导对齐标签，合法排版，报了就是误报
+        - '\begin{array}{r l} \text{原式} & = \tan\alpha\cot\alpha = 1. \end{array}'
+        - '\begin{array}{r l} \text{左边} & = \sin^{2}\alpha \\ & = \text{右边} \end{array}'
+        # 分段函数的条件词也在例外表内
+        - '\text{当 } x>0 \text{ 时}'
+        # 拉丁单位本就该写在 \text 里
+        - 'v = 3.0\times 10^{8}\ \text{m/s}'
+        - 'S = \pi r^{2}'

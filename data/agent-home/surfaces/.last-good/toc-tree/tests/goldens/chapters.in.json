@@ -1,0 +1,21 @@
+{
+  "entries": [
+    {
+      "label": "第1章 集合与逻辑",
+      "print_page": 1,
+      "is_chapter": true,
+      "level": 0,
+      "pdf_page": 7
+    },
+    {
+      "label": "1.1 集合初步",
+      "print_page": 2,
+      "is_chapter": false,
+      "level": 1
+    }
+  ],
+  "printToPdf": {
+    "1": 7,
+    "2": 8
+  }
+}

@@ -8,6 +8,10 @@ import {
 } from "../../api/import35b";
 import { store } from "../../state/store";
 import { typesetTextbookMathIdle } from "../../util/math-render";
+import {
+  createPageViewportController,
+  type PageViewportHandle,
+} from "../../util/PageViewportController";
 import { el } from "../../util/dom";
 import type { PanelHandle } from "./types";
 import {
@@ -20,8 +24,20 @@ import {
   type B35PreviewPage,
 } from "./B35ImportTree";
 import { mountB35PageDebugDrawer } from "./B35PageDebugDrawer";
-import { openB35FeedbackDialog } from "./B35FeedbackDialog";
 import { mountStickyPageStrip } from "./StickyPageStrip";
+import { mountImportCompare } from "./ImportCompareView";
+import { studioBus } from "../../events/studioBus";
+
+function emitFocusTarget(jobId: string, pageNo: number, blockId?: string): void {
+  const detail = {
+    line: "35b" as const,
+    jobId,
+    pageNo,
+    ...(blockId ? { blockId } : {}),
+  };
+  studioBus.emit("studio:focus-import-target", detail);
+  studioBus.emit("studio:open-ai-terminal");
+}
 
 const TERMINAL = new Set(["done", "failed", "canceled", "cancelled"]);
 
@@ -163,6 +179,33 @@ export function mountB35PipelinePanel(): PanelHandle {
   const previewPages = el("div", "import-preview-pages");
   const pageStripHost = el("div", "studio-sticky-page-strip-host");
   previewWrap.append(previewPlaceholder, pageStripHost, previewPages);
+  const compare = mountImportCompare({
+    previewWrap,
+    previewPages,
+    insertToolbarBefore: previewPages,
+    htmlLabel: "识别结果",
+    imageLabel: "原始页图",
+    loadImageSrc: async (jobId, pageNo) => import35b.pageDebugImageUrl(jobId, pageNo),
+    getActivePage: () => activePageNo,
+    onRefreshPage: (pageNo) => softRefreshMountedPage(pageNo),
+    onModeChange: (_on, keepPage) => {
+      const page = keepPage > 0 ? keepPage : activePageNo;
+      if (page > 0) {
+        activePageNo = page;
+        emitPageNavState();
+        ensurePageShell(page);
+        viewport?.scrollToPage(page);
+      }
+      requestAnimationFrame(() => {
+        viewport?.refresh();
+        viewport?.healVisible();
+        if (page > 0) viewport?.scrollToPage(page);
+      });
+      window.setTimeout(() => {
+        if (page > 0 && activePageNo === page) viewport?.scrollToPage(page);
+      }, 280);
+    },
+  });
   previewRoot.appendChild(previewWrap);
 
   const grid = el("div", "import-form-grid");
@@ -232,12 +275,18 @@ export function mountB35PipelinePanel(): PanelHandle {
 
   let previewJobId = "";
   let previewLabel = "";
+  /** Pages known available from API (shells may exist for 1..pageCount). */
   let renderedPages = new Set<number>();
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   const pageBodies = new Map<number, HTMLElement>();
+  const pageWraps = new Map<number, HTMLElement>();
+  const htmlCache = new Map<number, string>();
+  const debugMounted = new Set<number>();
+  let previewTotal = 0;
+  let viewport: PageViewportHandle | null = null;
+  const VIEWPORT_RADIUS = 4;
   let feedbackItems: Import35bFeedbackItem[] = [];
   let activePageNo = 0;
-  let pageNavObserver: IntersectionObserver | null = null;
 
   function syncPlaceholder(): void {
     previewPlaceholder.classList.toggle("hidden", !!previewJobId);
@@ -263,7 +312,11 @@ export function mountB35PipelinePanel(): PanelHandle {
       pageStrip.setPages([]);
       return;
     }
-    pageStrip.setPages([...renderedPages].filter((n) => n > 0).sort((a, b) => a - b));
+    const pages =
+      previewTotal > 0
+        ? Array.from({ length: previewTotal }, (_, i) => i + 1)
+        : [...renderedPages].filter((n) => n > 0).sort((a, b) => a - b);
+    pageStrip.setPages(pages);
     if (activePageNo > 0) pageStrip.setActive(activePageNo);
   }
 
@@ -283,26 +336,41 @@ export function mountB35PipelinePanel(): PanelHandle {
     syncPageStrip();
   }
 
+  function destroyViewport(): void {
+    viewport?.destroy();
+    viewport = null;
+  }
+
   function scrollToPage(pageNo: number): boolean {
-    const block = previewPages.querySelector<HTMLElement>(`[data-page-no="${pageNo}"]`);
-    if (!block) return false;
+    if (pageNo < 1) return false;
+    ensurePageShell(pageNo);
     activePageNo = pageNo;
     emitPageNavState();
-    const top =
-      block.getBoundingClientRect().top -
-      previewPages.getBoundingClientRect().top +
-      previewPages.scrollTop;
-    previewPages.scrollTo({ top: Math.max(0, top - 8), behavior: "smooth" });
+    if (viewport) viewport.scrollToPage(pageNo);
+    else {
+      const block = pageWraps.get(pageNo);
+      if (!block) return false;
+      const rootRect = previewPages.getBoundingClientRect();
+      const blockRect = block.getBoundingClientRect();
+      previewPages.scrollTop = Math.max(
+        0,
+        previewPages.scrollTop + (blockRect.top - rootRect.top),
+      );
+    }
     return true;
   }
 
   async function scrollToPageWhenReady(pageNo: number): Promise<void> {
+    if (previewTotal < pageNo) {
+      previewTotal = pageNo;
+      viewport?.setPageCount(pageNo);
+    }
     for (let i = 0; i < 40; i++) {
       if (scrollToPage(pageNo)) return;
       if (previewJobId && i > 0 && i % 8 === 0) {
         try {
           const job = await import35b.job(previewJobId);
-          await appendNewPages(job);
+          await syncViewportFromJob(job);
         } catch {
           /* retry */
         }
@@ -329,15 +397,8 @@ export function mountB35PipelinePanel(): PanelHandle {
     document.dispatchEvent(new CustomEvent(B35_IMPORT_LINE));
 
     if (previewJobId === jobId) {
-      if (pageNo && pageNo > 0) {
-        if (renderedPages.has(pageNo)) {
-          scrollToPage(pageNo);
-        } else {
-          await scrollToPageWhenReady(pageNo);
-        }
-      } else {
-        emitPageNavState();
-      }
+      if (pageNo && pageNo > 0) await scrollToPageWhenReady(pageNo);
+      else emitPageNavState();
       return;
     }
 
@@ -345,7 +406,7 @@ export function mountB35PipelinePanel(): PanelHandle {
     startPolling(jobId);
     try {
       const job = await import35b.job(jobId);
-      await appendNewPages(job);
+      await syncViewportFromJob(job);
       await refreshFeedback();
     } catch {
       /* pages may stream in */
@@ -358,26 +419,6 @@ export function mountB35PipelinePanel(): PanelHandle {
     }
   }
 
-  function bindPageNavObserver(): void {
-    pageNavObserver?.disconnect();
-    pageNavObserver = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        const top = visible[0]?.target as HTMLElement | undefined;
-        const pageNo = Number(top?.dataset.pageNo || 0);
-        if (pageNo > 0 && pageNo !== activePageNo) {
-          activePageNo = pageNo;
-          emitPageNavState();
-        }
-      },
-      { root: previewPages, threshold: [0.2, 0.45, 0.7] },
-    );
-    previewPages.querySelectorAll<HTMLElement>("[data-page-no]").forEach((n) => {
-      pageNavObserver?.observe(n);
-    });
-  }
 
   document.addEventListener(B35_NAVIGATE, ((e: CustomEvent<{
     jobId: string;
@@ -412,14 +453,19 @@ export function mountB35PipelinePanel(): PanelHandle {
   }) as EventListener);
 
   function clearPreview(): void {
+    destroyViewport();
     previewJobId = "";
+    compare.bindJob(null);
+    compare.setEnabled(false);
     previewLabel = "";
+    previewTotal = 0;
     renderedPages = new Set();
     pageBodies.clear();
+    pageWraps.clear();
+    htmlCache.clear();
+    debugMounted.clear();
     feedbackItems = [];
     activePageNo = 0;
-    pageNavObserver?.disconnect();
-    pageNavObserver = null;
     previewPages.innerHTML = "";
     stopPolling();
     emitB35PreviewState({ active: false });
@@ -447,20 +493,205 @@ export function mountB35PipelinePanel(): PanelHandle {
   }
 
   function enterLive(jobId: string, label: string): void {
+    destroyViewport();
     previewJobId = jobId;
+    compare.bindJob(jobId);
     previewLabel = label || jobId;
+    previewTotal = 0;
     renderedPages = new Set();
     pageBodies.clear();
+    pageWraps.clear();
+    htmlCache.clear();
+    debugMounted.clear();
     feedbackItems = [];
     activePageNo = 0;
-    pageNavObserver?.disconnect();
-    pageNavObserver = null;
     previewPages.innerHTML = "";
     syncPlaceholder();
     emitPageNavState();
   }
 
-  async function appendNewPages(job: Import35bJob): Promise<void> {
+  function ensurePageShell(pageNo: number): HTMLElement {
+    const existing = pageWraps.get(pageNo);
+    if (existing) return existing;
+
+    const wrap = el("div", "import-page-block is-shell");
+    wrap.dataset.pageNo = String(pageNo);
+    const tagRow = el("div", "import-page-tag muted");
+    tagRow.append(
+      el("span", "", `第 ${pageNo} 页`),
+      el("span", "muted import-page-ai-hint", "双击本页或块 → 填入 AI 对话"),
+    );
+    wrap.appendChild(tagRow);
+    const body = el("div", "lb-page import-preview-35b is-unloaded");
+    body.textContent = "滚入视口后加载…";
+    wrap.appendChild(body);
+    const debugHost = el("div", "b35-page-debug-host");
+    wrap.appendChild(debugHost);
+
+    const existingCards = [
+      ...previewPages.querySelectorAll<HTMLElement>(".import-page-block[data-page-no]"),
+    ];
+    const before = existingCards.find((c) => Number(c.dataset.pageNo || 0) > pageNo);
+    const beforeTop = before?.closest<HTMLElement>(".import-compare-row") || before;
+    if (beforeTop && beforeTop.parentElement === previewPages) {
+      previewPages.insertBefore(wrap, beforeTop);
+    } else {
+      previewPages.appendChild(wrap);
+    }
+
+    pageBodies.set(pageNo, body);
+    pageWraps.set(pageNo, wrap);
+    compare.notifyShell(pageNo);
+
+    const flashFocus = (elFlash: HTMLElement) => {
+      elFlash.classList.add("is-ai-focus");
+      window.setTimeout(() => elFlash.classList.remove("is-ai-focus"), 900);
+    };
+    wrap.addEventListener("dblclick", (ev) => {
+      if (!previewJobId) return;
+      const target = ev.target as HTMLElement | null;
+      const blockEl = target?.closest?.("[data-block-id]") as HTMLElement | null;
+      if (blockEl && body.contains(blockEl)) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const blockId = blockEl.getAttribute("data-block-id") || "";
+        if (!blockId) return;
+        flashFocus(blockEl);
+        emitFocusTarget(previewJobId, pageNo, blockId);
+        return;
+      }
+      ev.preventDefault();
+      flashFocus(wrap);
+      emitFocusTarget(previewJobId, pageNo);
+    });
+
+    return wrap;
+  }
+
+  function unloadPageContent(pageNo: number, shell: HTMLElement): void {
+    if (compare.isEnabled()) return;
+    const body =
+      pageBodies.get(pageNo) ||
+      shell.querySelector<HTMLElement>(".import-preview-35b");
+    if (!body) return;
+    const cached = htmlCache.get(pageNo);
+    if (cached?.trim()) {
+      body.classList.remove("is-unloaded");
+      body.innerHTML = cached;
+      shell.classList.remove("is-shell");
+      return;
+    }
+    body.replaceChildren();
+    body.classList.add("is-unloaded");
+    body.textContent = "滚回此处加载…";
+    shell.classList.add("is-shell");
+  }
+
+  async function loadPageIntoShell(pageNo: number, shell: HTMLElement): Promise<boolean> {
+    if (!previewJobId) return false;
+    const body =
+      pageBodies.get(pageNo) ||
+      shell.querySelector<HTMLElement>(".import-preview-35b");
+    if (!body) return false;
+
+    if (!renderedPages.has(pageNo)) {
+      body.classList.add("is-unloaded");
+      body.textContent = "等待出稿…";
+      return false;
+    }
+
+    try {
+      let html = htmlCache.get(pageNo);
+      if (!html) {
+        html = await import35b.pageHtml(previewJobId, pageNo);
+        htmlCache.set(pageNo, html);
+      }
+      body.classList.remove("is-unloaded");
+      body.innerHTML = html;
+      shell.classList.remove("is-shell");
+      typesetTextbookMathIdle(body);
+      if (!debugMounted.has(pageNo)) {
+        const debugHost = shell.querySelector<HTMLElement>(".b35-page-debug-host");
+        if (debugHost) {
+          mountB35PageDebugDrawer(debugHost, previewJobId, pageNo);
+          debugMounted.add(pageNo);
+        }
+      }
+      return true;
+    } catch (e) {
+      body.textContent = `第 ${pageNo} 页渲染失败：${(e as Error).message}`;
+      return false;
+    }
+  }
+
+  /** 手动/改页后：丢弃缓存并重新拉取当前页 HTML（带 cache bust）。 */
+  async function softRefreshMountedPage(pageNo: number): Promise<void> {
+    if (!previewJobId || pageNo <= 0) return;
+    htmlCache.delete(pageNo);
+    const shell = pageWraps.get(pageNo) || ensurePageShell(pageNo);
+    try {
+      const html = await import35b.pageHtml(previewJobId, pageNo, {
+        bustCache: true,
+      });
+      if (!html.trim()) {
+        viewport?.invalidate(pageNo);
+        return;
+      }
+      htmlCache.set(pageNo, html);
+      renderedPages.add(pageNo);
+      const body =
+        pageBodies.get(pageNo) ||
+        shell.querySelector<HTMLElement>(".import-preview-35b");
+      if (body) {
+        body.classList.remove("is-unloaded");
+        body.innerHTML = html;
+        shell.classList.remove("is-shell");
+        typesetTextbookMathIdle(body);
+        debugMounted.delete(pageNo);
+        const host = shell.querySelector<HTMLElement>(".b35-page-debug-host");
+        if (host) {
+          host.replaceChildren();
+          mountB35PageDebugDrawer(host, previewJobId, pageNo);
+          debugMounted.add(pageNo);
+        }
+      } else {
+        viewport?.invalidate(pageNo);
+      }
+    } catch (e) {
+      console.warn("35B 页软刷新失败", pageNo, e);
+      throw e;
+    }
+  }
+
+  function ensureViewport(): PageViewportHandle {
+    if (viewport) return viewport;
+    viewport = createPageViewportController({
+      root: previewPages,
+      pageCount: previewTotal,
+      radius: VIEWPORT_RADIUS,
+      keepRadius: Math.max(VIEWPORT_RADIUS, 6),
+      ensureShell: ensurePageShell,
+      loadPage: loadPageIntoShell,
+      unloadPage: unloadPageContent,
+      shouldUnload: () => !compare.isEnabled(),
+      isFilled: (pageNo, shell) => {
+        const body =
+          pageBodies.get(pageNo) ||
+          shell.querySelector<HTMLElement>(".import-preview-35b");
+        return !!body && !body.classList.contains("is-unloaded") && !!body.innerHTML.trim();
+      },
+      onActivePage: (pageNo) => {
+        if (pageNo > 0 && pageNo !== activePageNo) {
+          activePageNo = pageNo;
+          emitPageNavState();
+        }
+        viewport?.healVisible();
+      },
+    });
+    return viewport;
+  }
+
+  async function syncViewportFromJob(job: Import35bJob): Promise<void> {
     if (!previewJobId) return;
     let info;
     try {
@@ -469,98 +700,32 @@ export function mountB35PipelinePanel(): PanelHandle {
       return;
     }
 
-    const sorted = [...info.pages].sort((a, b) => a.page_no - b.page_no);
-    for (const p of sorted) {
-      if (renderedPages.has(p.page_no)) continue;
+    const newlyReady: number[] = [];
+    for (const p of info.pages) {
+      if (!renderedPages.has(p.page_no)) newlyReady.push(p.page_no);
       renderedPages.add(p.page_no);
-      const wrap = el("div", "import-page-block");
-      wrap.dataset.pageNo = String(p.page_no);
-      const tagRow = el("div", "import-page-tag muted");
-      const title = el("span", "", `第 ${p.page_no} 页`);
-      const actions = el("span", "import-page-tag-actions");
-      const reportBtn = el("button", "btn-link b35-report-btn", "反馈问题") as HTMLButtonElement;
-      reportBtn.type = "button";
-      reportBtn.onclick = () => {
-        const pageBody = pageBodies.get(p.page_no);
-        if (!pageBody) return;
-        openB35FeedbackDialog({
-          jobId: previewJobId,
-          pageNo: p.page_no,
-          pageEl: pageBody,
-          onSubmitted: () => void refreshFeedback(),
-        });
-      };
-      const reprocessBtn = el("button", "btn-link b35-reprocess-btn", "重新识别") as HTMLButtonElement;
-      reprocessBtn.type = "button";
-      reprocessBtn.onclick = async () => {
-        if (reprocessBtn.disabled) return;
-        const pageBody = pageBodies.get(p.page_no);
-        reprocessBtn.disabled = true;
-        const prevLabel = reprocessBtn.textContent || "重新识别";
-        reprocessBtn.textContent = "识别中…";
-        try {
-          await import35b.reprocessPage(previewJobId, p.page_no, { mode: "full" });
-          if (pageBody) {
-            pageBody.innerHTML = await import35b.pageHtml(previewJobId, p.page_no);
-            typesetTextbookMathIdle(pageBody);
-          }
-          reprocessBtn.textContent = "已更新";
-          window.setTimeout(() => {
-            reprocessBtn.textContent = prevLabel;
-            reprocessBtn.disabled = false;
-          }, 1200);
-        } catch (e) {
-          reprocessBtn.textContent = `失败`;
-          reprocessBtn.title = (e as Error).message;
-          window.setTimeout(() => {
-            reprocessBtn.textContent = prevLabel;
-            reprocessBtn.title = "";
-            reprocessBtn.disabled = false;
-          }, 2000);
-        }
-      };
-      const more = document.createElement("details");
-      more.className = "import-page-more";
-      const sum = document.createElement("summary");
-      sum.textContent = "更多";
-      more.append(sum, reprocessBtn);
-      actions.append(reportBtn, more);
-      tagRow.append(title, actions);
-      wrap.appendChild(tagRow);
-      const body = el("div", "lb-page import-preview-35b");
-      wrap.appendChild(body);
-      const debugHost = el("div", "b35-page-debug-host");
-      wrap.appendChild(debugHost);
-      previewPages.appendChild(wrap);
-      pageBodies.set(p.page_no, body);
-      mountB35PageDebugDrawer(debugHost, previewJobId, p.page_no);
+    }
+    const maxReady = info.pages.length
+      ? Math.max(...info.pages.map((p) => p.page_no))
+      : 0;
+    previewTotal = Math.max(
+      Number(info.page_count || job.page_count || 0),
+      maxReady,
+      previewTotal,
+    );
 
-      body.addEventListener("click", (ev) => {
-        const target = ev.target as HTMLElement | null;
-        const blockEl = target?.closest?.("[data-block-id]") as HTMLElement | null;
-        if (!blockEl) return;
-        const blockId = blockEl.getAttribute("data-block-id") || "";
-        if (!blockId) return;
-        if (!confirm(`重识别此块？\n${blockId}`)) return;
-        void (async () => {
-          try {
-            await import35b.refineBlock(previewJobId, p.page_no, blockId, {});
-            body.innerHTML = await import35b.pageHtml(previewJobId, p.page_no);
-            typesetTextbookMathIdle(body);
-          } catch (e) {
-            alert(`块精修失败：${(e as Error).message}`);
-          }
-        })();
-      });
-
-      try {
-        body.innerHTML = await import35b.pageHtml(previewJobId, p.page_no);
-        typesetTextbookMathIdle(body);
-      } catch (e) {
-        body.textContent = `第 ${p.page_no} 页渲染失败：${(e as Error).message}`;
+    // Terminal: allow any page in 1..N
+    if (TERMINAL.has(String(job.status || "")) && previewTotal > 0) {
+      for (let p = 1; p <= previewTotal; p++) {
+        if (!renderedPages.has(p)) newlyReady.push(p);
+        renderedPages.add(p);
       }
     }
-    bindPageNavObserver();
+
+    const vp = ensureViewport();
+    vp.setPageCount(previewTotal);
+    for (const p of newlyReady) vp.invalidate(p);
+    if (newlyReady.length === 0) vp.refresh();
     emitPageNavState();
     if (TERMINAL.has(String(job.status || ""))) {
       await refreshFeedback();
@@ -572,7 +737,7 @@ export function mountB35PipelinePanel(): PanelHandle {
     const tick = async () => {
       try {
         const job = await import35b.job(jobId);
-        if (jobId === previewJobId) await appendNewPages(job);
+        if (jobId === previewJobId) await syncViewportFromJob(job);
         if (TERMINAL.has(String(job.status || ""))) stopPolling();
       } catch {
         /* transient */
@@ -625,10 +790,10 @@ export function mountB35PipelinePanel(): PanelHandle {
   };
 
   async function refresh(): Promise<void> {
-    if (previewJobId && pollTimer) {
+    if (previewJobId) {
       try {
         const job = await import35b.job(previewJobId);
-        await appendNewPages(job);
+        await syncViewportFromJob(job);
       } catch {
         /* ignore */
       }

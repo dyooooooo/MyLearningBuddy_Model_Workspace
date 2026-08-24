@@ -6,12 +6,15 @@ different IR (DocumentBlock + HTML, not PageBlueprint).
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 from app.services.document_ir import DocumentBlock
+
+logger = logging.getLogger(__name__)
 
 Severity = Literal["high", "medium", "low"]
 
@@ -25,16 +28,28 @@ class Finding(BaseModel):
     page_no: int
     block_id: str = ""
     evidence: dict[str, Any] = Field(default_factory=dict)
+    # evidence 里「不给就没法动手」的那几个字段名，来自检测器的 remediation.locate_by。
+    # 改进器只拿这个子集，所以要跟着这条命中一路传到入库。
+    locate_by: list[str] = Field(default_factory=list)
     candidates: list[str] = Field(default_factory=list)
     fingerprint: str = ""
     fingerprint_exact: str = ""
     detector: str = "rule"
+    # 映射结果，由 corpus_symptoms.enrich_findings 填。空 = 这是个新症状。
+    pattern_id: str = ""
+    match: str = ""  # exact | suspect_type
+    remediation_kind: str = ""
+    landing_target: str = ""
+    playbook_ref: str = ""  # 指针：configs/checks/x.yaml#remediation.playbook
+    playbook: str = ""  # 按指针解析出来的手册步骤全文
 
     def finalize(self) -> "Finding":
-        core = f"{self.suspect_type}|{self.block_id}|{_norm_evidence(self.evidence)}"
+        # 指纹**不含块 ID 和页码**：块 ID 换本书就没有意义，而这个指纹的全部用途
+        # 就是跨书认出同一个症状。要定位到具体一处用 fingerprint_exact。
+        core = f"{self.suspect_type}|{_norm_evidence(self.evidence)}"
         self.fingerprint = hashlib.sha1(core.encode("utf-8")).hexdigest()[:16]
         self.fingerprint_exact = hashlib.sha1(
-            f"{core}|p{self.page_no}".encode("utf-8")
+            f"{core}|p{self.page_no}|{self.block_id}".encode("utf-8")
         ).hexdigest()[:16]
         return self
 
@@ -49,8 +64,51 @@ def run_page_checks(
     html: str,
     *,
     page_no: int,
+    with_declared: bool = True,
 ) -> list[Finding]:
-    """Return T1 findings for one corpus page."""
+    """Return T1 findings for one corpus page.
+
+    两个来源：这里硬编码的四条基础检查（页空、主栏空、公式回退、控制字符），
+    加上 ``configs/checks/`` 里 Agent 抽象出来的声明式检测器。前者是不变量，
+    后者随模式库增长。
+    """
+    findings = _builtin_checks(blocks, html, page_no=page_no)
+    if with_declared:
+        findings.extend(_declared_checks(blocks, html, page_no=page_no))
+    return findings
+
+
+def _declared_checks(
+    blocks: list[DocumentBlock], html: str, *, page_no: int
+) -> list[Finding]:
+    # 局部 import：corpus_symptoms 要读 DB 模型，而这个模块被纯渲染路径引用。
+    from app.services.corpus_symptoms import run_checks_on_page
+
+    try:
+        hits = run_checks_on_page(blocks, html, page_no=page_no)
+    except Exception as exc:  # noqa: BLE001 — 声明式检测器绝不阻断导入
+        logger.warning("declared symptom checks failed on page %s: %s", page_no, exc)
+        return []
+    return [
+        Finding(
+            suspect_type=hit.suspect_type,
+            severity=hit.severity,
+            page_no=hit.page_no,
+            block_id=hit.block_id,
+            evidence=hit.evidence,
+            locate_by=list(hit.locate_by),
+            detector=hit.detector or "declared",
+        ).finalize()
+        for hit in hits
+    ]
+
+
+def _builtin_checks(
+    blocks: list[DocumentBlock],
+    html: str,
+    *,
+    page_no: int,
+) -> list[Finding]:
     findings: list[Finding] = []
     page_blocks = [b for b in blocks if b.page_no == page_no]
     blank = any(bool((b.meta or {}).get("blank")) for b in page_blocks)

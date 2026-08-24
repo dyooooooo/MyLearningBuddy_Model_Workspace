@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from typing import Any
 
 from app.services.document_ir import DocumentBlock, normalize_figure_caption, stable_block_id
+from app.services.editions.geometry import ColumnGeometry, geometry_from_edition
 from app.services.ir.column_detect import assign_layout_zone, detect_columns
+from app.services.ir.layout import BlockInput, PageDecision, decide_page, extract_page_features
 from app.services.ir.textbook_profile import default_profile_id, load_textbook_profile
 
 _FIG_CAP_RE = re.compile(r"^图[\s　]*[０-９0-9]+[\.．-][０-９0-9\.．-]*")
@@ -127,16 +130,82 @@ def bbox_y0(block: DocumentBlock) -> float:
     return float(block.order)
 
 
-def enrich_page_blocks_slim(
+def _geometry_for_profile(profile: dict[str, Any]) -> ColumnGeometry:
+    """Full geometry from the Edition Bundle, with legacy zone keys layered on.
+
+    The bundle already carried every threshold; only the two zone edges used to
+    reach ``detect_columns``, so per-textbook tuning of the rest was inert.
+    """
+    edition_id = str(profile.get("edition_id") or profile.get("profile_id") or "")
+    geom = geometry_from_edition(edition_id) if edition_id else ColumnGeometry()
+    zones_cfg = profile.get("zones") or {}
+    return replace(
+        geom,
+        aside_left_x1_max=float(
+            zones_cfg.get("aside_left_x1_max", geom.aside_left_x1_max)
+        ),
+        aside_right_x0_min=float(
+            zones_cfg.get("aside_right_x0_min", geom.aside_right_x0_min)
+        ),
+    )
+
+
+def _decide_content_zones(
+    normalized: list[DocumentBlock],
+    layout,
+    *,
+    profile: dict[str, Any],
+    geom: ColumnGeometry,
+) -> PageDecision | None:
+    """Run the declarative rule layer over content blocks (chrome excluded)."""
+    content = [
+        b
+        for b in normalized
+        if not _is_running_chrome(b) and (b.meta or {}).get("layout_zone") != "running"
+    ]
+    if not content:
+        return None
+
+    inputs = [
+        BlockInput(
+            key=b.id,
+            bbox=b.bbox,
+            type=b.type,
+            mineru_type=str((b.meta or {}).get("mineru_type") or ""),
+            role=str((b.meta or {}).get("pedagogy_role") or "body"),
+            text=(b.text or b.caption or ""),
+            zone_pinned=str((b.meta or {}).get("refined_by") or "") in ("35b", "fusion"),
+        )
+        for b in content
+    ]
+    baseline = {b.id: assign_layout_zone(b.bbox, layout) for b in content}
+    features = extract_page_features(
+        inputs,
+        page_no=int(content[0].page_no or 0),
+        geometry=geom,
+        main_x0=layout.raw_main_x0,
+        main_x1=layout.raw_main_x1,
+        column_count=layout.column_count,
+        column_method=layout.method,
+        baseline_zones=baseline,
+    )
+    edition_id = str(profile.get("edition_id") or profile.get("profile_id") or "")
+    return decide_page(features, edition_id=edition_id or None)
+
+
+def enrich_page_blocks_slim_with_decision(
     page_blocks: list[DocumentBlock],
     *,
     profile: dict[str, Any],
     page_w: float,
     page_h: float,
-) -> list[DocumentBlock]:
-    zones_cfg = profile.get("zones") or {}
-    left_x1_max = float(zones_cfg.get("aside_left_x1_max", 280))
-    right_x0_min = float(zones_cfg.get("aside_right_x0_min", 680))
+) -> tuple[list[DocumentBlock], PageDecision | None]:
+    """Enrich one page and hand back the layout decision that produced it.
+
+    The decision carries the page confidence score used by the cost cascade:
+    only pages the geometry is unsure about are worth a vision-model call.
+    """
+    geom = _geometry_for_profile(profile)
 
     # Pass 1: normalize bbox + drop noise
     normalized: list[DocumentBlock] = []
@@ -160,9 +229,10 @@ def enrich_page_blocks_slim(
     ]
     layout = detect_columns(
         content_bboxes or [b.bbox for b in normalized],
-        left_x1_max=left_x1_max,
-        right_x0_min=right_x0_min,
+        geometry=geom,
     )
+    decision = _decide_content_zones(normalized, layout, profile=profile, geom=geom)
+    decided = decision.decisions if decision else {}
 
     enriched: list[DocumentBlock] = []
     for block in normalized:
@@ -209,11 +279,32 @@ def enrich_page_blocks_slim(
                     meta["pedagogy_role"] = (
                         "running_header" if y0 < 200 else "page_number"
                     )
-        elif meta.get("layout_zone") in ("aside_left", "aside_right", "main", "full_bleed"):
-            # Preserve explicit zone from refine / upstream
-            zone = str(meta.get("layout_zone"))
         else:
-            zone = assign_layout_zone(block.bbox, layout)
+            verdict = decided.get(block.id)
+            # Only a zone a model actually decided is worth preserving. A zone
+            # left over from a previous enrich pass is this function's own
+            # output, and treating it as pinned would freeze every re-run.
+            pinned = str(meta.get("refined_by") or "") in ("35b", "fusion") and meta.get(
+                "layout_zone"
+            ) in ("aside_left", "aside_right", "main", "full_bleed")
+            if pinned and not (verdict and verdict.layer == "page"):
+                # A page-level override is the one thing allowed to overrule it.
+                zone = str(meta.get("layout_zone"))
+            elif verdict is not None:
+                zone = verdict.zone
+            else:
+                zone = assign_layout_zone(block.bbox, layout)
+
+            if verdict is not None:
+                meta["layout_rule_id"] = verdict.rule_id
+                meta["layout_rule_layer"] = verdict.layer
+                meta["layout_confidence_score"] = round(verdict.confidence, 3)
+                meta["layout_evidence"] = verdict.evidence
+                if verdict.note:
+                    meta["layout_rule_note"] = verdict.note
+                meta["layout_confidence"] = (
+                    "low" if verdict.is_low_confidence else "high"
+                )
 
         meta["layout_zone"] = zone
         meta.setdefault("pedagogy_role", "body")
@@ -260,7 +351,20 @@ def enrich_page_blocks_slim(
         meta["reading_order"] = order
         final.append(b.model_copy(update={"order": order, "meta": meta}))
 
-    return final
+    return final, decision
+
+
+def enrich_page_blocks_slim(
+    page_blocks: list[DocumentBlock],
+    *,
+    profile: dict[str, Any],
+    page_w: float,
+    page_h: float,
+) -> list[DocumentBlock]:
+    blocks, _decision = enrich_page_blocks_slim_with_decision(
+        page_blocks, profile=profile, page_w=page_w, page_h=page_h
+    )
+    return blocks
 
 
 def enrich_blocks_slim(

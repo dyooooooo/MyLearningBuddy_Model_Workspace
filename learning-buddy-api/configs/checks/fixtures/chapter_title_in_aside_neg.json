@@ -1,0 +1,44 @@
+{
+  "page_no": 20,
+  "html": "<article><aside class=\"lb-aside-left\"><figure>tip</figure></aside><section class=\"lb-main\"><h2>第6章 三角</h2><p>正文段落</p></section></article>",
+  "blocks": [
+    {
+      "id": "aside_fig",
+      "type": "figure",
+      "page_no": 20,
+      "order": 1,
+      "text": "",
+      "caption": "旁注图",
+      "bbox": [40, 200, 180, 360],
+      "meta": {"layout_zone": "aside_left", "layout_confidence": "high"}
+    },
+    {
+      "id": "aside_tip",
+      "type": "paragraph",
+      "page_no": 20,
+      "order": 2,
+      "text": "思考：正弦与余弦有什么关系？",
+      "bbox": [40, 380, 180, 480],
+      "meta": {"layout_zone": "aside_left", "layout_confidence": "high"}
+    },
+    {
+      "id": "main_title",
+      "type": "heading",
+      "page_no": 20,
+      "order": 3,
+      "text": "第6章 三角",
+      "level": 2,
+      "bbox": [220, 80, 900, 140],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "main_body",
+      "type": "paragraph",
+      "page_no": 20,
+      "order": 4,
+      "text": "本章讨论任意角的三角函数定义及其基本关系。",
+      "bbox": [220, 160, 900, 260],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

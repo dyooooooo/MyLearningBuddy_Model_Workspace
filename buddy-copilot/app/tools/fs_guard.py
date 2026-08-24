@@ -16,15 +16,33 @@ from pathlib import Path
 # 兜底默认值 —— 正式来源是 agent-env/permissions.yaml 的 files 段（数据驱动）
 WRITE_WHITELIST = (
     "learning-buddy-api/configs/editions/",       # 方案种子/资产（bind-mount，便宜）
+    "learning-buddy-api/configs/checks/",         # 跨书症状检测器（bind-mount，便宜）
     "learning-buddy-api/data/prompts/",           # MinerU 线 prompt 模板（打进镜像，昂贵）
     "learning-buddy-api/app/import_35b/prompts/", # 35B 线 prompt 模板（打进镜像，昂贵）
     "learning-buddy-api/tests/",                  # 测试
+    "learning-buddy-api/app/static/",             # 教材渲染 CSS 等前台静态资源
 )
 
 # 永远禁止触碰（兜底默认值，同上）
 FORBIDDEN = (
     ".env",
     "learning-buddy-c2/",
+)
+
+# 白名单内的「专属闸」子路径：落在白名单目录里，但**不由目录级前缀自动放行**。
+#
+# 隐患根因：is_whitelisted 与 covered_by_approval 都是前缀匹配，所以
+# configs/checks/ 一进白名单，configs/checks/vocab_ext/ 就自动继承了。而那个目录
+# 里是**会在 buddy-worker 进程里执行的受限 Python**，不是声明文件——等于默认允许
+# Agent 写可执行代码。必须显式拆出来，走独立的批准动作。
+GATED_SUBPATHS = (
+    "learning-buddy-api/configs/checks/vocab_ext/",
+)
+
+# 专属闸内的例外：加载器只扫 vocab_ext/ 顶层，proposals/ 里的文件永远不会被执行，
+# 所以草稿落在这里和写一份 YAML 一样安全，普通 fs.request_edit 即可。
+GATE_EXEMPT_SUBPATHS = (
+    "learning-buddy-api/configs/checks/vocab_ext/proposals/",
 )
 
 # 白名单外但要能「真回滚」的源码区（兜底默认值，同上）
@@ -35,19 +53,98 @@ GUARDED_ROOTS = (
 )
 
 # 只备份源码后缀：guarded_roots 里混着几十 MB 资产，整树复制不可接受
-BACKUP_SUFFIXES = (".py", ".md", ".json", ".yaml", ".yml")
+BACKUP_SUFFIXES = (".py", ".md", ".json", ".yaml", ".yml", ".css", ".html")
+
+# 前台显示资产后缀（兜底；正式来源 permissions.yaml files.auto_allow_suffixes）
+AUTO_ALLOW_SUFFIXES = (".css", ".html")
+
+
+def gated_prefix(
+    rel_path: str,
+    gated_subpaths: tuple[str, ...] = GATED_SUBPATHS,
+    exempt_subpaths: tuple[str, ...] = GATE_EXEMPT_SUBPATHS,
+) -> str:
+    """该路径落在哪个专属闸子路径下；不在任何一个则返回空串。"""
+    p = rel_path.replace("\\", "/")
+    if any(p.startswith(e) for e in exempt_subpaths):
+        return ""
+    for g in gated_subpaths:
+        if p.startswith(g):
+            return g
+    return ""
 
 
 def is_whitelisted(
     rel_path: str,
     whitelist: tuple[str, ...] = WRITE_WHITELIST,
     forbidden: tuple[str, ...] = FORBIDDEN,
+    gated_subpaths: tuple[str, ...] = GATED_SUBPATHS,
+    *,
+    allow_gated: bool = False,
 ) -> bool:
+    """该路径是否可写。
+
+    ``allow_gated`` 只有两处该开：专属闸自己的申请工具，以及运行后统计改动面的
+    ``changed_since``（否则专属闸内的文件会被当成「白名单外越权」直接回滚，
+    批准过也写不进去）。其余调用方一律用默认值。
+    """
     p = rel_path.replace("\\", "/")
     for f in forbidden:
         if p == f or p.startswith(f) or p.endswith("/" + f) or p.endswith(f):
             return False
+    if not allow_gated and gated_prefix(p, gated_subpaths):
+        return False
     return any(p.startswith(w) for w in whitelist)
+
+
+def covered_by_approval(
+    rel_path: str,
+    approved_paths: tuple[str, ...] | list[str],
+    gated_subpaths: tuple[str, ...] = GATED_SUBPATHS,
+) -> bool:
+    """该文件是否落在某次批准的路径范围内。
+
+    批准是「按路径」的，不是「按会话」的：批了一个 prompt 模板不等于
+    整个白名单开闸。目录形式（以 / 结尾）按前缀匹配，文件按精确匹配。
+
+    专属闸另加一条：**上级目录的批准不覆盖专属闸目录**。批了
+    ``configs/checks/`` 不等于批了 ``configs/checks/vocab_ext/`` 里的可执行代码，
+    后者必须由落在它自己前缀下的那次批准来覆盖。
+    """
+    p = rel_path.replace("\\", "/")
+    gate = gated_prefix(p, gated_subpaths)
+    for raw in approved_paths:
+        a = str(raw).replace("\\", "/").strip()
+        if not a:
+            continue
+        if gate and not a.startswith(gate):
+            continue
+        if a.endswith("/"):
+            if p.startswith(a):
+                return True
+        elif p == a:
+            return True
+    return False
+
+
+def is_auto_allowed(
+    rel_path: str,
+    whitelist: tuple[str, ...] = WRITE_WHITELIST,
+    forbidden: tuple[str, ...] = FORBIDDEN,
+    auto_allow_suffixes: tuple[str, ...] = AUTO_ALLOW_SUFFIXES,
+    gated_subpaths: tuple[str, ...] = GATED_SUBPATHS,
+) -> bool:
+    """白名单内的前台显示资产（CSS/HTML）：免 fs.request_edit，仍受白名单约束。
+
+    专属闸子路径永远不免闸门——这里默认 ``allow_gated=False``，所以哪怕将来
+    往 auto_allow_suffixes 里加了 ``.py``，vocab_ext/ 也不会被自动放行。
+    """
+    if not auto_allow_suffixes:
+        return False
+    if not is_whitelisted(rel_path, whitelist, forbidden, gated_subpaths):
+        return False
+    p = rel_path.replace("\\", "/")
+    return any(p.endswith(s) for s in auto_allow_suffixes)
 
 
 class WorktreeSnapshot:
@@ -60,12 +157,14 @@ class WorktreeSnapshot:
         forbidden: tuple[str, ...] = FORBIDDEN,
         guarded_roots: tuple[str, ...] = GUARDED_ROOTS,
         backup_suffixes: tuple[str, ...] = BACKUP_SUFFIXES,
+        gated_subpaths: tuple[str, ...] = GATED_SUBPATHS,
     ) -> None:
         self.workspace = workspace
         self.whitelist = whitelist
         self.forbidden = forbidden
         self.guarded_roots = guarded_roots
         self.backup_suffixes = backup_suffixes
+        self.gated_subpaths = gated_subpaths
         self.before: dict[str, str] = self._dirty_hashes()
         self._backup_dir: Path | None = None
 
@@ -176,13 +275,23 @@ class WorktreeSnapshot:
         )
 
     def changed_since(self) -> tuple[list[str], list[str]]:
-        """返回 (白名单内改动, 白名单外改动)。只统计本次新增/内容变化的文件。"""
+        """返回 (白名单内改动, 白名单外改动)。只统计本次新增/内容变化的文件。
+
+        专属闸内的文件算「白名单内」（``allow_gated=True``）——它们照样要过批准，
+        只是那道批准由 ``covered_by_approval`` 按专属前缀卡，不在这里当越权回滚。
+        """
         after = self._dirty_hashes()
         changed = [
             f for f, h in after.items() if self.before.get(f) != h
         ]
-        ok = [f for f in changed if is_whitelisted(f, self.whitelist, self.forbidden)]
-        bad = [f for f in changed if not is_whitelisted(f, self.whitelist, self.forbidden)]
+
+        def writable(rel: str) -> bool:
+            return is_whitelisted(
+                rel, self.whitelist, self.forbidden, self.gated_subpaths, allow_gated=True
+            )
+
+        ok = [f for f in changed if writable(f)]
+        bad = [f for f in changed if not writable(f)]
         return ok, bad
 
     def rollback_whitelist(self) -> tuple[list[str], list[str]]:
@@ -231,8 +340,43 @@ class WorktreeSnapshot:
                         failed.append(f"{w}{rel}: {e}")
         return restored, failed
 
-    def diff_stat(self) -> str:
-        return self._git("diff", "--stat")
+    def diff_stat(self, files: list[str] | None = None) -> str:
+        """只列本轮文件。不传 files 时返回空串——禁止整库 `git diff --stat`。
+
+        整库摘要会把工作区里无关的未提交改动（编排器、权限表、别的书）
+        混进导入会话的「文件改动」卡，标题写 1 个文件、正文却列出几十个。
+        """
+        if not files:
+            return ""
+        return self._git("diff", "--stat", "--", *files)
+
+    def changed_line_count(self, files: list[str]) -> int:
+        """本次改动的行数（新增+删除）。未跟踪的新文件按其行数计。"""
+        if not files:
+            return 0
+        total = 0
+        numstat = self._git("diff", "--numstat", "--", *files)
+        counted: set[str] = set()
+        for line in numstat.splitlines():
+            cols = line.split("\t")
+            if len(cols) < 3:
+                continue
+            added, removed, path = cols[0], cols[1], cols[2]
+            counted.add(path)
+            for col in (added, removed):
+                if col.isdigit():
+                    total += int(col)
+        for rel in files:
+            if rel in counted:
+                continue
+            fp = self.workspace / rel
+            if not fp.is_file():
+                continue
+            try:
+                total += sum(1 for _ in fp.open("r", encoding="utf-8", errors="replace"))
+            except OSError:
+                continue
+        return total
 
     def diff_patch(self, files: list[str], max_chars: int = 12000) -> str:
         """指定文件的补丁文本（供前端 diff 卡展示）。

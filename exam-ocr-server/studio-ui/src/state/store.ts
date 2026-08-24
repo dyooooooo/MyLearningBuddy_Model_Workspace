@@ -5,7 +5,13 @@ import type { CorpusNode, CorpusStats, ImportJob } from "../api/types";
 import { comparePageOrder } from "../util/pageSort";
 import { studioBus } from "../events/studioBus";
 
-export type RibbonSection = "textbook" | "import" | "search" | "todo" | "edition-ops";
+export type RibbonSection =
+  | "textbook"
+  | "import"
+  | "search"
+  | "todo"
+  | "edition-ops"
+  | "improvements";
 export type ImportCenterView = "hub" | "preview" | "setup" | "mineru-settings";
 
 const RIBBON_STORAGE_KEY = "studio-active-ribbon";
@@ -13,7 +19,14 @@ const RIBBON_STORAGE_KEY = "studio-active-ribbon";
 function loadRibbon(): RibbonSection {
   try {
     const v = localStorage.getItem(RIBBON_STORAGE_KEY);
-    if (v === "textbook" || v === "import" || v === "search" || v === "todo" || v === "edition-ops") {
+    if (
+      v === "textbook" ||
+      v === "import" ||
+      v === "search" ||
+      v === "todo" ||
+      v === "edition-ops" ||
+      v === "improvements"
+    ) {
       return v;
     }
   } catch {

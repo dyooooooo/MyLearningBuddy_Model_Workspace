@@ -47,14 +47,6 @@ def test_import_advice_allows_rerender_mode():
     client.reprocess_page.assert_called_once()
 
 
-def test_page_assist_still_allows_35b():
-    specs, client = _specs("page_assist")
-    fn = specs["corpus.reprocess_page"].fn
-    out = fn("job1", 3, "layout_rebuild", "fix columns")
-    assert out.get("ok") is True
-    client.reprocess_page.assert_called_once()
-
-
 def test_import_advice_has_ir_tools():
     specs, _ = _specs("import_advice")
     for name in (

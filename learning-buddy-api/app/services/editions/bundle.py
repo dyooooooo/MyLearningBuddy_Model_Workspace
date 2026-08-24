@@ -41,7 +41,8 @@ def list_seed_edition_ids() -> list[str]:
     return sorted(
         p.name
         for p in root.iterdir()
-        if p.is_dir() and (p / "config.json").is_file()
+        if p.is_dir()
+        and ((p / "config.json").is_file() or _latest_materialized_version(p) is not None)
     )
 
 
@@ -92,6 +93,19 @@ def _bundle_from_legacy_profile(edition_id: str, data: dict[str, Any]) -> Editio
     )
 
 
+def _latest_materialized_version(root: Path) -> Path | None:
+    """Newest ``versions/<stamp>/`` snapshot that still has a config, if any."""
+    versions = root / "versions"
+    if not versions.is_dir():
+        return None
+    usable = [
+        p for p in versions.iterdir() if p.is_dir() and (p / "config.json").is_file()
+    ]
+    if not usable:
+        return None
+    return max(usable, key=lambda p: p.name)
+
+
 def _load_seed_bundle(edition_id: str) -> EditionBundle:
     root = editions_dir() / edition_id
     if not root.is_dir():
@@ -105,7 +119,18 @@ def _load_seed_bundle(edition_id: str) -> EditionBundle:
     config_path = root / "config.json"
     policy_path = root / "policy.json"
     if not config_path.is_file():
-        raise FileNotFoundError(f"edition config missing: {config_path}")
+        # The live seed files can go missing (manual cleanup, half-finished copy).
+        # Every publish also materializes a versioned snapshot, so fall back to the
+        # newest one rather than taking the whole edition down.
+        published = _latest_materialized_version(root)
+        if published is None:
+            raise FileNotFoundError(f"edition config missing: {config_path}")
+        logger.warning(
+            "edition %s has no live config.json; falling back to published version %s",
+            edition_id,
+            published.name,
+        )
+        return _load_from_dir(published, edition_id, published.name)
 
     meta_raw = _load_json(meta_path) if meta_path.is_file() else {"id": edition_id}
     meta_raw.setdefault("id", edition_id)

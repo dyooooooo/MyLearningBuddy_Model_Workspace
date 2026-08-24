@@ -55,7 +55,9 @@ def test_theme_css_exists():
     digest = _sha(css)
     if not snap.is_file():
         snap.write_text(digest + "\n", encoding="utf-8")
-    assert snap.read_text(encoding="utf-8").strip() == digest
+    assert snap.read_text(encoding="utf-8").strip() == digest, (
+        f"theme.css 变了。确认是有意改动后删掉 {snap} 再跑一次重录基线"
+    )
 
 
 def test_content_correct_golden_fixture():
@@ -217,4 +219,7 @@ def test_golden_snapshot_bundle_config():
             json.dumps(b.config.model_dump(), indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
-    assert snap.read_text(encoding="utf-8").strip() == digest
+    assert snap.read_text(encoding="utf-8").strip() == digest, (
+        f"方案 config 变了。先跟 {GOLDEN / 'config.snapshot.json'} 比对差异，"
+        f"确认是有意改动后删掉 {snap} 再跑一次重录基线"
+    )

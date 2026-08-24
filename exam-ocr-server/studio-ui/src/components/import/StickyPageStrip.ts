@@ -57,7 +57,8 @@ export function mountStickyPageStrip(opts: StickyPageStripOptions): StickyPageSt
       return;
     }
     const cur = activePage > 0 ? activePage : "—";
-    meta.textContent = `${cur} / ${pages.length}`;
+    const max = pages.length ? pages[pages.length - 1] : 0;
+    meta.textContent = max > 0 ? `${cur} / ${max}` : "";
   }
 
   function render(): void {

@@ -1,0 +1,24 @@
+{
+  "page_no": 24,
+  "html": "<article><section class=\"lb-main\"><p>合并后的段落</p></section></article>",
+  "blocks": [
+    {
+      "id": "merged",
+      "type": "paragraph",
+      "page_no": 24,
+      "order": 1,
+      "text": "（2）（3）（4）的证明方法类似，请同学们自行完成。",
+      "bbox": [120, 200, 900, 260],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "tail",
+      "type": "paragraph",
+      "page_no": 24,
+      "order": 2,
+      "text": "正文继续用于撑开页高。",
+      "bbox": [100, 900, 900, 1100],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "page_no": 11,
+  "html": "<article><section class=\"lb-main\"><h2>6.1 任意角</h2><p>例1 已知角…</p><p>例2 求值…</p></section></article>",
+  "blocks": [
+    {
+      "id": "sec",
+      "type": "heading",
+      "page_no": 11,
+      "order": 1,
+      "text": "6.1 任意角",
+      "level": 2,
+      "bbox": [100, 120, 500, 170],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "ex1p",
+      "type": "paragraph",
+      "page_no": 11,
+      "order": 2,
+      "text": "例1 已知角 α 在第二象限，求 sin α 的符号。",
+      "bbox": [100, 200, 900, 260],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "ex2p",
+      "type": "paragraph",
+      "page_no": 11,
+      "order": 3,
+      "text": "例2 求下列各角的三角函数值。",
+      "bbox": [100, 280, 900, 340],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

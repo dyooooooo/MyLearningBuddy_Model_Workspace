@@ -1,0 +1,24 @@
+{
+  "page_no": 61,
+  "html": "<article><section class=\"lb-main\"><p>stem</p><p>（　）</p></section></article>",
+  "blocks": [
+    {
+      "id": "stem",
+      "type": "paragraph",
+      "page_no": 61,
+      "order": 1,
+      "text": "（2）真命题为",
+      "bbox": [100, 180, 700, 220],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "orphan_blank",
+      "type": "paragraph",
+      "page_no": 61,
+      "order": 2,
+      "text": "（　）",
+      "bbox": [720, 180, 820, 220],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

@@ -48,6 +48,7 @@ def create_import_job(
     page_ranges: str | None = None,
     edition_id: str,
     textbook_profile: str | None = None,
+    inherit_from_job_id: str = "",
 ) -> CorpusImportJob:
     from app.schemas.parse_job_config import ParseJobConfig
 
@@ -82,6 +83,9 @@ def create_import_job(
                 "page_limit": None if pr else page_limit,
                 # Authoritative nested config
                 "parse_config": config.model_dump(),
+                # Same-book re-import: worker inherits the old job's fixed pages
+                # once this parse lands (empty = regenerate from scratch).
+                "inherit_from_job_id": (inherit_from_job_id or "").strip(),
                 **pipeline_patch(PIPELINE_PHASE_MINIO),
             }
         ),
@@ -414,167 +418,50 @@ def run_import_chunk(session: Session, job_id: str) -> CorpusImportJob:
     return job
 
 
-def run_import_extend(session: Session, job_id: str, page_ranges: str) -> CorpusImportJob:
-    """Append MinerU OCR for ``page_ranges`` into an existing job (merge IR by page)."""
-    from app.services.import_ir_store import load_blocks
-    from app.services.import_ir_pipeline import build_ir_from_parse, persist_job_ir
-    from app.services.corpus_import_incremental import upsert_page_draft_chunk
-    from app.services.corpus_blank_page import parse_page_ranges
+def _inherit_previous_pages(session: Session, job: CorpusImportJob) -> None:
+    """Same-book re-import: carry the chosen old job's fixed pages into this one.
 
-    job = session.get(CorpusImportJob, job_id)
-    if job is None:
-        raise ValueError(f"import job not found: {job_id}")
-    pr = (page_ranges or "").strip()
-    if not pr:
-        raise ValueError("page_ranges is required for extend")
-
-    t0 = time.perf_counter()
-    logger.info("import extend start id=%s page_ranges=%s", job_id, pr)
+    Driven by ``meta.inherit_from_job_id``, set when the operator picked
+    「继承上次结果」in Studio instead of a from-scratch regenerate.
+    """
     meta = loads(job.meta_json, {})
-    # The API recorded the real pre-extend status before resetting to uploaded.
-    prev_status = str(meta.pop("prev_status", "") or job.status)
-    job.status = "converting"
-    job.error = ""
-    job.updated_at = _now_iso()
-    meta["pending_page_ranges"] = pr
-    meta["extend_mode"] = True
-    job.meta_json = dumps(meta)
-    session.flush()
-
-    writer = ImportProgressWriter(session, job)
+    old_job_id = str(meta.get("inherit_from_job_id") or "").strip()
+    if not old_job_id or old_job_id == job.id:
+        return
     try:
-        raw = get_object_bytes(job.minio_key)
-        if not raw:
-            raise RuntimeError(f"MinIO object not found: {job.minio_key}")
+        from app.services.corpus_page_inherit import inherit_pages_from_job
 
-        from app.schemas.parse_job_config import ParseJobConfig
-
-        _job_config = ParseJobConfig.from_meta(loads(job.meta_json, {}))
-        parse_engine = _job_config.engine
-        _parse_phase = parse_phase_for_engine(parse_engine)
-        writer.patch(pipeline_patch(_parse_phase))
-
-        asset_prefix = ""
-        if job.minio_key:
-            from app.services.import_assets import asset_prefix_from_minio_key
-
-            asset_prefix = asset_prefix_from_minio_key(job.minio_key)
-
-        page_done = make_page_done_handler(session, job, writer)
-
-        def _progress(patch: dict) -> None:
-            from app.services.pipeline_telemetry import raise_if_canceled
-
-            raise_if_canceled(job_id, verify_corpus_job=True)
-            if "pipeline_phase" not in patch:
-                patch = {**pipeline_patch(_parse_phase), **patch}
-            writer.patch(patch)
-
-        md, meta_conv = convert_pdf_bytes(
-            raw,
-            filename=job.minio_key.split("/")[-1],
-            engine=parse_engine,
-            progress_cb=_progress,
-            page_done_cb=page_done,
-            asset_prefix=asset_prefix,
-            page_ranges=pr,
+        report = inherit_pages_from_job(
+            session,
+            old_job_id=old_job_id,
+            new_job_id=job.id,
+            dry_run=False,
+            commit=False,
         )
-        writer.patch(pipeline_patch(PIPELINE_PHASE_ADAPTER))
-        writer.patch(
-            {
-                "page_ranges": pr,
-                "last_extend_page_ranges": pr,
-                "content_list_source": meta_conv.get("content_list_source"),
-                "mineru_raw_keys": meta_conv.get("mineru_raw_keys") or {},
-            }
-        )
-
-        pages_streamed: set[int] = set()
-        _total_hint = int(meta_conv.get("total_pages") or meta_conv.get("ocr_total") or 0)
-        if not _total_hint:
-            # All-blank segment: MinerU reports 0 pages; use the requested span.
-            _total_hint = len(parse_page_ranges(pr))
-
-        def _page_html_cb(page_no: int, html: str) -> None:
-            from app.services.pipeline_telemetry import raise_if_canceled
-
-            raise_if_canceled(job_id)
-            upsert_page_draft_chunk(
-                session,
-                job,
-                page_no=page_no,
-                page_content=html,
-                total_pages=_total_hint,
-                engine=parse_engine,
-                content_format="html",
-            )
-            pages_streamed.add(page_no)
-            session.flush()
-            writer.on_page_committed()
-
-        new_ir = build_ir_from_parse(
-            engine=parse_engine,
-            raw_blocks=meta_conv.get("raw_blocks"),
-            vision_pages=meta_conv.get("vision_pages"),
-            pdf_bytes=raw,
-            asset_prefix=asset_prefix,
-            progress_cb=_progress,
-            page_html_cb=_page_html_cb,
-            job_id=job_id,
-            debug_job=job,
-            total_pages_hint=_total_hint or None,
-            expected_pages=parse_page_ranges(pr) or None,
-            profile_id=_job_config.edition_id,
-        )
-        existing = load_blocks(job) or []
-        new_pages = {b.page_no for b in (new_ir or [])}
-        merged = [b for b in existing if b.page_no not in new_pages]
-        merged.extend(new_ir or [])
-        merged.sort(key=lambda b: (int(b.page_no), str(getattr(b, "id", "") or "")))
-        if merged:
-            persist_job_ir(
-                session,
-                job,
-                merged,
-                pdf_bytes=raw,
-                parse_engine=parse_engine,
-                pages_rendered=pages_streamed,
-            )
-        job = session.get(CorpusImportJob, job_id)
-        assert job is not None
-        job.status = "parsed"
-        meta2 = loads(job.meta_json, {})
-        # Compare-and-delete: only clear the pending range this run consumed,
-        # so a concurrently queued extend is never silently overwritten.
-        if meta2.get("pending_page_ranges") == pr:
-            meta2.pop("pending_page_ranges", None)
-            meta2.pop("extend_mode", None)
-        segs = list(meta2.get("extended_page_ranges") or [])
-        if pr not in segs:
-            segs.append(pr)
-        meta2["extended_page_ranges"] = segs
-        job.meta_json = dumps(meta2)
-        job.updated_at = _now_iso()
-        writer.maybe_commit(force=True)
-        # structure merge so tree stays consistent after append
-        job = run_import_structure_merge(session, job_id)
         logger.info(
-            "import extend done id=%s page_ranges=%s prev=%s elapsed=%.2fs",
-            job_id,
-            pr,
-            prev_status,
-            time.perf_counter() - t0,
+            "import page inherit id=%s from=%s applied=%s skipped=%s unmatched=%s",
+            job.id,
+            old_job_id,
+            report.get("applied_count"),
+            report.get("skipped_count"),
+            report.get("unmatched_count"),
         )
-        return job
-    except Exception as e:
-        job = session.get(CorpusImportJob, job_id)
-        if job is not None:
-            job.status = "failed"
-            job.error = str(e)[:4000]
-            job.updated_at = _now_iso()
-            session.flush()
-        logger.exception("import extend failed id=%s", job_id)
-        raise
+    except Exception:
+        logger.exception("import page inherit failed id=%s from=%s", job.id, old_job_id)
+        return
+    meta = loads(job.meta_json, {})
+    meta["inherit_result"] = {
+        "from_job_id": old_job_id,
+        "applied_count": report.get("applied_count", 0),
+        "applied_pages": report.get("applied_pages", []),
+        "skipped_count": report.get("skipped_count", 0),
+        "low_confidence_count": report.get("low_confidence_count", 0),
+        "unmatched_count": report.get("unmatched_count", 0),
+        "offset_hint": report.get("offset_hint", 0),
+    }
+    job.meta_json = dumps(meta)
+    session.add(job)
+    session.flush()
 
 
 def process_import_job(session: Session, job_id: str) -> CorpusImportJob:
@@ -583,17 +470,6 @@ def process_import_job(session: Session, job_id: str) -> CorpusImportJob:
     job0 = session.get(CorpusImportJob, job_id)
     if job0 is None:
         raise ValueError(f"import job not found: {job_id}")
-    meta0 = loads(job0.meta_json, {})
-    pending_ext = str(meta0.get("pending_page_ranges") or "").strip()
-    if meta0.get("extend_mode") and pending_ext:
-        job = run_import_extend(session, job_id, pending_ext)
-        logger.info(
-            "import pipeline (extend) done id=%s status=%s elapsed=%.2fs",
-            job_id,
-            job.status,
-            time.perf_counter() - t0,
-        )
-        return job
 
     job = run_import_convert(session, job_id)
     if job.status == "parsed":
@@ -612,6 +488,7 @@ def process_import_job(session: Session, job_id: str) -> CorpusImportJob:
             session.flush()
         except Exception:
             logger.exception("import correction replay failed id=%s", job_id)
+        _inherit_previous_pages(session, job)
         job = run_import_structure_merge(session, job_id)
     logger.info(
         "import pipeline done id=%s status=%s textbook=%s elapsed=%.2fs",

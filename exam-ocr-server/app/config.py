@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     studio_token: str = ""
     # Buddy Copilot 宿主机编排服务（Cursor SDK），经 extra_hosts 访问宿主机
     copilot_base_url: str = "http://host.docker.internal:8200"
+    textbook_agent_url: str = "http://textbook-agent:8200"
+    textbook_agent_token: str = ""
     refine_enabled: bool = True
     redis_url: str = "redis://redis:6379/0"
     session_ttl_seconds: int = 86400

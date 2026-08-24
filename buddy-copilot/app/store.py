@@ -209,6 +209,49 @@ class Store:
         rows = self.list_sessions(limit=1, import_job_id=jid)
         return str(rows[0]["id"]) if rows else None
 
+    def find_session_id_by_fingerprint(
+        self, fingerprint_hash: str, *, kind: str = ""
+    ) -> str | None:
+        """按书指纹找改进点会话（payload.fingerprint_hash）；取最新一条。
+
+        kind 为空或 ip_book：在 ip_book/ip_triage/ip_split 中查找。
+        """
+        fp = (fingerprint_hash or "").strip()
+        if not fp:
+            return None
+        kind_q = (kind or "").strip()
+        ip_kinds = ("ip_book", "ip_triage", "ip_split")
+        with self._conn() as conn:
+            if kind_q and kind_q not in ip_kinds:
+                rows = conn.execute(
+                    "SELECT id, payload FROM sessions WHERE kind=?"
+                    " ORDER BY updated_at DESC LIMIT 80",
+                    (kind_q,),
+                ).fetchall()
+            elif kind_q == "ip_book" or not kind_q:
+                rows = conn.execute(
+                    "SELECT id, payload, kind FROM sessions"
+                    " WHERE kind IN ('ip_book','ip_triage','ip_split')"
+                    " ORDER BY updated_at DESC LIMIT 80"
+                ).fetchall()
+            else:
+                # 指定旧 kind 时仍优先同指纹任意 IP 会话（一书一对话）
+                rows = conn.execute(
+                    "SELECT id, payload, kind FROM sessions"
+                    " WHERE kind IN ('ip_book','ip_triage','ip_split')"
+                    " ORDER BY updated_at DESC LIMIT 80"
+                ).fetchall()
+        for r in rows:
+            try:
+                pl = json.loads(r["payload"] or "{}")
+            except Exception:  # noqa: BLE001
+                continue
+            if not isinstance(pl, dict):
+                continue
+            if str(pl.get("fingerprint_hash") or "").strip() == fp:
+                return str(r["id"])
+        return None
+
     def bind_import_job(self, sid: str, import_job_id: str) -> list[str]:
         """将会话绑定到导入任务；删除同 job 下其它会话，返回被删 id 列表。"""
         jid = (import_job_id or "").strip()
@@ -274,7 +317,15 @@ class Store:
         conn.execute("DELETE FROM sessions WHERE id=?", (sid,))
 
     def update_session(self, sid: str, **fields: Any) -> None:
-        allowed = {"status", "agent_id", "plan", "iteration", "payload", "import_job_id"}
+        allowed = {
+            "status",
+            "agent_id",
+            "plan",
+            "iteration",
+            "payload",
+            "import_job_id",
+            "kind",
+        }
         sets, vals = [], []
         sync_job_from_payload: str | None = None
         for k, v in fields.items():
@@ -387,6 +438,26 @@ class Store:
                 ),
             )
         return cur.rowcount > 0
+
+    def grant_write_scope(self, sid: str, paths: list[str], *, reason: str = "") -> str:
+        """正式工具写盘后登记获批范围，避免 fs_guard 把合法 fork 当越权掐死。
+
+        ``editions.fork`` / ``edition.finalize_from_session`` 是草稿档（自动执行），
+        但会在 ``configs/editions/<id>/`` 落文件；终检按路径求交，没有这张卡就会
+        把整轮会话标 failed。
+        """
+        clean = [str(p).strip() for p in paths if str(p).strip()]
+        aid = self.create_approval(
+            sid,
+            "tool_write_scope",
+            {
+                "tool": "tool_write_scope",
+                "title": reason or "工具写盘范围",
+                "scope_paths": clean,
+            },
+        )
+        self.decide_approval(aid, True, note=reason)
+        return aid
 
     def has_session_allow(self, sid: str, action_key: str) -> bool:
         """本会话内该动作是否已被「总是允许」（approved + remember）。"""

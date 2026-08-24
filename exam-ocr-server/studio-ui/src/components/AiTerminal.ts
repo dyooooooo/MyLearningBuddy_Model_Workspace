@@ -1,11 +1,13 @@
 /**
- * Ctrl+` AI 对话抽屉：挂在中栏（main）底部，与预览上下分栏。
- * 宽屏：抽屉式上下分栏；窄屏（≤1080px）：AI 已在底部属性栏的「AI 对话」页签里，
- * Ctrl+` 只负责展开底部栏并切到该页签，不再开抽屉。
+ * AI 对话显隐协调：
+ * - 跟随属性栏当前停靠（右栏 / 下栏），展开对应区域并切到「AI 对话」页签
+ * - 不再按页宽硬开中栏遗留抽屉
+ *
+ * Ctrl+` / studio:open-ai-terminal / 双击聚焦 共用同一套逻辑。
  */
 
 import { el } from "../util/dom";
-
+import { isInspectorDockBottom } from "./LayoutShell";
 const HEIGHT_KEY = "studio.ai-terminal-h";
 const DEFAULT_H = 360;
 const MIN_H = 180;
@@ -47,7 +49,7 @@ function clampHeight(h: number): number {
   return Math.min(maxHeight(), Math.max(MIN_H, Math.round(h)));
 }
 
-/** 挂到中栏 main 底部；Ctrl+` / Cmd+` 开关。 */
+/** 挂到中栏 main 底部；Ctrl+` / Cmd+` 按布局适配打开 AI 宿主。 */
 export function mountAiTerminal(main: HTMLElement): AiTerminalHandle {
   const root = el("div", "studio-ai-terminal");
   root.setAttribute("role", "complementary");
@@ -74,14 +76,15 @@ export function mountAiTerminal(main: HTMLElement): AiTerminalHandle {
   const placeholder = el(
     "div",
     "studio-ai-terminal__empty muted",
-    "尚无进行中的 AI 会话。在导入区选择方案与 PDF 后点「AI 分段导入」即可在此对话。",
+    "尚无进行中的 AI 会话。在导入区选择方案与 PDF 后点「AI 全书导入」即可在此对话。",
   );
   slot.appendChild(placeholder);
 
   root.append(handle, head, slot);
   main.appendChild(root);
 
-  let open = false;
+  /** 遗留底部抽屉是否处于打开态（宽屏新逻辑下应保持 false）。 */
+  let drawerOpen = false;
   let height = loadHeight();
   let homeParent: HTMLElement | null = null;
   let homeNext: ChildNode | null = null;
@@ -96,7 +99,7 @@ export function mountAiTerminal(main: HTMLElement): AiTerminalHandle {
   function parkCopilotHost(): void {
     try {
       void import("./Inspector").then(({ getImportCopilotHost }) => {
-        if (!open) return;
+        if (!drawerOpen) return;
         const copilotHost = getImportCopilotHost();
         if (!copilotHost || parkedHost === copilotHost) return;
         if (slot.contains(copilotHost)) {
@@ -137,41 +140,64 @@ export function mountAiTerminal(main: HTMLElement): AiTerminalHandle {
     }
   }
 
-  function focusComposer(): void {
-    window.setTimeout(() => {
-      const ta = root.querySelector<HTMLTextAreaElement>(".copilot-composer-input");
-      ta?.focus();
-    }, 40);
-  }
-
-  function setOpen(next: boolean): void {
-    if (next && window.matchMedia("(max-width: 1080px)").matches) {
-      // 窄屏：属性栏（含 AI 页签）已在中栏底部，聚焦过去即可，不开抽屉
-      document.dispatchEvent(new CustomEvent("studio:expand-bottom-dock"));
-      void import("./Inspector").then(({ showImportCopilotTab }) => {
-        showImportCopilotTab();
-        focusComposer();
-      });
-      return;
-    }
-    open = next;
-    root.classList.toggle("is-open", open);
-    main.classList.toggle("studio-main--ai-terminal", open);
-    document.documentElement.classList.toggle("studio-ai-terminal-open", open);
-    if (open) {
-      // 窄屏单栏：绝不展开右栏，避免把中栏挤没
+  function setDrawerOpen(next: boolean): void {
+    drawerOpen = next;
+    root.classList.toggle("is-open", drawerOpen);
+    main.classList.toggle("studio-main--ai-terminal", drawerOpen);
+    document.documentElement.classList.toggle("studio-ai-terminal-open", drawerOpen);
+    if (drawerOpen) {
       applyHeight(height);
       parkCopilotHost();
-      focusComposer();
     } else {
       restoreCopilotHost();
     }
   }
 
+  /** 关闭遗留中栏底部抽屉，把 Copilot 宿主还回属性栏。 */
+  function closeLegacyDrawer(): void {
+    if (drawerOpen) setDrawerOpen(false);
+    else restoreCopilotHost();
+  }
+
+  function focusComposer(): void {
+    window.setTimeout(() => {
+      void import("./Inspector").then(({ getImportCopilotHost }) => {
+        const host = getImportCopilotHost();
+        const ta =
+          host?.querySelector<HTMLTextAreaElement>(".copilot-composer-input") ||
+          root.querySelector<HTMLTextAreaElement>(".copilot-composer-input");
+        ta?.focus();
+      });
+    }, 40);
+  }
+
+  /** 跟随属性栏停靠位打开 AI（右栏或下栏），不挪动停靠、不开遗留抽屉。 */
+  function revealAiSurface(): void {
+    closeLegacyDrawer();
+    if (isInspectorDockBottom()) {
+      document.dispatchEvent(new CustomEvent("studio:expand-bottom-dock"));
+    } else {
+      document.dispatchEvent(new CustomEvent("studio:expand-right-dock"));
+    }
+    void import("./Inspector").then(({ showImportCopilotTab }) => {
+      showImportCopilotTab();
+      focusComposer();
+    });
+  }
+
+  function setOpen(next: boolean): void {
+    if (next) {
+      revealAiSurface();
+      return;
+    }
+    // 关闭：收起遗留抽屉；窄屏额外折叠底部栏（可选，保持轻量只关抽屉）
+    closeLegacyDrawer();
+  }
+
   closeBtn.onclick = () => setOpen(false);
 
   handle.addEventListener("pointerdown", (ev) => {
-    if (ev.button !== 0 || !open) return;
+    if (ev.button !== 0 || !drawerOpen) return;
     ev.preventDefault();
     const startY = ev.clientY;
     const startH = height;
@@ -192,35 +218,58 @@ export function mountAiTerminal(main: HTMLElement): AiTerminalHandle {
   });
 
   window.addEventListener("resize", () => {
-    if (open) applyHeight(height);
+    if (drawerOpen) closeLegacyDrawer();
   });
 
   document.addEventListener("keydown", (e) => {
     if (!(e.ctrlKey || e.metaKey)) return;
     if (e.code !== "Backquote" && e.key !== "`") return;
     e.preventDefault();
-    setOpen(!open);
+    if (drawerOpen) setOpen(false);
+    else revealAiSurface();
   });
 
   document.addEventListener("studio:toggle-ai-terminal", (() => {
-    setOpen(!open);
+    if (drawerOpen) setOpen(false);
+    else revealAiSurface();
   }) as EventListener);
 
   document.addEventListener("studio:open-ai-terminal", (() => {
-    setOpen(true);
+    revealAiSurface();
   }) as EventListener);
 
+  document.addEventListener(
+    "studio:focus-import-target",
+    ((e: CustomEvent<{
+      line: "mineru" | "35b";
+      jobId: string;
+      pageNo: number;
+      blockId?: string;
+    }>) => {
+      revealAiSurface();
+      const detail = e.detail;
+      if (!detail?.jobId || !detail.pageNo) return;
+      void import("./CopilotPanel").then(({ focusImportTarget }) => {
+        void focusImportTarget(detail);
+      });
+    }) as EventListener,
+  );
+
+  // 仅当遗留抽屉仍开着时，切到 AI 页签才把宿主 park 进抽屉（宽屏新路径不会触发）
   document.addEventListener("studio:inspector-tab", ((e: CustomEvent<{ tab?: string }>) => {
-    if (open && e.detail?.tab === "ai") parkCopilotHost();
+    if (drawerOpen && e.detail?.tab === "ai") parkCopilotHost();
   }) as EventListener);
 
   applyHeight(height);
 
   return {
     el: root,
-    isOpen: () => open,
+    isOpen: () => drawerOpen,
     open: () => setOpen(true),
     close: () => setOpen(false),
-    toggle: () => setOpen(!open),
+    toggle: () => {
+      if (drawerOpen) setOpen(false);
+      else revealAiSurface();
+    },
   };
 }

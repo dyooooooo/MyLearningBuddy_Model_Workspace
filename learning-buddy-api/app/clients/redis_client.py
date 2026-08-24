@@ -110,6 +110,18 @@ def purge_import35b_queue(job_id: str) -> int:
     return removed
 
 
+def enqueue_kb_import(book_id: str) -> str:
+    payload = {"job_id": book_id, "type": "kb_import"}
+    get_redis().lpush(settings.kb_import_queue, json.dumps(payload))
+    return book_id
+
+
+def enqueue_textbook_eval(request_id: str) -> str:
+    payload = {"job_id": request_id, "type": "textbook_eval", "request_id": request_id}
+    get_redis().lpush(settings.textbook_eval_queue, json.dumps(payload))
+    return request_id
+
+
 def enqueue_scout_run(run_id: str) -> str:
     payload = {"job_id": run_id, "type": "scout", "run_id": run_id}
     get_redis().lpush(settings.scout_queue, json.dumps(payload))

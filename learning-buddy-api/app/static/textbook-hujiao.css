@@ -168,6 +168,28 @@
   margin-bottom: 0.35rem;
 }
 
+/* Narrow aside: never show horizontal scrollbars on formulas */
+.lb-aside .lb-equation,
+.lb-aside .math--display {
+  overflow-x: visible;
+  overflow: visible;
+  max-width: 100%;
+}
+
+.lb-aside .lb-equation {
+  margin: 0.25rem 0;
+  padding: 0.25rem 0.2rem;
+  text-align: left;
+  background: transparent;
+}
+
+.lb-aside .math--display,
+.lb-aside .math--inline {
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .lb-col-placeholder {
   min-height: 1px;
 }
@@ -179,8 +201,10 @@
 .lb-main .lb-block > p {
   margin: 0 0 0.65rem;
   text-indent: var(--lb-indent);
-  text-align: justify;
-  text-justify: inter-ideograph;
+  /* 全文左对齐：两端对齐在窄栏+长公式时会「抻面条」 */
+  text-align: left !important;
+  text-justify: auto !important;
+  word-spacing: normal;
 }
 
 /* Numbered examples (1)(2)… — same 1× indent as body first-line, whole line */
@@ -189,6 +213,76 @@
   text-indent: 0;
   padding-left: var(--lb-indent) !important;
   text-align: left;
+}
+
+/* 选择题选项：A/B 一行、C/D 一行（两列分栏感，避免挤成一行） */
+.lb-main .lb-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.75rem;
+  row-gap: 0.4rem;
+  margin: 0.1rem 0 0.85rem;
+  padding-left: var(--lb-indent);
+  text-align: left;
+}
+
+.lb-main .lb-choice {
+  text-indent: 0;
+  text-align: left;
+  min-width: 0;
+}
+
+.lb-main .lb-choice .math--inline {
+  overflow-wrap: anywhere;
+}
+
+/* 习题小问 ①②… / （1）（2）…：题干换行后横排，放得下就一行，放不下自动折行 */
+.lb-main .lb-subitem-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 1.75rem;
+  row-gap: 0.4rem;
+  margin: 0.1rem 0 0.85rem;
+  padding-left: var(--lb-indent);
+  text-align: left;
+}
+
+.lb-main .lb-subitem {
+  flex: 0 1 auto;
+  text-indent: 0;
+  text-align: left;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lb-main .lb-subitem .math--inline,
+.lb-main .lb-subitem .math--display {
+  overflow-wrap: anywhere;
+}
+
+/* p54 题4：原书（1）（2）/（3）（4）两列 */
+.lb-page[data-page="54"] .lb-block[data-block-id="375f78ce2060d2f8"] .lb-subitem-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 1.5rem;
+  row-gap: 0.35rem;
+}
+
+/* p78 题4：原书（1）（2）/（3）（4）两列 */
+.lb-page[data-page="78"] .lb-block[data-block-id="cf34f6386df81029"] .lb-subitem-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 1.5rem;
+  row-gap: 0.35rem;
+}
+
+/* p97 题7：原书（1）（2）/（3）（4）两列 */
+.lb-page[data-page="97"] .lb-block[data-block-id="1b927f3fc7f3fbb9"] .lb-subitem-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 1.5rem;
+  row-gap: 0.35rem;
 }
 
 /* 解与题目同盒模型缩进；答案在 label 栏（1×）后再起一列 */
@@ -288,6 +382,78 @@
   text-align: center;
 }
 
+/* Compact figures — prefer data-block-id / class in theme; no renderer change needed */
+.lb-fig-item--half {
+  max-width: 48%;
+}
+
+.lb-fig-item--md {
+  max-width: 58%;
+}
+
+.lb-fig-item--sm {
+  max-width: 38%;
+}
+
+/* 图 6-1-8（job p16）：原书约占主栏一半 */
+.lb-fig-item[data-block-id="e715abda3ff0e08c"] {
+  max-width: 48%;
+}
+
+/* 图 7-1-9（job p77）：原书贴段首右侧，约方图；勿拉满旁栏 */
+.lb-fig-item[data-block-id="907605d237c81feb"] {
+  float: right;
+  clear: right;
+  width: 28%;
+  max-width: 8.75rem;
+  margin: 0.1rem 0 0.55rem 0.85rem;
+  text-align: center;
+}
+
+.lb-fig-item[data-block-id="907605d237c81feb"] img {
+  width: 100%;
+  height: auto;
+  max-height: 8.5rem;
+  object-fit: contain;
+}
+
+/* 图 6-2-1 / 6-2-2（job p32）：原书左右并排，各带图题；固定图槽高度底对齐 */
+.lb-fig-item[data-block-id="fe60e0d75801a2c2"],
+.lb-fig-item[data-block-id="d94bbfe3a29c4a76"] {
+  display: inline-block;
+  width: 48%;
+  max-width: 48%;
+  vertical-align: top;
+  margin-left: 0.5%;
+  margin-right: 0.5%;
+  box-sizing: border-box;
+}
+
+.lb-fig-item[data-block-id="fe60e0d75801a2c2"] > div,
+.lb-fig-item[data-block-id="d94bbfe3a29c4a76"] > div {
+  height: 9.75rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.lb-fig-item[data-block-id="fe60e0d75801a2c2"] .lb-fig-cell,
+.lb-fig-item[data-block-id="d94bbfe3a29c4a76"] .lb-fig-cell {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.lb-fig-item[data-block-id="fe60e0d75801a2c2"] img,
+.lb-fig-item[data-block-id="d94bbfe3a29c4a76"] img {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 .lb-fig-item img,
 .lb-fig-group img {
   max-width: 100%;
@@ -299,20 +465,41 @@
 
 .lb-fig-row {
   display: flex;
-  gap: 0.65rem;
+  gap: 1.25rem;
   justify-content: center;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
+.lb-fig-group .lb-fig-row + .lb-fig-row {
+  margin-top: 0.65rem;
+}
+
+/* 并排图组：图在上、图注在底行，保证同排图注基线对齐 */
 .lb-fig-cell {
   min-width: 0;
+  flex: 1 1 0;
+  max-width: 16rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.lb-fig-cell img {
+  margin-top: auto;
+  max-height: 12rem;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .lb-fig-cell-cap {
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
+  min-height: 1.25em;
   color: var(--lb-muted);
   font-size: 0.82rem;
+  line-height: 1.25;
 }
 
 .lb-fig-item figcaption,
@@ -433,9 +620,25 @@
 }
 
 .lb-table-wrap caption {
-  margin-bottom: 0.35rem;
+  caption-side: top;
+  text-align: center;
+  margin: 0 0 0.35rem;
+  color: var(--lb-ink, #1f2937);
+  font-size: 0.95rem;
+  font-weight: 700; /* 表题 caption 加粗，非全文 heading */
+}
+
+/* 表题 heading（如「表 6-1」）：居中贴在下一张表正上方，仍为 h3 以映射章节 */
+.lb-main .lb-block:has(+ .lb-block > .lb-table-wrap) > h3 {
+  text-align: center;
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: var(--lb-muted);
-  font-size: 0.82rem;
+}
+
+.lb-main .lb-block:has(+ .lb-block > .lb-table-wrap) + .lb-block > .lb-table-wrap {
+  margin-top: 0.15rem;
 }
 
 .lb-table-wrap th,
@@ -448,6 +651,109 @@
 .lb-table-wrap th {
   background: var(--lb-accent-soft);
   font-weight: 700;
+}
+
+/* Wide comparison tables (e.g. 角度↔弧度): show all columns, no horizontal scroll.
+   !important：压过导入预览 critical CSS 对 .lb-table-wrap 的 width/margin 锁定。 */
+.lb-main .lb-block > .lb-table-wrap:has(table.lb-table--fit),
+.lb-table-wrap:has(table.lb-table--fit) {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.lb-table-wrap table.lb-table--fit {
+  table-layout: fixed;
+  width: 100% !important;
+  max-width: 100%;
+  font-size: 0.72rem;
+}
+
+.lb-table-wrap table.lb-table--fit th,
+.lb-table-wrap table.lb-table--fit td {
+  padding: 0.22rem 0.08rem;
+  text-align: center;
+  vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.lb-table-wrap table.lb-table--fit .math--inline,
+.lb-table-wrap table.lb-table--fit .math--display {
+  font-size: 0.9em;
+  max-width: 100%;
+  overflow: visible;
+  white-space: normal;
+}
+
+/* lb-table--wide: same content width as body paragraphs in .lb-main
+   (override import-preview critical CSS that forces wrap margin: 2×indent). */
+.lb-main .lb-block:has(> .lb-table-wrap > table.lb-table--wide),
+.lb-main .lb-block:has(> .lb-table-wrap table.lb-table--wide) {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.lb-main .lb-block > .lb-table-wrap:has(> table.lb-table--wide),
+.lb-main .lb-block > .lb-table-wrap:has(table.lb-table--wide),
+.lb-table-wrap:has(> table.lb-table--wide) {
+  margin: 0.75rem 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+}
+
+.lb-main .lb-block > .lb-table-wrap > table.lb-table--wide,
+.lb-table-wrap > table.lb-table--wide {
+  display: table !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+  table-layout: fixed;
+  font-size: 0.92rem;
+}
+
+.lb-table-wrap table.lb-table--wide th,
+.lb-table-wrap table.lb-table--wide td {
+  padding: 0.55rem 0.5rem;
+  text-align: center;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+/* Tables with inline figures (e.g. 内容提要 trig summary): keep image row
+   proportional to text rows — never let intrinsic img size inflate row height. */
+.lb-table-wrap table td img,
+.lb-table-wrap table th img {
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-height: 7.25rem;
+  display: block;
+  margin: 0.15rem auto;
+  object-fit: contain;
+}
+
+.lb-table-wrap table.lb-table--wide td img,
+.lb-table-wrap table.lb-table--wide th img {
+  max-height: 4.25rem;
+}
+
+/* Compact figure cells (e.g. p96 内容提要 trig graphs). */
+.lb-table-wrap table.lb-table--fig-sm td img,
+.lb-table-wrap table.lb-table--fig-sm th img {
+  max-height: 3.75rem;
+  max-width: 92%;
 }
 
 .lb-equation {

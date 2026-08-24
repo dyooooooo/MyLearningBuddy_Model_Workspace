@@ -1,0 +1,30 @@
+suspect_type: FILL_BLANK_OUT_OF_MATH
+title: 填空下划线/空白误入 LaTeX
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    has_math and zone == 'main'
+    and (
+      matches(text, '\\\\underline')
+      or matches(text, '\\$[^$]*____[^$]*\\$')
+    )
+  min_hits: 1
+
+evidence: [type, zone, char_count, has_math, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L0.normalize
+  # 填空横线跑到公式外：认这一块，看它是否真含公式
+  locate_by: [zone, has_math, text_preview]
+  playbook: |
+    1. 定位含 ____ 或 \underline{…} 的公式块。
+    2. 把填空空白移到公式外的正文；公式内只留符号与数字。
+    3. rebuild_ir 核对填空题渲染与作答线。
+
+examples:
+  positive: [configs/checks/fixtures/fill_blank_out_of_math_pos.json]
+  negative: [configs/checks/fixtures/fill_blank_out_of_math_neg.json]

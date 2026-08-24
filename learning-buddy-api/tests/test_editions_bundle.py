@@ -30,6 +30,30 @@ def test_load_base():
     assert b.config.features.columns == "single"
 
 
+def test_live_config_loss_falls_back_to_newest_publish(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    """方案目录里的现行 config.json 丢了，也要能靠已发布版本起来，不能整册瘫掉。"""
+    root = tmp_path / "ed1"
+    for stamp, columns in (("20260101000000", "double"), ("20260202000000", "single")):
+        version = root / "versions" / stamp
+        version.mkdir(parents=True)
+        (version / "meta.json").write_text('{"id": "ed1"}', encoding="utf-8")
+        (version / "config.json").write_text(
+            '{"features": {"columns": "%s"}}' % columns, encoding="utf-8"
+        )
+    monkeypatch.setattr(
+        "app.services.editions.bundle.editions_dir", lambda: tmp_path
+    )
+    clear_bundle_cache()
+
+    bundle = load_bundle("ed1")
+
+    assert bundle.meta.version == "20260202000000"
+    assert bundle.config.features.columns == "single"
+    assert "ed1" in list_seed_edition_ids()
+
+
 def test_hard_break_empty_edition_id():
     with pytest.raises(ValueError, match="edition_id"):
         load_bundle("")

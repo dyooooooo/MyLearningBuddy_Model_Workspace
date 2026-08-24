@@ -1,0 +1,25 @@
+{
+  "page_no": 16,
+  "html": "<article><section class=\"lb-main\"><figure></figure><p>正文</p></section></article>",
+  "blocks": [
+    {
+      "id": "only",
+      "type": "figure",
+      "page_no": 16,
+      "order": 1,
+      "text": "",
+      "caption": "示意图",
+      "bbox": [100, 150, 900, 700],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "body",
+      "type": "paragraph",
+      "page_no": 16,
+      "order": 2,
+      "text": "正文说明。",
+      "bbox": [100, 720, 900, 780],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

@@ -100,12 +100,13 @@ export function describeImportJob(job: ImportJob): { statusText: string; pct: nu
 }
 
 function applyJob(job: ImportJob): void {
-  store.setImportJob(job);
-  studioBus.emit("studio:import-progress");
+  // 先停轮询再通知 UI，避免横幅看到「终态 + 仍在 polling」而钉死不消失。
   if (IMPORT_JOB_TERMINAL.has(String(job.status || ""))) {
     stopImportJobObserver();
     activeJobId = null;
   }
+  store.setImportJob(job);
+  studioBus.emit("studio:import-progress");
 }
 
 async function refreshJob(jobId: string): Promise<void> {

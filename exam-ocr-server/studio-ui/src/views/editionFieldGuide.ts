@@ -48,7 +48,7 @@ export const EDIT_OVERVIEW = {
     "不要手改 meta.id / meta.version / meta.base（只读）；换方案或继承请用左侧「新建」。",
     "不要把坐标填成超过 page_w 的值；页面坐标系默认宽约 1000。",
     "正则（patterns）写错会导致章节/目录识别失败——改前先看右栏说明。",
-    "policy.entries 只在跑大模型 refine 时注入提示词；refine_mode=skip 时基本不生效。",
+    "不要把版式规则写进 policy.entries —— MinerU 全书导入完全不读它，写了等于没写；请改 layout_rules.yaml。",
   ],
 };
 
@@ -170,13 +170,13 @@ export const FORM_FIELDS: FieldGuide[] = [
       { value: "full", label: "full — 完整 refine" },
       { value: "rerecognize", label: "rerecognize — 重识别" },
     ],
-    hint: "决定每页是否再走 LLM refine",
+    hint: "遗留字段：MinerU 全书导入不读它",
     tutorial:
-      "控制导入后是否对每页再跑一轮大模型。\n" +
-      "· skip：最快，沪教 MinerU 默认；此时 policy.entries 基本不注入。\n" +
-      "· layout_only / content_correct / full：更重、更慢、更吃 GPU。",
-    impact: "发布后新导入按该模式消耗算力与耗时。",
-    tip: "不确定时保持 skip。",
+      "历史字段。MinerU 全书导入主链在架构上就不跑大模型 refine，\n" +
+      "无论这里填什么都不会触发——不是「按 skip 判断」，是根本没有这条分支。\n" +
+      "页级版式问题请改 layout_rules.yaml / overrides/pages，再对该页重算排版。",
+    impact: "对当前导入流程无影响。",
+    tip: "保持 skip。",
   },
   {
     path: "config.refine_parallel",
@@ -526,16 +526,19 @@ export const FORM_FIELDS: FieldGuide[] = [
     path: "policy.entries",
     label: "软规则条目",
     control: "policy_entries",
-    hint: "卡片编辑：id / facet / severity / 陈述 / tags；下方 JSON 仍可整包改",
+    hint: "⚠️ 账本用途：MinerU 全书导入不读它；卡片编辑 id / facet / severity / 陈述 / tags",
     tutorial:
       "软政策：按 facet 注入对应提示词槽位（仅大模型步骤）。\n" +
+      "⚠️ MinerU 全书导入主链不跑大模型，因此本数组对该线【完全无效】；\n" +
+      "它目前只对 35B 线的 vision_layout 槽位有效。\n" +
+      "AI 会话收尾（finalize）也写进这里 —— 那是账本与溯源，不会改变下次导入结果。\n" +
       "· id：唯一标识（建议 方案前缀.主题）\n" +
       "· facet：提示词过滤主题\n" +
       "· severity：must / should / may\n" +
       "· statement：自然语言规则\n" +
-      "· tags：逗号分隔可选标签\n" +
-      "refine_mode=skip 时批量导入几乎不读这里；待审「通过」也会写入本数组。",
-    impact: "影响 refine/35B 提示词内容；不直接改分栏引擎。",
+      "· tags：逗号分隔可选标签",
+    impact: "只影响 35B 线提示词内容；不改分栏引擎，不影响 MinerU 导入。",
+    tip: "要让规则真的生效，请改 layout_rules.yaml（即时）或 geometry/patterns/features（需发布）。",
   },
 
   // ── assets ────────────────────────────────────────────────────────────

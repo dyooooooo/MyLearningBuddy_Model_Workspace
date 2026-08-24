@@ -1,0 +1,27 @@
+suspect_type: HEADER_DECOR_FIGURE_IN_ASIDE
+title: 顶栏装饰图被当成侧栏插图
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_figure and zone == 'aside_left' and rel_y0 < 0.18
+    and height_ratio <= 0.14 and width_ratio <= 0.35
+  min_hits: 1
+
+evidence: [type, zone, rel_y0, height_ratio, width_ratio, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L1.layout_rule
+  # 页眉装饰图归错到侧栏：靠归属区 + 纵向位置与图高定位
+  locate_by: [zone, rel_y0, height_ratio, text_preview]
+  playbook: |
+    1. 确认左侧顶栏 figure 是页眉装饰/文字图，不是正文插图。
+    2. OCR 出文字后并入 running_header（放在原页眉前），去掉误判 aside figure。
+    3. rebuild_ir 后核对页眉完整、侧栏不再残留装饰图。
+
+examples:
+  positive: [configs/checks/fixtures/header_decor_figure_in_aside_pos.json]
+  negative: [configs/checks/fixtures/header_decor_figure_in_aside_neg.json]

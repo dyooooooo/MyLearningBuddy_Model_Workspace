@@ -14,6 +14,8 @@ import {
   initB35ImportTreeListeners,
 } from "./import/B35ImportTree";
 import {
+  activateMinerUPendingNode,
+  augmentMinerUPendingImports,
   bindMinerUImportTree,
   decorateMinerUTreeRow,
   initMinerUImportTreeListeners,
@@ -160,6 +162,7 @@ async function openMinerUImportPage(n: TreeNode): Promise<void> {
 
 function onNodeActivate(n: TreeNode): void {
   if (activateB35TreeNode(n)) return;
+  if (activateMinerUPendingNode(n)) return;
   if (n.node_type === "import_job") {
     const jobId = n.id.replace("job:", "");
     void openImportJob(jobId);
@@ -173,7 +176,7 @@ function onNodeActivate(n: TreeNode): void {
     });
     return;
   }
-  // Import ribbon: page clicks stay in MinerU preview (reprocess / feedback / debug).
+  // Import ribbon: page navigation / debug; page edits via AI dialog (double-click focus).
   if (store.activeRibbon === "import" && looksLikeMinerUImportPage(n)) {
     void openMinerUImportPage(n);
     return;
@@ -263,6 +266,7 @@ export function refreshVault(): Promise<void> {
 }
 
 let editionOpsPanel: HTMLElement | null = null;
+let improvementsSidePanel: HTMLElement | null = null;
 
 function showSection(section: RibbonSection): void {
   if (!panelBody) return;
@@ -274,6 +278,7 @@ function showSection(section: RibbonSection): void {
     { id: "search", el: searchPanel },
     { id: "todo", el: todoPanel },
     { id: "edition-ops", el: editionOpsPanel },
+    { id: "improvements", el: improvementsSidePanel },
   ];
   for (const v of views) {
     v.el?.classList.toggle("hidden", v.id !== section);
@@ -288,6 +293,10 @@ function showSection(section: RibbonSection): void {
   if (section === "search") focusSearchPanel();
   if (section === "edition-ops") {
     document.dispatchEvent(new CustomEvent("studio:edition-ops-loaded"));
+  }
+  if (section === "improvements") {
+    document.dispatchEvent(new CustomEvent("studio:improvements-side-open"));
+    document.dispatchEvent(new CustomEvent("studio:improvements-refresh"));
   }
 }
 
@@ -347,7 +356,8 @@ export function mountSidePanel(rootEl: HTMLElement): void {
     roots: IMPORT_ROOTS,
     augmentChildren: async (parentId, apiRoot, nodes) => {
       if (apiRoot === "import" && parentId === `${VAULT_ROOT_PREFIX}import`) {
-        return augmentImportRootChildren(nodes);
+        // 占位行排最前：AI 刚接手、后端还没有任务行的那一段时间也要看得见
+        return augmentMinerUPendingImports(await augmentImportRootChildren(nodes));
       }
       return nodes;
     },
@@ -387,6 +397,128 @@ export function mountSidePanel(rootEl: HTMLElement): void {
   };
   editionOpsPanel.appendChild(newEditionBtn);
   panelBody.appendChild(editionOpsPanel);
+
+  // Improvements: left = 导入任务导航 · center = 管理台
+  improvementsSidePanel = el("div", "side-panel-section hidden");
+  improvementsSidePanel.appendChild(el("h3", "", "改进点"));
+  improvementsSidePanel.appendChild(
+    el(
+      "p",
+      "muted side-hint",
+      "按书指纹列改进点（含无导入任务的）；「全部」看全集。点书后中栏筛选。",
+    ),
+  );
+  const ipJobList = el("div", "edition-side-list improvements-job-list");
+  ipJobList.textContent = "加载中…";
+  improvementsSidePanel.appendChild(ipJobList);
+  const openIpBtn = el("button", "btn-secondary", "刷新列表") as HTMLButtonElement;
+  openIpBtn.type = "button";
+  improvementsSidePanel.appendChild(openIpBtn);
+  panelBody.appendChild(improvementsSidePanel);
+
+  /** 选中键：空=全部；否则为 fingerprint_hash */
+  let selectedIpBookKey = "";
+  try {
+    const raw = window.localStorage.getItem("studio.improvements.focus.v1");
+    if (raw) {
+      const o = JSON.parse(raw) as { fingerprintHash?: string };
+      selectedIpBookKey = String(o.fingerprintHash || "").trim();
+    }
+  } catch {
+    /* ignore */
+  }
+  const refreshIpJobList = (): void => {
+    void import("../api/improvementPoints")
+      .then(({ improvementPoints }) => improvementPoints.listBooks())
+      .then((out) => {
+        const books = out.books || [];
+        const total = Number(out.total || 0);
+        ipJobList.innerHTML = "";
+
+        const paintActive = () => {
+          for (const child of ipJobList.querySelectorAll(".edition-side-item")) {
+            const key = String((child as HTMLElement).dataset.bookKey || "");
+            child.classList.toggle("active", key === selectedIpBookKey);
+          }
+        };
+
+        const allBtn = el("button", "edition-side-item") as HTMLButtonElement;
+        allBtn.type = "button";
+        allBtn.dataset.bookKey = "";
+        allBtn.title = "不按书筛选，显示全部改进点";
+        allBtn.appendChild(el("span", "edition-side-name", "全部"));
+        allBtn.appendChild(
+          el("span", "edition-side-meta", `${total} 条`),
+        );
+        allBtn.onclick = () => {
+          selectedIpBookKey = "";
+          paintActive();
+          document.dispatchEvent(
+            new CustomEvent("studio:improvements-focus", {
+              detail: { jobId: "", fingerprintHash: "", jobLabel: "全部" },
+            }),
+          );
+        };
+        ipJobList.appendChild(allBtn);
+
+        if (!books.length) {
+          ipJobList.appendChild(el("p", "muted", "暂无改进点"));
+          paintActive();
+          return;
+        }
+        for (const b of books) {
+          const fp = String(b.fingerprint_hash || "");
+          const label = String(b.label || fp || "未命名");
+          const count = Number(b.count || 0);
+          const jobId = String(b.source_job_id || "");
+          const btn = el("button", "edition-side-item") as HTMLButtonElement;
+          btn.type = "button";
+          btn.dataset.bookKey = fp;
+          btn.title = `${label}\n${fp || "(无指纹)"}${
+            b.job_fingerprint_mismatch ? "\n（任务指纹与改进点不一致，已按改进点指纹列）" : ""
+          }`;
+          btn.appendChild(el("span", "edition-side-name", label.slice(0, 42)));
+          btn.appendChild(
+            el(
+              "span",
+              "edition-side-meta",
+              `${count} 条${fp ? ` · ${fp.slice(0, 8)}…` : ""}`,
+            ),
+          );
+          btn.onclick = () => {
+            selectedIpBookKey = fp;
+            paintActive();
+            document.dispatchEvent(
+              new CustomEvent("studio:improvements-focus", {
+                detail: {
+                  jobId,
+                  fingerprintHash: fp,
+                  jobLabel: label,
+                },
+              }),
+            );
+          };
+          ipJobList.appendChild(btn);
+        }
+        paintActive();
+      })
+      .catch(() => {
+        ipJobList.innerHTML = "";
+        ipJobList.appendChild(el("p", "muted", "书列表加载失败"));
+      });
+  };
+  openIpBtn.onclick = () => {
+    refreshIpJobList();
+    document.dispatchEvent(new CustomEvent("studio:improvements-refresh"));
+  };
+  document.addEventListener("studio:improvements-side-open", () => refreshIpJobList());
+  document.addEventListener("studio:improvements-refresh", () => {
+    if (store.activeRibbon === "improvements") refreshIpJobList();
+  });
+  document.addEventListener("studio:improvements-focus", ((e: CustomEvent) => {
+    selectedIpBookKey = String(e.detail?.fingerprintHash || "").trim();
+    refreshIpJobList();
+  }) as EventListener);
 
   const refreshEditionSideList = (): void => {
     void Promise.all([

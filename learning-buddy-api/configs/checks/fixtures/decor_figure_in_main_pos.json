@@ -1,0 +1,25 @@
+{
+  "page_no": 19,
+  "html": "<article><section class=\"lb-main\"><figure></figure><p>正文</p></section></article>",
+  "blocks": [
+    {
+      "id": "decor",
+      "type": "figure",
+      "page_no": 19,
+      "order": 1,
+      "text": "",
+      "caption": "",
+      "bbox": [40, 20, 160, 100],
+      "meta": {"layout_zone": "main", "layout_confidence": "medium"}
+    },
+    {
+      "id": "body",
+      "type": "paragraph",
+      "page_no": 19,
+      "order": 2,
+      "text": "正文从这里开始，并延续到页底以给出真实页高。",
+      "bbox": [120, 150, 900, 1200],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

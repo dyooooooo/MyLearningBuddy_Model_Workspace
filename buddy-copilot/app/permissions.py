@@ -32,6 +32,9 @@ class Budgets:
     gate_timeout_s: int = 1800
     max_tool_calls: int = 120
     max_nudges: int = 2
+    # 改动面上限（爆炸半径）：一轮改的文件数 / 行数超限即视为越权并回滚
+    max_changed_files: int = 12
+    max_changed_lines: int = 800
 
 
 @dataclass(frozen=True)
@@ -44,6 +47,9 @@ class Permissions:
     forbidden: tuple[str, ...] = ()
     guarded_roots: tuple[str, ...] = ()
     backup_suffixes: tuple[str, ...] = ()
+    auto_allow_suffixes: tuple[str, ...] = ()
+    # 白名单内但要走独立批准的子路径（会被执行的代码，不是声明文件）
+    gated_subpaths: tuple[str, ...] = ()
 
     def tool(self, name: str) -> ToolPerm:
         p = self.tools.get(name)
@@ -86,11 +92,15 @@ def load_permissions(agent_env_dir: Path) -> Permissions:
             gate_timeout_s=int(b.get("gate_timeout_s", 1800)),
             max_tool_calls=int(b.get("max_tool_calls", 120)),
             max_nudges=int(b.get("max_nudges", 2)),
+            max_changed_files=int(b.get("max_changed_files", 12)),
+            max_changed_lines=int(b.get("max_changed_lines", 800)),
         ),
         write_whitelist=tuple(files.get("write_whitelist") or ()),
         forbidden=tuple(files.get("forbidden") or ()),
         guarded_roots=tuple(files.get("guarded_roots") or ()),
         backup_suffixes=tuple(files.get("backup_suffixes") or ()),
+        auto_allow_suffixes=tuple(files.get("auto_allow_suffixes") or ()),
+        gated_subpaths=tuple(files.get("gated_subpaths") or ()),
     )
     # 一致性校验：场景引用的工具必须已声明
     for kind, names in perms.scenario_tools.items():

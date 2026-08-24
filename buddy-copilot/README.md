@@ -1,7 +1,7 @@
 # Buddy Copilot — 宿主机编排服务（:8200）
 
-用 Cursor SDK（Python `cursor-sdk`）接管 PDF 导入前的整书方案建议（场景 A）与
-页级「AI 助手」分诊（场景 B）。
+用 Cursor SDK（Python `cursor-sdk`）接管 MinerU 全书导入与会话内定点改页
+（场景 `import_advice`；事后聚焦某页在同一会话完成，不再另开页级分诊）。
 
 **v2 = Cursor 式自主执行**：行动简报确认后，Agent 在一次运行内自主调工具、
 自诊断、自修复、重试直到完成；发布方案 / rebuild 容器 / 改文件三类闸门动作
@@ -9,7 +9,11 @@
 
 必须跑在宿主机：Agent 要改工作区代码并 `docker compose build`（容器内做不到）。
 
-## 启动
+## 启动（推荐：systemd 用户服务）
+
+`:8200` 应由 **systemd --user** 常驻，不要长期用前台 `./run.sh`。
+
+首次准备：
 
 ```bash
 cd buddy-copilot
@@ -27,9 +31,33 @@ python3 -m venv .venv
 cp .env.example .env   # 填 CURSOR_API_KEY
 ```
 
+安装并启动服务：
+
 ```bash
-./run.sh
+./deploy/install-user-service.sh
 ```
+
+常用：
+
+```bash
+systemctl --user status buddy-copilot
+```
+
+```bash
+systemctl --user restart buddy-copilot
+```
+
+```bash
+journalctl --user -u buddy-copilot -f
+```
+
+开机自启（注销后仍保持）：
+
+```bash
+sudo loginctl enable-linger "$USER"
+```
+
+临时前台调试仍可用 `./run.sh`（先 `systemctl --user stop buddy-copilot`）。
 
 健康检查：`curl -s http://127.0.0.1:8200/api/v1/copilot/health`
 
@@ -44,8 +72,8 @@ cp .env.example .env   # 填 CURSOR_API_KEY
 | `app/permissions.py` | `permissions.yaml` 加载（分档/闸门/场景可见性/白名单/预算） |
 | `app/mcp_server.py` | MCP（stdio）通用装配器：注册表挂载 + gate/预算/占位符/step 中间件 |
 | `app/tools/registry.py` | 工具插件注册表（ToolSpec / ToolContext） |
-| `app/tools/plugins/` | 工具插件：editions / corpus / harness / system / session（Todo 清单卡） |
-| `app/scenarios/` | 场景插件（kind → 上下文 + 任务使命 + 验收要求） |
+| `app/tools/plugins/` | 工具插件：editions / corpus / harness / system / session / **ip_tools**（整理·拆分） |
+| `app/scenarios/` | 场景：`import_advice` / `pattern_abstract` / **`ip_triage`** / **`ip_split`** |
 | `agent-env/` | 资源地图、规则、技能、pipeline 地图、`permissions.yaml`、`pinning.yaml` |
 | `scripts/check-agent-env.sh` | 一致性守护：必选文件 / 路径漂移 / 工具三方核对 |
 

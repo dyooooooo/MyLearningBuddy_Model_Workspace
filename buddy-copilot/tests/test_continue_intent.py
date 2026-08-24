@@ -51,15 +51,31 @@ def test_unfinished_pipeline_open_issues() -> None:
             "minio_key": "corpus/x.pdf",
             "page_count": 40,
             "segment_next_page": 21,
+            "fullbook_autofix_done": True,
             "open_issues": [{"page": 3, "kind": "layout", "status": "open"}],
         },
     }
     assert eng._unfinished_pipeline(session) == "segment_issues"
 
 
+def test_unfinished_autofix_beats_open_issues() -> None:
+    """自动改没收口时，遗留页也走全书验活，不走旧单页门闸。"""
+    eng = LoopEngine.__new__(LoopEngine)
+    session = {
+        "kind": "import_advice",
+        "payload": {
+            "minio_key": "corpus/x.pdf",
+            "page_count": 40,
+            "open_issues": [{"page": 3, "kind": "layout", "status": "open"}],
+        },
+    }
+    assert eng._unfinished_pipeline(session) == "segment"
+
+
 def test_unfinished_pipeline_none() -> None:
     eng = LoopEngine.__new__(LoopEngine)
     assert eng._unfinished_pipeline({"kind": "other", "payload": {}}) is None
+    # 全书路径：导入+自动改完成且无待 finalize 账本 → 无断点
     assert (
         eng._unfinished_pipeline(
             {
@@ -69,6 +85,7 @@ def test_unfinished_pipeline_none() -> None:
                     "page_count": 10,
                     "segment_next_page": 11,
                     "import_job_id": "job-1",
+                    "fullbook_autofix_done": True,
                 },
             }
         )

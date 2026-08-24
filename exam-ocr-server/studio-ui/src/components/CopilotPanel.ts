@@ -9,8 +9,8 @@
 //     + 模型下拉 + 历史会话入口
 //
 // 两个入口：
-//   场景 A：导入表单「AI 方案」（kind=import_advice）→ 出现在导入表单下方
-//   场景 B：页卡片「AI 助手」（kind=page_assist）→ 出现在页卡片下方
+//   场景 A：导入表单「AI 方案」（kind=import_advice）→ 属性栏 / AI 终端
+//   聚焦改页：预览双击页/块 → focusImportTarget 预填 composer（不自动发送）
 
 import {
   copilot,
@@ -27,7 +27,16 @@ import {
   persistActiveMinerUJob,
 } from "./import/activeMinerUJob";
 import { store } from "../state/store";
+import { studioBus } from "../events/studioBus";
 import { el, renderMarkdown } from "../util/dom";
+
+function isRestartInterrupt(content: unknown): boolean {
+  if (!content || typeof content !== "object") return false;
+  const c = content as { restart_interrupt?: boolean; text?: string };
+  if (c.restart_interrupt) return true;
+  const text = String(c.text || "");
+  return text.includes("服务重启") || text.includes("服务器重启");
+}
 
 /** 打开导入工作台并定位到任务预览（MinerU / 35B 分线）。 */
 function focusImportJob(jobId: string, opts?: { line?: string; pageNo?: number }): void {
@@ -66,6 +75,8 @@ const STATUS_LABEL: Record<string, string> = {
   done: "已完成",
   failed: "已失败",
   cancelled: "已取消",
+  idle: "待命",
+  interrupted: "已中断，可继续",
 };
 
 const RUNNING_STATUSES = new Set(["planning", "executing", "verifying"]);
@@ -87,7 +98,10 @@ const CHANNEL_LABEL: Record<string, string> = {
 
 const KIND_LABEL: Record<string, string> = {
   import_advice: "AI 方案建议",
-  page_assist: "页面分诊",
+  pattern_abstract: "模式抽象",
+  ip_book: "本书改进点",
+  ip_triage: "本书改进点",
+  ip_split: "本书改进点",
 };
 
 const TODO_ICON: Record<string, string> = {
@@ -157,9 +171,36 @@ const HOST_JOB_BIND = new Map<HTMLElement, string>();
 /** 程序化输入通道：宿主面板（导入面板等）把事件作为用户消息注入活动会话。 */
 const HOST_SEND = new WeakMap<HTMLElement, (text: string) => void>();
 
+/** 预填 composer（不发送）：双击页/块聚焦时用。 */
+const HOST_PREFILL = new WeakMap<
+  HTMLElement,
+  (text: string, chipLabel?: string) => void
+>();
+
+/** 宿主 → 追平消息流（终态后再开跑时重接 SSE/轮询）。 */
+const HOST_RESYNC = new WeakMap<HTMLElement, () => void>();
+
+export type FocusImportTargetDetail = {
+  line: "mineru" | "35b";
+  jobId: string;
+  pageNo: number;
+  blockId?: string;
+};
+
 /** 指定挂载点上是否有活动的 Copilot 面板。 */
 export function hasActiveCopilot(host: HTMLElement): boolean {
-  return HOST_SEND.has(host);
+  return HOST_SEND.has(host) || HOST_PREFILL.has(host);
+}
+
+/**
+ * 复用会话又开跑后：重新接 SSE/轮询，把已落库但面板漏画的消息追平。
+ * 无活动面板返回 false。
+ */
+export function copilotResync(host: HTMLElement): boolean {
+  const fn = HOST_RESYNC.get(host);
+  if (!fn) return false;
+  fn();
+  return true;
 }
 
 /** 关掉挂载点上的面板（不删服务端会话）。新导入开新对话前调用。 */
@@ -175,6 +216,92 @@ export function copilotSendText(host: HTMLElement, text: string): boolean {
   if (!fn) return false;
   fn(text);
   return true;
+}
+
+/** 预填输入框 + 可选聚焦 chip；不自动发送。无活动面板返回 false。 */
+export function copilotPrefillText(
+  host: HTMLElement,
+  text: string,
+  chipLabel?: string,
+): boolean {
+  const fn = HOST_PREFILL.get(host);
+  if (!fn) return false;
+  fn(text, chipLabel);
+  return true;
+}
+
+export function buildFocusComposerText(d: FocusImportTargetDetail): string {
+  return [
+    "【聚焦目标】",
+    `line=${d.line}`,
+    `job_id=${d.jobId}`,
+    `page_no=${d.pageNo}`,
+    `block_id=${d.blockId || ""}`,
+    "请基于该页/块做修改（重识别、改文、改结构等）。先说明你要做什么，再调用工具。",
+    "改动生效后，界面会询问是否把此改进点记入当前解析方案（Edition）待审队列——你无需代用户决定。",
+  ].join("\n");
+}
+
+/**
+ * 打开/复用导入 AI 会话，写入聚焦 chip + 预填 composer（用户回车后才发送）。
+ */
+export async function focusImportTarget(
+  detail: FocusImportTargetDetail,
+): Promise<void> {
+  const jobId = String(detail.jobId || "").trim();
+  const pageNo = Number(detail.pageNo) || 0;
+  if (!jobId || pageNo <= 0) return;
+
+  const { getImportCopilotHost, showImportCopilotTab } = await import("./Inspector");
+  showImportCopilotTab();
+  const host = getImportCopilotHost();
+  if (!host) return;
+
+  const bound = host.getAttribute("data-copilot-job") || "";
+  if (hasActiveCopilot(host) && bound && bound !== jobId) {
+    closeCopilotPanel(host);
+  }
+
+  if (!hasActiveCopilot(host)) {
+    const job = store.activeImportJob;
+    const meta = (job?.meta || {}) as Record<string, unknown>;
+    const editionId = String(
+      meta.edition_id || meta.source_edition_id || meta.textbook_profile || "",
+    ).trim();
+    openCopilotPanel({
+      kind: "import_advice",
+      host,
+      payload: {
+        import_job_id: jobId,
+        job_id: jobId,
+        page_no: pageNo,
+        line: detail.line,
+        ...(editionId
+          ? { edition_id: editionId, source_edition_id: editionId }
+          : {}),
+        ...(detail.blockId ? { block_id: detail.blockId } : {}),
+      },
+      title: detail.blockId
+        ? `AI · 第 ${pageNo} 页 · ${detail.blockId}`
+        : `AI · 第 ${pageNo} 页`,
+    });
+  }
+
+  const chip = detail.blockId
+    ? `聚焦：第 ${pageNo} 页 · block_id=${detail.blockId}`
+    : `聚焦：第 ${pageNo} 页`;
+  const text = buildFocusComposerText({
+    line: detail.line,
+    jobId,
+    pageNo,
+    ...(detail.blockId ? { blockId: detail.blockId } : {}),
+  });
+
+  const attempt = (left: number): void => {
+    if (copilotPrefillText(host, text, chip)) return;
+    if (left > 0) window.setTimeout(() => attempt(left - 1), 200);
+  };
+  attempt(30);
 }
 
 const SESSION_STORAGE_PREFIX = "studio.copilot.session.";
@@ -196,8 +323,10 @@ function persistSessionId(
     const jid = String(jobId || "").trim();
     window.localStorage.setItem(sessionStorageKey(kind, jid), sid);
     if (jid) {
-      // 历史回放时不改「当前活跃任务」指针，避免把三栏拽回旧任务
-      if (opts.markActive !== false) persistActiveMinerUJob(jid);
+      // 仅导入会话才改 MinerU「活跃任务」；改进点会话用指纹作 scope，勿误写
+      if (opts.markActive !== false && kind === "import_advice") {
+        persistActiveMinerUJob(jid);
+      }
       window.localStorage.setItem(sessionStorageKey(kind), sid);
     } else {
       window.localStorage.setItem(sessionStorageKey(kind), sid);
@@ -205,6 +334,25 @@ function persistSessionId(
   } catch {
     /* ignore */
   }
+}
+
+function isIpCopilotKind(kind: CopilotKind | string): boolean {
+  return kind === "ip_book" || kind === "ip_triage" || kind === "ip_split";
+}
+
+function scopeKeyForKind(
+  kind: CopilotKind,
+  payload: Record<string, unknown> | undefined,
+): string {
+  if (isIpCopilotKind(kind) || kind === "pattern_abstract") {
+    // 模式抽象也挂在改进点宿主上，按书指纹绑定，避免与 ip_book 面板争 scope
+    return String(
+      payload?.fingerprint_hash || payload?.job_id || payload?.import_job_id || "",
+    ).trim();
+  }
+  return String(
+    payload?.import_job_id || payload?.job_id || "",
+  ).trim();
 }
 
 function clearPersistedSessionId(
@@ -216,8 +364,10 @@ function clearPersistedSessionId(
     const jid = String(jobId || "").trim();
     if (jid) {
       window.localStorage.removeItem(sessionStorageKey(kind, jid));
-      // 只删对话时保留「活跃任务」指针，中栏预览不该跟着消失
-      if (!opts.keepActiveJob) clearActiveMinerUJob(jid);
+      // 只清导入会话时才动 MinerU 活跃任务；改进点 scope 是书指纹
+      if (!opts.keepActiveJob && kind === "import_advice") {
+        clearActiveMinerUJob(jid);
+      }
       window.localStorage.removeItem(sessionStorageKey(kind));
     } else {
       window.localStorage.removeItem(sessionStorageKey(kind));
@@ -238,80 +388,268 @@ export function onImportJobDeleted(jobId: string): void {
     HOST_CLEANUP.get(host)?.();
     HOST_JOB_BIND.delete(host);
     host.removeAttribute("data-copilot-job");
+    host.removeAttribute("data-copilot-scope");
     host.replaceChildren();
   }
   // 网关已级联删服务端会话；再调一次幂等兜底
   void copilot.deleteByImportJob(jid).catch(() => undefined);
 }
 
-/** 刷新后恢复右栏 Copilot：优先按 import job 绑定恢复。 */
+/** 从导入任务拼「空绑定」会话 payload（已导入书，勿再触发全书编排）。 */
+function payloadFromImportJob(
+  jobId: string,
+  job: {
+    id?: string;
+    label?: string;
+    page_count?: number;
+    meta?: Record<string, unknown> | null;
+  } | null | undefined,
+): Record<string, unknown> {
+  const meta = (job?.meta && typeof job.meta === "object" ? job.meta : {}) as Record<
+    string,
+    unknown
+  >;
+  const editionId = String(
+    meta.edition_id || meta.source_edition_id || meta.textbook_profile || "",
+  ).trim();
+  const minioKey = String(
+    meta.minio_key || meta.source_minio_key || meta.pdf_minio_key || "",
+  ).trim();
+  const pageCount = Number(job?.page_count || meta.page_count || 0) || 0;
+  const label = String(job?.label || meta.label || "").trim();
+  const payload: Record<string, unknown> = {
+    import_job_id: jobId,
+    job_id: jobId,
+    // 标记：任务已存在，空会话仅供聚焦改页（编排器勿当新书导入）
+    attach_existing_job: true,
+    fullbook_autofix_done: true,
+  };
+  if (label) payload.label = label;
+  if (pageCount > 0) {
+    payload.page_count = pageCount;
+    payload.segment_imported_through = pageCount;
+    payload.segment_qa_through = pageCount;
+    payload.segment_next_page = pageCount + 1;
+  }
+  if (editionId) {
+    payload.edition_id = editionId;
+    payload.source_edition_id = editionId;
+  }
+  if (minioKey) payload.minio_key = minioKey;
+  return payload;
+}
+
+/** 刷新/切任务时恢复右栏 Copilot：按 import job 或书指纹 1:1 绑定；无会话则可选建空对话。 */
 export async function tryRestoreCopilotPanel(opts: {
   kind: CopilotKind;
   host: HTMLElement;
   title?: string;
-  /** 当前预览/选中的导入任务；与 AI 会话 1:1 */
+  /** 当前预览/选中的导入任务；与 AI 会话 1:1（import_advice） */
   jobId?: string;
+  /**
+   * 通用 scope（改进点用 fingerprint_hash）。
+   * 与 jobId 二选一；都传时优先 scopeKey。
+   */
+  scopeKey?: string;
   /** 切换任务时强制换绑（关掉宿主上其它 job 的面板） */
   force?: boolean;
+  /**
+   * 指定了 job 且找不到历史对话时：自动新建空会话并绑定（默认 true）。
+   * 新建时 auto_start=false，不会跑全书导入编排。
+   * 改进点场景请传 false：只恢复已有会话，不自动空建。
+   */
+  createIfMissing?: boolean;
 }): Promise<boolean> {
+  const wantScope = String(opts.scopeKey || opts.jobId || "").trim();
   const wantJob = String(opts.jobId || "").trim();
-  const bound = opts.host.getAttribute("data-copilot-job") || "";
+  const createIfMissing = opts.createIfMissing !== false;
+  const bound =
+    opts.host.getAttribute("data-copilot-scope") ||
+    opts.host.getAttribute("data-copilot-job") ||
+    "";
+  const isIpKind = isIpCopilotKind(opts.kind);
+  // 改进点必须带书指纹；无指纹不恢复（避免「全部」仍挂上一本）
+  if (isIpKind && !wantScope) return false;
   if (hasActiveCopilot(opts.host)) {
-    if (!opts.force && (!wantJob || bound === wantJob)) return true;
-    // 换任务：先拆掉旧面板（不删服务端会话）
+    if (!opts.force && bound === wantScope) return true;
+    // 换任务/换书：先拆掉旧面板（不删服务端会话）
     HOST_CLEANUP.get(opts.host)?.();
   }
-  let sid = "";
-  try {
-    if (wantJob) {
-      sid = window.localStorage.getItem(sessionStorageKey(opts.kind, wantJob)) || "";
-      if (!sid) {
-        const found = await copilot.findByImportJob(wantJob);
-        if (found?.id) sid = found.id;
+  const clearIpStorage = (): void => {
+    clearPersistedSessionId("ip_book", wantScope);
+    clearPersistedSessionId("ip_triage", wantScope);
+    clearPersistedSessionId("ip_split", wantScope);
+    if (wantJob && wantJob !== wantScope) {
+      clearPersistedSessionId("ip_book", wantJob);
+      clearPersistedSessionId("ip_triage", wantJob);
+      clearPersistedSessionId("ip_split", wantJob);
+    }
+  };
+
+  const readStoredSid = (): string => {
+    try {
+      if (!wantScope) {
+        if (isIpKind) return "";
+        // 导入：活跃任务 / 裸 key
+        // （async 路径外的同步读；import 的 job 查找在下方）
+        return "";
       }
-    } else {
+      const storageKinds: CopilotKind[] = isIpKind
+        ? ["ip_book", "ip_triage", "ip_split"]
+        : [opts.kind];
+      for (const k of storageKinds) {
+        const v = window.localStorage.getItem(sessionStorageKey(k, wantScope)) || "";
+        if (v) return v;
+      }
+      if (wantJob && wantJob !== wantScope) {
+        for (const k of storageKinds) {
+          const v =
+            window.localStorage.getItem(sessionStorageKey(k, wantJob)) || "";
+          if (v) return v;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    return "";
+  };
+
+  /** 校验 sid 是否可挂接；失败返回 null（并清陈旧 localStorage）。 */
+  const resolveSession = async (
+    candidate: string,
+  ): Promise<{
+    id: string;
+    payload: Record<string, unknown>;
+  } | null> => {
+    const sid = String(candidate || "").trim();
+    if (!sid) return null;
+    try {
+      const s = await copilot.getSession(sid);
+      const sk = String(s?.kind || "");
+      const kindOk =
+        !!s?.id &&
+        (sk === opts.kind || (isIpKind && isIpCopilotKind(sk)));
+      if (!kindOk) {
+        if (isIpKind) clearIpStorage();
+        else clearPersistedSessionId(opts.kind, wantScope);
+        return null;
+      }
+      const payload =
+        s.payload && typeof s.payload === "object"
+          ? (s.payload as Record<string, unknown>)
+          : {};
+      const boundScope = scopeKeyForKind(
+        isIpKind ? "ip_book" : opts.kind,
+        payload,
+      );
+      const boundJob = String(
+        s.import_job_id || payload.import_job_id || payload.job_id || "",
+      ).trim();
+      const fpInPayload = String(payload.fingerprint_hash || "").trim();
+      const mismatch = isIpKind
+        ? !fpInPayload || fpInPayload !== wantScope
+        : !!(
+            wantScope &&
+            boundScope &&
+            boundScope !== wantScope &&
+            boundJob !== wantScope
+          );
+      if (mismatch) {
+        if (isIpKind) clearIpStorage();
+        else clearPersistedSessionId(opts.kind, wantScope);
+        return null;
+      }
+      return { id: s.id, payload };
+    } catch {
+      if (isIpKind) clearIpStorage();
+      else clearPersistedSessionId(opts.kind, wantScope);
+      return null;
+    }
+  };
+
+  let sid = "";
+  if (wantScope) {
+    sid = readStoredSid();
+  } else if (!isIpKind) {
+    try {
       const { loadActiveMinerUJob } = await import("./import/activeMinerUJob");
       const activeJob = loadActiveMinerUJob();
       if (activeJob) {
         sid =
-          window.localStorage.getItem(sessionStorageKey(opts.kind, activeJob)) || "";
+          window.localStorage.getItem(sessionStorageKey(opts.kind, activeJob)) ||
+          "";
       }
       if (!sid) {
         sid = window.localStorage.getItem(sessionStorageKey(opts.kind)) || "";
       }
+    } catch {
+      sid = "";
     }
-  } catch {
-    sid = "";
   }
-  if (!sid) return false;
-  try {
-    const s = await copilot.getSession(sid);
-    if (!s?.id || String(s.kind || "") !== opts.kind) {
-      clearPersistedSessionId(opts.kind, wantJob);
-      return false;
+
+  let resolved = await resolveSession(sid);
+
+  // localStorage 陈旧（合并删会话后常见）：按指纹/导入任务再查一次
+  if (!resolved) {
+    sid = "";
+    try {
+      if (isIpKind && opts.scopeKey) {
+        const found = await copilot.findByFingerprint(
+          String(opts.scopeKey),
+          "ip_book",
+        );
+        if (found?.id) {
+          sid = found.id;
+          resolved = await resolveSession(sid);
+        }
+      } else if (wantJob && opts.kind === "import_advice") {
+        const found = await copilot.findByImportJob(wantJob);
+        if (found?.id) {
+          sid = found.id;
+          resolved = await resolveSession(sid);
+        }
+      }
+    } catch {
+      resolved = null;
     }
-    const payload =
-      s.payload && typeof s.payload === "object"
-        ? (s.payload as Record<string, unknown>)
-        : {};
-    const boundJob = String(
-      s.import_job_id || payload.import_job_id || payload.job_id || "",
-    ).trim();
-    // 指定了 job 时必须匹配，避免串台
-    if (wantJob && boundJob && boundJob !== wantJob) {
-      clearPersistedSessionId(opts.kind, wantJob);
-      return false;
-    }
+  }
+
+  // 有历史会话 → 挂接恢复
+  if (resolved) {
+    const panelKind: CopilotKind = isIpKind ? "ip_book" : opts.kind;
     openCopilotPanel({
-      kind: opts.kind,
+      kind: panelKind,
       host: opts.host,
-      payload: { ...payload, ...(wantJob ? { import_job_id: wantJob, job_id: wantJob } : {}) },
-      resumeSessionId: sid,
+      payload: {
+        ...resolved.payload,
+        ...(wantJob ? { import_job_id: wantJob, job_id: wantJob } : {}),
+        ...(opts.scopeKey ? { fingerprint_hash: String(opts.scopeKey) } : {}),
+      },
+      resumeSessionId: resolved.id,
       title: opts.title,
     });
     return true;
-  } catch {
-    clearPersistedSessionId(opts.kind, wantJob);
+  }
+
+  // 无历史：为该导入任务建空对话并 1:1 绑定
+  if (!wantJob || !createIfMissing) return false;
+  try {
+    let job = store.activeImportJob?.id === wantJob ? store.activeImportJob : null;
+    if (!job) {
+      const { corpus } = await import("../api/corpus");
+      job = await corpus.importJob(wantJob);
+    }
+    const payload = payloadFromImportJob(wantJob, job);
+    openCopilotPanel({
+      kind: opts.kind,
+      host: opts.host,
+      payload,
+      title: opts.title || "AI · 本任务对话",
+      autoStart: false,
+    });
+    return true;
+  } catch (e) {
+    console.warn("为导入任务创建空 AI 会话失败", wantJob, e);
     return false;
   }
 }
@@ -324,6 +662,11 @@ export function openCopilotPanel(opts: {
   title?: string;
   /** 刷新恢复：挂到已有会话，不新建。 */
   resumeSessionId?: string;
+  /**
+   * 新建会话是否立即跑编排（默认 true）。
+   * 切到已有导入任务且无历史对话时传 false，只建空绑定。
+   */
+  autoStart?: boolean;
 }): void {
   // 同一个挂载点只保留一个面板
   HOST_CLEANUP.get(opts.host)?.();
@@ -335,14 +678,14 @@ export function openCopilotPanel(opts: {
   // ---- 头部 ----
   const head = el("div", "copilot-inline-head");
   const titleWrap = el("div", "copilot-inline-title");
-  titleWrap.append(
-    el("span", "copilot-spark", "✦"),
-    el(
-      "span",
-      "",
-      opts.title || (opts.kind === "import_advice" ? "AI 方案建议" : "AI 助手 · 页面分诊"),
-    ),
+  const titleMain = el(
+    "span",
+    "",
+    opts.title || "AI 方案建议",
   );
+  const focusLabel = el("span", "copilot-focus-label muted");
+  focusLabel.hidden = true;
+  titleWrap.append(el("span", "copilot-spark", "✦"), titleMain, focusLabel);
   const statusPill = el("span", "copilot-status", "连接中…");
   const historyBtn = el("button", "copilot-icon-btn", "🕘") as HTMLButtonElement;
   historyBtn.type = "button";
@@ -370,9 +713,7 @@ export function openCopilotPanel(opts: {
   textarea.className = "copilot-composer-input";
   textarea.rows = 1;
   textarea.placeholder =
-    opts.kind === "page_assist"
-      ? "继续对话或描述哪里不满意（Enter 发送，可粘贴截图）"
-      : "继续对话、追问下一步，或明确说「拒绝/改方案」（Enter 发送）";
+    "继续对话、聚焦改页、追问下一步，或明确说「拒绝/改方案」（Enter 发送，可粘贴截图）";
   const composerFoot = el("div", "copilot-composer-foot");
 
   const modelSelect = document.createElement("select");
@@ -452,17 +793,24 @@ export function openCopilotPanel(opts: {
     stream.scrollTop = stream.scrollHeight;
   };
 
+  let restartInterrupt = false;
+
   const setLive = (status: string): void => {
-    const label = STATUS_LABEL[status] || status;
+    if (RUNNING_STATUSES.has(status)) restartInterrupt = false;
+    const interrupted =
+      restartInterrupt && (status === "failed" || status === "awaiting_user");
+    const pill = interrupted ? "interrupted" : status;
+    const label = STATUS_LABEL[pill] || STATUS_LABEL[status] || status;
     statusPill.textContent = label;
-    statusPill.className = `copilot-status copilot-status--${status}`;
+    statusPill.className = `copilot-status copilot-status--${pill}`;
     if (RUNNING_STATUSES.has(status)) {
       liveText.textContent = `${label}…`;
       liveLine.classList.remove("hidden");
     } else {
       liveLine.classList.add("hidden");
     }
-    const running = !TERMINAL_STATUSES.has(status) && status !== "";
+    const running =
+      RUNNING_STATUSES.has(status) || status === "awaiting_approval";
     stopBtn.classList.toggle("hidden", !running);
   };
 
@@ -552,6 +900,43 @@ export function openCopilotPanel(opts: {
         const btn = el("button", "copilot-continue-btn", label) as HTMLButtonElement;
         btn.type = "button";
         btn.onclick = () => {
+          // UI shortcuts — do not send chat noise to the agent.
+          if (sendText.startsWith("__ui:open_edition:")) {
+            const eid = sendText.slice("__ui:open_edition:".length).trim();
+            if (eid) {
+              store.setActiveRibbon("edition-ops");
+              document.dispatchEvent(
+                new CustomEvent("studio:edition-ops-select", { detail: { editionId: eid } }),
+              );
+            }
+            return;
+          }
+          if (sendText.startsWith("__ui:open_corrections:")) {
+            const eid = sendText.slice("__ui:open_corrections:".length).trim();
+            if (eid) {
+              store.setActiveRibbon("edition-ops");
+              document.dispatchEvent(
+                new CustomEvent("studio:edition-ops-select", { detail: { editionId: eid } }),
+              );
+              document.dispatchEvent(new CustomEvent("studio:edition-ops-goto-corrections"));
+            }
+            return;
+          }
+          if (sendText.startsWith("__ui:open_improvement_points:")) {
+            store.setActiveRibbon("improvements");
+            document.dispatchEvent(new CustomEvent("studio:improvements-refresh"));
+            return;
+          }
+          if (sendText.startsWith("打开方案 ")) {
+            const eid = sendText.slice("打开方案 ".length).trim();
+            if (eid) {
+              store.setActiveRibbon("edition-ops");
+              document.dispatchEvent(
+                new CustomEvent("studio:edition-ops-select", { detail: { editionId: eid } }),
+              );
+              return;
+            }
+          }
           if (!sid) return;
           const draft = textarea.value;
           textarea.value = sendText;
@@ -688,7 +1073,7 @@ export function openCopilotPanel(opts: {
   };
 
   /** 工具步骤行：done/error 行可展开查看参数与结果。 */
-  const renderStep = (content: any): void => {
+  const renderStep = (content: any, live = true): void => {
     const st = String(content.state || "");
     const title = String(content.title ?? content.step?.title ?? "");
     const tool = String(content.tool ?? content.step?.tool ?? "");
@@ -746,6 +1131,17 @@ export function openCopilotPanel(opts: {
     }
     stream.appendChild(details);
     scrollDown();
+    // 改进点写库工具完成后立刻软刷中栏状态（不必等整轮 Agent 结束）
+    if (
+      live &&
+      st === "done" &&
+      isIpCopilotKind(opts.kind) &&
+      /^(ip\.triage_apply|ip\.split_apply|ip\.aggregate_resolve)$/.test(tool)
+    ) {
+      document.dispatchEvent(
+        new CustomEvent("studio:improvements-refresh", { detail: { soft: true } }),
+      );
+    }
   };
 
   /** 任务清单卡：原地更新（Cursor Todo 风格）。 */
@@ -772,13 +1168,32 @@ export function openCopilotPanel(opts: {
     scrollDown();
   };
 
-  /** 文件改动 diff 卡。 */
+  /** 待确认的 diff 卡（保留 / 放弃）；diff_resolved 时统一置灰。 */
+  const pendingDiffCards: Array<{
+    card: HTMLElement;
+    settle: (action: string) => void;
+  }> = [];
+
+  /** 文件改动 diff 卡（pending 时可保留或回退，类似 Cursor Agent）。 */
   const renderDiff = (content: any): void => {
     lastAssistant = null;
     const files: string[] = Array.isArray(content.files) ? content.files.map(String) : [];
+    const pending = Boolean(content.pending);
     const card = el("div", "copilot-card copilot-diff-card");
-    card.append(el("div", "copilot-card-title", `文件改动 · ${files.length} 个文件`));
+    if (pending) card.classList.add("copilot-diff-card--pending");
+    card.append(
+      el(
+        "div",
+        "copilot-card-title",
+        pending
+          ? `文件改动待确认 · ${files.length} 个文件`
+          : `文件改动 · ${files.length} 个文件`,
+      ),
+    );
     for (const f of files) card.append(el("code", "copilot-diff-file", f));
+    if (content.hint) {
+      card.append(el("div", "copilot-plan-options muted", String(content.hint)));
+    }
     if (content.stat) {
       const pre = el("pre", "copilot-report");
       pre.textContent = String(content.stat).trim();
@@ -792,8 +1207,85 @@ export function openCopilotPanel(opts: {
       details.append(summary, renderDiffPre(String(content.patch)));
       card.append(details);
     }
+    if (pending && sid) {
+      const btns = el("div", "copilot-approval-btns");
+      const keep = el("button", "btn-primary", "保留改动") as HTMLButtonElement;
+      const discard = el("button", "btn-link", "放弃并回退") as HTMLButtonElement;
+      keep.type = "button";
+      discard.type = "button";
+      keep.title = "保留本轮对工作区文件的修改";
+      discard.title = "回退到本轮执行前的版本（类似 Cursor Undo / git）";
+      let settled = false;
+      const settle = (action: string) => {
+        if (settled) return;
+        settled = true;
+        keep.disabled = true;
+        discard.disabled = true;
+        card.classList.remove("copilot-diff-card--pending");
+        card.classList.add(
+          action === "keep" ? "copilot-diff-kept" : "copilot-diff-discarded",
+        );
+        card.append(
+          el(
+            "div",
+            "copilot-plan-options muted",
+            action === "keep" ? "已保留本轮改动。" : "已回退到本轮执行前。",
+          ),
+        );
+      };
+      keep.onclick = async () => {
+        keep.disabled = true;
+        discard.disabled = true;
+        try {
+          const r = await copilot.keepFiles(sid);
+          if (!r.ok) {
+            addBubble("copilot-msg--system", r.error || "保留失败（可能已处理）");
+            keep.disabled = false;
+            discard.disabled = false;
+            return;
+          }
+          settle("keep");
+        } catch (e) {
+          addBubble("copilot-msg--system", `保留失败：${fmtErr(e)}`);
+          keep.disabled = false;
+          discard.disabled = false;
+        }
+      };
+      discard.onclick = async () => {
+        if (!window.confirm("放弃本轮文件改动并回退到执行前？此操作不可撤销。")) {
+          return;
+        }
+        keep.disabled = true;
+        discard.disabled = true;
+        try {
+          const r = await copilot.discardFiles(sid);
+          if (!r.ok) {
+            addBubble("copilot-msg--system", r.error || "回退失败（可能已处理）");
+            keep.disabled = false;
+            discard.disabled = false;
+            return;
+          }
+          settle("discard");
+        } catch (e) {
+          addBubble("copilot-msg--system", `回退失败：${fmtErr(e)}`);
+          keep.disabled = false;
+          discard.disabled = false;
+        }
+      };
+      btns.append(keep, discard);
+      card.append(btns);
+      pendingDiffCards.push({ card, settle });
+    }
     stream.appendChild(card);
     scrollDown();
+  };
+
+  const resolveDiff = (content: any): void => {
+    const action = String(content.action || "");
+    while (pendingDiffCards.length) {
+      const entry = pendingDiffCards.pop();
+      if (entry) entry.settle(action || "keep");
+    }
   };
 
   let lastImportJobId = "";
@@ -860,6 +1352,24 @@ export function openCopilotPanel(opts: {
       }
     }
 
+    if (mineru && (ev === "import_progress" || ev === "import_started" || ev === "import_done")) {
+      studioBus.emit("studio:mineru-pipeline-tick", {
+        job_id: jobId || undefined,
+        pipeline_phase: c.pipeline_phase,
+        status: c.status,
+        pages_ready: c.pages_ready,
+        autofix_round: c.autofix_round,
+        autofix_remaining: c.autofix_remaining,
+        autofix_done: c.autofix_done,
+        batch_types: c.batch_types,
+        batch_n: c.batch_n,
+        known_n: c.known_n,
+        unknown_n: c.unknown_n,
+        park_reason: c.park_reason,
+        symptom_rows: c.symptom_rows,
+      });
+    }
+
     if (ev === "import_progress") {
       // 进度不另开卡片（system 也不刷屏）；live 行已更新
       return;
@@ -894,6 +1404,249 @@ export function openCopilotPanel(opts: {
         ),
       );
     }
+    stream.appendChild(card);
+    if (live && ev === "reprocess_done") {
+      maybeOfferPromoteToEdition(c);
+    }
+    scrollDown();
+  };
+
+  /** 改动写盘后：询问是否确认有效改进（IP）并记入方案「待审议」。 */
+  const maybeOfferPromoteToEdition = (c: CopilotImportEvent): void => {
+    if (c.ok === false) return;
+    if (c.promote_prompt === false) return;
+    const mode = String(c.mode || "");
+    if (mode === "rerender") return;
+
+    const pageNo = Number(c.page_no) || 0;
+    const jobMeta = (store.activeImportJob?.meta || {}) as Record<string, unknown>;
+    const editionId = String(
+      c.edition_id ||
+        opts.payload?.result_edition_id ||
+        opts.payload?.edition_id ||
+        opts.payload?.source_edition_id ||
+        jobMeta.edition_id ||
+        jobMeta.source_edition_id ||
+        jobMeta.textbook_profile ||
+        "",
+    ).trim();
+    if (!editionId) {
+      addBubble(
+        "copilot-msg--system",
+        "改动已写盘。当前会话未绑定解析方案（edition_id），无法确认改进点。可在「方案」页手动登记。",
+      );
+      return;
+    }
+
+    const blockId = String(c.block_id || "").trim();
+    const htmlOk = c.html_changed !== false;
+    const summary =
+      String(c.summary || "").trim() ||
+      (blockId
+        ? `AI 修改第 ${pageNo || "?"} 页块 ${blockId}（mode=${mode || "cursor_ir"}）`
+        : `AI 修改第 ${pageNo || "?"} 页（mode=${mode || "cursor_ir"}）`);
+    // 默认：页级 IR / 方案数据 → 非越权；核心代码类 mode → 越权
+    const hintedAuth =
+      String(c.authority || "").trim() === "pipeline" ||
+      mode === "fs_edit" ||
+      mode === "fs_violation" ||
+      mode === "pipeline"
+        ? "pipeline"
+        : "edition";
+
+    // 同一页连续刷新时只保留最新一张询问卡
+    stream.querySelectorAll(".copilot-promote-card[data-pending='1']").forEach((n) => {
+      n.remove();
+    });
+
+    const card = el("div", "copilot-card copilot-promote-card");
+    card.dataset.pending = "1";
+    card.append(el("div", "copilot-card-title", "确认有效改进？请标注改动类型"));
+    card.append(
+      el(
+        "div",
+        "copilot-plan-summary",
+        htmlOk
+          ? "本页改动已生效。确认后写入改进点有效集，并记入方案待审议（不立刻覆盖正式方案）："
+          : "IR 已写盘，但页面 HTML 未变。仍可确认改进点并记入待审议：",
+      ),
+    );
+    card.append(
+      el(
+        "div",
+        "copilot-plan-options muted",
+        `方案 ${editionId}${pageNo ? ` · 第 ${pageNo} 页` : ""}${
+          blockId ? ` · 块 ${blockId}` : ""
+        } · 建议：${hintedAuth === "pipeline" ? "越权" : "非越权"}`,
+      ),
+    );
+    card.append(el("div", "copilot-plan-summary muted", summary));
+    card.append(
+      el(
+        "div",
+        "copilot-plan-options muted",
+        "非越权：后期只需改方案数据即可吸收。越权：需要改 Pipeline 核心代码才能系统性修好。",
+      ),
+    );
+
+    const btns = el("div", "copilot-approval-btns copilot-approval-btns--wrap");
+    const yesEdition = el(
+      "button",
+      hintedAuth === "edition" ? "btn-primary" : "btn-secondary",
+      "记入·非越权",
+    ) as HTMLButtonElement;
+    const yesPipeline = el(
+      "button",
+      hintedAuth === "pipeline" ? "btn-primary" : "btn-secondary",
+      "记入·越权",
+    ) as HTMLButtonElement;
+    const openBtn = el("button", "btn-link", "打开待审议") as HTMLButtonElement;
+    const no = el("button", "btn-link", "本次跳过") as HTMLButtonElement;
+    yesEdition.type = "button";
+    yesPipeline.type = "button";
+    openBtn.type = "button";
+    no.type = "button";
+    yesEdition.title = "确认改进点（非越权）并记入方案待审议";
+    yesPipeline.title = "确认改进点（越权）并记入方案待审议；需改 Pipeline 核心";
+    openBtn.title = "打开方案页的待审建议列表";
+    no.title = "仅保留本页改动，不写入改进点有效集";
+
+    const settle = (msg: string, ok: boolean) => {
+      card.dataset.pending = "0";
+      yesEdition.disabled = true;
+      yesPipeline.disabled = true;
+      no.disabled = true;
+      openBtn.disabled = false;
+      card.classList.add(ok ? "copilot-approved" : "copilot-rejected");
+      card.append(el("div", "copilot-plan-options muted", msg));
+    };
+
+    openBtn.onclick = () => {
+      store.setActiveRibbon("edition-ops");
+      document.dispatchEvent(
+        new CustomEvent("studio:edition-ops-select", { detail: { editionId } }),
+      );
+      document.dispatchEvent(new CustomEvent("studio:edition-ops-goto-corrections"));
+    };
+
+    const enqueueWithAuthority = (authority: "edition" | "pipeline") => {
+      void (async () => {
+        yesEdition.disabled = true;
+        yesPipeline.disabled = true;
+        no.disabled = true;
+        try {
+          const { editionOps } = await import("../api/editionOps");
+          const { improvementPoints } = await import("../api/improvementPoints");
+          const facet =
+            authority === "pipeline"
+              ? "content_correct"
+              : mode.includes("layout") || mode === "cursor_ir"
+                ? "layout_rebuild"
+                : "content_correct";
+          const idSuffix = `${pageNo || 0}.${Date.now().toString(36).slice(-6)}`;
+          const label = authority === "pipeline" ? "越权" : "非越权";
+          const jobId = String(
+            c.job_id ||
+              opts.payload?.import_job_id ||
+              opts.payload?.job_id ||
+              store.activeImportJob?.id ||
+              "",
+          ).trim();
+          const bf = (opts.payload?.book_fingerprint ||
+            jobMeta.book_fingerprint ||
+            {}) as Record<string, unknown>;
+          const fingerprintHash = String(
+            (typeof bf === "object" && bf ? bf.hash : "") ||
+              opts.payload?.fingerprint_hash ||
+              jobMeta.fingerprint_hash ||
+              "",
+          ).trim();
+          const editionFamilyId = String(
+            opts.payload?.source_edition_id ||
+              opts.payload?.edition_id ||
+              jobMeta.source_edition_id ||
+              jobMeta.edition_id ||
+              editionId ||
+              "",
+          ).trim();
+          const attempt: Record<string, unknown> = {
+            id: `ui.${idSuffix}`,
+            tool: mode || "cursor_ir",
+            op: mode || "cursor_ir",
+            page: pageNo,
+            page_no: pageNo,
+            summary: summary.slice(0, 400),
+            args_summary: summary.slice(0, 300),
+            ok: true,
+            mode,
+            at: new Date().toISOString(),
+          };
+          if (blockId) attempt.block_id = blockId;
+          const ipOut = await improvementPoints.confirm({
+            job_id: jobId,
+            session_id: sid || "",
+            fingerprint_hash: fingerprintHash,
+            page_no: pageNo,
+            summary: summary.slice(0, 500),
+            authority,
+            kind: mode || "cursor_ir",
+            block_ids: blockId ? [blockId] : [],
+            attempts: [attempt],
+            pattern_status: authority === "edition" ? "draft" : "none",
+            edition_family_id: editionFamilyId,
+            write_correction: true,
+            // 人在 Studio 点确认卡 = 人工确认（相对分段全文 AI 质检批）
+            origin: authority === "pipeline" ? "pipeline_event" : "human_confirm",
+          });
+          const ipId = String(ipOut?.ip?.id || "").trim();
+          if (!ipId) {
+            throw new Error(
+              String(ipOut?.detail || ipOut?.error || "confirm 未返回改进点 id"),
+            );
+          }
+          const out = await editionOps.enqueueCorrection(
+            editionId,
+            {
+              id: `ai.${idSuffix}`,
+              facet,
+              severity: "should",
+              statement: summary.slice(0, 500),
+              authority,
+              tags: [
+                "ai_page_edit",
+                `authority:${authority}`,
+                label,
+                `ip:${ipId}`,
+                ...(pageNo ? [`page:${pageNo}`] : []),
+                ...(blockId ? [`block:${blockId}`] : []),
+                ...(mode ? [`mode:${mode}`] : []),
+              ],
+            },
+            "ai_page_edit",
+            ipId,
+          );
+          const corrId = String(out?.id || out?.corr_id || "").trim();
+          settle(
+            corrId
+              ? `已确认改进点 ${ipId.slice(0, 8)}…（${label}），并记入「${editionId}」待审议（${corrId.slice(0, 8)}…）。`
+              : `已确认改进点 ${ipId.slice(0, 8)}…（${label}），并记入「${editionId}」待审议。`,
+            true,
+          );
+        } catch (e) {
+          yesEdition.disabled = false;
+          yesPipeline.disabled = false;
+          no.disabled = false;
+          addBubble("copilot-msg--system", `确认改进点失败：${fmtErr(e)}`);
+        }
+      })();
+    };
+
+    yesEdition.onclick = () => enqueueWithAuthority("edition");
+    yesPipeline.onclick = () => enqueueWithAuthority("pipeline");
+    no.onclick = () => settle("已跳过：本页改动保留，未写入改进点有效集。", false);
+
+    btns.append(yesEdition, yesPipeline, openBtn, no);
+    card.append(btns);
     stream.appendChild(card);
     scrollDown();
   };
@@ -991,10 +1744,16 @@ export function openCopilotPanel(opts: {
         addBubble("copilot-msg--assistant", String(c.text ?? ""));
         break;
       case "system": {
+        const sysText = String(c.text ?? "");
+        if (isRestartInterrupt(c)) restartInterrupt = true;
+        // 历史心跳气泡：后端已不再写入，旧会话仍可能残留，直接跳过
+        if (/Run 仍在进行/.test(sysText) || (/⏳/.test(sysText) && /距上次活动/.test(sysText))) {
+          break;
+        }
         const actions = Array.isArray(c.actions)
           ? (c.actions as { id?: string; label: string; send: string }[])
           : undefined;
-        addBubble("copilot-msg--system", String(c.text ?? ""), { actions });
+        addBubble("copilot-msg--system", sysText, { actions });
         break;
       }
       case "status":
@@ -1010,7 +1769,7 @@ export function openCopilotPanel(opts: {
         resolveApproval(c);
         break;
       case "step":
-        renderStep(c);
+        renderStep(c, live);
         break;
       case "todos":
         renderTodos(c);
@@ -1018,12 +1777,18 @@ export function openCopilotPanel(opts: {
       case "diff":
         renderDiff(c);
         break;
+      case "diff_resolved":
+        resolveDiff(c);
+        break;
       case "verify":
-        renderStep({
-          step: c.step,
-          state: c.ok ? "done" : "error",
-          error: c.ok ? "" : "验收未通过",
-        });
+        renderStep(
+          {
+            step: c.step,
+            state: c.ok ? "done" : "error",
+            error: c.ok ? "" : "验收未通过",
+          },
+          live,
+        );
         break;
       case "result":
         renderResult(c);
@@ -1036,6 +1801,7 @@ export function openCopilotPanel(opts: {
     }
   };
 
+  let lastStreamStatus = "";
   const applyBatch = (status: string, messages: CopilotMessage[]): void => {
     const live = !hydrating;
     for (const m of messages) {
@@ -1044,6 +1810,24 @@ export function openCopilotPanel(opts: {
     }
     hydrating = false;
     setLive(status);
+    // 改进点 Agent：从执行中进入结束/待命时软刷中栏（避免 idle 轮询反复刷）
+    const wasRunning = RUNNING_STATUSES.has(lastStreamStatus);
+    const becameQuiet =
+      TERMINAL_STATUSES.has(status) ||
+      status === "idle" ||
+      status === "awaiting_user" ||
+      status === "awaiting_approval";
+    if (
+      live &&
+      isIpCopilotKind(opts.kind) &&
+      wasRunning &&
+      becameQuiet
+    ) {
+      document.dispatchEvent(
+        new CustomEvent("studio:improvements-refresh", { detail: { soft: true } }),
+      );
+    }
+    lastStreamStatus = status;
   };
 
   // ---- 实时通道：SSE 优先，失败回退轮询 ----
@@ -1062,10 +1846,7 @@ export function openCopilotPanel(opts: {
     try {
       const out = await copilot.getMessages(sid, afterSeq);
       applyBatch(out.status, out.messages);
-      if (TERMINAL_STATUSES.has(out.status) && pollTimer != null) {
-        window.clearInterval(pollTimer);
-        pollTimer = null;
-      }
+      // 终态后不停轮询：一书一对话会再次 intent 开跑，需继续追平
     } catch (e) {
       statusPill.textContent = `轮询失败：${fmtErr(e)}`;
     }
@@ -1095,8 +1876,12 @@ export function openCopilotPanel(opts: {
       }
     });
     es.addEventListener("end", () => {
+      // 终态会 end；改挂轻量轮询，避免再点「整理/拆分」后消息已落库但面板不更新
       es.close();
-      if (eventSource === es) eventSource = null;
+      if (eventSource === es) {
+        eventSource = null;
+        startPolling();
+      }
     });
     es.onerror = () => {
       // SSE 断开（网关重启/代理不支持流式）→ 回退轮询
@@ -1114,19 +1899,26 @@ export function openCopilotPanel(opts: {
     sid = targetSid;
     afterSeq = 0;
     hydrating = true;
-    const jobFromPayload = String(
-      opts.payload?.import_job_id || opts.payload?.job_id || lastImportJobId || "",
-    ).trim();
-    persistSessionId(opts.kind, targetSid, jobFromPayload);
-    if (jobFromPayload) {
-      HOST_JOB_BIND.set(opts.host, jobFromPayload);
-      opts.host.setAttribute("data-copilot-job", jobFromPayload);
+    const scope = scopeKeyForKind(opts.kind, opts.payload) || lastImportJobId;
+    const persistKind: CopilotKind = isIpCopilotKind(opts.kind)
+      ? "ip_book"
+      : opts.kind;
+    persistSessionId(persistKind, targetSid, scope, {
+      markActive: opts.kind === "import_advice",
+    });
+    if (scope) {
+      HOST_JOB_BIND.set(opts.host, scope);
+      opts.host.setAttribute("data-copilot-scope", scope);
+      if (opts.kind === "import_advice") {
+        opts.host.setAttribute("data-copilot-job", scope);
+      }
     }
     if (resetStream) {
       stream.replaceChildren();
       todosCard = null;
       lastAssistant = null;
       approvalCards.clear();
+      restartInterrupt = false;
     }
     startStream();
   };
@@ -1291,14 +2083,26 @@ export function openCopilotPanel(opts: {
     HOST_CLEANUP.delete(opts.host);
     HOST_JOB_BIND.delete(opts.host);
     HOST_SEND.delete(opts.host);
+    HOST_PREFILL.delete(opts.host);
+    HOST_RESYNC.delete(opts.host);
     opts.host.removeAttribute("data-copilot-job");
+    opts.host.removeAttribute("data-copilot-scope");
+    opts.host.classList.remove("is-active");
   };
   HOST_CLEANUP.set(opts.host, cleanup);
+  // 一书一对话再次 intent 开跑后：立刻按 afterSeq 追平（含已落库未画的气泡）
+  HOST_RESYNC.set(opts.host, () => {
+    if (closed || !sid) return;
+    startStream();
+  });
   {
-    const bootJob = String(opts.payload?.import_job_id || opts.payload?.job_id || "").trim();
-    if (bootJob) {
-      HOST_JOB_BIND.set(opts.host, bootJob);
-      opts.host.setAttribute("data-copilot-job", bootJob);
+    const bootScope = scopeKeyForKind(opts.kind, opts.payload);
+    if (bootScope) {
+      HOST_JOB_BIND.set(opts.host, bootScope);
+      opts.host.setAttribute("data-copilot-scope", bootScope);
+      if (opts.kind === "import_advice") {
+        opts.host.setAttribute("data-copilot-job", bootScope);
+      }
     }
   }
   closeBtn.onclick = cleanup;
@@ -1307,7 +2111,8 @@ export function openCopilotPanel(opts: {
     if (!sid) return;
     stopBtn.disabled = true;
     try {
-      await copilot.cancel(sid);
+      // 停止默认回退本轮文件改动（Cursor 式放弃）
+      await copilot.cancel(sid, true);
     } catch {
       /* 会话可能已结束 */
     } finally {
@@ -1373,6 +2178,17 @@ export function openCopilotPanel(opts: {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 140)}px`;
   };
   textarea.addEventListener("input", autoGrow);
+  HOST_PREFILL.set(opts.host, (text: string, chipLabel?: string) => {
+    if (closed) return;
+    textarea.value = text;
+    autoGrow();
+    if (chipLabel) {
+      focusLabel.hidden = false;
+      focusLabel.textContent = chipLabel;
+      addBubble("copilot-msg--system copilot-msg--focus-chip", chipLabel);
+    }
+    window.setTimeout(() => textarea.focus(), 40);
+  });
 
   // ---- 启动 / 恢复会话 ----
   const resumeId = String(opts.resumeSessionId || "").trim();
@@ -1381,8 +2197,14 @@ export function openCopilotPanel(opts: {
     addBubble("copilot-msg--system", "正在恢复与本导入任务绑定的 AI 会话…");
     attachSession(resumeId, false);
   } else {
-    setLive("planning");
-    addBubble("copilot-msg--system", "正在创建 Copilot 会话…");
+    const wantAutoStart = opts.autoStart !== false;
+    setLive(wantAutoStart ? "planning" : "idle");
+    addBubble(
+      "copilot-msg--system",
+      wantAutoStart
+        ? "正在创建 Copilot 会话…"
+        : "正在为本导入任务创建空 AI 对话（可聚焦改页）…",
+    );
     void (async () => {
       try {
         const bootJob = String(
@@ -1401,11 +2223,32 @@ export function openCopilotPanel(opts: {
           }
         }
         const model = window.localStorage.getItem(MODEL_STORAGE_KEY) || "";
-        const out = await copilot.createSession(opts.kind, opts.payload, model);
+        const out = await copilot.createSession(opts.kind, opts.payload, model, {
+          auto_start: wantAutoStart,
+        });
         if (out.resumed) {
-          addBubble("copilot-msg--system", "已复用与本导入任务绑定的 AI 对话。");
+          addBubble(
+            "copilot-msg--system",
+            isIpCopilotKind(opts.kind)
+              ? "已复用本书改进点 AI 对话（一书一会话）。"
+              : "已复用与本导入任务绑定的 AI 对话。",
+          );
+        } else if (!wantAutoStart) {
+          addBubble(
+            "copilot-msg--system",
+            "已绑定本导入任务。对话为空，可在中栏双击页/块后在此改页。",
+          );
+          setLive("idle");
+          statusPill.textContent = "待命";
         }
         attachSession(out.session_id, false);
+        if (opts.kind === "import_advice" && !bootJob) {
+          // 任务要等 agent 调 start_import 才有；先让左栏出现「准备中」占位行，
+          // 否则这段时间刷新页面会看不到这次导入。
+          void import("./import/MinerUImportTree").then(({ emitMinerUTreeRefresh }) => {
+            emitMinerUTreeRefresh();
+          });
+        }
       } catch (e) {
         addBubble(
           "copilot-msg--system",

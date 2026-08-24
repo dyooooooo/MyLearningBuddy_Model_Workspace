@@ -214,7 +214,7 @@ def build_cursor_pack(session: Session, feedback: Import35bFeedback) -> dict[str
 ## 执行步骤
 
 ### Step 0 — 优先运行时修复（先于改代码）
-- [ ] 优先试 **PageReprocess**（`POST .../pages/{page_no}/reprocess`，mode=full 或 from_raw）
+- [ ] 优先试 **PageReprocess**（`POST .../pages/{feedback.page_no}/reprocess`，mode=full 或 from_raw）
 - [ ] 单块问题试 **BlockRefine**（`POST .../blocks/{{block_id}}/refine`）
 - [ ] 仍失败再改 Profile features / v6 prompt / heuristics
 

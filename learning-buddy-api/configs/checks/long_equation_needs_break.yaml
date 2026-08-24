@@ -1,0 +1,30 @@
+suspect_type: LONG_EQUATION_NEEDS_BREAK
+title: 超长单行公式需分行/array 折行
+severity: low
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    type == 'equation' and zone == 'main' and has_math
+    and char_count >= 90 and height_ratio <= 0.06
+    and not contains(text, 'begin{array}')
+    and not contains(text, 'begin{aligned}')
+    and not contains(text, 'begin{align}')
+  min_hits: 1
+
+evidence: [type, zone, char_count, height_ratio, width_ratio, has_math, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L3.book_patch
+  # 长公式要断行：得知道有多长、渲出来多宽
+  locate_by: [zone, char_count, width_ratio, text_preview]
+  playbook: |
+    1. 确认是 equation 块、长 LaTeX 挤在很矮的单行框里（非带公式的正文段落）。
+    2. 用 array/aligned 按等号或多项拆行；必要时保留 \\tag。
+    3. rebuild_ir 后核对不再横向溢出。语义边界：短高公式与散文夹公式不在本检测器范围。
+
+examples:
+  positive: [configs/checks/fixtures/long_equation_needs_break_pos.json]
+  negative: [configs/checks/fixtures/long_equation_needs_break_neg.json]

@@ -130,7 +130,15 @@ Studio 是平台**长期运营后台**（`doc/plans/corpus-studio.plan.md`；roa
 
 - [ ] 上传分派/级联删除下沉或显式端点；copilot→buddy-api 审计统一
 - [ ] `packages/buddy-client`：生成类型 + typed client + ApiError + SSE
-- [ ] `/test/` → Android 迁移后降级为验收 harness（文档裁决）
+- [ ] `/test/` 按下面的定位裁决降级
+
+#### 多前端定位裁决
+
+| 前端 | 定位 |
+|------|------|
+| `/test/`（`exam-ocr-server/static` + `frontend/` Vite） | 现为学生侧伴学试验台；**Android 薄客户端能力迁移完成后降级为纯验收 harness**（smoke / acceptance），不再作为第三套「半正式」产品前端生长 |
+| `/studio/`（studio-ui） | 正式运营后台 — 教研 / 导入 / Edition / Copilot |
+| 消费级产品 UI（家长审核、学习看板等） | 独立立项，React/Next，复用 `packages/buddy-client` 契约 |
 
 ---
 

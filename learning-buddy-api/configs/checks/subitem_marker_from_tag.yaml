@@ -1,0 +1,28 @@
+suspect_type: SUBITEM_MARKER_FROM_TAG
+title: 小题序号误入公式 \\tag 而非可见列表标
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    has_math and zone == 'main'
+    and matches(text, '\\\\tag')
+    and matches(text, '[（(][0-9]+[）)]')
+  min_hits: 1
+
+evidence: [type, zone, char_count, has_math, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L3.book_patch
+  # 小题标号被标签吃掉：认这一块，看原文里标号残成什么样
+  locate_by: [zone, text_preview]
+  playbook: |
+    1. 定位带 \\tag{（n）} / \\tag{(n)} 的公式块（小题号藏在公式末尾）。
+    2. 把序号改为题首可见 list「（n）」；公式本体去掉 \\tag。
+    3. 若缺小题，对照 PDF 补回；练习标题与分册序号对齐后 rebuild_ir。
+
+examples:
+  positive: [configs/checks/fixtures/subitem_marker_from_tag_pos.json]
+  negative: [configs/checks/fixtures/subitem_marker_from_tag_neg.json]

@@ -1,0 +1,27 @@
+suspect_type: FIGURE_DISPLAY_TOO_WIDE
+title: 多图页主栏 figure 过宽应缩小展示
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_main_figure and width_ratio >= 0.65
+    and height_ratio <= 0.55 and page_figure_count >= 2
+  min_hits: 1
+
+evidence: [type, zone, width_ratio, height_ratio, page_figure_count, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L1.theme_css
+  # 改主题 CSS 要知道超宽到什么程度、这页有几张图
+  locate_by: [zone, width_ratio, page_figure_count, text_preview]
+  playbook: |
+    1. 确认同页多图或示意小图被撑满主栏宽度。
+    2. 设 figure_size=half 或主题 CSS 限制最大宽度约主栏一半。
+    3. 预览核对与正文并排/居中观感正常。
+
+examples:
+  positive: [configs/checks/fixtures/figure_display_too_wide_pos.json]
+  negative: [configs/checks/fixtures/figure_display_too_wide_neg.json]

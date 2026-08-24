@@ -24,6 +24,7 @@ from .loop import LoopEngine
 from .permissions import load_permissions
 from .schemas import ApprovalDecisionRequest, CreateSessionRequest, UserMessageRequest
 from .scenarios import build_task_context
+from .session_sweep import sweep_zombie_sessions
 from .store import Store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -37,34 +38,13 @@ engine = LoopEngine(
     task_context_builder=build_task_context(settings),
 )
 
-_TERMINAL_STATUSES = ("done", "failed", "cancelled")
-
-
 def _sweep_zombie_sessions() -> None:
     """启动时清扫僵尸会话：上次进程退出时线程已不在，但状态仍停在 planning/executing。
     awaiting_user（质检门闸等人）是合法停靠态，不扫 —— 用户刷新后发消息即可 resume。
-    planning/executing 置 failed 并留言，用户发「继续」可续。"""
-    swept = 0
-    for s in store.list_sessions(limit=200):
-        st = s["status"]
-        if st in _TERMINAL_STATUSES or st == "awaiting_user" or engine.is_running(s["id"]):
-            continue
-        store.update_session(s["id"], status="failed")
-        store.add_message(
-            s["id"],
-            "system",
-            {
-                "text": (
-                    "服务重启导致本会话中断。"
-                    "点「继续」或发送「继续」可重连 Agent 并从断点接着做。"
-                ),
-                "actions": [{"id": "continue", "label": "继续", "send": "继续"}],
-            },
-        )
-        store.audit(s["id"], "orchestrator", "zombie_swept", {"was": st})
-        swept += 1
+    执行中残留停到 awaiting_user（不是 failed），用户点「继续」可续。"""
+    swept = sweep_zombie_sessions(store, is_running=engine.is_running)
     if swept:
-        log.info("启动清扫：%d 个僵尸会话已置为 failed（可续聊）", swept)
+        log.info("启动清扫：%d 个僵尸会话已停靠为 awaiting_user（可续跑）", swept)
 
 
 @asynccontextmanager
@@ -135,12 +115,12 @@ def health() -> dict:
         "pinning.yaml",
         "permissions.yaml",
         "rules/00-copilot-core.md",
+        "rules/40-layout-rules-first.md",
         "skills/edition-tuning.md",
         "skills/page-diagnosis.md",
-        "skills/verify-loop.md",
+        "skills/pattern-abstract.md",
         "context/editions.md",
         "context/import-pipeline.md",
-        "context/reprocess.md",
     ):
         if not (env_dir / rel).is_file():
             problems.append(f"agent-env 缺失: {rel}")
@@ -185,27 +165,205 @@ def list_models() -> dict:
     return {"models": _models_cache["models"], "default": settings.cursor_model}
 
 
+_IP_KINDS = frozenset({"ip_book", "ip_triage", "ip_split"})
+
+
+def _normalize_session_kind(kind: str) -> str:
+    """旧 ip_triage / ip_split 归一为 ip_book（一书指纹一对话）。"""
+    if kind in ("ip_triage", "ip_split", "ip_book"):
+        return "ip_book"
+    return kind
+
+
+def _ensure_ip_intent(kind_raw: str, payload: dict) -> dict:
+    """写入 payload.intent；兼容旧前端只传 kind / focus / process_all / ip_id。"""
+    pl = dict(payload or {})
+    intent = str(pl.get("intent") or "").strip().lower()
+    if intent in ("triage", "split_all", "split_one", "aggregate"):
+        pl["intent"] = intent
+        return pl
+    if str(pl.get("focus") or "").strip().lower() == "aggregate":
+        pl["intent"] = "aggregate"
+    elif kind_raw == "ip_split":
+        pl["intent"] = (
+            "split_all" if pl.get("process_all") else "split_one"
+        )
+    elif pl.get("ip_id") and not pl.get("process_all"):
+        pl["intent"] = "split_one"
+    elif pl.get("process_all") and kind_raw == "ip_book":
+        # 新 kind 未带 intent：默认整理（全部拆分须显式 intent=split_all）
+        pl["intent"] = "triage"
+    else:
+        pl["intent"] = "triage"
+    return pl
+
+
+def _normalize_aggregate_payload(payload: dict) -> dict:
+    """全书聚合 vs 单簇互斥：有 member_ids 且未声明 process_all → 单簇。"""
+    pl = dict(payload or {})
+    if str(pl.get("intent") or "").strip().lower() != "aggregate":
+        return pl
+    members = [
+        str(x).strip() for x in (pl.get("member_ids") or []) if str(x).strip()
+    ]
+    # 显式 process_all=true → 全书；否则有 member_ids → 单簇
+    if pl.get("process_all") is True or (
+        bool(pl.get("process_all")) and not members
+    ):
+        pl["process_all"] = True
+        for k in (
+            "member_ids",
+            "aggregate_group_id",
+            "aggregate_cluster_index",
+            "aggregate_cluster_label",
+        ):
+            pl.pop(k, None)
+        return pl
+    if members:
+        pl["process_all"] = False
+        pl["member_ids"] = members
+        idx = pl.get("aggregate_cluster_index")
+        label = str(pl.get("aggregate_cluster_label") or "").strip()
+        if not label and idx not in (None, ""):
+            try:
+                pl["aggregate_cluster_label"] = f"簇#{int(idx)}"
+            except (TypeError, ValueError):
+                pl["aggregate_cluster_label"] = f"簇#{idx}"
+        return pl
+    pl["process_all"] = True
+    return pl
+
+
+def _ip_intent_user_text(payload: dict) -> str:
+    intent = str(payload.get("intent") or "triage").strip().lower()
+    ip_id = str(payload.get("ip_id") or "").strip()
+    if intent == "aggregate":
+        pl = _normalize_aggregate_payload(payload)
+        members = [
+            str(x).strip() for x in (pl.get("member_ids") or []) if str(x).strip()
+        ]
+        label = str(pl.get("aggregate_cluster_label") or "").strip()
+        if not label and pl.get("aggregate_cluster_index") not in (None, ""):
+            label = f"簇#{pl.get('aggregate_cluster_index')}"
+        gid = str(pl.get("aggregate_group_id") or "").strip()
+        if members and not pl.get("process_all"):
+            lab = label or (f"组 {gid[:8]}" if gid else "指定簇")
+            return (
+                f"【意图：处理聚合 · 仅{lab}】"
+                f"aggregate_cluster_label={lab}；"
+                f"aggregate_group_id={gid or '（无）'}；"
+                f"member_ids={members}。"
+                f"只裁决{lab}这一簇的对立，向我说明 keep/delete，确认后再 aggregate_resolve。"
+                "**禁止**处理其它簇；**不要**问我要处理全部还是一个——"
+                f"本次范围已定为{lab}。"
+            )
+        return (
+            "【意图：处理全部聚合】请用 conflict_hints / 列表找出本书全部对立簇，"
+            "按簇#1、簇#2…逐簇向我说明 keep/delete，确认后再 aggregate_resolve。"
+        )
+    if intent == "split_all":
+        return (
+            "【意图：全部拆分】请用 ip.list_for_split 清空该书全部 needs_split；"
+            "逐条 propose→apply，直到 remaining_needs_split=0。"
+        )
+    if intent == "split_one":
+        return (
+            f"【意图：拆分本条】ip_id={ip_id or '（缺失）'}。"
+            "请 propose 提案，向我展示后确认再 split_apply。"
+        )
+    return (
+        "【意图：整理】请用 ip.list_for_triage 清空该书全部 needs_triage；"
+        "每批 triage_apply 后继续 list，直到 remaining_needs_triage=0。"
+    )
+
+
+def _kick_ip_session(sid: str, payload: dict) -> None:
+    """复用会话时按 intent 开跑：运行中则投递用户消息，否则 resume。"""
+    text = _ip_intent_user_text(payload)
+    if engine.is_running(sid):
+        try:
+            engine.post_user_message(sid, text)
+            return
+        except KeyError:
+            pass
+    engine.resume_session(sid, text)
+
+
 @app.post("/api/v1/copilot/sessions")
 def create_session(req: CreateSessionRequest) -> dict:
     if not settings.cursor_api_key:
         raise HTTPException(503, "CURSOR_API_KEY 未配置，无法创建会话")
-    jid = Store._job_id_from_payload(req.payload)
+    kind_raw = req.kind
+    kind = _normalize_session_kind(kind_raw)
+    payload = dict(req.payload or {})
+    if kind == "ip_book":
+        payload = _ensure_ip_intent(kind_raw, payload)
+        payload = _normalize_aggregate_payload(payload)
+    jid = Store._job_id_from_payload(payload)
     # 导入任务 ↔ AI 对话 1:1：已有绑定则复用，不新建平行会话
-    if jid and req.kind == "import_advice":
+    if jid and kind == "import_advice":
         existing = store.find_session_id_by_import_job(jid)
         if existing:
             store.audit(
                 existing,
                 "user",
                 "session_reused_for_job",
-                {"import_job_id": jid, "kind": req.kind},
+                {"import_job_id": jid, "kind": kind},
             )
             return {
                 "session_id": existing,
                 "resumed": True,
                 "import_job_id": jid,
             }
-    sid = store.create_session(req.kind, req.payload, model=req.model.strip())
+    # 一书指纹 ↔ AI 对话 1:1
+    if kind == "ip_book":
+        fp = str(payload.get("fingerprint_hash") or "").strip()
+        if fp:
+            existing = store.find_session_id_by_fingerprint(fp, kind="ip_book")
+            if existing:
+                sess = store.get_session(existing) or {}
+                # 单簇/全书字段先清再并入，避免上一轮 process_all/member_ids 残留
+                merged = dict(sess.get("payload") or {})
+                for k in (
+                    "member_ids",
+                    "aggregate_group_id",
+                    "aggregate_cluster_index",
+                    "aggregate_cluster_label",
+                    "process_all",
+                    "user_goal",
+                    "focus",
+                ):
+                    merged.pop(k, None)
+                merged.update(payload)
+                merged = _ensure_ip_intent(kind_raw, merged)
+                merged = _normalize_aggregate_payload(merged)
+                store.update_session(existing, payload=merged, kind="ip_book")
+                store.audit(
+                    existing,
+                    "user",
+                    "session_reused_for_fingerprint",
+                    {
+                        "fingerprint_hash": fp,
+                        "intent": merged.get("intent"),
+                        "kind_raw": kind_raw,
+                        "aggregate_cluster_label": merged.get(
+                            "aggregate_cluster_label"
+                        ),
+                        "process_all": merged.get("process_all"),
+                    },
+                )
+                if req.auto_start:
+                    try:
+                        _kick_ip_session(existing, merged)
+                    except Exception:  # noqa: BLE001
+                        log.exception("ip_book reuse kick failed sid=%s", existing)
+                return {
+                    "session_id": existing,
+                    "resumed": True,
+                    "import_job_id": jid or None,
+                    "auto_start": bool(req.auto_start),
+                }
+    sid = store.create_session(kind, payload, model=req.model.strip())
     if jid:
         removed = store.bind_import_job(sid, jid)
         for oid in removed:
@@ -218,19 +376,82 @@ def create_session(req: CreateSessionRequest) -> dict:
         "user",
         "session_created",
         {
-            "kind": req.kind,
-            "payload": req.payload,
+            "kind": kind,
+            "kind_raw": kind_raw,
+            "payload": payload,
             "model": req.model.strip() or "auto",
             "import_job_id": jid or "",
+            "auto_start": bool(req.auto_start),
         },
     )
-    engine.start(sid)
-    return {"session_id": sid, "import_job_id": jid or None, "resumed": False}
+    if req.auto_start:
+        engine.start(sid)
+    else:
+        # 已有导入任务的空绑定：等人聚焦改页，勿自动跑全书编排
+        store.update_session(sid, status="awaiting_user")
+        try:
+            store.add_message(
+                sid,
+                "system",
+                {
+                    "text": (
+                        "已与导入任务绑定（空对话）。"
+                        "可在中栏聚焦页/块后在此发送修改要求；不会自动重新全书导入。"
+                    )
+                },
+            )
+        except Exception:  # noqa: BLE001
+            log.warning("idle bind welcome message failed sid=%s", sid, exc_info=True)
+    return {
+        "session_id": sid,
+        "import_job_id": jid or None,
+        "resumed": False,
+        "auto_start": bool(req.auto_start),
+    }
 
 
 @app.get("/api/v1/copilot/sessions")
 def list_sessions(import_job_id: str = "") -> dict:
     return {"sessions": store.list_sessions(import_job_id=import_job_id)}
+
+
+@app.get("/api/v1/copilot/sessions/by-fingerprint/{fingerprint_hash}")
+def find_session_by_fingerprint(
+    fingerprint_hash: str, kind: str = "ip_book"
+) -> dict:
+    """按书指纹找回改进点 AI 会话（刷新后无 localStorage 时用）。
+
+    默认 kind=ip_book；命中旧 ip_triage/ip_split 时升级为 ip_book。
+    """
+    fp = (fingerprint_hash or "").strip()
+    if not fp:
+        raise HTTPException(400, "fingerprint_hash 必填")
+    kind_q = (kind or "").strip() or "ip_book"
+    if kind_q in _IP_KINDS:
+        kind_q = "ip_book"
+    sid = store.find_session_id_by_fingerprint(fp, kind=kind_q)
+    if not sid:
+        return {"session": None}
+    s = store.get_session(sid)
+    if not s:
+        return {"session": None}
+    if str(s.get("kind") or "") in ("ip_triage", "ip_split"):
+        try:
+            store.update_session(sid, kind="ip_book")
+            s = store.get_session(sid) or s
+        except Exception:  # noqa: BLE001
+            log.warning("upgrade session kind to ip_book failed sid=%s", sid, exc_info=True)
+    return {
+        "session": {
+            "id": s["id"],
+            "kind": s.get("kind"),
+            "status": s.get("status"),
+            "import_job_id": s.get("import_job_id"),
+            "label": s.get("label"),
+            "created_at": s.get("created_at"),
+            "updated_at": s.get("updated_at"),
+        }
+    }
 
 
 @app.get("/api/v1/copilot/sessions/{sid}")
@@ -239,14 +460,19 @@ def get_session(sid: str) -> dict:
     if not s:
         raise HTTPException(404, "会话不存在")
     s["running"] = engine.is_running(sid)
+    s["pending_fs"] = engine.has_pending_checkpoint(sid)
     return s
 
 
 def _purge_session(sid: str) -> bool:
     """取消运行中线程并物理删除会话（含消息）。"""
     try:
+        engine.discard_files(sid, reason="删除会话")
+    except Exception:  # noqa: BLE001
+        log.exception("discard before delete failed sid=%s", sid)
+    try:
         if engine.is_running(sid):
-            engine.cancel(sid)
+            engine.cancel(sid, discard_files=True)
     except Exception:  # noqa: BLE001
         log.exception("cancel before delete failed sid=%s", sid)
     # 关闭 Agent 引用
@@ -441,12 +667,29 @@ def decide_approval(sid: str, req: ApprovalDecisionRequest) -> dict:
 
 
 @app.post("/api/v1/copilot/sessions/{sid}/cancel")
-def cancel_session(sid: str) -> dict:
+def cancel_session(sid: str, discard_files: bool = True) -> dict:
     # 线程可能已退出（awaiting_user 停靠态）：仍要落 cancelled，
     # 否则「停止」在界面上像没生效，且残余流程会把状态改回去。
-    engine.cancel(sid)
-    store.audit(sid, "user", "session_cancelled", {})
-    return {"ok": True}
+    # discard_files 默认 True：停止 ≈ Cursor 放弃，回退本轮文件改动。
+    engine.cancel(sid, discard_files=discard_files)
+    store.audit(sid, "user", "session_cancelled", {"discard_files": discard_files})
+    return {"ok": True, "discard_files": discard_files}
+
+
+@app.post("/api/v1/copilot/sessions/{sid}/fs/keep")
+def fs_keep(sid: str) -> dict:
+    """保留本轮文件改动（释放检查点）。"""
+    if not store.get_session(sid):
+        raise HTTPException(404, "会话不存在")
+    return engine.keep_files(sid)
+
+
+@app.post("/api/v1/copilot/sessions/{sid}/fs/discard")
+def fs_discard(sid: str) -> dict:
+    """放弃本轮文件改动，回退到本轮执行前（类似 git / Cursor Undo）。"""
+    if not store.get_session(sid):
+        raise HTTPException(404, "会话不存在")
+    return engine.discard_files(sid, reason="用户放弃改动")
 
 
 @app.get("/api/v1/copilot/sessions/{sid}/audit")

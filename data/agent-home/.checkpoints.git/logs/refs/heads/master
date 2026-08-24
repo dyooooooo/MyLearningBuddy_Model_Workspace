@@ -1,0 +1,12 @@
+0000000000000000000000000000000000000000 f4bbe28728c91af37614f726b304370ceb8a9e91 textbook-agent <textbook-agent@local> 1787285316 +0000	commit (initial): manual: initial
+f4bbe28728c91af37614f726b304370ceb8a9e91 5288e02f7fd8843d7cf83060076164583256b274 textbook-agent <textbook-agent@local> 1787288035 +0000	commit: backfill: existing turns
+5288e02f7fd8843d7cf83060076164583256b274 089d9fe563ed70179461687c2ad1ffbf11704372 textbook-agent <textbook-agent@local> 1787288914 +0000	commit: turn: 第五章的 5.4 反函数和下面的内容提要在大纲里是没有链接的，你修改一下
+089d9fe563ed70179461687c2ad1ffbf11704372 2e55211b317b8c333597805d2a4ce40c4a5d97c7 textbook-agent <textbook-agent@local> 1787289124 +0000	commit: restore: restore 089d9fe563ed
+2e55211b317b8c333597805d2a4ce40c4a5d97c7 156f6142cb40664b1963f59ecdaaec7ccf02dcee textbook-agent <textbook-agent@local> 1787289671 +0000	commit: turn: 继续
+156f6142cb40664b1963f59ecdaaec7ccf02dcee ae18bd3be174b7cff9c2a31047f5b821dac21203 textbook-agent <textbook-agent@local> 1787290334 +0000	commit: turn: 建立一个自动检查目录及相应链接的工具和 hook。
+ae18bd3be174b7cff9c2a31047f5b821dac21203 1b0c0725fbfe976718b25e1132d2261557caa700 textbook-agent <textbook-agent@local> 1787301893 +0000	commit: turn: 继续
+1b0c0725fbfe976718b25e1132d2261557caa700 a8bd3510dde83021a1d64b7a6891431857a5f1a1 textbook-agent <textbook-agent@local> 1787301915 +0000	commit: turn: 继续
+a8bd3510dde83021a1d64b7a6891431857a5f1a1 c566e50190351b406f9c026eee481429024200fe textbook-agent <textbook-agent@local> 1787301952 +0000	commit: turn: 继续
+c566e50190351b406f9c026eee481429024200fe 8d615dfea573f1a0e14ff22b503102d4ce12ec4c textbook-agent <textbook-agent@local> 1787302125 +0000	commit: turn: 改善第十页
+8d615dfea573f1a0e14ff22b503102d4ce12ec4c f0bf6f99c6f66ad28307d8f6305d63032bdd3ea5 textbook-agent <textbook-agent@local> 1787302629 +0000	commit: turn: 继续
+f0bf6f99c6f66ad28307d8f6305d63032bdd3ea5 62c1a1550ebd2359f661bd0628403443dcdc5a71 textbook-agent <textbook-agent@local> 1787302815 +0000	commit: manual: 目录链接已补全，接下来改幕/幂和第3、4章首页

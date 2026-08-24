@@ -20,16 +20,19 @@ def test_actions_when_open_issues():
     pl = {
         "open_issues": [{"page": 3, "kind": "layout", "status": "open"}],
         "import_job_id": "j1",
-        "segment_imported_through": 20,
+        "segment_imported_through": 178,
+        "page_count": 178,
     }
     acts = build_next_step_actions(pl)
     ids = {a["id"] for a in acts}
     assert "accept" in ids
-    assert "skip" in ids
+    assert "skip" not in ids
+    assert "done" in ids
     assert len(acts) >= 1
     msg = next_steps_message(pl)
     assert msg["actions"]
-    assert "待办" in msg["text"] or "3" in msg["text"]
+    assert "遗留" in msg["text"] or "3" in msg["text"]
+    assert "下一批" not in msg["text"]
 
 
 def test_actions_finalize_when_ledger():
@@ -44,10 +47,29 @@ def test_actions_finalize_when_ledger():
     assert any(a["id"] == "finalize" for a in acts)
 
 
-def test_actions_after_result_edition():
-    pl = {"result_edition_id": "ed_ai_20260725"}
+def test_actions_after_result_edition_forked():
+    pl = {
+        "result_edition_id": "ed_ai_20260726_qc",
+        "result_edition_forked": True,
+    }
     acts = build_next_step_actions(pl)
     assert acts[0]["id"] == "open_edition"
+    assert acts[0]["send"].startswith("__ui:open_edition:")
+    msg = next_steps_message(pl)
+    assert "已新建" in msg["text"]
+    assert "非本轮新建" not in msg["text"]
+
+
+def test_actions_after_result_edition_associated_only():
+    """result_edition_id 仅关联、非本轮 fork → 文案诚实，仍可再生成新方案。"""
+    pl = {"result_edition_id": "ed_ai_20260725"}
+    acts = build_next_step_actions(pl)
+    ids = {a["id"] for a in acts}
+    assert "open_corrections" in ids
+    assert "finalize" in ids
+    msg = next_steps_message(pl)
+    assert "非本轮新建" in msg["text"]
+    assert "已新建" not in msg["text"]
 
 
 def test_layout_change_log_append():

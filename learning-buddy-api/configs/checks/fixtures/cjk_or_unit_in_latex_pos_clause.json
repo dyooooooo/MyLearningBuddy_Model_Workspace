@@ -1,0 +1,15 @@
+{
+  "page_no": 15,
+  "html": "<article><section class=\"lb-main\"></section></article>",
+  "blocks": [
+    {
+      "id": "clause_in_math_eq",
+      "type": "equation",
+      "page_no": 15,
+      "order": 1,
+      "text": "\\sin\\alpha=0,\\ \\cos\\alpha=-1,\\ \\tan\\alpha=0,\\ \\text{cot }\\alpha\\text{ 不存在}",
+      "bbox": [80, 260, 720, 320],
+      "meta": { "layout_zone": "main" }
+    }
+  ]
+}

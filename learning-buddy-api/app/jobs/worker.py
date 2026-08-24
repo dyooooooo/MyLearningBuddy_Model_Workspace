@@ -58,23 +58,11 @@ def _handle_import(payload: dict) -> None:
         if existing is None:
             logger.info("import worker skip — job gone id=%s", job_id)
             return
-        meta = {}
-        try:
-            from app.util.json_util import loads
-
-            meta = loads(existing.meta_json, {}) or {}
-        except Exception:  # noqa: BLE001
-            meta = {}
-        # extend 可在 chunked/parsed 后再次入队（pending_page_ranges）
-        is_extend = bool(meta.get("extend_mode") and meta.get("pending_page_ranges"))
-        if existing.status in ("canceled", "failed") or (
-            existing.status == "chunked" and not is_extend
-        ):
+        if existing.status in ("canceled", "failed", "chunked"):
             logger.info(
-                "import worker skip — terminal status=%s id=%s extend=%s",
+                "import worker skip — terminal status=%s id=%s",
                 existing.status,
                 job_id,
-                is_extend,
             )
             return
 
@@ -161,6 +149,37 @@ def _handle_import35b(payload: dict) -> None:
     service.run_convert(job_id)
 
 
+def _handle_kb_import(payload: dict) -> None:
+    from app.kb.import_service import mark_failed, process_kb_book
+
+    book_id = payload.get("job_id", "")
+    logger.info("kb import worker dequeue id=%s", book_id)
+    try:
+        book = process_kb_book(book_id)
+        logger.info("kb import done id=%s status=%s pages=%s", book.get("id"), book.get("status"), book.get("page_count"))
+    except Exception as exc:
+        logger.exception("kb import failed id=%s", book_id)
+        mark_failed(book_id, str(exc))
+
+
+def _handle_textbook_eval(payload: dict) -> None:
+    from app.services.textbook_eval import call_textbook_agent, mark_eval_failed
+
+    request_id = payload.get("request_id") or payload.get("job_id", "")
+    logger.info("textbook eval dequeue request_id=%s", request_id)
+    factory = get_session_factory()
+    with factory() as session:
+        try:
+            call_textbook_agent(session, request_id)
+            session.commit()
+        except Exception as exc:
+            session.rollback()
+            logger.exception("textbook agent failed request_id=%s", request_id)
+            with factory() as s2:
+                mark_eval_failed(s2, request_id, str(exc))
+                s2.commit()
+
+
 def _handle_scout(payload: dict) -> None:
     run_id = payload.get("run_id") or payload.get("job_id", "")
     factory = get_session_factory()
@@ -210,6 +229,8 @@ def main() -> None:
         settings.edge_queue,
         settings.import_queue,
         settings.import35b_queue,
+        settings.kb_import_queue,
+        settings.textbook_eval_queue,
         settings.scout_queue,
         settings.publish_queue,
     ]
@@ -235,6 +256,10 @@ def main() -> None:
                 _handle_import(payload)
             elif queue_name == settings.import35b_queue and job_type == "import35b":
                 _handle_import35b(payload)
+            elif queue_name == settings.kb_import_queue and job_type == "kb_import":
+                _handle_kb_import(payload)
+            elif queue_name == settings.textbook_eval_queue and job_type == "textbook_eval":
+                _handle_textbook_eval(payload)
             elif queue_name == settings.scout_queue and job_type == "scout":
                 _handle_scout(payload)
             elif queue_name == settings.publish_queue and job_type == "reindex":

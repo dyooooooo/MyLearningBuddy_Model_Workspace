@@ -1,0 +1,49 @@
+# 通用版式规则（base 层）——所有教材共享的硬不变量
+#
+# 这一层只写「无论哪本教材都成立」的约束，教材差异写到
+# configs/editions/<edition_id>/layout_rules.yaml，单页修正写到
+# configs/editions/<edition_id>/overrides/pages/NNNN.yaml。
+#
+# 条件表达式可用变量见 app/services/ir/layout/features.py。
+# ${wide_min} 之类会用当前教材 Edition Bundle 的 geometry 求值。
+#
+# 层叠顺序：base < edition < page；同层内 priority 大者胜。
+
+version: 1
+
+# 置信度低于此值的块记为「存疑」
+escalate_below: 0.6
+# 存疑块占比达到此值时，整页升级到 35B 视觉模型复核
+escalate_ratio: 0.25
+
+rules:
+  # 教训 E/H：宽正文块永远属主栏。短行不够宽就进侧栏是历史上最主要的误判来源。
+  - id: base.wide-block-stays-main
+    when: "has_bbox and not zone_pinned and width >= ${wide_min}"
+    zone: main
+    confidence: 0.95
+    priority: 900
+    note: 宽块一律主栏
+
+  # 教训 E：侧栏 = 「并排岛」，必须在同高度有主栏伴生；孤立窄条不是旁注。
+  - id: base.left-aside-needs-right-companion
+    when: "has_bbox and not zone_pinned and baseline_zone == 'aside_left' and not has_companion_right"
+    zone: main
+    confidence: 0.80
+    priority: 800
+    note: 左侧栏无同高主栏伴生，退回主栏
+
+  - id: base.right-aside-needs-left-companion
+    when: "has_bbox and not zone_pinned and baseline_zone == 'aside_right' and not has_companion_left"
+    zone: main
+    confidence: 0.80
+    priority: 800
+    note: 右侧栏无同高主栏伴生，退回主栏
+
+  # 没有 bbox 就没有几何依据，标低置信度让它进升级队列，而不是默默塞进主栏。
+  - id: base.no-bbox-is-uncertain
+    when: "not has_bbox"
+    zone: main
+    confidence: 0.35
+    priority: 100
+    note: 缺少 bbox，几何判据不可用

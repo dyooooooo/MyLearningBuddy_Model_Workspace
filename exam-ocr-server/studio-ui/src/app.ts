@@ -15,6 +15,8 @@ import { mountIndexHealth } from "./views/IndexHealth";
 import { mountMinerUSettings } from "./views/MinerUSettings";
 import { mountEditionOpsInspector } from "./views/EditionOpsInspector";
 import { mountEditionOpsPanel } from "./views/EditionOpsPanel";
+import { mountImprovementsInspector } from "./views/ImprovementsInspector";
+import { mountImprovementsPanel } from "./views/ImprovementsPanel";
 import { store } from "./state/store";
 import { el } from "./util/dom";
 
@@ -65,17 +67,28 @@ export function mountApp(root: HTMLElement): void {
   //   textbook | search | todo → NoteEditor (node content)
   //   import                   → ImportPipelinePanel (+ NoteEditor when a page chunk is open)
   //   edition-ops              → EditionOpsPanel
+  //   improvements             → ImprovementsPanel（改进点管理平台）
   const editor = el("div", "studio-editor");
   const pipelineSlot = el("div", "studio-pipeline-slot");
   const noteSlot = el("div", "studio-note-slot");
   const editionOpsSlot = el("div", "studio-edition-ops-slot hidden");
+  const improvementsSlot = el("div", "studio-improvements-slot hidden");
   mountImportBanner(editor);
   mountImportPipelinePanel(pipelineSlot);
   mountNoteEditor(noteSlot);
   mountEditionOpsPanel(editionOpsSlot);
+  try {
+    mountImprovementsPanel(improvementsSlot);
+  } catch (e) {
+    console.error("[studio] mountImprovementsPanel failed", e);
+    improvementsSlot.appendChild(
+      el("p", "error", `改进点面板加载失败：${e}`),
+    );
+  }
   editor.appendChild(pipelineSlot);
   editor.appendChild(noteSlot);
   editor.appendChild(editionOpsSlot);
+  editor.appendChild(improvementsSlot);
   main.appendChild(editor);
 
   const graph = el("div", "studio-graph hidden");
@@ -108,28 +121,40 @@ export function mountApp(root: HTMLElement): void {
   mountInspector(inspector);
   const editionInspector = el("div", "studio-edition-inspector hidden");
   mountEditionOpsInspector(editionInspector);
+  const improvementsInspector = el("div", "studio-improvements-inspector hidden");
+  mountImprovementsInspector(improvementsInspector);
   const rightEdge = el("div", "studio-panel-edge studio-panel-edge--right");
   rightEdge.appendChild(rightResize.el);
   rightBody.appendChild(inspector);
   rightBody.appendChild(editionInspector);
+  rightBody.appendChild(improvementsInspector);
   rightDock.appendChild(rightEdge);
   rightDock.appendChild(rightBody);
   layout.appendChild(rightDock);
 
   const syncCenter = (): void => {
     const edition = store.activeRibbon === "edition-ops";
+    const improvements = store.activeRibbon === "improvements";
     editionOpsSlot.classList.toggle("hidden", !edition);
-    inspector.classList.toggle("hidden", edition);
+    improvementsSlot.classList.toggle("hidden", !improvements);
+    inspector.classList.toggle("hidden", edition || improvements);
     editionInspector.classList.toggle("hidden", !edition);
-    rightDock.classList.toggle("studio-right-dock--edition", edition);
-    subtitle.textContent = edition
-      ? "配置导入用的解析方案（分栏 / 校对规则）"
-      : "导入 PDF → 校对定稿 → 发布进检索库";
-    if (edition) {
+    improvementsInspector.classList.toggle("hidden", !improvements);
+    rightDock.classList.toggle("studio-right-dock--edition", edition || improvements);
+    if (improvements) {
+      subtitle.textContent = "改进点：中栏筛选列表 · 右栏详情与批量操作";
       pipelineSlot.classList.add("hidden");
       noteSlot.classList.add("hidden");
-    } else if (!store.isImportWorkspace()) {
-      noteSlot.classList.remove("hidden");
+      document.dispatchEvent(new CustomEvent("studio:improvements-refresh"));
+    } else if (edition) {
+      subtitle.textContent = "配置导入用的解析方案（分栏 / 校对规则）";
+      pipelineSlot.classList.add("hidden");
+      noteSlot.classList.add("hidden");
+    } else {
+      subtitle.textContent = "导入 PDF → 校对定稿 → 发布进检索库";
+      if (!store.isImportWorkspace()) {
+        noteSlot.classList.remove("hidden");
+      }
     }
   };
   store.subscribe(syncCenter);

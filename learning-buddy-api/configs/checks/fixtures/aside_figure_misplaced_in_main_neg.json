@@ -1,0 +1,25 @@
+{
+  "page_no": 14,
+  "html": "<article><section class=\"lb-main\"><figure class=\"hero\"></figure><p>正文</p></section></article>",
+  "blocks": [
+    {
+      "id": "hero",
+      "type": "figure",
+      "page_no": 14,
+      "order": 1,
+      "text": "",
+      "caption": "示意图",
+      "bbox": [100, 150, 900, 520],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "body",
+      "type": "paragraph",
+      "page_no": 14,
+      "order": 2,
+      "text": "如图所示。",
+      "bbox": [100, 540, 900, 590],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "page_no": 60,
+  "html": "<article><section class=\"lb-main\"><div class=\"math\">blank in math</div></section></article>",
+  "blocks": [
+    {
+      "id": "blank_bad",
+      "type": "list",
+      "page_no": 60,
+      "order": 1,
+      "text": "（3）若 $\\sin(\\pi-\\alpha)=\\dfrac{2}{3}$，则 $\\sin 2\\alpha=____$．",
+      "bbox": [100, 200, 900, 280],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

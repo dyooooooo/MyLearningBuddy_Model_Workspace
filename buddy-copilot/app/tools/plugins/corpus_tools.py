@@ -63,6 +63,17 @@ def _write_verdict(
 def build(ctx: ToolContext) -> list[ToolSpec]:
     client = ctx.client
 
+    def _session_inherit_job_id() -> str:
+        """导入面板选定的「继承上次结果」来源任务（无则空=重新生成）。"""
+        if not ctx.session_id:
+            return ""
+        try:
+            sess = ctx.store.get_session(ctx.session_id) or {}
+            pl = sess.get("payload") or {}
+            return str(pl.get("inherit_from_job_id") or "").strip()
+        except Exception:  # noqa: BLE001 - 拿不到就按重新生成走
+            return ""
+
     def _emit_import(event: str, **fields: Any) -> None:
         """落库 import_event（前端打开导入面板）+ 关键节点的中文 system 明示。"""
         if not ctx.session_id:
@@ -229,6 +240,9 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
         wait=true 时阻塞等样页就绪。会向会话推送 import_event。"""
         lim = int(page_limit) if page_limit else 0
         pr = (page_ranges or "").strip() or None
+        # 「继承上次结果」由用户在导入面板选定，写在会话 payload 里；
+        # 由工具自己带上，不依赖模型记得传参。
+        inherit = _session_inherit_job_id()
         out = client.start_pdf_import(
             minio_key=minio_key,
             edition_id=edition_id,
@@ -237,6 +251,7 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
             grade_band=grade_band,
             page_limit=None if pr else (lim or None),
             page_ranges=pr,
+            inherit_from_job_id=inherit,
         )
         job_id = out.get("id")
         result: dict[str, Any] = {
@@ -248,6 +263,8 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
             "line": "mineru",
             "preview_import": True,
         }
+        if inherit:
+            result["inherit_from_job_id"] = inherit
         _emit_import(
             "import_started",
             job_id=job_id,
@@ -268,62 +285,7 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
             )
         return result
 
-    def corpus_extend_import(
-        job_id: str,
-        page_ranges: str,
-        wait: bool = True,
-        wait_timeout: int = 1800,
-    ) -> Any:
-        """同 job 追加 MinerU 分段页范围（如 "21-40"）。有 open_issues 时编排器会拒绝调用。"""
-        pr = (page_ranges or "").strip()
-        if not pr:
-            return {"error": "page_ranges 必填"}
-        if ctx.session_id:
-            from ...segment_state import has_blocking_open_issues
-
-            sess = ctx.store.get_session(ctx.session_id) or {}
-            pl = sess.get("payload") or {}
-            if has_blocking_open_issues(pl):
-                return {
-                    "error": "仍有未关闭的 open_issues，禁止 extend 下一批；请先修正或明确跳过",
-                    "open_pages": [
-                        i.get("page")
-                        for i in (pl.get("open_issues") or [])
-                        if i.get("status") == "open"
-                    ],
-                }
-        out = client.extend_pdf_import(job_id, pr)
-        result: dict[str, Any] = {
-            "job_id": job_id,
-            "status": out.get("status"),
-            "page_ranges": pr,
-            "line": "mineru",
-            "extended": True,
-        }
-        edition_id = ""
-        if ctx.session_id:
-            sess = ctx.store.get_session(ctx.session_id) or {}
-            edition_id = str((sess.get("payload") or {}).get("edition_id") or "")
-        _emit_import(
-            "import_started",
-            job_id=job_id,
-            status=out.get("status"),
-            page_ranges=pr,
-            edition_id=edition_id,
-            event_note="extend",
-        )
-        if wait:
-            _wait_job(
-                str(job_id),
-                edition_id=edition_id,
-                page_limit=None,
-                page_ranges=pr,
-                wait_timeout=wait_timeout,
-                result=result,
-            )
-        return result
-
-    # import_advice 禁止走 35B refine/rebuild；page_assist 仍可用全套 mode
+    # Copilot 仅 import_advice：禁止 35B refine/rebuild；改页用 patch/replace/rerender
     _REFINE_35B_MODES = frozenset(
         {"content_correct", "layout_content", "layout_rebuild", "refine_35b"}
     )
@@ -354,43 +316,118 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
 
             sess = ctx.store.get_session(ctx.session_id) or {}
             pl = dict(sess.get("payload") or {})
-            entry = {
-                "op": op,
-                "page": page,
-                "summary": summary,
-                "before_hint": before_hint,
-                "after_hint": after_hint,
-                "block_ids": block_ids or [],
-                "proposer": "ai",
-            }
+            from ...authority import stamp_authority
+
+            bids = [str(b) for b in (block_ids or []) if str(b).strip()]
+            entry = stamp_authority(
+                {
+                    "op": op,
+                    "tool": f"corpus.{op}" if not str(op).startswith("corpus.") else op,
+                    "page": page,
+                    "summary": summary,
+                    "args_summary": summary[:300],
+                    "before_hint": before_hint,
+                    "after_hint": after_hint,
+                    "block_ids": bids,
+                    "proposer": "ai",
+                    "mode": op,
+                },
+                mode=op,
+            )
             pl["layout_change_log"] = append_layout_change(pl, entry)
+            # Sync attempts to buddy-api IP store (must be visible on failure)
+            ingest_err = ""
+            job_id = str(pl.get("import_job_id") or pl.get("job_id") or "").strip()
+            fp = ""
+            bf = pl.get("book_fingerprint") or {}
+            if isinstance(bf, dict):
+                fp = str(bf.get("hash") or "")
+            log_tail = (pl.get("layout_change_log") or [])[-1:]
+            if job_id and log_tail:
+                try:
+                    client.ip_ingest_attempts(
+                        {
+                            "attempts": log_tail,
+                            "job_id": job_id,
+                            "session_id": ctx.session_id or "",
+                            "fingerprint_hash": fp,
+                        }
+                    )
+                except Exception as e:  # noqa: BLE001
+                    ingest_err = str(e)[:240]
+                    pl["last_ip_ingest_error"] = ingest_err
             ctx.store.update_session(ctx.session_id, payload=pl)
             log = pl.get("layout_change_log") or []
-            return str(log[-1].get("id")) if log else None
+            aid = str(log[-1].get("id")) if log else None
+            if ingest_err and aid:
+                # Keep attempt id but surface ingest failure to tool callers
+                entry["ip_ingest_error"] = ingest_err
+            return aid
         except Exception:  # noqa: BLE001
             return None
 
-    def _emit_page_refresh(job_id: str, page_no: int, note: str) -> None:
+    def _session_edition_id() -> str:
+        if not ctx.session_id:
+            return ""
+        try:
+            sess = ctx.store.get_session(ctx.session_id) or {}
+            pl = sess.get("payload") or {}
+            # Prefer fork result so「待审议」落在用户看到的那本草稿上
+            return str(
+                pl.get("result_edition_id")
+                or pl.get("edition_id")
+                or pl.get("source_edition_id")
+                or ""
+            ).strip()
+        except Exception:  # noqa: BLE001
+            return ""
+
+    def _emit_page_refresh(
+        job_id: str,
+        page_no: int,
+        note: str,
+        *,
+        mode: str = "cursor_ir",
+        ok: bool = True,
+        html_changed: bool | None = None,
+        block_id: str = "",
+        summary: str = "",
+        promote_prompt: bool | None = None,
+    ) -> None:
+        """通知前端刷预览；改动写盘后附带「是否记入待审议」提示字段。"""
         if not ctx.session_id:
             return
+        # 纯重渲不算「新改进」；IR 写盘成功即使 html 未变也要提示记入待审议
+        if promote_prompt is None:
+            if mode == "rerender":
+                promote_prompt = False
+            else:
+                promote_prompt = bool(ok)
+        eid = _session_edition_id()
+        from ...authority import authority_label, classify_authority
+
+        auth = classify_authority(mode=mode)
         try:
-            ctx.store.add_message(
-                ctx.session_id,
-                "import_event",
-                {
-                    "event": "reprocess_done",
-                    "line": "mineru",
-                    "job_id": job_id,
-                    "page_no": int(page_no),
-                    "mode": "cursor_ir",
-                    "ok": True,
-                },
-            )
-            ctx.store.add_message(
-                ctx.session_id,
-                "system",
-                {"text": note},
-            )
+            payload: dict[str, Any] = {
+                "event": "reprocess_done",
+                "line": "mineru",
+                "job_id": job_id,
+                "page_no": int(page_no),
+                "mode": mode,
+                "ok": bool(ok),
+                "promote_prompt": bool(promote_prompt),
+                "summary": (summary or note or "")[:400],
+                "authority": auth,
+                "authority_label": authority_label(auth),
+            }
+            if eid:
+                payload["edition_id"] = eid
+            if html_changed is not None:
+                payload["html_changed"] = bool(html_changed)
+            if block_id:
+                payload["block_id"] = block_id
+            ctx.store.add_message(ctx.session_id, "import_event", payload)
+            ctx.store.add_message(ctx.session_id, "system", {"text": note})
         except Exception:  # noqa: BLE001
             pass
 
@@ -403,6 +440,7 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
             blocks = [b for b in blocks if int(b.get("page_no") or 0) == pn]
         slim = []
         for b in blocks[:200]:
+            meta = b.get("meta") or {}
             slim.append(
                 {
                     "id": b.get("id"),
@@ -411,16 +449,20 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
                     "order": b.get("order"),
                     "text": _trim(b.get("text") or "", 240),
                     "caption": _trim(b.get("caption") or "", 120),
-                    "layout_zone": (b.get("meta") or {}).get("layout_zone"),
-                    "pedagogy_role": (b.get("meta") or {}).get("pedagogy_role"),
-                    "reading_order": (b.get("meta") or {}).get("reading_order"),
+                    "layout_zone": meta.get("layout_zone"),
+                    "pedagogy_role": meta.get("pedagogy_role"),
+                    "reading_order": meta.get("reading_order"),
+                    # A 层 provenance：与 layout_escalate / page-diagnosis 对齐
+                    "layout_rule_id": meta.get("layout_rule_id"),
+                    "layout_confidence": meta.get("layout_confidence"),
+                    "layout_confidence_score": meta.get("layout_confidence_score"),
+                    "layout_evidence": meta.get("layout_evidence"),
+                    "layout_escalate": meta.get("layout_escalate"),
                     "bbox": b.get("bbox"),
                     # 该块 HTML 由谁决定：有 text_segments 时改 text 需连带刷新，
                     # patch_block 会自动作废这份缓存
                     "renders_from": (
-                        "text_segments"
-                        if (b.get("meta") or {}).get("text_segments")
-                        else "text"
+                        "text_segments" if meta.get("text_segments") else "text"
                     ),
                 }
             )
@@ -488,6 +530,11 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
                     if verdict.get("html_changed")
                     else " 页面 HTML 未变化——看 rendered_snippet / hint，勿空转重渲。"
                 ),
+                mode="cursor_ir",
+                ok=True,
+                html_changed=bool(verdict.get("html_changed")),
+                block_id=block_id,
+                summary=summary or f"patch block {block_id}",
             )
         return {
             "ok": True,
@@ -539,12 +586,17 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
             after_hint=f"ids={after_ids[:40]}",
             block_ids=after_ids[:80],
         )
+        verdict = _write_verdict(out)
         _emit_page_refresh(
             job_id,
             int(page_no),
             f"✅ 页 {page_no} 排版已由 Cursor 重写（{len(blocks)} 块）· job=`{job_id}`"
             + (" · 已 rerender" if out.get("rerendered") else "")
             + " → 请 preview+Read 验收。",
+            mode="cursor_ir",
+            ok=True,
+            html_changed=bool(verdict.get("html_changed")),
+            summary=summary or f"replace page {page_no} layout ({len(blocks)} blocks)",
         )
         return {
             "ok": True,
@@ -554,7 +606,7 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
             "rerendered": out.get("rerendered"),
             "layout_log_id": log_id,
             "html_chars": len(out.get("html") or "") if out.get("html") else 0,
-            **_write_verdict(out),
+            **verdict,
         }
 
     def corpus_rerender_page(job_id: str, page_no: int) -> Any:
@@ -564,6 +616,9 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
             job_id,
             int(page_no),
             f"✅ 页 {page_no} 已 rerender · job=`{job_id}`。",
+            mode="rerender",
+            ok=True,
+            promote_prompt=False,
         )
         return {
             "ok": True,
@@ -572,18 +627,64 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
             "html_chars": len(out.get("html") or ""),
         }
 
+    def corpus_rebuild_ir(job_id: str, pages_json: str = "") -> Any:
+        """Layout-only 重跑 A 层（math→规则→HTML），合并更新 layout_escalate_*。
+
+        改完 layout_rules / page override 后调用。pages_json 为 JSON 数组如
+        ``[3,10]``；空则全书。**无 35B**。"""
+        import json
+
+        pages: list[int] | None = None
+        raw = (pages_json or "").strip()
+        if raw:
+            try:
+                parsed = json.loads(raw)
+            except json.JSONDecodeError as e:
+                return {"ok": False, "error": f"pages_json 非法: {e}"}
+            if not isinstance(parsed, list):
+                return {"ok": False, "error": "pages_json 须为页号数组"}
+            pages = [int(p) for p in parsed]
+        out = client.rebuild_ir(job_id, pages=pages)
+        note = (
+            f"✅ layout-only rebuild_ir · job=`{job_id}`"
+            + (f" · pages={pages}" if pages else " · 全书")
+        )
+        # escalate 页数是全书回归闸：规则全书生效，只看改动页会漏掉被弄坏的页。
+        esc = (out or {}).get("escalate") or {}
+        verdict = ""
+        if esc:
+            delta = int(esc.get("delta") or 0)
+            if delta > 0:
+                verdict = f"⚠️ escalate 增加 {delta} 页（新增 {esc.get('newly_escalated')}）—— 规则弄坏了别的页，不要落地"
+            elif delta < 0:
+                verdict = f"✅ escalate 减少 {-delta} 页，无新增回归"
+            else:
+                verdict = "✅ escalate 持平，无新增回归"
+            note += f" · {verdict}"
+        try:
+            if ctx.session_id:
+                ctx.store.add_message(ctx.session_id, "system", {"text": note})
+        except Exception:  # noqa: BLE001
+            pass
+        return {
+            "ok": True,
+            "job_id": job_id,
+            "pages": pages or "all",
+            "regression_verdict": verdict,
+            **(out or {}),
+        }
+
     def corpus_reprocess_page(
         job_id: str, page_no: int, mode: str = "layout_content", user_note: str = ""
     ) -> Any:
-        """单页重处理。page_assist 可用 content_correct / layout_content / layout_rebuild；
-        import_advice 仅允许 rerender / restore_mineru / from_cloud（无 35B），
-        排版修正请用 corpus.replace_page_blocks / patch_block。"""
+        """单页重处理。仅允许 rerender / restore_mineru / from_cloud（无 35B）；
+        排版/内容修正请用 corpus.replace_page_blocks / patch_block。"""
         mode_s = (mode or "").strip() or "layout_content"
-        if ctx.kind == "import_advice" and mode_s in _REFINE_35B_MODES:
+        if mode_s in _REFINE_35B_MODES:
             return {
                 "ok": False,
                 "error": (
-                    "import_advice 禁用 35B reprocess "
+                    "禁用 35B reprocess "
                     f"（mode={mode_s}）。请用 corpus.get_blocks + "
                     "corpus.replace_page_blocks / corpus.patch_block + "
                     "corpus.rerender_page 由 Cursor 直接改中间表示（IR）。"
@@ -601,31 +702,20 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
         }
         keep["findings"] = _trim(out.get("findings"))
         if ctx.session_id and job_id:
-            try:
-                ctx.store.add_message(
-                    ctx.session_id,
-                    "import_event",
-                    {
-                        "event": "reprocess_done",
-                        "line": "mineru",
-                        "job_id": job_id,
-                        "page_no": int(page_no),
-                        "mode": mode_s,
-                        "ok": bool(out.get("ok")),
-                    },
-                )
-                ctx.store.add_message(
-                    ctx.session_id,
-                    "system",
-                    {
-                        "text": (
-                            f"{'✅' if out.get('ok') else '⚠️'} 页 {page_no} 已重处理（mode={mode_s}）· "
-                            f"job_id=`{job_id}` → 导入预览已刷新该页。"
-                        )
-                    },
-                )
-            except Exception:  # noqa: BLE001
-                pass
+            note = (
+                f"{'✅' if out.get('ok') else '⚠️'} 页 {page_no} 已重处理（mode={mode_s}）· "
+                f"job_id=`{job_id}` → 导入预览已刷新该页。"
+            )
+            _emit_page_refresh(
+                job_id,
+                int(page_no),
+                note,
+                mode=mode_s,
+                ok=bool(out.get("ok")),
+                html_changed=None if out.get("noop") is None else (not bool(out.get("noop"))),
+                summary=user_note or f"reprocess mode={mode_s}",
+                promote_prompt=bool(out.get("ok")) and not bool(out.get("noop")),
+            )
         return keep
 
     return [
@@ -634,10 +724,14 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
         ToolSpec("corpus.page_context", "页重识别上下文", corpus_page_context),
         ToolSpec("corpus.page_html", "页渲染 HTML", corpus_page_html),
         ToolSpec("corpus.start_import", "发起 PDF 导入", corpus_start_import),
-        ToolSpec("corpus.extend_import", "同 job 追加 MinerU 分段", corpus_extend_import),
         ToolSpec("corpus.get_blocks", "读 IR 块", corpus_get_blocks),
         ToolSpec("corpus.patch_block", "单块改 IR", corpus_patch_block),
         ToolSpec("corpus.replace_page_blocks", "整页重排/重写 IR", corpus_replace_page_blocks),
         ToolSpec("corpus.rerender_page", "IR 重渲 HTML", corpus_rerender_page),
+        ToolSpec(
+            "corpus.rebuild_ir",
+            "layout-only 重跑规则并刷新 escalate",
+            corpus_rebuild_ir,
+        ),
         ToolSpec("corpus.reprocess_page", "单页重处理", corpus_reprocess_page),
     ]

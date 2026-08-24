@@ -1,0 +1,44 @@
+{
+  "page_no": 30,
+  "html": "<article><section class=\"lb-main\"><h2>第</h2><p>章首页正文…</p></section><aside class=\"lb-aside-left\"><h2>等式与不等式</h2></aside></article>",
+  "blocks": [
+    {
+      "id": "decor",
+      "type": "figure",
+      "page_no": 30,
+      "order": 1,
+      "text": "",
+      "bbox": [0, 0, 1000, 502],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "eyebrow",
+      "type": "heading",
+      "page_no": 30,
+      "order": 2,
+      "text": "第",
+      "level": 2,
+      "bbox": [386, 64, 477, 131],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "body",
+      "type": "paragraph",
+      "page_no": 30,
+      "order": 3,
+      "text": "数量关系是数学重要的研究对象，相等关系与不等关系是最基本的数量关系。",
+      "bbox": [504, 514, 922, 625],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "aside_title",
+      "type": "heading",
+      "page_no": 30,
+      "order": 4,
+      "text": "等式与不等式",
+      "level": 2,
+      "bbox": [78, 569, 324, 667],
+      "meta": {"layout_zone": "aside_left", "layout_confidence": "high"}
+    }
+  ]
+}

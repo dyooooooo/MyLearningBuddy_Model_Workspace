@@ -26,6 +26,10 @@ from app.services.editions.bundle import (
     list_seed_edition_ids,
     load_bundle,
 )
+from app.services.editions.authority import (
+    authority_label,
+    normalize_candidate_authority,
+)
 from app.services.editions.schema import EditionBundle, PolicyEntry
 
 logger = logging.getLogger(__name__)
@@ -333,13 +337,24 @@ def enqueue_correction(
     source: str = "feedback",
     source_ref: str = "",
 ) -> dict[str, Any]:
-    PolicyEntry.model_validate(candidate)
+    cand = normalize_candidate_authority(dict(candidate or {}))
+    # Validate PolicyEntry shape (authority/tags kept on stored cand).
+    PolicyEntry.model_validate(
+        {
+            "id": cand.get("id"),
+            "facet": cand.get("facet"),
+            "severity": cand.get("severity") or "should",
+            "statement": cand.get("statement"),
+            "tags": cand.get("tags") or [],
+            "authority": cand.get("authority") or "edition",
+        }
+    )
     row = EditionCorrectionQueue(
         id=str(uuid.uuid4()),
         edition_id=edition_id,
         source=source,
         source_ref=source_ref,
-        candidate_json=_dumps(candidate),
+        candidate_json=_dumps(cand),
         status="pending",
         created_at=_now(),
         updated_at=_now(),
@@ -365,12 +380,21 @@ def list_corrections(
 
 
 def _corr_out(row: EditionCorrectionQueue) -> dict[str, Any]:
+    cand = _loads(row.candidate_json, {})
+    if not isinstance(cand, dict):
+        cand = {}
+    auth = str(cand.get("authority") or "edition")
     return {
         "id": row.id,
         "edition_id": row.edition_id,
         "source": row.source,
         "source_ref": row.source_ref,
-        "candidate": _loads(row.candidate_json, {}),
+        "candidate": cand,
+        "authority": auth,
+        "authority_label": authority_label(auth),
+        "title": cand.get("statement") or cand.get("id") or row.id,
+        "summary": cand.get("statement") or "",
+        "kind": cand.get("facet") or row.source,
         "status": row.status,
         "reviewer": row.reviewer,
         "review_note": row.review_note,
@@ -397,17 +421,58 @@ def review_correction(
     row.review_note = review_note
     row.updated_at = _now()
     if action == "approve":
-        # Merge candidate into draft policy
+        cand = _loads(row.candidate_json, {})
+        if not isinstance(cand, dict):
+            cand = {}
+        auth = str(cand.get("authority") or "edition")
         draft_view = get_or_create_draft(session, row.edition_id)
         bundle = dict(draft_view["bundle"])
-        policy = dict(bundle.get("policy") or {"version": "1", "entries": []})
-        entries = list(policy.get("entries") or [])
-        cand = _loads(row.candidate_json, {})
-        # Replace same id or append
-        entries = [e for e in entries if e.get("id") != cand.get("id")]
-        entries.append(cand)
-        policy["entries"] = entries
-        bundle["policy"] = policy
+        if auth == "pipeline":
+            # 越权：记入 backlog，不并入 prompt policy（需改核心代码，不是方案条目）
+            meta = dict(bundle.get("meta") or {})
+            backlog = list(meta.get("pipeline_backlog") or [])
+            backlog.append(
+                {
+                    "correction_id": row.id,
+                    "approved_at": _now(),
+                    "reviewer": reviewer,
+                    "note": review_note,
+                    "candidate": {
+                        k: cand[k]
+                        for k in (
+                            "id",
+                            "facet",
+                            "severity",
+                            "statement",
+                            "tags",
+                            "authority",
+                            "page",
+                            "paths",
+                            "mode",
+                        )
+                        if k in cand
+                    },
+                }
+            )
+            meta["pipeline_backlog"] = backlog[-200:]
+            bundle["meta"] = meta
+        else:
+            # 非越权：并入草稿 policy，发布后可注入提示词槽位
+            policy = dict(bundle.get("policy") or {"version": "1", "entries": []})
+            entries = list(policy.get("entries") or [])
+            entries = [e for e in entries if e.get("id") != cand.get("id")]
+            # Strip non-PolicyEntry keys that confuse prompt consumers later
+            entry = {
+                "id": cand.get("id"),
+                "facet": cand.get("facet"),
+                "severity": cand.get("severity") or "should",
+                "statement": cand.get("statement"),
+                "tags": list(cand.get("tags") or []),
+                "authority": "edition",
+            }
+            entries.append(entry)
+            policy["entries"] = entries
+            bundle["policy"] = policy
         save_draft(session, row.edition_id, bundle, updated_by=reviewer)
     session.flush()
     return _corr_out(row)

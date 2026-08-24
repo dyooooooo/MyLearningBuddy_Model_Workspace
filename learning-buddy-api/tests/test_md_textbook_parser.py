@@ -25,7 +25,8 @@ def test_parse_chapters_and_lessons() -> None:
     assert all(len(s.chunks) >= 1 for s in lessons)
 
 
-def test_table_is_atomic_chunk() -> None:
+def test_table_stays_whole_inside_its_section_chunk() -> None:
+    """现在每个小节只出一个 `toc_leaf` 分块（目录定权），表格不能被切开。"""
     md = FIXTURE.read_text(encoding="utf-8")
     _, sections = parse_textbook_markdown(
         md,
@@ -34,11 +35,14 @@ def test_table_is_atomic_chunk() -> None:
         grade_band="hs",
         prefix="tb:test",
     )
-    table_chunks = [
-        ch for s in sections for ch in s.chunks if ch.get("meta", {}).get("doc_type") == "table"
+    chunks_with_table = [
+        ch for s in sections for ch in s.chunks if "| N | 自然数集 |" in ch["text"]
     ]
-    assert len(table_chunks) >= 1
-    assert "|" in table_chunks[0]["text"]
+    assert len(chunks_with_table) == 1
+    text = chunks_with_table[0]["text"]
+    assert "| 集合 | 含义 |" in text
+    assert "| Z | 整数集 |" in text
+    assert chunks_with_table[0]["meta"]["chunk_kind"] == "toc_leaf"
 
 
 def test_no_cover_pricing_in_chunks() -> None:

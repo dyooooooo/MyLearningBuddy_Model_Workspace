@@ -25,17 +25,9 @@ from typing import Sequence
 from app.services.editions.geometry import ColumnGeometry, geometry_from_edition
 
 PAGE_W = 1000.0
-# Module defaults = _base seed (engines may override via ColumnGeometry).
-_WIDE_MIN = 380.0
-_ASIDE_MAX_WIDTH = 320.0
-_MIN_GUTTER = 18.0
-_FULL_WIDTH_RATIO = 0.72
-_MIN_Y_OVERLAP = 18.0
-_MIN_COMPANION_WIDTH = 200.0
-
-
-def _geom_or_default(geom: ColumnGeometry | None) -> ColumnGeometry:
-    return geom or ColumnGeometry()
+# Every threshold lives on ColumnGeometry (Edition Bundle data). Its field
+# defaults are the _base seed values — do not reintroduce module constants,
+# or per-textbook tuning silently stops taking effect.
 
 
 @dataclass(frozen=True)
@@ -60,9 +52,15 @@ class ColumnLayout:
     method: str = "single"
     main_x0: float = 0.0
     main_x1: float = PAGE_W
+    # Body-text edges before aside carving. ``main_x0/main_x1`` get stretched to
+    # swallow any narrow block that failed the aside gate, which hides exactly
+    # the margin notes we want to re-examine — feature extraction uses these.
+    raw_main_x0: float = 0.0
+    raw_main_x1: float = PAGE_W
     # Validated aside islands: (y0, y1) spans that passed companion check
     left_spans: list[tuple[float, float]] = field(default_factory=list)
     right_spans: list[tuple[float, float]] = field(default_factory=list)
+    geom: ColumnGeometry = field(default_factory=ColumnGeometry)
     _ref_boxes: list[tuple[float, float, float, float]] = field(
         default_factory=list, repr=False
     )
@@ -70,6 +68,7 @@ class ColumnLayout:
     def zone_for_bbox(self, bbox: Sequence[float] | None) -> str:
         if not bbox or len(bbox) < 4 or not self.bands:
             return "main"
+        g = self.geom
         x0, y0, x1, y1 = float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])
         if x1 < x0:
             x0, x1 = x1, x0
@@ -77,33 +76,33 @@ class ColumnLayout:
             y0, y1 = y1, y0
         width = x1 - x0
 
-        if width >= PAGE_W * _FULL_WIDTH_RATIO or width >= _WIDE_MIN:
+        if width >= g.page_w * g.full_width_ratio or width >= g.wide_min:
             return "main"
 
         left_band = next((b for b in self.bands if b.zone == "aside_left"), None)
         right_band = next((b for b in self.bands if b.zone == "aside_right"), None)
         box = (x0, y0, x1, y1)
 
-        if left_band and width <= _ASIDE_MAX_WIDTH:
-            in_gutter = x1 <= self.main_x0 - _MIN_GUTTER * 0.5 and x0 < self.main_x0
+        if left_band and width <= g.aside_max_width:
+            in_gutter = x1 <= self.main_x0 - g.min_gutter * 0.5 and x0 < self.main_x0
             left_ov = left_band.overlap(x0, x1)
             main_ov = max(0.0, min(self.main_x1, x1) - max(self.main_x0, x0))
             in_band = left_ov > 0 and left_ov >= main_ov and x1 <= left_band.x1 + 8
-            if (in_gutter or in_band) and _span_hits(self.left_spans, y0, y1):
+            if (in_gutter or in_band) and _span_hits(self.left_spans, y0, y1, g):
                 if self._ref_boxes and not _has_side_companion(
-                    box, self._ref_boxes, side="left"
+                    box, self._ref_boxes, side="left", g=g
                 ):
                     return "main"
                 return "aside_left"
 
-        if right_band and width <= _ASIDE_MAX_WIDTH:
-            in_gutter = x0 >= self.main_x1 + _MIN_GUTTER * 0.5
+        if right_band and width <= g.aside_max_width:
+            in_gutter = x0 >= self.main_x1 + g.min_gutter * 0.5
             right_ov = right_band.overlap(x0, x1)
             main_ov = max(0.0, min(self.main_x1, x1) - max(self.main_x0, x0))
             in_band = right_ov > 0 and right_ov >= main_ov and x0 >= right_band.x0 - 8
-            if (in_gutter or in_band) and _span_hits(self.right_spans, y0, y1):
+            if (in_gutter or in_band) and _span_hits(self.right_spans, y0, y1, g):
                 if self._ref_boxes and not _has_side_companion(
-                    box, self._ref_boxes, side="right"
+                    box, self._ref_boxes, side="right", g=g
                 ):
                     return "main"
                 return "aside_right"
@@ -131,11 +130,16 @@ def _y_overlap(
     return max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
 
 
-def _span_hits(spans: list[tuple[float, float]], y0: float, y1: float) -> bool:
+def _span_hits(
+    spans: list[tuple[float, float]],
+    y0: float,
+    y1: float,
+    g: ColumnGeometry,
+) -> bool:
     if not spans:
         return False
     for s0, s1 in spans:
-        if max(0.0, min(y1, s1) - max(y0, s0)) >= _MIN_Y_OVERLAP * 0.5:
+        if max(0.0, min(y1, s1) - max(y0, s0)) >= g.min_y_overlap * 0.5:
             return True
     return False
 
@@ -162,34 +166,36 @@ def _has_side_companion(
     others: list[tuple[float, float, float, float]],
     *,
     side: str,
+    g: ColumnGeometry,
 ) -> bool:
     """True when a wide/main block shares this height (side-by-side island)."""
     cx0, _cy0, cx1, _cy1 = cand
     for o in others:
         if o == cand:
             continue
-        if _y_overlap(cand, o) < _MIN_Y_OVERLAP:
+        if _y_overlap(cand, o) < g.min_y_overlap:
             continue
         ox0, _oy0, ox1, _oy1 = o
         ow = ox1 - ox0
-        if ow < _MIN_COMPANION_WIDTH:
+        if ow < g.min_companion_width:
             continue
         if side == "left":
             # Companion sits to the right; no 2D box intersection required,
             # but x-intervals must not heavily overlap (clear gutter).
-            if ox0 >= cx1 - 8 and ow >= _MIN_COMPANION_WIDTH:
+            if ox0 >= cx1 - 8:
                 return True
         else:
-            if ox1 <= cx0 + 8 and ow >= _MIN_COMPANION_WIDTH:
+            if ox1 <= cx0 + 8:
                 return True
     return False
 
 
 def _main_edges(
     boxes: list[tuple[float, float, float, float]],
+    g: ColumnGeometry,
 ) -> tuple[float, float] | None:
     """Estimate main column [x0, x1] from wide body-like boxes."""
-    wide = [b for b in boxes if (b[2] - b[0]) >= _WIDE_MIN]
+    wide = [b for b in boxes if (b[2] - b[0]) >= g.wide_min]
     if len(wide) >= 2:
         x0s = sorted(b[0] for b in wide)
         x1s = sorted(b[2] for b in wide)
@@ -215,12 +221,13 @@ def _main_edges(
 def _left_aside_boxes(
     boxes: list[tuple[float, float, float, float]],
     main_x0: float,
+    g: ColumnGeometry,
 ) -> list[tuple[float, float, float, float]]:
     out = []
     for x0, y0, x1, y1 in boxes:
-        if (x1 - x0) > _ASIDE_MAX_WIDTH:
+        if (x1 - x0) > g.aside_max_width:
             continue
-        if x1 <= main_x0 - _MIN_GUTTER:
+        if x1 <= main_x0 - g.min_gutter:
             out.append((x0, y0, x1, y1))
     return out
 
@@ -228,12 +235,13 @@ def _left_aside_boxes(
 def _right_aside_boxes(
     boxes: list[tuple[float, float, float, float]],
     main_x1: float,
+    g: ColumnGeometry,
 ) -> list[tuple[float, float, float, float]]:
     out = []
     for x0, y0, x1, y1 in boxes:
-        if (x1 - x0) > _ASIDE_MAX_WIDTH:
+        if (x1 - x0) > g.aside_max_width:
             continue
-        if x0 >= main_x1 + _MIN_GUTTER:
+        if x0 >= main_x1 + g.min_gutter:
             out.append((x0, y0, x1, y1))
     return out
 
@@ -243,14 +251,16 @@ def _filter_with_companions(
     boxes: list[tuple[float, float, float, float]],
     *,
     side: str,
+    g: ColumnGeometry,
 ) -> list[tuple[float, float, float, float]]:
-    return [c for c in cands if _has_side_companion(c, boxes, side=side)]
+    return [c for c in cands if _has_side_companion(c, boxes, side=side, g=g)]
 
 
 def _aside_is_meaningful(
     aside_boxes: list[tuple[float, float, float, float]],
     *,
     side: str,
+    g: ColumnGeometry,
     profile_edge: float | None = None,
 ) -> bool:
     if not aside_boxes:
@@ -265,11 +275,16 @@ def _aside_is_meaningful(
     # Margin notes past the profile edge (short 「∞」旁注 / tip strip)
     if profile_edge is not None:
         if side == "right":
-            if any(b[0] >= profile_edge and (b[2] - b[0]) <= _ASIDE_MAX_WIDTH for b in aside_boxes):
+            if any(
+                b[0] >= profile_edge and (b[2] - b[0]) <= g.aside_max_width
+                for b in aside_boxes
+            ):
                 return True
         if side == "left":
             if any(
-                b[2] <= profile_edge and (b[2] - b[0]) <= _ASIDE_MAX_WIDTH and (b[3] - b[1]) >= 40
+                b[2] <= profile_edge
+                and (b[2] - b[0]) <= g.aside_max_width
+                and (b[3] - b[1]) >= 40
                 for b in aside_boxes
             ):
                 return True
@@ -296,17 +311,16 @@ def detect_columns(
     ``left_x1_max`` / ``right_x0_min`` still accepted.
     """
     g = geometry or (geometry_from_edition(edition_id) if edition_id else None)
-    if g is not None:
-        page_w = g.page_w
-        left_x1_max = g.aside_left_x1_max
-        right_x0_min = g.aside_right_x0_min
-        # Bind module-level names used below via locals — callers of helpers
-        # still use module constants; override via closure values where needed.
-        wide_min = g.wide_min
-        full_width_ratio = g.full_width_ratio
-    else:
-        wide_min = _WIDE_MIN
-        full_width_ratio = _FULL_WIDTH_RATIO
+    if g is None:
+        # Legacy callers pass only the two zone edges; keep their values.
+        g = ColumnGeometry(
+            page_w=page_w,
+            aside_left_x1_max=left_x1_max,
+            aside_right_x0_min=right_x0_min,
+        )
+    page_w = g.page_w
+    left_x1_max = g.aside_left_x1_max
+    right_x0_min = g.aside_right_x0_min
 
     boxes: list[tuple[float, float, float, float]] = []
     for bb in bboxes:
@@ -314,7 +328,7 @@ def detect_columns(
         if b is None:
             continue
         x0, y0, x1, y1 = b
-        if (x1 - x0) >= page_w * full_width_ratio:
+        if (x1 - x0) >= page_w * g.full_width_ratio:
             continue
         boxes.append(b)
 
@@ -324,36 +338,42 @@ def detect_columns(
         method="single",
         main_x0=0.0,
         main_x1=page_w,
+        raw_main_x0=0.0,
+        raw_main_x1=page_w,
+        geom=g,
         _ref_boxes=[],
     )
     if not boxes:
         return empty
 
-    edges = _main_edges(boxes)
+    edges = _main_edges(boxes, g)
     if edges is None:
         return empty
 
     main_x0, main_x1 = edges
+    raw_main_x0, raw_main_x1 = main_x0, main_x1
     left_cands = _filter_with_companions(
-        _left_aside_boxes(boxes, main_x0), boxes, side="left"
+        _left_aside_boxes(boxes, main_x0, g), boxes, side="left", g=g
     )
     right_cands = _filter_with_companions(
-        _right_aside_boxes(boxes, main_x1), boxes, side="right"
+        _right_aside_boxes(boxes, main_x1, g), boxes, side="right", g=g
     )
 
     if not right_cands:
         profile_right = [
             b
             for b in boxes
-            if b[0] >= right_x0_min and (b[2] - b[0]) <= _ASIDE_MAX_WIDTH
+            if b[0] >= right_x0_min and (b[2] - b[0]) <= g.aside_max_width
         ]
-        right_cands = _filter_with_companions(profile_right, boxes, side="right")
+        right_cands = _filter_with_companions(
+            profile_right, boxes, side="right", g=g
+        )
 
     has_left = _aside_is_meaningful(
-        left_cands, side="left", profile_edge=left_x1_max
+        left_cands, side="left", g=g, profile_edge=left_x1_max
     )
     has_right = _aside_is_meaningful(
-        right_cands, side="right", profile_edge=right_x0_min
+        right_cands, side="right", g=g, profile_edge=right_x0_min
     )
 
     bands: list[ColumnBand] = []
@@ -362,7 +382,7 @@ def detect_columns(
     right_spans: list[tuple[float, float]] = []
 
     if has_left:
-        left_x1 = min(max(b[2] for b in left_cands), main_x0 - _MIN_GUTTER)
+        left_x1 = min(max(b[2] for b in left_cands), main_x0 - g.min_gutter)
         left_x1 = max(40.0, left_x1)
         bands.append(ColumnBand(0.0, left_x1, "aside_left"))
         gutters.append((left_x1, main_x0))
@@ -373,10 +393,10 @@ def detect_columns(
 
     if has_right:
         right_x0 = min(b[0] for b in right_cands)
-        right_x0 = max(min(right_x0, right_x0_min), main_x1 + _MIN_GUTTER * 0.25)
+        right_x0 = max(min(right_x0, right_x0_min), main_x1 + g.min_gutter * 0.25)
         if right_x0 < right_x0_min and min(b[0] for b in right_cands) >= right_x0_min:
             right_x0 = right_x0_min
-        main_hi = min(main_x1, right_x0 - _MIN_GUTTER)
+        main_hi = min(main_x1, right_x0 - g.min_gutter)
         bands.append(ColumnBand(main_lo, max(main_lo + 40.0, main_hi), "main"))
         bands.append(ColumnBand(right_x0, page_w, "aside_right"))
         gutters.append((main_hi, right_x0))
@@ -399,8 +419,11 @@ def detect_columns(
         method="main_edge",
         main_x0=main_lo,
         main_x1=main_hi,
+        raw_main_x0=raw_main_x0,
+        raw_main_x1=raw_main_x1,
         left_spans=left_spans,
         right_spans=right_spans,
+        geom=g,
         _ref_boxes=list(boxes),
     )
 

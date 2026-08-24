@@ -21,14 +21,34 @@ from app.schemas.corpus import (
     CorpusNodePatch,
     CorpusStatsOut,
     GraphOut,
-    ImportExtendRequest,
+    AdoptFingerprintRequest,
+    BookEditionBindRequest,
+    CheckDryRunRequest,
+    CheckExamplesRequest,
+    CheckFalsePositiveRequest,
+    FinalizeBookRequest,
     ImportJobOut,
     ImportPdfRequest,
     InboxItemOut,
+    InheritPagesRequest,
+    IpAttemptIngestRequest,
+    IpConfirmRequest,
+    IpConvergeRequest,
+    IpPatternRequest,
+    IpPrepConflictResolveRequest,
+    IpResolveConflictRequest,
+    IpSplitApplyRequest,
+    IpSplitProposeRequest,
+    IpTriageApplyRequest,
     MarkdownPatch,
     NavContextOut,
     NavCrumb,
     NodeLinksOut,
+    PatternBindDetectorRequest,
+    PatternLandRequest,
+    PatternMergeRequest,
+    PatternRouteRequest,
+    PatternSplitRequest,
     PromoteQuestionRequest,
     PublishSubtreeOut,
     ReaderPageOut,
@@ -342,26 +362,8 @@ def import_pdf(body: ImportPdfRequest, session: Session = Depends(db_session)) -
     return job_out
 
 
-@router.post("/import/jobs/{job_id}/extend", response_model=ImportJobOut)
-def import_job_extend(
-    job_id: str,
-    body: ImportExtendRequest,
-    session: Session = Depends(db_session),
-) -> ImportJobOut:
-    """同 job 追加 MinerU 分段页范围（AI 分段导入）。"""
-    try:
-        job_out = svc.import_job_extend(session, job_id, body.page_ranges)
-    except svc.ImportJobConflictError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    session.commit()
-    enqueue_import_job(job_out.id)
-    return job_out
-
-
 @router.post("/import/pdf-probe")
-async def probe_pdf(request: Request) -> dict:
+async def probe_pdf(request: Request, session: Session = Depends(db_session)) -> dict:
     """Read basic PDF metadata without creating a job or uploading to MinIO.
 
     Accepts raw PDF bytes in the request body (application/pdf) to avoid a
@@ -380,13 +382,25 @@ async def probe_pdf(request: Request) -> dict:
         result = extract_pdf_bytes(data, filename=filename)
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"PDF 解析失败：{exc}") from exc
-    return {
+    out = {
         "page_count": result.meta["page_count"],
         "pdf_kind": result.meta["pdf_kind"],
         "avg_chars_per_page": result.meta["avg_chars_per_page"],
         "file_size_bytes": len(data),
         "filename": filename,
     }
+    # Recognise a re-import here, before any cloud parse is spent, so the panel
+    # can offer "regenerate" vs "inherit last result".
+    try:
+        from app.services.book_identity import probe_known_books
+
+        out["known_books"] = probe_known_books(session, data, filename=filename)
+        session.commit()
+    except Exception:  # noqa: BLE001 - identity is advisory, never blocks probe
+        session.rollback()
+        logger.warning("known-book probe failed filename=%s", filename, exc_info=True)
+        out["known_books"] = {"candidates": [], "best": None}
+    return out
 
 
 @router.get("/import/jobs", response_model=list[ImportJobOut])
@@ -579,12 +593,15 @@ def rebuild_import_ir(
     body: RebuildIrRequest | None = None,
     session: Session = Depends(db_session),
 ) -> dict:
+    from app.services.corpus_import_incremental import _job_meta
     from app.services.import_ir_pipeline import rebuild_job_ir
 
     job = session.get(CorpusImportJob, job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     pages = body.pages if body else None
+    # 规则是全书生效的，落地前后的 escalate 页数就是回归闸：只看改动页会漏掉被弄坏的页。
+    before_escalate = sorted(int(p) for p in (_job_meta(job).get("layout_escalate_pages") or []))
     try:
         _blocks, refine_meta = rebuild_job_ir(session, job, pages=pages)
         from app.services.corpus_import_incremental import run_import_structure_merge
@@ -593,13 +610,111 @@ def rebuild_import_ir(
         session.commit()
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    after_escalate = sorted(int(p) for p in (_job_meta(job).get("layout_escalate_pages") or []))
     return {
         "job_id": job_id,
         "refine_prompt_version": refine_meta.get("refine_prompt_version"),
         "page_refine_chunks": len(refine_meta.get("page_refine_chunks") or []),
         "refine_errors": len(refine_meta.get("refine_errors") or []),
         "rebuilt_pages": pages or "all",
+        "escalate": {
+            "before": len(before_escalate),
+            "after": len(after_escalate),
+            "delta": len(after_escalate) - len(before_escalate),
+            "newly_escalated": sorted(set(after_escalate) - set(before_escalate))[:50],
+            "resolved": sorted(set(before_escalate) - set(after_escalate))[:50],
+        },
     }
+
+
+# --- Same-book re-import: adopt a prior identity / inherit finished pages ---
+
+
+@router.get("/books/fingerprints")
+def list_book_fingerprints(
+    subject: str = "",
+    grade_band: str = "",
+    session: Session = Depends(db_session),
+) -> dict:
+    """Book identities with ledger health — the picker behind 认亲."""
+    from app.db.models import CorpusBookFingerprint
+    from app.services.corpus_corrections import correction_ledger_stats
+
+    q = session.query(CorpusBookFingerprint)
+    if subject:
+        q = q.filter(CorpusBookFingerprint.subject == subject)
+    if grade_band:
+        q = q.filter(CorpusBookFingerprint.grade_band == grade_band)
+    items = []
+    for row in q.all():
+        stats = correction_ledger_stats(session, row.fingerprint_hash)
+        if not stats["corrections"] and not stats["accepted_ips"]:
+            continue
+        items.append(
+            {
+                "fingerprint_hash": row.fingerprint_hash,
+                "subject": row.subject,
+                "grade_band": row.grade_band,
+                "page_count": row.page_count,
+                "label_hint": row.label_hint,
+                "updated_at": row.updated_at,
+                **{k: v for k, v in stats.items() if k != "fingerprint_hash"},
+            }
+        )
+    items.sort(key=lambda x: (-int(x["accepted_ips"]), -int(x["replayable"])))
+    return {"items": items, "total": len(items)}
+
+
+@router.post("/import/jobs/{job_id}/adopt-fingerprint")
+def adopt_import_fingerprint(
+    job_id: str,
+    body: AdoptFingerprintRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services.corpus_corrections import (
+        adopt_book_fingerprint,
+        apply_matched_corrections,
+    )
+
+    job = session.get(CorpusImportJob, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    try:
+        out = adopt_book_fingerprint(
+            session, job, body.fingerprint_hash, note=body.note
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if body.replay:
+        try:
+            out["replay"] = apply_matched_corrections(session, job)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    session.commit()
+    return out
+
+
+@router.post("/import/jobs/{job_id}/inherit-pages")
+def inherit_import_pages(
+    job_id: str,
+    body: InheritPagesRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services.corpus_page_inherit import inherit_pages_from_job
+
+    try:
+        return inherit_pages_from_job(
+            session,
+            old_job_id=body.from_job_id,
+            new_job_id=job_id,
+            pages=body.pages,
+            only_improved=body.only_improved,
+            dry_run=body.dry_run,
+            max_offset=body.max_offset,
+            include_low_confidence=body.include_low_confidence,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 # --- MinerU ops: page reprocess / debug / feedback / cursor pack ------------
@@ -1077,7 +1192,56 @@ def cancel_import(job_id: str, session: Session = Depends(db_session)) -> dict:
 @router.delete("/import/jobs/{job_id}")
 def delete_import_job(job_id: str, session: Session = Depends(db_session)) -> dict:
     """Hard-delete an import job row + purge its Redis telemetry/cancel keys."""
-    return svc.delete_import_job(session, job_id)
+    try:
+        return svc.delete_import_job(session, job_id)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+
+@router.get("/import/jobs/{job_id}/finalize-book")
+def finalize_book_preview(job_id: str, session: Session = Depends(db_session)) -> dict:
+    """Preview 定稿: which version stays, which get deleted, and the warnings."""
+    from app.services.corpus_finalize import preview_finalize
+
+    try:
+        return preview_finalize(session, job_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.post("/import/jobs/{job_id}/finalize-book")
+def finalize_book(
+    job_id: str,
+    body: FinalizeBookRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    """定稿 this import: it becomes the book's only version; others are deleted."""
+    from app.services.corpus_finalize import finalize_book as run_finalize
+
+    try:
+        return run_finalize(
+            session,
+            job_id,
+            note=body.note,
+            ack_warnings=body.ack_warnings,
+            dry_run=body.dry_run,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except Exception as e:  # noqa: BLE001
+        logger.exception("finalize-book failed job=%s", job_id)
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/import/jobs/{job_id}/unfinalize-book")
+def unfinalize_book(job_id: str, session: Session = Depends(db_session)) -> dict:
+    """Release the 定稿 delete lock (already-deleted versions stay deleted)."""
+    from app.services.corpus_finalize import unfinalize_book as run_unfinalize
+
+    try:
+        return run_unfinalize(session, job_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.get("/pipeline/status")
@@ -1219,3 +1383,597 @@ def promote_question(
         return svc.promote_from_question(session, question_id, body)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+# ---- Improvement Points (IP) ----
+
+
+@router.post("/improvement-points/ingest-attempts")
+def ip_ingest_attempts(
+    body: IpAttemptIngestRequest, session: Session = Depends(db_session)
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    out = ip_svc.ingest_attempts(
+        session,
+        attempts=body.attempts,
+        job_id=body.job_id,
+        session_id=body.session_id,
+        fingerprint_hash=body.fingerprint_hash,
+    )
+    session.commit()
+    return out
+
+
+@router.post("/improvement-points/confirm")
+def ip_confirm(body: IpConfirmRequest, session: Session = Depends(db_session)) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.confirm_improvement(
+            session,
+            job_id=body.job_id,
+            session_id=body.session_id,
+            fingerprint_hash=body.fingerprint_hash,
+            page_no=body.page_no,
+            category=body.category,
+            summary=body.summary,
+            authority=body.authority,
+            kind=body.kind,
+            block_ids=body.block_ids,
+            slot=body.slot,
+            procedure=body.procedure,
+            attempts=body.attempts,
+            concrete=body.concrete,
+            pattern_abstract=body.pattern_abstract,
+            pattern_status=body.pattern_status,
+            edition_family_id=body.edition_family_id,
+            write_correction=body.write_correction,
+            origin=body.origin,
+            needs_split=body.needs_split,
+        )
+    except ip_svc.PrepGateError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.get("/improvement-points/conflict-pairs")
+def ip_conflict_pairs(
+    fingerprint_hash: str = "",
+    detect: bool = True,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.list_conflict_pairs(
+            session, fingerprint_hash=fingerprint_hash, detect=detect
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/improvement-points/conflict-resolve")
+def ip_conflict_resolve_prep(
+    body: IpPrepConflictResolveRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.resolve_prep_conflicts(
+            session, keep_ids=body.keep_ids, delete_ids=body.delete_ids
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.get("/improvement-points/list-for-triage")
+def ip_list_for_triage(
+    fingerprint_hash: str = "",
+    limit: int = 2000,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    return ip_svc.list_for_triage(
+        session, fingerprint_hash=fingerprint_hash, limit=limit
+    )
+
+
+@router.get("/improvement-points/list-for-split")
+def ip_list_for_split(
+    fingerprint_hash: str = "",
+    limit: int = 2000,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    return ip_svc.list_for_split(
+        session, fingerprint_hash=fingerprint_hash, limit=limit
+    )
+
+
+@router.get("/improvement-points/conflict-hints")
+def ip_conflict_hints(
+    fingerprint_hash: str = "",
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        return ip_svc.conflict_hints(session, fingerprint_hash=fingerprint_hash)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/improvement-points/triage-apply")
+def ip_triage_apply(
+    body: IpTriageApplyRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.triage_apply(
+            session,
+            fingerprint_hash=body.fingerprint_hash,
+            ready_ids=body.ready_ids,
+            split_ids=body.split_ids,
+            aggregate_groups=body.aggregate_groups,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/improvement-points/{ip_id}/split-propose")
+def ip_split_propose(
+    ip_id: str,
+    body: IpSplitProposeRequest | None = None,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        children = (body.children if body else None) or None
+        return ip_svc.split_propose(
+            session, ip_id, children_spec=children or None
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/improvement-points/{ip_id}/split-apply")
+def ip_split_apply(
+    ip_id: str,
+    body: IpSplitApplyRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.split_apply(session, ip_id, children=body.children or None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/improvement-points/converge")
+def ip_converge(body: IpConvergeRequest, session: Session = Depends(db_session)) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.converge_job(
+            session,
+            job_id=body.job_id,
+            session_id=body.session_id,
+            fingerprint_hash=body.fingerprint_hash,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.delete("/improvement-points/{ip_id}")
+def ip_purge(ip_id: str, session: Session = Depends(db_session)) -> dict:
+    """彻底删除改进点及其派生残留（专书页补丁、链接、待审队列引用等）。"""
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.purge_improvement_point(session, ip_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/improvement-points/purge-without-procedure")
+def ip_purge_without_procedure(session: Session = Depends(db_session)) -> dict:
+    """批量硬删缺少成功实现路径的改进点。"""
+    from app.services import improvement_points as ip_svc
+
+    out = ip_svc.purge_ips_without_success_procedure(session)
+    session.commit()
+    return out
+
+
+@router.post("/improvement-points/{ip_id}/resolve-conflict")
+def ip_resolve_conflict(
+    ip_id: str,
+    body: IpResolveConflictRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.resolve_conflict(session, ip_id, winner=body.winner)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/improvement-points/{ip_id}/pattern")
+def ip_set_pattern(
+    ip_id: str,
+    body: IpPatternRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.set_pattern(
+            session,
+            ip_id,
+            pattern_status=body.pattern_status,
+            abstract_text=body.abstract_text,
+            target_layer=body.target_layer,
+            edition_family_id=body.edition_family_id,
+            suspect_type=body.suspect_type,
+        )
+    except ip_svc.PrepGateError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.get("/patterns")
+def pattern_list(
+    category: str = "",
+    status: str = "",
+    landing_target: str = "",
+    min_members: int = 0,
+    with_members: bool = False,
+    limit: int = 200,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    return ip_svc.list_patterns(
+        session,
+        category=category,
+        status=status,
+        landing_target=landing_target,
+        min_members=min_members,
+        with_members=with_members,
+        limit=limit,
+    )
+
+
+@router.get("/patterns/{pattern_id}")
+def pattern_get(pattern_id: str, session: Session = Depends(db_session)) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        return ip_svc.get_pattern(session, pattern_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.post("/patterns/{pattern_id}/route")
+def pattern_route(
+    pattern_id: str,
+    body: PatternRouteRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.route_pattern(
+            session, pattern_id, landing_target=body.landing_target, note=body.note
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/patterns/{pattern_id}/land")
+def pattern_land(
+    pattern_id: str,
+    body: PatternLandRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.land_pattern(
+            session, pattern_id, landed_ref=body.landed_ref, note=body.note
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/patterns/{pattern_id}/merge")
+def pattern_merge(
+    pattern_id: str,
+    body: PatternMergeRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.merge_patterns(
+            session, keep_id=pattern_id, merge_ids=body.merge_ids, note=body.note
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/patterns/{pattern_id}/split")
+def pattern_split(
+    pattern_id: str,
+    body: PatternSplitRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.split_pattern(
+            session,
+            pattern_id=pattern_id,
+            member_ip_ids=body.member_ip_ids,
+            abstract_text=body.abstract_text,
+            category=body.category,
+            note=body.note,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.post("/patterns/{pattern_id}/bind-detector")
+def pattern_bind_detector(
+    pattern_id: str,
+    body: PatternBindDetectorRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import corpus_symptom_ops as sym_ops
+
+    try:
+        out = sym_ops.bind_detector(
+            session,
+            pattern_id=pattern_id,
+            suspect_type=body.suspect_type,
+            detector_ref=body.detector_ref,
+            remediation_kind=body.remediation_kind,
+            playbook_ref=body.playbook_ref,
+            landing_target=body.landing_target,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.get("/patterns/{pattern_id}/promotion-check")
+def pattern_promotion_check(
+    pattern_id: str, session: Session = Depends(db_session)
+) -> dict:
+    """够不够格从 playbook 升 rule。只出提议，不写规则文件。"""
+    from app.services import corpus_symptom_ops as sym_ops
+
+    try:
+        out = sym_ops.promotion_check(session, pattern_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.get("/checks")
+def checks_list(session: Session = Depends(db_session)) -> dict:
+    """当前生效的症状检测器 + 可用词表（含体检）+ 没能生效的声明（load_errors）。"""
+    from app.services import corpus_symptom_ops as sym_ops
+
+    return sym_ops.checks_overview(session)
+
+
+@router.post("/checks/dry-run")
+def checks_dry_run(
+    body: CheckDryRunRequest, session: Session = Depends(db_session)
+) -> dict:
+    """在一次真实导入的页上试跑一条检测器。不落库、不改文件。"""
+    from app.services import corpus_symptom_ops as sym_ops
+
+    try:
+        return sym_ops.dry_run(
+            session,
+            job_id=body.job_id,
+            suspect_type=body.suspect_type,
+            yaml_text=body.yaml_text,
+            pages=body.pages,
+            limit=body.limit,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/checks/run-examples")
+def checks_run_examples(body: CheckExamplesRequest) -> dict:
+    """跑正反例，给出召回率与误报率。"""
+    from app.services import corpus_symptom_ops as sym_ops
+
+    try:
+        return sym_ops.run_examples(
+            suspect_type=body.suspect_type, yaml_text=body.yaml_text
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/checks/false-positive")
+def checks_report_false_positive(
+    body: CheckFalsePositiveRequest, session: Session = Depends(db_session)
+) -> dict:
+    """人裁决「这不是问题」。只降权不屏蔽。"""
+    from app.services import corpus_symptom_ops as sym_ops
+
+    try:
+        out = sym_ops.report_false_positive(
+            session,
+            suspect_type=body.suspect_type,
+            fingerprint=body.fingerprint,
+            job_id=body.job_id,
+            page_no=body.page_no,
+            block_id=body.block_id,
+            evidence=body.evidence,
+            note=body.note,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+def _job_symptoms_payload(job: CorpusImportJob) -> dict:
+    """读任务元数据，按「有没有处置办法」切开。"""
+    from app.services.corpus_symptoms import partition_findings
+
+    meta = loads(job.meta_json, {}) or {}
+    findings = list(meta.get("symptom_findings") or [])
+    known, unknown = partition_findings(findings)
+    return {
+        "job_id": job.id,
+        "summary": meta.get("symptom_summary") or {},
+        "coverage": meta.get("layout_escalate_target") or "none",
+        "known": known,
+        "unknown": unknown,
+        "refreshed_at": meta.get("symptom_refreshed_at") or "",
+        # 数值兜底，和命名症状并列而不混为一谈。
+        "low_confidence_pages": sorted(
+            int(p) for p in (meta.get("layout_escalate_pages") or [])
+        ),
+    }
+
+
+@router.get("/jobs/{job_id}/symptoms")
+def job_symptoms(job_id: str, session: Session = Depends(db_session)) -> dict:
+    """这次导入查出的命名症状，按「有成功路径 / 需诊断」分开。"""
+    job = session.get(CorpusImportJob, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return _job_symptoms_payload(job)
+
+
+@router.post("/jobs/{job_id}/symptoms/refresh")
+def job_symptoms_refresh(job_id: str, session: Session = Depends(db_session)) -> dict:
+    """按当前中间表示整本重跑检测，覆盖导入时的症状快照。
+
+    自动改每轮结束必须走这里：编排器用活清单决定能不能收口，
+    Studio 中栏也不再钉死导入那一刻的卡片数。
+    """
+    from app.services.import_ir_pipeline import refresh_job_symptom_findings
+
+    job = session.get(CorpusImportJob, job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    try:
+        refresh_job_symptom_findings(job)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return _job_symptoms_payload(job)
+
+
+@router.get("/improvement-points/books")
+def ip_books(session: Session = Depends(db_session)) -> dict:
+    """改进点侧栏：按真实书指纹分组（含无对应导入任务的孤儿指纹）。"""
+    from app.services import improvement_points as ip_svc
+
+    return ip_svc.list_ip_books(session)
+
+
+@router.get("/improvement-points")
+def ip_list(
+    fingerprint_hash: str = "",
+    job_id: str = "",
+    status: str = "",
+    prep_status: str = "",
+    page_no: int | None = None,
+    limit: int = 1000,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    return ip_svc.list_improvement_points(
+        session,
+        fingerprint_hash=fingerprint_hash,
+        job_id=job_id,
+        status=status,
+        prep_status=prep_status,
+        page_no=page_no,
+        limit=limit,
+    )
+
+
+@router.post("/books/{fingerprint_hash}/bind-edition")
+def book_bind_edition(
+    fingerprint_hash: str,
+    body: BookEditionBindRequest,
+    session: Session = Depends(db_session),
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    try:
+        out = ip_svc.bind_book_edition(
+            session,
+            fingerprint_hash,
+            body.edition_id,
+            source_job_id=body.source_job_id,
+            note=body.note,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    session.commit()
+    return out
+
+
+@router.get("/books/{fingerprint_hash}/bind-edition")
+def book_get_bind(
+    fingerprint_hash: str, session: Session = Depends(db_session)
+) -> dict:
+    from app.services import improvement_points as ip_svc
+
+    out = ip_svc.get_book_edition_bind(session, fingerprint_hash)
+    if out is None:
+        raise HTTPException(status_code=404, detail="no bind")
+    return out

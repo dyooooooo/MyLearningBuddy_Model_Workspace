@@ -10,6 +10,11 @@ COPY studio-ui/ ./
 RUN npm install
 RUN npm run build
 
+WORKDIR /fe-kb
+COPY kb-ui/ ./
+RUN npm install
+RUN npm run build
+
 FROM python:3.12-slim-bookworm
 
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
@@ -31,6 +36,7 @@ COPY scripts ./scripts
 COPY tests ./tests
 COPY --from=web /fe-test/dist ./static/vite
 COPY --from=web /fe-studio/dist ./static/studio
+COPY --from=web /fe-kb/dist ./static/kb
 
 EXPOSE 8000
 

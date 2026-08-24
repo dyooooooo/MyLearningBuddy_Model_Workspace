@@ -1,0 +1,9 @@
+toc_titles:
+  - 目录
+  - 目 录
+  - Contents
+  - CONTENTS
+heading_tag: div
+protect_selectors:
+  - kb-page-toc-heading
+  - kb-page-toc

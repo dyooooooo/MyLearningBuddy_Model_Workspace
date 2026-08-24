@@ -92,6 +92,14 @@ class Settings(BaseSettings):
     corpus_debug_dump: bool = True
     scout_queue: str = "lb:jobs:scout"
     publish_queue: str = "lb:jobs:publish"
+    # Knowledge-base MinerU import — isolated from corpus import_queue.
+    kb_import_queue: str = "lb:jobs:kb_import"
+    textbook_eval_queue: str = "lb:jobs:textbook_eval"
+
+    textbook_agent_url: str = ""
+    textbook_agent_token: str = ""
+    textbook_agent_timeout_s: float = 300.0
+    agent_textbooks_dir: str = "/data/agent/textbooks"
 
     milvus_staging_collection: str = "lb_corpus_staging"
 

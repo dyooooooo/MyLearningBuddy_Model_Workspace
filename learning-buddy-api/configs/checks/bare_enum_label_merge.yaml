@@ -1,0 +1,28 @@
+suspect_type: BARE_ENUM_LABEL_MERGE
+title: 裸枚举标号应与后续正文合并
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_plain_main_text
+    and char_count <= 6
+    and matches(text, '^[（(][0-9]+[）)]$')
+  min_hits: 1
+
+evidence: [type, zone, char_count, next_type, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L3.book_patch
+  # 光秃标号要并进后一块：得知道后一块是什么、这块有多短
+  locate_by: [zone, next_type, char_count, text_preview]
+  playbook: |
+    1. 定位仅含「（n）」的裸标号块（或 list 拆出的裸标号）。
+    2. 与后续正文合并为同一 paragraph；标号后有正文才拆行。
+    3. rebuild_ir 核对阅读序与标号连续。
+
+examples:
+  positive: [configs/checks/fixtures/bare_enum_label_merge_pos.json]
+  negative: [configs/checks/fixtures/bare_enum_label_merge_neg.json]

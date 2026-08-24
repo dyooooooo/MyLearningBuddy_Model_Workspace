@@ -78,11 +78,12 @@ def extract_book_features(
     blocks: list[DocumentBlock],
 ) -> dict[str, Any]:
     meta = loads(job.meta_json, {})
-    page_count = int(
-        meta.get("total_pages")
-        or meta.get("ocr_total")
-        or max((b.page_no for b in blocks), default=0)
-    )
+    page_span = int(max((b.page_no for b in blocks), default=0))
+    meta_pages = int(meta.get("total_pages") or meta.get("ocr_total") or 0)
+    # Identity follows the parsed IR span, not a stale meta counter: an early
+    # partial parse could freeze total_pages (e.g. 20 for a 178-page book) and
+    # split one book into two fingerprints that can never match each other.
+    page_count = page_span or meta_pages
     toc = extract_toc_titles(blocks)
     toc_hash = _sha1("\n".join(toc)) if toc else ""
 
@@ -111,6 +112,8 @@ def extract_book_features(
         "subject": subject,
         "grade_band": grade,
         "page_count": page_count,
+        "page_span": page_span,
+        "meta_page_count": meta_pages,
         "toc_titles": toc,
         "toc_hash": toc_hash,
         "first_page_hash": first_page_hash,
@@ -160,11 +163,33 @@ def upsert_fingerprint(
         "hash": row.fingerprint_hash,
         "page_count": row.page_count,
         "toc_hash": row.toc_hash,
-        "matched": True,
+        # "registered" only means this book's identity row exists; it says
+        # nothing about matching a prior ledger (see apply_matched_corrections).
+        "registered": True,
     }
     job.meta_json = dumps(meta)
     session.add(job)
     return row
+
+
+# Re-parses of the same book rarely produce an identical page span (engine
+# version, blank-page trimming). Allow a small window instead of demanding
+# equality, which used to reject every real re-import.
+_SOFT_PAGE_TOLERANCE_RATIO = 0.05
+_SOFT_PAGE_TOLERANCE_MIN = 8
+
+
+def soft_page_tolerance(page_count: int) -> int:
+    return max(_SOFT_PAGE_TOLERANCE_MIN, int(round(abs(page_count) * _SOFT_PAGE_TOLERANCE_RATIO)))
+
+
+def fingerprint_override_hash(job: CorpusImportJob) -> str:
+    """Operator-declared book identity ("认亲") stored on the job meta."""
+    meta = loads(job.meta_json, {})
+    override = meta.get("book_fingerprint_override")
+    if isinstance(override, dict):
+        return str(override.get("hash") or "").strip()
+    return str(override or "").strip()
 
 
 def find_matching_fingerprint(
@@ -172,7 +197,20 @@ def find_matching_fingerprint(
     job: CorpusImportJob,
     blocks: list[DocumentBlock],
 ) -> tuple[CorpusBookFingerprint | None, str]:
-    """Return (fingerprint, match_kind) where match_kind is exact|soft|none."""
+    """Return (fingerprint, match_kind): override|exact|soft_*|none."""
+    override = fingerprint_override_hash(job)
+    if override:
+        row = (
+            session.query(CorpusBookFingerprint)
+            .filter(CorpusBookFingerprint.fingerprint_hash == override)
+            .one_or_none()
+        )
+        if row is not None:
+            return row, "override"
+        logger.warning(
+            "book fingerprint override not found job=%s hash=%s", job.id, override
+        )
+
     feats = extract_book_features(job, blocks)
     exact = (
         session.query(CorpusBookFingerprint)
@@ -182,22 +220,75 @@ def find_matching_fingerprint(
     if exact is not None:
         return exact, "exact"
 
-    # Soft: same subject/grade/page_count + (toc OR first-page hash)
-    q = (
+    # Soft: same subject/grade + (toc OR first-page hash) + page count in window
+    candidates = (
         session.query(CorpusBookFingerprint)
         .filter(
             CorpusBookFingerprint.subject == feats["subject"],
             CorpusBookFingerprint.grade_band == feats["grade_band"],
-            CorpusBookFingerprint.page_count == feats["page_count"],
         )
+        .all()
     )
-    candidates = q.all()
+    pages = int(feats["page_count"])
+    tolerance = soft_page_tolerance(pages)
+    scored: list[tuple[int, CorpusBookFingerprint, str]] = []
     for row in candidates:
+        delta = abs(int(row.page_count or 0) - pages)
+        if delta > tolerance:
+            continue
         if feats["toc_hash"] and row.toc_hash == feats["toc_hash"]:
-            return row, "soft_toc"
-        if feats["first_page_hash"] and row.first_page_hash == feats["first_page_hash"]:
-            return row, "soft_first_page"
+            scored.append((delta, row, "soft_toc"))
+        elif feats["first_page_hash"] and row.first_page_hash == feats["first_page_hash"]:
+            scored.append((delta, row, "soft_first_page"))
+    if scored:
+        # Closest page span wins; toc evidence beats first-page evidence.
+        scored.sort(key=lambda item: (item[0], 0 if item[2] == "soft_toc" else 1))
+        _delta, row, kind = scored[0]
+        return row, kind
+
+    # Last tier: compare the *source PDFs*. Everything above is derived from the
+    # IR, which layout rules and the agent rewrite — so two runs of one book
+    # diverge there. The raw PDF text layer is untouched by any pipeline stage,
+    # and the comparison skips cover/front matter and samples several body pages.
+    row, kind = _match_by_source_pdf(session, job)
+    if row is not None:
+        return row, kind
     return None, "none"
+
+
+def _match_by_source_pdf(
+    session: Session, job: CorpusImportJob
+) -> tuple[CorpusBookFingerprint | None, str]:
+    from app.services.book_identity import match_job_by_source_pdf
+
+    try:
+        other, verdict = match_job_by_source_pdf(session, job)
+    except Exception:  # noqa: BLE001 - identity fallback must never break import
+        logger.warning("source-pdf identity match failed job=%s", job.id, exc_info=True)
+        return None, "none"
+    if other is None:
+        return None, "none"
+    other_meta = loads(other.meta_json, {})
+    book = other_meta.get("book_fingerprint")
+    fp_hash = str(book.get("hash") or "") if isinstance(book, dict) else ""
+    if not fp_hash:
+        return None, "none"
+    row = (
+        session.query(CorpusBookFingerprint)
+        .filter(CorpusBookFingerprint.fingerprint_hash == fp_hash)
+        .one_or_none()
+    )
+    if row is None:
+        return None, "none"
+    logger.info(
+        "book identity via source pdf job=%s prior_job=%s kind=%s shared=%s similar=%s",
+        job.id,
+        other.id,
+        verdict.get("kind"),
+        verdict.get("shared_pages"),
+        verdict.get("similar_pages"),
+    )
+    return row, f"soft_pdf_{verdict.get('kind') or 'match'}"
 
 
 def save_correction(
@@ -212,7 +303,15 @@ def save_correction(
     before_blocks: list[dict[str, Any]],
     after_blocks: list[dict[str, Any]],
     refine_result: dict[str, Any] | None = None,
+    ip_id: str = "",
+    procedure: dict[str, Any] | None = None,
 ) -> CorpusCorrection:
+    """Persist L3 page/block patch. Requires accepted IP id (no parallel ledger)."""
+    if not (ip_id or "").strip():
+        raise ValueError(
+            "corpus_corrections require ip_id from an accepted Improvement Point; "
+            "call improvement-points/confirm first"
+        )
     matched, _kind = find_matching_fingerprint(session, job, blocks)
     current = upsert_fingerprint(session, job, blocks)
     # Prefer the matched prior book identity so soft-matched re-imports share one ledger.
@@ -230,6 +329,8 @@ def save_correction(
         after_json=dumps(after_blocks),
         refine_result_json=dumps(refine_result or {}),
         source_job_id=job.id,
+        ip_id=ip_id or "",
+        procedure_json=dumps(procedure or {}),
         created_at=now,
         updated_at=now,
     )
@@ -249,8 +350,112 @@ def list_corrections_for_fingerprint(
     )
 
 
+def accepted_ip_ids(session: Session, fingerprint_hash: str) -> set[str]:
+    from app.db.models import CorpusImprovementPoint
+
+    return {
+        row.id
+        for row in session.query(CorpusImprovementPoint)
+        .filter(
+            CorpusImprovementPoint.fingerprint_hash == fingerprint_hash,
+            CorpusImprovementPoint.status == "accepted",
+        )
+        .all()
+    }
+
+
+def replayable_corrections(
+    session: Session, fingerprint_hash: str
+) -> list[CorpusCorrection]:
+    """Patches that would really apply: live accepted IP + non-empty after."""
+    live = accepted_ip_ids(session, fingerprint_hash)
+    out: list[CorpusCorrection] = []
+    for corr in list_corrections_for_fingerprint(session, fingerprint_hash):
+        if not (corr.ip_id or "") or corr.ip_id not in live:
+            continue
+        after = loads(corr.after_json, [])
+        if not isinstance(after, list) or not after:
+            continue
+        out.append(corr)
+    return out
+
+
+def correction_ledger_stats(session: Session, fingerprint_hash: str) -> dict[str, Any]:
+    """Ledger health for one book identity (used by adopt / inherit reports)."""
+    rows = list_corrections_for_fingerprint(session, fingerprint_hash)
+    live = accepted_ip_ids(session, fingerprint_hash)
+    with_after = 0
+    dangling = 0
+    for corr in rows:
+        after = loads(corr.after_json, [])
+        if isinstance(after, list) and after:
+            with_after += 1
+        if not (corr.ip_id or "") or corr.ip_id not in live:
+            dangling += 1
+    replayable = replayable_corrections(session, fingerprint_hash)
+    return {
+        "fingerprint_hash": fingerprint_hash,
+        "corrections": len(rows),
+        "with_after": with_after,
+        "dangling": dangling,
+        "accepted_ips": len(live),
+        "replayable": len(replayable),
+        "replayable_pages": sorted({int(c.page_no or 0) for c in replayable}),
+    }
+
+
+def adopt_book_fingerprint(
+    session: Session,
+    job: CorpusImportJob,
+    fingerprint_hash: str,
+    *,
+    note: str = "",
+) -> dict[str, Any]:
+    """认亲: pin this import job to a prior book identity for L3 replay."""
+    fp_hash = (fingerprint_hash or "").strip()
+    if not fp_hash:
+        raise ValueError("fingerprint_hash required")
+    row = (
+        session.query(CorpusBookFingerprint)
+        .filter(CorpusBookFingerprint.fingerprint_hash == fp_hash)
+        .one_or_none()
+    )
+    if row is None:
+        raise ValueError(f"unknown book fingerprint: {fp_hash}")
+
+    meta = loads(job.meta_json, {})
+    meta["book_fingerprint_override"] = {
+        "id": row.id,
+        "hash": row.fingerprint_hash,
+        "page_count": row.page_count,
+        "note": (note or "")[:500],
+        "adopted_at": _now_iso(),
+    }
+    job.meta_json = dumps(meta)
+    session.add(job)
+    session.flush()
+    return {
+        "job_id": job.id,
+        "adopted": meta["book_fingerprint_override"],
+        "ledger": correction_ledger_stats(session, row.fingerprint_hash),
+    }
+
+
 def _block_from_dict(d: dict[str, Any]) -> DocumentBlock:
     return DocumentBlock.model_validate(d)
+
+
+# A page-scope patch replaces the whole page. Older patches often stored only
+# the one block the agent touched, so replaying them verbatim would delete the
+# rest of the page.
+PAGE_REPLACE_MIN_RATIO = 0.4
+PAGE_REPLACE_GUARD_FLOOR = 4
+
+
+def page_replace_is_safe(after_count: int, current_count: int) -> bool:
+    if current_count < PAGE_REPLACE_GUARD_FLOOR:
+        return True
+    return after_count >= max(2, int(current_count * PAGE_REPLACE_MIN_RATIO))
 
 
 def apply_matched_corrections(session: Session, job: CorpusImportJob) -> dict[str, Any]:
@@ -274,22 +479,44 @@ def apply_matched_corrections(session: Session, job: CorpusImportJob) -> dict[st
             "fingerprint_hash": current.fingerprint_hash,
         }
 
-    corrections = list_corrections_for_fingerprint(session, fp.fingerprint_hash)
+    # Replay ONLY L3 rows linked to accepted IPs (legacy unlinked rows are abandoned).
+    live_ips = accepted_ip_ids(session, fp.fingerprint_hash)
+    corrections = [
+        c
+        for c in list_corrections_for_fingerprint(session, fp.fingerprint_hash)
+        if (c.ip_id or "") and (c.ip_id or "") in live_ips
+    ]
+
+    from app.services.improvement_points import (
+        get_book_edition_bind,
+        procedures_for_fingerprint,
+    )
+
+    procedure_hints = procedures_for_fingerprint(session, fp.fingerprint_hash)
+    bind = get_book_edition_bind(session, fp.fingerprint_hash)
+
     if not corrections:
         # Link soft match into current row if hashes differ
+        meta = loads(job.meta_json, {})
         if current.fingerprint_hash != fp.fingerprint_hash:
-            meta = loads(job.meta_json, {})
             meta["book_fingerprint"] = {
                 "id": fp.id,
                 "hash": fp.fingerprint_hash,
                 "match": kind,
                 "page_count": fp.page_count,
             }
-            job.meta_json = dumps(meta)
+        if procedure_hints:
+            meta["improvement_procedures"] = procedure_hints
+        if bind:
+            meta["bound_edition_id"] = bind.get("edition_id")
+        job.meta_json = dumps(meta)
+        session.flush()
         return {
             "applied": 0,
             "match": kind,
             "fingerprint_hash": fp.fingerprint_hash,
+            "procedures": procedure_hints,
+            "bound_edition_id": (bind or {}).get("edition_id") or "",
         }
 
     # Append history: replay only the latest correction per (scope, page, block).
@@ -304,6 +531,7 @@ def apply_matched_corrections(session: Session, job: CorpusImportJob) -> dict[st
 
     by_id = {b.id: b for b in blocks}
     pages_touched: set[int] = set()
+    skipped_pages: list[dict[str, Any]] = []
     applied = 0
 
     for corr in corrections:
@@ -343,6 +571,30 @@ def apply_matched_corrections(session: Session, job: CorpusImportJob) -> dict[st
                 new_page.append(nb)
             if not new_page:
                 continue
+            current_count = sum(1 for b in by_id.values() if b.page_no == page_no)
+            if not page_replace_is_safe(len(new_page), current_count):
+                # A partial snapshot would wipe the rest of the page — the patch
+                # is unusable as a whole-page replacement, so report it instead.
+                skipped_pages.append(
+                    {
+                        "page_no": page_no,
+                        "reason": "partial_page_snapshot",
+                        "after_blocks": len(new_page),
+                        "current_blocks": current_count,
+                        "ip_id": corr.ip_id or "",
+                        "note": (corr.user_note or "")[:120],
+                    }
+                )
+                logger.warning(
+                    "corpus correction skipped (partial page snapshot) job=%s page=%s "
+                    "after=%d current=%d ip=%s",
+                    job.id,
+                    page_no,
+                    len(new_page),
+                    current_count,
+                    corr.ip_id or "",
+                )
+                continue
             by_id = {bid: b for bid, b in by_id.items() if bid in keep}
             for nb in new_page:
                 by_id[nb.id] = nb
@@ -350,10 +602,27 @@ def apply_matched_corrections(session: Session, job: CorpusImportJob) -> dict[st
             applied += 1
 
     if not applied:
+        meta = loads(job.meta_json, {})
+        meta["book_fingerprint"] = {
+            "id": fp.id,
+            "hash": fp.fingerprint_hash,
+            "match": kind,
+            "corrections_applied": 0,
+            "skipped": skipped_pages[:50],
+        }
+        if procedure_hints:
+            meta["improvement_procedures"] = procedure_hints
+        if bind:
+            meta["bound_edition_id"] = bind.get("edition_id")
+        job.meta_json = dumps(meta)
+        session.flush()
         return {
             "applied": 0,
             "match": kind,
             "fingerprint_hash": fp.fingerprint_hash,
+            "skipped": skipped_pages,
+            "procedures": procedure_hints,
+            "bound_edition_id": (bind or {}).get("edition_id") or "",
         }
 
     new_blocks = sorted(by_id.values(), key=lambda b: (b.page_no, b.order, b.id))
@@ -391,7 +660,12 @@ def apply_matched_corrections(session: Session, job: CorpusImportJob) -> dict[st
         "match": kind,
         "corrections_applied": applied,
         "pages": sorted(pages_touched),
+        "skipped": skipped_pages[:50],
     }
+    if procedure_hints:
+        meta["improvement_procedures"] = procedure_hints
+    if bind:
+        meta["bound_edition_id"] = bind.get("edition_id")
     job.meta_json = dumps(meta)
     session.add(job)
     session.flush()
@@ -407,4 +681,7 @@ def apply_matched_corrections(session: Session, job: CorpusImportJob) -> dict[st
         "match": kind,
         "fingerprint_hash": fp.fingerprint_hash,
         "pages": sorted(pages_touched),
+        "skipped": skipped_pages,
+        "procedures": procedure_hints,
+        "bound_edition_id": (bind or {}).get("edition_id") or "",
     }

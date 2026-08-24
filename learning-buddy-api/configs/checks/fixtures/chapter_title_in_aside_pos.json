@@ -1,0 +1,44 @@
+{
+  "page_no": 8,
+  "html": "<article><aside class=\"lb-aside-left\"><h2>三角</h2></aside><section class=\"lb-main\"><h2>第</h2><p>导语</p></section></article>",
+  "blocks": [
+    {
+      "id": "fig1",
+      "type": "figure",
+      "page_no": 8,
+      "order": 1,
+      "text": "",
+      "bbox": [0, 4, 1000, 504],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "h_partial",
+      "type": "heading",
+      "page_no": 8,
+      "order": 2,
+      "text": "第",
+      "level": 2,
+      "bbox": [386, 61, 557, 129],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "lead",
+      "type": "paragraph",
+      "page_no": 8,
+      "order": 3,
+      "text": "本章将拓展角的概念，并对一个任意给定的角给出其相应的正弦、余弦、正切、余切的定义。",
+      "bbox": [502, 514, 924, 875],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "aside_title",
+      "type": "heading",
+      "page_no": 8,
+      "order": 4,
+      "text": "三角",
+      "level": 2,
+      "bbox": [78, 595, 200, 642],
+      "meta": {"layout_zone": "aside_left", "layout_confidence": "high"}
+    }
+  ]
+}

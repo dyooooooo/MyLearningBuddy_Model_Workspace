@@ -92,7 +92,41 @@ def _session_cancelled() -> bool:
     return bool(s and s.get("status") == "cancelled")
 
 
-def _gate(spec: ToolSpec, risk: str, note: str, args_digest: dict[str, Any]) -> tuple[bool, str]:
+def _scope_paths(argmap: dict[str, Any]) -> list[str]:
+    """批准范围 = 本次调用的 ``paths`` 参数原文。
+
+    ``args_digest`` 会把列表转成截断字符串，事后无法可靠还原；fs_guard 的
+    「路径求交」必须拿到未截断的原始清单，所以单独存一份。
+    """
+    raw = argmap.get("paths")
+    if isinstance(raw, (list, tuple)):
+        return [str(p) for p in raw]
+    return []
+
+
+def _gate_digest(
+    spec: ToolSpec, argmap: dict[str, Any], digest: dict[str, Any]
+) -> dict[str, Any]:
+    """批准卡参数 = 入参摘要 + 该工具的闸门前自检结果（若声明了 preflight）。
+
+    自检本身失败也照样进卡片：让人看见「没验成」，而不是悄悄按通过处理。
+    """
+    if spec.preflight is None:
+        return digest
+    try:
+        extra = spec.preflight(argmap)
+    except Exception as e:  # noqa: BLE001 - 自检不阻断闸门，结果如实呈现
+        extra = {"闸门前自检": f"执行失败：{str(e)[:500]}"}
+    return {**digest, **extra} if extra else digest
+
+
+def _gate(
+    spec: ToolSpec,
+    risk: str,
+    note: str,
+    args_digest: dict[str, Any],
+    scope_paths: list[str] | None = None,
+) -> tuple[bool, str]:
     """闸门：创建批准卡（元数据下发给前端渲染），阻塞轮询直到用户决定 / 超时 / 会话取消。
 
     用户此前对同一动作选过「本会话总是允许」时直接放行（会话级 override）。
@@ -107,7 +141,14 @@ def _gate(spec: ToolSpec, risk: str, note: str, args_digest: dict[str, Any]) -> 
     aid = _store.create_approval(
         _SESSION_ID,
         spec.name,
-        {"tool": spec.name, "title": spec.title, "description": note, "risk": risk, "args": args_digest},
+        {
+            "tool": spec.name,
+            "title": spec.title,
+            "description": note,
+            "risk": risk,
+            "args": args_digest,
+            "scope_paths": list(scope_paths or []),
+        },
     )
     _say(
         "approval",
@@ -179,7 +220,9 @@ def _wrap(spec: ToolSpec, tier: str, gated: bool, risk: str, gate_note: str):
         _store.audit(_SESSION_ID or None, "agent", "tool_call", {"tool": spec.name, "args": digest})
 
         if gated:
-            approved, user_note = _gate(spec, risk, gate_note, digest)
+            approved, user_note = _gate(
+                spec, risk, gate_note, _gate_digest(spec, argmap, digest), _scope_paths(argmap)
+            )
             if not approved:
                 _say("step", {**base, "state": "skipped", "note": user_note})
                 return _dump({

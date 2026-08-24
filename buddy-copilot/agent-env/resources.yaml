@@ -8,7 +8,33 @@ configs:
     where: learning-buddy-api/configs/editions/
     how: 文件系统直读；bind-mount 进容器 /app/configs/editions
     mutability: cheap
-    note: 草稿不在这里！草稿存 Postgres edition_drafts，读写走 editions API / save_draft 工具
+    note: >-
+      草稿不在这里！草稿存 Postgres edition_drafts，读写走 editions API / save_draft 工具。
+      config.geometry/patterns/features 改草稿后必须 publish 才落盘生效；
+      policy.json 的 entries 对 MinerU 导入无效（仅 35B 线 b35.vision_layout 槽位用），
+      版式规则请写 layout_rules.yaml。
+
+  - what: 教材版式规则（声明式，MinerU 导入的真正生效面）
+    where: learning-buddy-api/configs/editions/{edition_id}/layout_rules.yaml
+    how: fs.request_edit 改文件（白名单内）；改完 corpus.rebuild_ir 验证
+    mutability: cheap
+    note: 层叠 base_rules.yaml < edition layout_rules.yaml < overrides/pages/NNNN.yaml；不需 publish、不需 rebuild
+
+  - what: 页级定点修正（层叠最高优先）
+    where: learning-buddy-api/configs/editions/{edition_id}/overrides/pages/
+    how: fs.request_edit 写 NNNN.yaml；改完 corpus.rebuild_ir(pages=[N])
+    mutability: cheap
+
+  - what: 共享版式硬不变量（所有教材）
+    where: learning-buddy-api/configs/layout/base_rules.yaml
+    how: 文件系统直读
+    mutability: readonly
+    note: 白名单外，不要改；教材差异写到 edition 层
+
+  - what: 版式规则引擎（特征计算 / 规则层叠 / zone 判定与 escalate）
+    where: learning-buddy-api/app/services/ir/layout/
+    how: 文件系统直读（features.py 列出 when 表达式可用变量）
+    mutability: expensive
 
   - what: 方案历史版本（publish 时物化）
     where: learning-buddy-api/configs/editions/{edition_id}/versions/{version}/
@@ -19,7 +45,9 @@ configs:
     where: learning-buddy-api/data/prompts/
     how: 文件系统直读
     mutability: expensive
-    note: 槽位映射见 learning-buddy-api/app/services/editions/slots.py
+    note: >-
+      槽位映射见 learning-buddy-api/app/services/editions/slots.py。
+      全书导入主链不消费这些模板（永不跑 35B refine），改它们对导入无效。
 
   - what: 35B 线 prompt 模板（layout blueprint，槽位用 v6）
     where: learning-buddy-api/app/import_35b/prompts/
@@ -73,6 +101,10 @@ acceptance:
     where: "buddy-api POST /api/v1/admin/editions/{edition_id}/golden"
     how: 只读工具 run_golden / 步骤工具 harness.run_golden
     mutability: readonly
+    note: >-
+      只检查 mineru.content_correct / layout_rebuild / unit_judge / b35.vision_layout
+      四个槽位能否装配出文本，而前三个在全书导入里不跑；
+      MinerU 线的硬证据是 corpus.rebuild_ir 后的最终 HTML 与 harness.page_diff。
 
   - what: golden 快照与评测数据
     where: learning-buddy-api/data/eval/
@@ -108,10 +140,15 @@ pipeline_code:
     where: learning-buddy-api/app/services/document_ir.py
     how: 文件系统直读
     mutability: expensive
+  - what: 全书导入主链编排（几何 + 规则 → HTML + escalate）
+    where: learning-buddy-api/app/services/import_ir_pipeline.py
+    how: 文件系统直读
+    mutability: expensive
   - what: 页重处理调度（各 mode 语义）
     where: learning-buddy-api/app/services/corpus_reprocess_service.py
     how: 文件系统直读
     mutability: expensive
+    note: 35B 系列 mode（content_correct / layout_content / layout_rebuild / refine_35b）在本场景已被工具层硬拦截
   - what: 方案 schema 与生命周期
     where: learning-buddy-api/app/services/editions/schema.py
     how: 文件系统直读

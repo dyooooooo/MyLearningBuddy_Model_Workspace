@@ -36,7 +36,11 @@
     "aside": "both",
     "toc_style": "text_list",
     "figure_policy": "strict_label",
-    "math_density": "high"
+    "math_density": "high",
+    "cover_pages": [
+      1,
+      2
+    ]
   },
   "zones": {
     "aside_left_x1_max": 280,

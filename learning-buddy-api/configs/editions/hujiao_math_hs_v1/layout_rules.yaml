@@ -1,0 +1,88 @@
+# 沪教版高一数学（上）版式规则 —— edition 层
+#
+# 对应 doc/mineru-corpus-pipeline-lessons.md 第 4 节「60 页分栏审计」里
+# 记录的漏检 / 误判。改这里不需要动 Python，也不需要重建镜像。
+#
+# 旁注（margin note / tip）的共同特征，四条 rescue 规则都要满足：
+#   - type 不是 heading/title：本书的「练习1.1(2)」「集合与逻辑」是悬挂缩进的
+#     标题，视觉上凸进左边距，但属于正文流，拉进侧栏会打断阅读顺序。
+#   - height >= 20：高度不足一行的「( )」「图2-3-1」是行尾符号与图注，不是旁注。
+#   - page_wide_count >= 2：正文页至少有两块宽正文；封面与章扉页没有，另有专门规则。
+
+version: 1
+
+rules:
+  # 审计：p16 / p36 / p50 右侧 tip 整段留在主栏（aside 数量少于原图）。
+  # 判据用 left_of_main / right_of_main（相对主栏边缘），而不是固定 x 阈值，
+  # 这样正文缩进不同的页也适用。
+  - id: hujiao.right-margin-tip-rescue
+    when: >
+      has_bbox and not zone_pinned and baseline_zone == 'main'
+      and type not in ('heading', 'title') and height >= 20
+      and page_wide_count >= 2
+      and right_of_main and width <= ${aside_max_width}
+      and has_companion_left
+    zone: aside_right
+    confidence: 0.75
+    priority: 500
+    note: 主栏右外侧的窄块且同高有主栏伴生 —— 是旁注不是正文
+
+  - id: hujiao.left-margin-tip-rescue
+    when: >
+      has_bbox and not zone_pinned and baseline_zone == 'main'
+      and type not in ('heading', 'title') and height >= 20
+      and page_wide_count >= 2
+      and left_of_main and width <= ${aside_max_width}
+      and has_companion_right
+    zone: aside_left
+    confidence: 0.75
+    priority: 500
+    note: 主栏左外侧的窄块且同高有主栏伴生 —— 是旁注不是正文
+
+  # 审计：p25「例7 反证法」旁注留在主栏。这一页上半两栏、下半单栏，
+  # 整页级 main_x0 被下半段拉到左边，left_of_main 失效；同高伴生也只有几行短句，
+  # 单块宽度都不够。band_main_* 只看该块上下一个窗口内的**宽块**，
+  # 得到的是「该高度处的正文列」，混排页也成立。
+  - id: hujiao.left-margin-tip-band-rescue
+    when: >
+      has_bbox and not zone_pinned and baseline_zone == 'main'
+      and type not in ('heading', 'title') and height >= 20
+      and page_wide_count >= 2
+      and left_of_band_main and width <= ${aside_max_width}
+      and x1 <= ${aside_left_x1_max} + 40
+    zone: aside_left
+    confidence: 0.68
+    priority: 450
+    note: 同高度正文列在其右侧 —— 左外侧窄块是旁注
+
+  - id: hujiao.right-margin-tip-band-rescue
+    when: >
+      has_bbox and not zone_pinned and baseline_zone == 'main'
+      and type not in ('heading', 'title') and height >= 20
+      and page_wide_count >= 2
+      and right_of_band_main and width <= ${aside_max_width}
+      and x0 >= ${aside_right_x0_min} - 40
+    zone: aside_right
+    confidence: 0.68
+    priority: 450
+    note: 同高度正文列在其左侧 —— 右外侧窄块是旁注
+
+  # 审计：p30 章扉页大标题「等式与不等式」被判进 aside_left。
+  # 章扉页特征：块很少、几乎没有宽正文块。此时标题是主视觉，不是旁注。
+  - id: hujiao.chapter-opener-title-stays-main
+    when: >
+      has_bbox and not zone_pinned and baseline_zone != 'main'
+      and page_block_count <= 8 and page_wide_count <= 1
+      and type in ('title', 'heading')
+    zone: main
+    confidence: 0.70
+    priority: 600
+    note: 章扉页主视觉标题属主栏装饰
+
+  # 页眉/页码由页骨架单独渲染，任何情况下都不该被当成旁注内容。
+  - id: hujiao.running-chrome-never-aside
+    when: "role in ('running_header', 'running_footer', 'page_number')"
+    zone: main
+    confidence: 0.90
+    priority: 950
+    note: running chrome 由页骨架渲染，不进侧栏内容流

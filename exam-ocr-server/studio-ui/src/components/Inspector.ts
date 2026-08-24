@@ -18,7 +18,7 @@ import {
 let contentPacks: ContentPack[] = [];
 let showAllLinks = false;
 
-/** 导入模式右栏 AI 对话宿主（MinerU AI 分段导入挂载点）。 */
+/** 导入模式右栏 AI 对话宿主（MinerU AI 全书导入挂载点）。 */
 let _importCopilotHost: HTMLElement | null = null;
 let _setInspectorTab: ((tab: "ai" | "props") => void) | null = null;
 
@@ -47,11 +47,35 @@ export function mountInspector(rootEl: HTMLElement): void {
   const tabs = el("div", "inspector-tabs");
   const tabAi = el("button", "inspector-tab", "AI 对话") as HTMLButtonElement;
   tabAi.type = "button";
-  tabAi.title = "MinerU 分段导入的 Copilot 对话";
+  tabAi.title = "MinerU 全书导入的 Copilot 对话";
   const tabProps = el("button", "inspector-tab inspector-tab--active", "属性") as HTMLButtonElement;
   tabProps.type = "button";
   tabProps.title = "导入流程调试与节点属性";
-  tabs.append(tabAi, tabProps);
+  const dockBtn = el("button", "inspector-dock-toggle", "↓ 下栏") as HTMLButtonElement;
+  dockBtn.type = "button";
+  dockBtn.title = "将属性栏移到中栏下方";
+  dockBtn.setAttribute("aria-label", "切换属性栏右栏或下栏");
+  const syncDockBtn = (placement: "right" | "bottom"): void => {
+    if (placement === "bottom") {
+      dockBtn.textContent = "→ 右栏";
+      dockBtn.title = "将属性栏移到右侧栏";
+    } else {
+      dockBtn.textContent = "↓ 下栏";
+      dockBtn.title = "将属性栏移到中栏下方";
+    }
+  };
+  dockBtn.onclick = () => {
+    document.dispatchEvent(new CustomEvent("studio:toggle-inspector-dock"));
+  };
+  document.addEventListener("studio:inspector-dock", ((e: CustomEvent<{ placement?: string }>) => {
+    const p = e.detail?.placement;
+    if (p === "right" || p === "bottom") syncDockBtn(p);
+  }) as EventListener);
+  // 初始文案：下栏模式类在 LayoutShell apply 后会再同步一次
+  if (document.documentElement.classList.contains("studio-inspector-dock-bottom")) {
+    syncDockBtn("bottom");
+  }
+  tabs.append(tabAi, tabProps, dockBtn);
   rootEl.appendChild(tabs);
 
   const aiPane = el("div", "inspector-pane inspector-pane--ai hidden");
@@ -60,7 +84,7 @@ export function mountInspector(rootEl: HTMLElement): void {
     el(
       "div",
       "inspector-copilot-empty muted",
-      "在导入面板选择教材方案与 PDF 后，点「AI 分段导入」。刷新后会自动恢复未结束的会话。",
+      "在导入面板选择教材方案与 PDF 后，点「AI 全书导入」。刷新后会自动恢复未结束的会话。",
     ),
   );
   aiPane.appendChild(_importCopilotHost);
@@ -83,7 +107,9 @@ export function mountInspector(rootEl: HTMLElement): void {
     aiPane.classList.toggle("hidden", !ai);
     propsPane.classList.toggle("hidden", ai);
     rootEl.classList.toggle("studio-inspector--ai", ai);
-    rootEl.closest(".studio-right-dock")?.classList.toggle("studio-right-dock--ai", ai);
+    document
+      .querySelector(".studio-right-dock")
+      ?.classList.toggle("studio-right-dock--ai", ai);
     try {
       window.localStorage.setItem("studio.inspector.tab", tab);
     } catch {

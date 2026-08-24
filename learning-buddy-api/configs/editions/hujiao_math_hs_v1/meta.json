@@ -5,5 +5,5 @@
   "base": "_base",
   "subject": "math",
   "grade_band": "hs",
-  "description": "沪教版高中数学教材识别方案包（从原 textbook_profiles 1:1 迁移）"
+  "description": "沪教版高中数学最终版型，必修一/二共用。助手整包调用这一份。"
 }

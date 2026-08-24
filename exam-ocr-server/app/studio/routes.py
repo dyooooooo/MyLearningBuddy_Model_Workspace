@@ -175,6 +175,7 @@ async def import_pdf(
     page_ranges: str = Form(""),
     edition_id: str = Form(""),
     profile_id: str = Form(""),
+    inherit_from_job_id: str = Form(""),
 ) -> dict[str, Any]:
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="仅支持 PDF 文件")
@@ -254,6 +255,10 @@ async def import_pdf(
         "parse_engine": parse_engine,
         "edition_id": eid,
     }
+    # 同一本书重导：继承上次已改好的页（35B 线不支持，仅 MinerU 线）
+    inherit = (inherit_from_job_id or "").strip()
+    if inherit:
+        body["inherit_from_job_id"] = inherit
     pr = (page_ranges or "").strip()
     if pr:
         body["page_ranges"] = pr
@@ -271,24 +276,6 @@ async def import_pdf(
     out = r.json()
     logger.info("studio pdf upload queued job_id=%s minio_key=%s", out.get("id"), key)
     return out
-
-
-@router.post("/import/jobs/{job_id}/extend")
-async def import_job_extend(job_id: str, body: dict[str, Any]) -> dict[str, Any]:
-    """同 job 追加 MinerU 分段（代理 buddy-api）。"""
-    try:
-        r = await corpus_admin_request(
-            "POST",
-            f"/api/v1/admin/corpus/import/jobs/{job_id}/extend",
-            json=body,
-        )
-    except httpx.ConnectError as exc:
-        raise _buddy_unavailable(exc) from exc
-    except httpx.TimeoutException as exc:
-        raise HTTPException(status_code=504, detail="导入服务超时，请稍后重试") from exc
-    if r.status_code >= 400:
-        raise HTTPException(status_code=r.status_code, detail=_proxy_error_detail(r.status_code, r.text))
-    return r.json()
 
 
 @router.get("/settings/mineru")

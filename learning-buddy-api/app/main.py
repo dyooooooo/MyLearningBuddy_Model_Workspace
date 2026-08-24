@@ -25,6 +25,7 @@ from app.routes.students import router as students_router
 from app.routes.math import router as math_router
 from app.routes.mineru_settings import router as mineru_settings_router
 from app.routes.wrong_book import router as wrong_book_router
+from app.kb.routes import router as kb_admin_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -64,6 +65,7 @@ app.include_router(health_router)
 app.include_router(admin_router)
 app.include_router(mineru_settings_router)
 app.include_router(corpus_admin_router)
+app.include_router(kb_admin_router)
 app.include_router(editions_admin_router)
 app.include_router(import35b_router)
 app.include_router(graph_runs_router)

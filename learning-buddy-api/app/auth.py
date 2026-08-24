@@ -33,7 +33,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         if path.startswith("/api/v1/system/health"):
             return await call_next(request)
-
         token = extract_bearer(request)
         if path.startswith("/api/v1/admin"):
             if not verify_token(token, settings.admin_token):

@@ -124,8 +124,15 @@ export const import35b = {
   pages: (id: string): Promise<Import35bPages> => call("GET", `jobs/${id}/pages`),
   deleteJob: (id: string): Promise<any> => call("DELETE", `jobs/${id}`),
 
-  async pageHtml(id: string, pageNo: number): Promise<string> {
-    const html = await studioFetch<string>(`${PROXY35B}/jobs/${id}/page/${pageNo}/html`);
+  async pageHtml(
+    id: string,
+    pageNo: number,
+    opts?: { bustCache?: boolean },
+  ): Promise<string> {
+    const q = opts?.bustCache ? `?_ts=${Date.now()}` : "";
+    const html = await studioFetch<string>(
+      `${PROXY35B}/jobs/${id}/page/${pageNo}/html${q}`,
+    );
     return rewriteAssetUrls(typeof html === "string" ? html : String(html));
   },
 

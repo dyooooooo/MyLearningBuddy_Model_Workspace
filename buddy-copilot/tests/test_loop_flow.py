@@ -99,7 +99,7 @@ def _make_engine(tmp_path, monkeypatch, script: list[str]) -> tuple[LoopEngine, 
 
 def test_brief_approved_then_done(tmp_path, monkeypatch):
     engine, store = _make_engine(tmp_path, monkeypatch, [BRIEF_TEXT, DONE_REPORT])
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     engine.start(sid)
 
     aid = _pending_approval(store, sid)
@@ -120,7 +120,7 @@ def test_brief_rejected_then_revised(tmp_path, monkeypatch):
     engine, store = _make_engine(
         tmp_path, monkeypatch, [BRIEF_TEXT, "修订后的简报：改用方案草稿通道。", DONE_REPORT]
     )
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     engine.start(sid)
 
     aid1 = _pending_approval(store, sid)
@@ -167,7 +167,7 @@ def test_blocked_then_user_reply_continues(tmp_path, monkeypatch):
 def test_missing_report_nudged_then_failed(tmp_path, monkeypatch):
     """Agent 一直不交最终报告：追问 max_nudges 次后判 failed。"""
     engine, store = _make_engine(tmp_path, monkeypatch, [BRIEF_TEXT, "呃我还在想", "还在想", "仍然没有"])
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     engine.start(sid)
     aid = _pending_approval(store, sid)
     _decide(engine, store, sid, aid, True)
@@ -196,7 +196,7 @@ def test_fs_violation_rolls_back_and_fails(tmp_path, monkeypatch):
 
     monkeypatch.setattr(loop_mod, "WorktreeSnapshot", FakeSnap)
     engine, store = _make_engine(tmp_path, monkeypatch, [BRIEF_TEXT, DONE_REPORT])
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     engine.start(sid)
     aid = _pending_approval(store, sid)
     _decide(engine, store, sid, aid, True)
@@ -358,7 +358,7 @@ def test_followup_after_done_resumes(tmp_path, monkeypatch):
 
 def test_cancel_during_brief(tmp_path, monkeypatch):
     engine, store = _make_engine(tmp_path, monkeypatch, [BRIEF_TEXT, DONE_REPORT])
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     engine.start(sid)
     _pending_approval(store, sid)
     engine.cancel(sid)
@@ -395,7 +395,7 @@ def test_hang_reconnects_then_done(tmp_path, monkeypatch):
 
     monkeypatch.setattr(loop_mod, "load_permissions", small_budgets)
 
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     engine.start(sid)
 
     # 挂死检测（join 切片 5s）+ 重连后出简报确认卡
@@ -431,7 +431,7 @@ def test_hang_twice_fails_with_message(tmp_path, monkeypatch):
 
     monkeypatch.setattr(loop_mod, "load_permissions", small_budgets)
 
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     engine.start(sid)
     assert _wait_status(store, sid, {"failed"}, timeout=40.0) == "failed"
     texts = [m["content"].get("text", "") for m in store.get_messages(sid) if m["role"] == "system"]
@@ -462,7 +462,7 @@ def test_bridge_error_reconnects_then_done(tmp_path, monkeypatch):
     engine, store = _make_engine(tmp_path, monkeypatch, [BRIEF_TEXT, DONE_REPORT])
     monkeypatch.setattr(loop_mod, "SessionAgent", BridgeThenOkAgent)
 
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     engine.start(sid)
     aid = _pending_approval(store, sid, timeout=15.0)
     _decide(engine, store, sid, aid, True)
@@ -496,7 +496,7 @@ def test_internal_error_force_new_agent_then_done(tmp_path, monkeypatch):
     engine, store = _make_engine(tmp_path, monkeypatch, [BRIEF_TEXT, DONE_REPORT])
     monkeypatch.setattr(loop_mod, "SessionAgent", InternalThenOkAgent)
 
-    sid = store.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = store.create_session("import_advice", {"job_id": "j", "page_no": 3})
     # 模拟已有坏死 agent_id（Resume 会成功，但 Send 秒挂）
     store.update_session(sid, agent_id="agent-dead-internal")
     engine.start(sid)

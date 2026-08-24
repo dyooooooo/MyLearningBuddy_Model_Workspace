@@ -118,6 +118,19 @@ def re_eval_homework(
     meta = loads(entry.meta_json, {})
     subject = entry.subject or meta.get("subject", "math")
     grade_band = entry.grade_band or meta.get("grade_band", "hs")
+    from app.services.textbook_eval import enqueue_homework_for_eval, textbook_eval_enabled
+
+    if textbook_eval_enabled():
+        n = enqueue_homework_for_eval(
+            session,
+            student_id=student_id,
+            homework_id=homework_id,
+            subject=subject,
+            grade_band=grade_band,
+            force=True,
+        )
+        session.commit()
+        return {"eval_updated": n, "homework_id": homework_id, "via": "textbook_agent"}
     n = run_eval_on_homework(
         session,
         student_id,

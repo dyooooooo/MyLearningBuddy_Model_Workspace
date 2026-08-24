@@ -1,0 +1,28 @@
+suspect_type: CHAPTER_TITLE_IN_ASIDE
+title: 章名短标题被判进左侧栏
+severity: high
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    zone == 'aside_left' and is_heading and char_count <= 12
+    and width_ratio <= 0.28 and not has_math
+  min_hits: 1
+
+evidence: [zone, type, char_count, width_ratio, rel_x0, rel_y0, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L1.layout_rule
+  rule_ref: "editions/<id>/layout_rules.yaml#chapter-title-keep-main"
+  # 章标题被判进侧栏：靠归属区 + 起点坐标定位（规则要按几何写）
+  locate_by: [zone, rel_x0, rel_y0, text_preview]
+  playbook: |
+    1. corpus.get_blocks：确认 aside_left 短 heading 与主栏「第N章」是否同页拆分。
+    2. 写 layout_rules / page override：短章名归 main，勿留 aside_left；删除重复 callout。
+    3. corpus.rebuild_ir(pages=[N])，核对最终 HTML 章题完整且侧栏无章名。
+
+examples:
+  positive: [configs/checks/fixtures/chapter_title_in_aside_pos.json]
+  negative: [configs/checks/fixtures/chapter_title_in_aside_neg.json]

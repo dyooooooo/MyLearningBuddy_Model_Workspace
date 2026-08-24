@@ -1,0 +1,33 @@
+{
+  "page_no": 22,
+  "html": "<article><section class=\"lb-main\"></section></article>",
+  "blocks": [
+    {
+      "id": "align_label_eq",
+      "type": "equation",
+      "page_no": 22,
+      "order": 1,
+      "text": "\\begin{array}{r l} \\text{原式} & = \\dfrac{(-\\sin\\alpha)\\tan\\alpha(-\\cot\\alpha)}{(-\\cos\\alpha)(-\\tan\\alpha)} \\\\ & = \\tan\\alpha\\cot\\alpha = 1. \\end{array}",
+      "bbox": [80, 200, 720, 300],
+      "meta": { "layout_zone": "main" }
+    },
+    {
+      "id": "prove_sides_eq",
+      "type": "equation",
+      "page_no": 22,
+      "order": 2,
+      "text": "\\begin{array}{r l} \\text{左边} & = (\\sin\\alpha\\cos\\beta+\\cos\\alpha\\sin\\beta)(\\sin\\alpha\\cos\\beta-\\cos\\alpha\\sin\\beta) \\\\ & = \\text{右边} \\end{array}",
+      "bbox": [80, 320, 720, 420],
+      "meta": { "layout_zone": "main" }
+    },
+    {
+      "id": "latin_unit_eq",
+      "type": "equation",
+      "page_no": 22,
+      "order": 3,
+      "text": "v = 3.0\\times 10^{8}\\ \\text{m/s}",
+      "bbox": [80, 440, 480, 490],
+      "meta": { "layout_zone": "main" }
+    }
+  ]
+}

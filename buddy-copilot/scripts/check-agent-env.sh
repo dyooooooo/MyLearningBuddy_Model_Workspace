@@ -28,14 +28,14 @@ required = [
     "rules/00-copilot-core.md",
     "rules/10-isolation.md",
     "rules/20-host-docker-sync.md",
-    "rules/30-mineru-lessons.md",
+    "rules/40-layout-rules-first.md",
     "skills/edition-tuning.md",
     "skills/page-diagnosis.md",
-    "skills/verify-loop.md",
+    "skills/pattern-abstract.md",
+    "skills/ip-triage.md",
+    "skills/ip-split.md",
     "context/editions.md",
     "context/import-pipeline.md",
-    "context/reprocess.md",
-    "context/resource-map.md",
 ]
 missing = [r for r in required if not (env / r).is_file()]
 if missing:

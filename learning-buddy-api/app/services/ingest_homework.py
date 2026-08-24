@@ -208,6 +208,17 @@ def ingest_homework(
 
     schedule_graph_run(student_id, body.id, subject=subject, grade_band=grade_band)
 
+    from app.services.textbook_eval import enqueue_homework_for_eval, textbook_eval_enabled
+
+    if textbook_eval_enabled():
+        enqueue_homework_for_eval(
+            session,
+            student_id=student_id,
+            homework_id=body.id,
+            subject=subject,
+            grade_band=grade_band,
+        )
+
     return homework_to_out(entry, questions_out, body.parts)
 
 

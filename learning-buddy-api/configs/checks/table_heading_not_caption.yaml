@@ -1,0 +1,26 @@
+suspect_type: TABLE_HEADING_NOT_CAPTION
+title: 表题被当成独立标题而非表格 caption
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_main_heading and next_type == 'table' and char_count <= 24
+  min_hits: 1
+
+evidence: [type, next_type, char_count, zone, level, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L0.renderer
+  # 表题被当成标题：要知道后面紧跟的是不是表格，以及原来的层级
+  locate_by: [zone, next_type, level, text_preview]
+  playbook: |
+    1. 确认紧邻 table 的短 heading 实质是表题（非章节/小节标题）。
+    2. 将表题并入 table.caption（居中加粗），IR 可保留 heading 供章节映射但勿重复渲染为 H3。
+    3. rebuild_ir / rerender 后核对 HTML：表上方一条 caption，无重复标题。
+
+examples:
+  positive: [configs/checks/fixtures/table_heading_not_caption_pos.json]
+  negative: [configs/checks/fixtures/table_heading_not_caption_neg.json]

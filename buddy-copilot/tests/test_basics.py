@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.agent_runner import extract_final_report  # noqa: E402
 from app.permissions import load_permissions  # noqa: E402
 from app.schemas import FinalReport, find_placeholders  # noqa: E402
-from app.tools.fs_guard import WorktreeSnapshot, is_whitelisted  # noqa: E402
+from app.tools.fs_guard import WorktreeSnapshot, is_auto_allowed, is_whitelisted  # noqa: E402
 
 ENV_DIR = Path(__file__).resolve().parent.parent / "agent-env"
 
@@ -96,10 +96,24 @@ def test_whitelist():
     assert is_whitelisted("learning-buddy-api/data/prompts/mineru_page_refine_v2.md")
     assert is_whitelisted("learning-buddy-api/app/import_35b/prompts/layout_blueprint_v6.md")
     assert is_whitelisted("learning-buddy-api/tests/test_column_detect.py")
+    assert is_whitelisted("learning-buddy-api/app/static/textbook-hujiao.css")
     assert not is_whitelisted("learning-buddy-api/app/services/document_ir.py")
     assert not is_whitelisted("learning-buddy-c2/docker-compose.yml")
     assert not is_whitelisted("learning-buddy-api/configs/editions/x/.env")
     assert not is_whitelisted("exam-ocr-server/app/main.py")
+
+
+def test_auto_allow_display_assets():
+    """白名单内 CSS/HTML 免闸门；同目录 .json / 白名单外 .css 不免。"""
+    assert is_auto_allowed(
+        "learning-buddy-api/configs/editions/hujiao_math_hs_v1/assets/theme.css"
+    )
+    assert is_auto_allowed("learning-buddy-api/app/static/textbook-hujiao.css")
+    assert not is_auto_allowed(
+        "learning-buddy-api/configs/editions/hujiao_math_hs_v1/config.json"
+    )
+    assert not is_auto_allowed("learning-buddy-api/app/services/document_ir.py")
+    assert not is_auto_allowed("exam-ocr-server/app/static/foo.css")
 
 
 def test_whitelist_from_permissions_yaml():
@@ -110,6 +124,18 @@ def test_whitelist_from_permissions_yaml():
         perms.write_whitelist,
         perms.forbidden,
     )
+    assert is_whitelisted(
+        "learning-buddy-api/app/static/textbook-hujiao.css",
+        perms.write_whitelist,
+        perms.forbidden,
+    )
+    assert is_auto_allowed(
+        "learning-buddy-api/app/static/textbook-hujiao.css",
+        perms.write_whitelist,
+        perms.forbidden,
+        perms.auto_allow_suffixes,
+    )
+    assert ".css" in perms.auto_allow_suffixes
     assert not is_whitelisted("learning-buddy-c2/.env", perms.write_whitelist, perms.forbidden)
 
 
@@ -176,7 +202,14 @@ def test_find_placeholders_clean():
 def test_permissions_tiers_and_gates():
     perms = load_permissions(ENV_DIR)
     gated = {n for n, p in perms.tools.items() if p.gated}
-    assert gated == {"editions.publish", "fs.request_edit", "docker.rebuild"}
+    assert gated == {
+        "editions.publish",
+        "fs.request_edit",
+        "docker.rebuild",
+        # 词插件专属闸：批的是会在 buddy-worker 里执行的受限 Python，
+        # 与 fs.request_edit 分开，批了 configs/checks/ 不覆盖它
+        "vocab.request_plugin_edit",
+    }
     assert perms.tool("editions.overview").tier == "read"
     assert perms.tool("corpus.start_import").tier == "run"
     assert perms.tool("editions.save_draft").tier == "draft"
@@ -187,17 +220,55 @@ def test_permissions_tiers_and_gates():
 
 
 def test_permissions_scenario_visibility():
-    """接口隔离：页面分诊不暴露 editions.publish；导入建议可申请改文件但不能重建容器。"""
+    """接口隔离：import_advice 可申请改文件但不能重建容器；无 page_assist 场景。"""
     perms = load_permissions(ENV_DIR)
-    page = set(perms.visible_tools("page_assist"))
+    assert "page_assist" not in perms.scenario_tools
     imp = set(perms.visible_tools("import_advice"))
-    assert "editions.publish" not in page
-    assert "fs.request_edit" in page and "docker.rebuild" in page
     # 碰到代码级阻塞要有合法通道（否则会直接动源码），但重建仍走人工
     assert "fs.request_edit" in imp and "docker.rebuild" not in imp
     assert "corpus.start_import" in imp and "editions.publish" in imp
+    assert "symptoms.refresh" in imp and "symptoms.for_job" in imp
+    # 全书一次导入：分段 extend 已下线
+    assert "corpus.extend_import" not in perms.tools
+    assert "corpus.extend_import" not in imp
     # 未声明场景 → 全集
     assert set(perms.visible_tools("")) == set(perms.tools)
+
+
+def test_pattern_abstract_scenario_is_abstraction_only():
+    """抽象轨只做归纳与落地：给落地通道，但不给改单页 IR 的工具。"""
+    perms = load_permissions(ENV_DIR)
+    pa = set(perms.visible_tools("pattern_abstract"))
+    assert {"patterns.list", "patterns.route", "patterns.land"} <= pa
+    # 落地要走批准闸门，且 config/CSS 类要能发布
+    assert "fs.request_edit" in pa and "editions.publish" in pa
+    # 验证成员页黄金集需要全书重跑与前后对比
+    assert "corpus.rebuild_ir" in pa and "harness.page_diff" in pa
+    # 这个场景不修单页
+    assert not ({"corpus.patch_block", "corpus.replace_page_blocks"} & pa)
+    # run_golden 对 MinerU 线是假验证，不该出现在抽象轨的工具面
+    assert "harness.run_golden" not in pa
+
+
+def test_registered_scenarios_have_permissions_and_skills():
+    """新场景要三处齐活：Scenario 注册、permissions 工具面、SKILL_BY_KIND 技能。"""
+    from app.agent_env import SKILL_BY_KIND
+    from app.scenarios import SCENARIOS
+
+    perms = load_permissions(ENV_DIR)
+    for kind in SCENARIOS:
+        assert kind in perms.scenario_tools, f"{kind} 没有 permissions 工具面"
+        assert SKILL_BY_KIND.get(kind), f"{kind} 没有技能文件"
+        for name in SKILL_BY_KIND[kind]:
+            assert (ENV_DIR / "skills" / name).is_file(), f"{kind} 的技能 {name} 不存在"
+
+
+def test_every_scenario_tool_has_a_tier():
+    """场景里写了却没声明档位的工具会在运行时才炸，这里提前拦住。"""
+    perms = load_permissions(ENV_DIR)
+    for scenario, tools in perms.scenario_tools.items():
+        unknown = [t for t in tools if t not in perms.tools]
+        assert not unknown, f"{scenario} 引用了未声明档位的工具: {unknown}"
 
 
 def test_permissions_budgets():
@@ -213,7 +284,7 @@ def test_store_roundtrip(tmp_path):
     from app.store import Store
 
     st = Store(tmp_path / "t.db")
-    sid = st.create_session("page_assist", {"job_id": "j", "page_no": 3})
+    sid = st.create_session("import_advice", {"job_id": "j", "page_no": 3})
     st.add_message(sid, "user", {"text": "hi"})
     st.add_message(sid, "assistant", {"text": "yo"})
     msgs = st.get_messages(sid, after_seq=0)
@@ -234,7 +305,7 @@ def test_store_roundtrip(tmp_path):
     assert st.decide_approval(aid2, True, remember=True)
     assert st.has_session_allow(sid, "editions.publish")
     assert not st.has_session_allow(sid, "fs.request_edit")  # 拒绝过的不算
-    sid2 = st.create_session("page_assist", {})
+    sid2 = st.create_session("import_advice", {})
     assert not st.has_session_allow(sid2, "editions.publish")  # 不跨会话
 
     st.update_session(sid, status="done", plan={"status": "done", "summary": "s"})
@@ -277,9 +348,10 @@ def test_context_pack_contains_all_sections():
     from app.config import get_settings
 
     s = get_settings()
-    pack = build_context_pack(s.agent_env_dir, "page_assist", "TASK-XYZ")
-    for marker in ("最终报告", "资源地图", "分诊", "TASK-XYZ", "fs.request_edit"):
+    pack = build_context_pack(s.agent_env_dir, "import_advice", "TASK-XYZ")
+    for marker in ("最终报告", "资源地图", "TASK-XYZ", "fs.request_edit"):
         assert marker in pack, f"missing {marker}"
+    assert "page-diagnosis" in pack or "坏页" in pack
 
 
 def test_classify_brief_message_intents():
@@ -292,3 +364,61 @@ def test_classify_brief_message_intents():
     assert classify_brief_message("拒绝，改成用另一套方案") == "revise"
     assert classify_brief_message("打回，重新规划") == "revise"
     assert classify_brief_message("好的了解了") == "clarify"  # 默认不打回
+
+
+def test_wall_elapsed_pauses_while_gate_pending():
+    from app.loop import wall_elapsed
+
+    started = 100.0
+    # 跑了 50s 后开始等批准，又等了 800s
+    assert wall_elapsed(started, now=150.0) == 50.0
+    assert wall_elapsed(started, now=950.0, pause_start=150.0) == 50.0
+    # 批准后累计暂停 800s，再跑 10s
+    assert wall_elapsed(started, now=960.0, paused=800.0) == 60.0
+
+
+def test_grant_write_scope_covers_forked_edition(tmp_path):
+    from app.config import Settings
+    from app.loop import LoopEngine
+    from app.store import Store
+    from app.tools.fs_guard import covered_by_approval
+    from app.tools.plugins.editions_tools import edition_dir_rel
+
+    settings = Settings(copilot_db_path=tmp_path / "c.db")
+    st = Store(settings.db_path)
+    sid = st.create_session("import_advice", {})
+    rel = edition_dir_rel("hujiao_math_hs_v1")
+    st.grant_write_scope(sid, [rel], reason="finalize")
+    rows = st.list_approvals(sid, "tool_write_scope")
+    assert rows and rows[0]["status"] == "approved"
+    assert rows[0]["action"]["scope_paths"] == [rel]
+    assert covered_by_approval(rel + "config.json", [rel])
+
+    engine = LoopEngine(settings, st, lambda kind, payload: "")
+    assert rel in engine._approved_edit_paths(sid)
+
+
+def test_render_preview_sends_studio_token(monkeypatch):
+    from types import SimpleNamespace
+
+    import httpx
+
+    from app.config import Settings
+    from app.tools.plugins import preview_tools
+
+    captured: dict[str, object] = {}
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        captured["headers"] = headers or {}
+        request = httpx.Request("GET", url)
+        response = httpx.Response(401, request=request, text="need token")
+        raise httpx.HTTPStatusError("401", request=request, response=response)
+
+    monkeypatch.setattr(preview_tools.httpx, "get", fake_get)
+    settings = Settings(studio_token="tok-preview", gateway_base="http://127.0.0.1:8000")
+    ctx = SimpleNamespace(settings=settings)
+    specs = {s.name: s for s in preview_tools.build(ctx)}
+    out = specs["corpus.render_preview"].fn("corpus/imports/staging/x.pdf", pages="1-1")
+    assert captured["headers"].get("Authorization") == "Bearer tok-preview"
+    assert out.get("checked") is False
+    assert "401" in str(out.get("error") or "") or "令牌" in str(out.get("error") or "")

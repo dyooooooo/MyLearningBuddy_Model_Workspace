@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     buddy_api_base: str = "http://127.0.0.1:8100"
     gateway_base: str = "http://127.0.0.1:8000"  # c2-gateway（minio.stat 预检用）
     admin_token: str = ""
+    # 网关 /api/v1/studio/* 走 StudioAuthMiddleware，缺令牌一律 401
+    studio_token: str = ""
 
     # 本地 vLLM（三角裁决 35B 主力；宿主机直连）
     vllm_base_url: str = "http://127.0.0.1:8088/v1"
@@ -82,6 +84,19 @@ class Settings(BaseSettings):
     def resolve_admin_token(self) -> str:
         """ADMIN_TOKEN 优先取显式配置，否则回读 learning-buddy-c2/.env。"""
         return self.admin_token or self._c2_env("ADMIN_TOKEN")
+
+    def resolve_studio_token(self) -> str:
+        """Studio 令牌，回退顺序与网关 studio_auth._expected_token 保持一致。"""
+        return (
+            self.studio_token
+            or self._c2_env("STUDIO_TOKEN")
+            or self.resolve_admin_token()
+        )
+
+    def studio_auth_headers(self) -> dict[str, str]:
+        """网关 `/api/v1/studio/*` 要用的 Authorization 头；没令牌就空，由调用方降级。"""
+        token = self.resolve_studio_token()
+        return {"Authorization": f"Bearer {token}"} if token else {}
 
     def resolve_mineru_token(self) -> str:
         return self.mineru_api_token or self._c2_env("MINERU_API_TOKEN")

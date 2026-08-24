@@ -504,9 +504,9 @@ M7 视频习惯 ████████████  ⑥ 视频/行为、(b)(c)
 | Windows 适配 | `exam-ocr-server/docs/windows-adaptation-2026-06.md`（同工作区，若已同步） |
 | 伴学流水线（工程） | `companion-pipeline.md`（待同步至 `doc/` 或引用 Android 仓库） |
 | 部署与演进（长期） | `learning-buddy-deployment-evolution.md`（待同步至 `doc/`） |
-| Spark C2 部署计划 | [doc/plans/spark_c2_双_docker_8d0f0c24.plan.md](plans/spark_c2_双_docker_8d0f0c24.plan.md) |
-| 伴学 Pipeline 计划 | [doc/plans/伴学_pipeline_前台_05e58a7a.plan.md](plans/伴学_pipeline_前台_05e58a7a.plan.md) |
-| vLLM 显存优化计划 | [doc/plans/vllm_显存优化_351d642a.plan.md](plans/vllm_显存优化_351d642a.plan.md) |
+| MinerU 全书导入现行流程 | [doc/mineru-fullbook-import-flow.md](mineru-fullbook-import-flow.md) |
+| 改进点（IP）权威设计 | [doc/improvement-point-management.md](improvement-point-management.md) |
+| 已完成计划（Spark C2 / 伴学 Pipeline / vLLM 显存 / API M1 契约） | [doc/archive/](archive/) |
 | OCR 融合规划 | `~/.cursor/plans/多次ocr融合方案_d3a9c441.plan.md`（仅 Cursor 本地） |
 | PaddleOCR v6 能力（切题 / 印写分离） | [doc/paddleocr-v6-capabilities.md](paddleocr-v6-capabilities.md) |
 

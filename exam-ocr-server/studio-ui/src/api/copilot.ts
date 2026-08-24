@@ -9,7 +9,16 @@ import { studioFetch, type HttpMethod } from "./http";
 
 const BASE = "/api/v1/studio/copilot";
 
-export type CopilotKind = "import_advice" | "page_assist";
+export type CopilotKind =
+  | "import_advice"
+  | "ip_book"
+  | "ip_triage" // 兼容旧存储；创建时服务端归一为 ip_book
+  | "ip_split"
+  /** 改进点抽象成跨书模式（症状 · 检测器 · 处置 · 生效面） */
+  | "pattern_abstract";
+
+/** 改进点一书一对话的意图（按钮只切换意图，不新建平行会话）。 */
+export type IpBookIntent = "triage" | "split_all" | "split_one" | "aggregate";
 
 export type CopilotMessage = {
   seq: number;
@@ -24,6 +33,7 @@ export type CopilotMessage = {
     | "verify"
     | "result"
     | "diff"
+    | "diff_resolved"
     | "todos"
     | "approval_resolved"
     | "import_event";
@@ -44,7 +54,34 @@ export type CopilotImportEvent = {
   ok?: boolean;
   error?: string;
   pipeline_phase?: string;
+  /** 自动改第几轮（找症状 → 按手册改 → 验活） */
+  autofix_round?: number;
+  autofix_remaining?: number;
+  autofix_done?: boolean;
+  batch_types?: string[];
+  batch_n?: number;
+  known_n?: number;
+  unknown_n?: number;
+  park_reason?: string;
+  symptom_rows?: Array<{
+    suspect_type: string;
+    known?: boolean;
+    count?: number;
+    pages?: number[];
+    playbook?: string;
+    remediation_kind?: string;
+    landing_target?: string;
+  }>;
   mode?: string;
+  /** 改动是否已反映到页 HTML；false 时不提示记入方案 */
+  html_changed?: boolean;
+  block_id?: string;
+  summary?: string;
+  /** 为 true 时前端弹出「是否记入当前方案」 */
+  promote_prompt?: boolean;
+  /** edition=非越权；pipeline=越权（需改 Pipeline 核心） */
+  authority?: "edition" | "pipeline" | string;
+  authority_label?: string;
 };
 
 export type CopilotSessionSummary = {
@@ -104,12 +141,30 @@ export const copilot = {
   listModels: (): Promise<{ models: CopilotModel[]; default: string }> =>
     call("GET", "/models"),
 
+  /** 导入任务被删/定稿清理后：删掉绑在它上面的会话（网关级联入口）。 */
+  cascadeByImportJob: (jobId: string): Promise<any> =>
+    studioFetch(
+      `/api/v1/studio/copilot/cascade-by-import-job/${encodeURIComponent(jobId)}`,
+      { method: "POST" },
+    ),
+
   createSession: (
     kind: CopilotKind,
     payload: Record<string, unknown>,
     model = "",
-  ): Promise<{ session_id: string; resumed?: boolean; import_job_id?: string | null }> =>
-    call("POST", "/sessions", { kind, payload, model }),
+    opts: { auto_start?: boolean } = {},
+  ): Promise<{
+    session_id: string;
+    resumed?: boolean;
+    import_job_id?: string | null;
+    auto_start?: boolean;
+  }> =>
+    call("POST", "/sessions", {
+      kind,
+      payload,
+      model,
+      auto_start: opts.auto_start !== false,
+    }),
 
   getMessages: (
     sid: string,
@@ -134,7 +189,26 @@ export const copilot = {
       remember,
     }),
 
-  cancel: (sid: string): Promise<{ ok: boolean }> => call("POST", `/sessions/${sid}/cancel`),
+  cancel: (
+    sid: string,
+    discardFiles = true,
+  ): Promise<{ ok: boolean; discard_files?: boolean }> =>
+    call(
+      "POST",
+      discardFiles
+        ? `/sessions/${sid}/cancel`
+        : `/sessions/${sid}/cancel?discard_files=false`,
+    ),
+
+  /** 保留本轮文件改动（类似 Cursor Keep）。 */
+  keepFiles: (sid: string): Promise<{ ok: boolean; action?: string; error?: string }> =>
+    call("POST", `/sessions/${sid}/fs/keep`),
+
+  /** 放弃并回退到本轮执行前（类似 Cursor Undo / git checkout）。 */
+  discardFiles: (
+    sid: string,
+  ): Promise<{ ok: boolean; action?: string; restored?: string[]; error?: string }> =>
+    call("POST", `/sessions/${sid}/fs/discard`),
 
   deleteSession: (sid: string): Promise<{ ok: boolean; deleted?: string[] }> =>
     call("DELETE", `/sessions/${sid}`),
@@ -165,6 +239,28 @@ export const copilot = {
     );
     const list = Array.isArray(sessions) ? sessions : [];
     return list[0] || null;
+  },
+
+  /** 按书指纹找回改进点会话（默认 ip_book；找不到再试旧 kind）。 */
+  findByFingerprint: async (
+    fingerprintHash: string,
+    kind: CopilotKind = "ip_book",
+  ): Promise<CopilotSessionSummary | null> => {
+    const fp = String(fingerprintHash || "").trim();
+    if (!fp) return null;
+    const order: CopilotKind[] =
+      kind === "ip_book" || kind === "ip_triage" || kind === "ip_split"
+        ? ["ip_book", "ip_triage", "ip_split"]
+        : [kind];
+    for (const k of order) {
+      const out = await call(
+        "GET",
+        `/sessions/by-fingerprint/${encodeURIComponent(fp)}?kind=${encodeURIComponent(k)}`,
+      );
+      const sess = (out?.session as CopilotSessionSummary) || null;
+      if (sess?.id) return sess;
+    }
+    return null;
   },
 
   getSession: (

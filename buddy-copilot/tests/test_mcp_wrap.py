@@ -17,7 +17,7 @@ from app.tools.registry import ToolSpec  # noqa: E402
 
 def _setup(tmp_path, monkeypatch) -> tuple[Store, str]:
     store = Store(tmp_path / "mcp.db")
-    sid = store.create_session("page_assist", {})
+    sid = store.create_session("import_advice", {})
     monkeypatch.setattr(m, "_store", store)
     monkeypatch.setattr(m, "_SESSION_ID", sid)
     monkeypatch.setattr(m, "_local_calls", {"n": 0})

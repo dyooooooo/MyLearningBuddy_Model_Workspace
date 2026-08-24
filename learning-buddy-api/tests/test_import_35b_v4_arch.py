@@ -1,6 +1,6 @@
 """v4 架构 golden：防腐层 / 统一富文本管线 / running_header 收敛 / SSR / T1 校验。
 
-台账页映射（doc/import35b-issues/2026-07-04-35b-preview-math-issues.md）：
+台账页映射（doc/archive/2026-07-04-35b-preview-math-issues.md）：
 p3 吞块 · p14 残缺 cases · p20/21/26 转义损伤 · p24 表格公式。
 纯代码路径（repair → normalize → compile → validate），不调 vLLM。
 """

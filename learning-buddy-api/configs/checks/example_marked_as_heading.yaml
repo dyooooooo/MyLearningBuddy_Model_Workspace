@@ -1,0 +1,28 @@
+suspect_type: EXAMPLE_MARKED_AS_HEADING
+title: 例题导语被标成 heading
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_heading and zone == 'main' and char_count <= 24
+    and startswith(text, '例') and not next_type == 'table'
+  min_hits: 1
+
+evidence: [type, zone, level, char_count, next_type, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L0.renderer
+  # 例题被当成标题：得知道原层级和后面紧跟什么
+  locate_by: [zone, level, next_type, text_preview]
+  playbook: |
+    1. 确认短 heading 实为「例N」题干导语，不是章节标题。
+    2. 将 type/role 改回正文段落（或 pedagogy example），勿用 heading 层级。
+    3. 若 heading 内含裸 $，先改 Unicode/行内公式再降级为段落。
+    4. rebuild_ir / rerender 后核对目录与正文层级不再收录例题。
+
+examples:
+  positive: [configs/checks/fixtures/example_marked_as_heading_pos.json]
+  negative: [configs/checks/fixtures/example_marked_as_heading_neg.json]

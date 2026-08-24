@@ -41,6 +41,10 @@ Thumbs.db
 # Docker / runtime data
 learning-buddy-c2/data/
 **/companion-data/
+data/agent-home/textbooks/**
+data/agent-home/traces/**
+data/agent-home/inbox/**
+!data/agent-home/**/.gitkeep
 
 # Cursor project cache (lives under ~/.cursor/projects/, not here)
 .cursor/

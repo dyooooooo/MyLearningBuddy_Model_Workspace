@@ -1,0 +1,29 @@
+suspect_type: FIGURE_PANEL_CAPTION_GAP
+title: 多子图页的子图缺 caption 或仅短碎片
+severity: low
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    is_main_figure and page_figure_count >= 3
+    and width_ratio >= 0.12 and width_ratio <= 0.42
+    and height_ratio >= 0.10 and height_ratio <= 0.40
+    and not has_caption and char_count <= 2
+  min_hits: 1
+
+evidence: [type, zone, width_ratio, height_ratio, has_caption, char_count, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L3.book_patch
+  # 补图注要知道是哪张图、缺不缺图注、图有多大
+  locate_by: [zone, has_caption, width_ratio, height_ratio, text_preview]
+  playbook: |
+    1. 确认同页多枚中等子图缺独立 caption（排除装饰小图标与已有 caption 的图）。
+    2. patch 各子图 caption；总图题写在正文或独立 caption 块。
+    3. rebuild_ir 后核对图组阅读序与标注完整。
+
+examples:
+  positive: [configs/checks/fixtures/figure_panel_caption_gap_pos.json]
+  negative: [configs/checks/fixtures/figure_panel_caption_gap_neg.json]

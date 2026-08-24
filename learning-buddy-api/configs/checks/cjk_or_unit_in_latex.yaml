@@ -1,0 +1,38 @@
+suspect_type: CJK_OR_UNIT_IN_LATEX
+title: 中文单位或连接词被包进 LaTeX
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  # 只有 \text{} 不足以判错：\text{cm} 是单位正确写法，\text{原式}\text{左边} 是推导
+  # 对齐标签。cjk_text_in_math 已排除这两类，剩下的才是「正文被塞进公式」。
+  when: >
+    has_math and (contains(text, 'math--fallback') or cjk_text_in_math)
+  min_hits: 1
+
+evidence: [type, zone, char_count, has_math, cjk_text_in_math, text_preview]
+
+remediation:
+  kind: playbook
+  landing_target: L0.normalize
+  # 改进器只拿这几项：哪一块（zone + 预览）、错在公式里的哪一处（cjk_text_in_math）
+  locate_by: [zone, cjk_text_in_math, text_preview]
+  playbook: |
+    1. 定位 \text{…} / \textrm{…} 里含**汉字**的公式块，或含 math--fallback 的块。
+    2. 把中文单位/连接词拆到公式外的正文；公式内只留符号与数字。
+    3. 度弧度互化等写成独立 display/行内公式 + 相邻中文，勿整句塞进 LaTeX。
+    4. \text{原式}\text{左边}\text{右边} 等推导对齐标签、\text{cm} 等拉丁单位是**合法排版**，
+       不要动；判据已排除它们，若仍被报出来说明判据回退了。
+    5. 同指纹修复步骤不一致时保持 playbook，勿升 rule。
+
+examples:
+  positive:
+    # 中文单位黏进公式
+    - configs/checks/fixtures/cjk_or_unit_in_latex_pos.json
+    # 整句中文塞进公式（例8「cot α 不存在」）
+    - configs/checks/fixtures/cjk_or_unit_in_latex_pos_clause.json
+  negative:
+    - configs/checks/fixtures/cjk_or_unit_in_latex_neg.json
+    # 推导标签与拉丁单位：合法排版，报了就是误报（第 20/22/35 页实例）
+    - configs/checks/fixtures/cjk_or_unit_in_latex_neg_derivation.json

@@ -98,16 +98,14 @@ class ImportPdfRequest(BaseModel):
     page_limit: int | None = Field(default=None, ge=1, description="仅导入前 N 页；None 表示全部")
     page_ranges: str | None = Field(
         default=None,
-        description='MinerU Cloud 页范围，如 "1-20" / "21-40"；与 page_limit 互斥，优先本字段',
+        description='MinerU Cloud 页范围，如 "1-178"；与 page_limit 互斥，优先本字段。全书导入通常不传',
     )
     # Hard-break: explicit Edition bundle required (no implicit 沪教 default).
     edition_id: str = Field(..., min_length=1, description="Edition bundle id, e.g. hujiao_math_hs_v1")
-
-
-class ImportExtendRequest(BaseModel):
-    """同 job 追加 MinerU 分段识别（AI 分段导入）。"""
-
-    page_ranges: str = Field(..., min_length=1, description='如 "21-40"')
+    inherit_from_job_id: str = Field(
+        default="",
+        description="同一本书重导：解析完成后把该旧任务改好的页整页继承过来（空=重新生成）",
+    )
 
 
 class ImportJobOut(BaseModel):
@@ -126,12 +124,190 @@ class ImportJobOut(BaseModel):
     updated_at: str = ""
 
 
+class IpAttemptIngestRequest(BaseModel):
+    attempts: list[dict[str, Any]] = Field(default_factory=list)
+    job_id: str = ""
+    session_id: str = ""
+    fingerprint_hash: str = ""
+
+
+class IpConfirmRequest(BaseModel):
+    job_id: str = ""
+    session_id: str = ""
+    fingerprint_hash: str = ""
+    page_no: int = 0
+    category: str = ""
+    summary: str = ""
+    authority: str = "edition"
+    kind: str = ""
+    block_ids: list[str] = Field(default_factory=list)
+    slot: str = ""
+    procedure: dict[str, Any] | None = None
+    attempts: list[dict[str, Any]] = Field(default_factory=list)
+    concrete: dict[str, Any] | None = None
+    pattern_abstract: str = ""
+    pattern_status: str = "none"
+    edition_family_id: str = ""
+    write_correction: bool = True
+    # Closed set: ai_auto | user_ask (legacy codes mapped server-side)
+    origin: str = ""
+    # 显式待拆；None = 按摘要启发式
+    needs_split: bool | None = None
+
+
+class IpConvergeRequest(BaseModel):
+    job_id: str = ""
+    session_id: str = ""
+    fingerprint_hash: str = ""
+
+
+class IpResolveConflictRequest(BaseModel):
+    winner: bool = True
+
+
+class IpSplitProposeRequest(BaseModel):
+    """拆分提案：可选带 step_indices/after_indices 的子条规格（Agent 组装）。"""
+
+    children: list[dict] = Field(default_factory=list)
+
+
+class IpSplitApplyRequest(BaseModel):
+    """拆分确认：完备子条列表（须含 procedure_slice 或 step_indices）。"""
+
+    children: list[dict] = Field(default_factory=list)
+
+
+class IpPrepConflictResolveRequest(BaseModel):
+    """整理态矛盾/聚合裁决（与 lifecycle resolve-conflict 不同）。"""
+
+    keep_ids: list[str] = Field(default_factory=list)
+    delete_ids: list[str] = Field(default_factory=list)
+
+
+class IpTriageApplyRequest(BaseModel):
+    """Cursor Agent 整理结果落库（无模型）。"""
+
+    fingerprint_hash: str = ""
+    ready_ids: list[str] = Field(default_factory=list)
+    split_ids: list[str] = Field(default_factory=list)
+    aggregate_groups: list[dict] = Field(default_factory=list)
+
+
+class IpPatternRequest(BaseModel):
+    pattern_status: str = "none"
+    abstract_text: str = ""
+    # 空 = 不改动模式已有的分层；定路由请用 POST /patterns/{id}/route。
+    target_layer: str = ""
+    edition_family_id: str = ""
+    # 症状名（闭集，全大写下划线）。给了就按它归并，这是跨书对齐的锚点；
+    # 不给才退回按摘要文本哈希归并。
+    suspect_type: str = ""
+
+
+class PatternRouteRequest(BaseModel):
+    """定路由：这条规律最终写到哪个生效面（取值见 LANDING_TARGETS 闭集）。"""
+
+    landing_target: str
+    note: str = ""
+
+
+class PatternLandRequest(BaseModel):
+    """落地记账：写盘由 buddy-copilot 走批准闸门完成，这里只回填 landed_ref。"""
+
+    landed_ref: str
+    note: str = ""
+
+
+class PatternMergeRequest(BaseModel):
+    merge_ids: list[str] = Field(default_factory=list)
+    note: str = ""
+
+
+class PatternSplitRequest(BaseModel):
+    """把混在一个桶里的另一条规律拆出去。"""
+
+    member_ip_ids: list[str] = Field(default_factory=list)
+    abstract_text: str = ""
+    category: str = ""
+    note: str = ""
+
+
+class PatternBindDetectorRequest(BaseModel):
+    """把模式和它的症状名、检测器声明、处置档位绑起来。"""
+
+    suspect_type: str
+    detector_ref: str = ""
+    remediation_kind: str = ""  # rule | playbook
+    playbook_ref: str = ""
+    landing_target: str = ""
+
+
+class CheckDryRunRequest(BaseModel):
+    """在真实导入页上试跑检测器。``yaml_text`` 给未落盘的草稿，优先于 suspect_type。"""
+
+    job_id: str
+    suspect_type: str = ""
+    yaml_text: str = ""
+    pages: list[int] = Field(default_factory=list)
+    limit: int = 40
+
+
+class CheckExamplesRequest(BaseModel):
+    suspect_type: str = ""
+    yaml_text: str = ""
+
+
+class CheckFalsePositiveRequest(BaseModel):
+    """人裁决「这不是问题」。"""
+
+    suspect_type: str
+    fingerprint: str = ""
+    job_id: str = ""
+    page_no: int = 0
+    block_id: str = ""
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    note: str = ""
+
+
+class BookEditionBindRequest(BaseModel):
+    edition_id: str
+    source_job_id: str = ""
+    note: str = ""
+
+
 class MarkdownPatch(BaseModel):
     markdown: str
 
 
 class RebuildIrRequest(BaseModel):
     pages: list[int] | None = None
+
+
+class AdoptFingerprintRequest(BaseModel):
+    """认亲: pin an import job to a prior book identity so L3 replay applies."""
+
+    fingerprint_hash: str
+    note: str = ""
+    replay: bool = False
+
+
+class InheritPagesRequest(BaseModel):
+    """Carry finished pages from a previous import job into this one."""
+
+    from_job_id: str
+    pages: list[int] | None = None
+    only_improved: bool = True
+    dry_run: bool = True
+    max_offset: int = 8
+    include_low_confidence: bool = False
+
+
+class FinalizeBookRequest(BaseModel):
+    """定稿: keep this import as the book's only version, delete the rest."""
+
+    dry_run: bool = True
+    ack_warnings: bool = False
+    note: str = ""
 
 
 class SearchPreviewRequest(BaseModel):

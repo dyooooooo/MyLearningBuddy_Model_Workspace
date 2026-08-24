@@ -25,3 +25,8 @@ llama-index-core>=0.12.0
 prometheus-fastapi-instrumentator>=7.0.0
 structlog>=24.4.0
 bleach>=6.1.0
+# Declarative layout rules: layered YAML merge + sandboxed condition expressions.
+omegaconf>=2.3.0
+simpleeval>=1.0.0
+# Mounted vocabulary plugins (configs/checks/vocab_ext/): restricted Python subset.
+RestrictedPython>=7.0

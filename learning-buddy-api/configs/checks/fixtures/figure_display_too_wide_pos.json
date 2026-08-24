@@ -1,0 +1,26 @@
+{
+  "page_no": 16,
+  "html": "<article><section class=\"lb-main\"><figure></figure><figure></figure></section></article>",
+  "blocks": [
+    {
+      "id": "wide",
+      "type": "figure",
+      "page_no": 16,
+      "order": 1,
+      "text": "图6-1-8",
+      "caption": "图6-1-8",
+      "bbox": [80, 200, 900, 520],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    },
+    {
+      "id": "small",
+      "type": "figure",
+      "page_no": 16,
+      "order": 2,
+      "text": "",
+      "caption": "示意",
+      "bbox": [100, 560, 280, 700],
+      "meta": {"layout_zone": "main", "layout_confidence": "high"}
+    }
+  ]
+}

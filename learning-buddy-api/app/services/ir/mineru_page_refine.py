@@ -29,16 +29,24 @@ REFINE_PAGE_DPI = 150
 _PROMPTS_DIR = Path(__file__).resolve().parents[3] / "data" / "prompts"
 _DEFAULT_REFINE_MODE = "skip"
 
+# Cost cascade: ``auto`` runs the cheap geometry+rules pass on every page and
+# spends a vision call only on the pages that came out low confidence.
+AUTO_REFINE_MODE = "auto"
+# Concrete mode used for the pages ``auto`` decides to escalate.
+AUTO_ESCALATION_MODE = "layout_only"
+
+_REFINE_MODES = ("layout_only", "full", "rerecognize", "skip", AUTO_REFINE_MODE)
+
 
 def get_refine_mode(profile_id: str | None = None) -> str:
-    """Resolve refine_mode from profile (layout_only | full | rerecognize | skip)."""
+    """Resolve refine_mode from profile (layout_only | full | rerecognize | auto | skip)."""
     pid = profile_id or default_profile_id()
     try:
         profile = load_textbook_profile(pid)
     except FileNotFoundError:
         return _DEFAULT_REFINE_MODE
     mode = str(profile.get("refine_mode") or _DEFAULT_REFINE_MODE).strip().lower()
-    if mode not in ("layout_only", "full", "rerecognize", "skip"):
+    if mode not in _REFINE_MODES:
         return _DEFAULT_REFINE_MODE
     return mode
 

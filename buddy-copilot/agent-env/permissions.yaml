@@ -28,19 +28,48 @@ tools:
   env.resource_map:       { tier: read }
   # ---- 运行（不改代码） ----
   corpus.start_import:    { tier: run }
-  corpus.extend_import:   { tier: run }   # 同 job 追加 MinerU 分段（AI 分段）
   corpus.reprocess_page:  { tier: run }
   corpus.get_blocks:      { tier: read }  # Cursor 读 IR
   corpus.patch_block:     { tier: run }   # Cursor 单块改 IR（自动记账）
   corpus.replace_page_blocks: { tier: run }  # Cursor 整页重排（自动记账）
   corpus.rerender_page:   { tier: run }   # 仅重渲 HTML
+  corpus.rebuild_ir:      { tier: run }   # layout-only 重跑 A 层，刷新 escalate
   corpus.render_preview:  { tier: run }   # 渲染 PDF 页面预览图到本地（escalate 看图用）
-  layout.judge_35b:       { tier: run }   # 35B（import_advice 场景禁用）
+  layout.judge_35b:       { tier: run }   # 预览 triad 用；import_advice 工具面不可见
   layout.anchor_mineru:   { tier: run }
   layout.compare:         { tier: run }
   layout.triad:           { tier: run }
   harness.run_pytest:     { tier: run }
   session.update_todos:   { tier: run }   # 仅更新会话 UI 任务清单
+  patterns.list:          { tier: read }
+  patterns.get:           { tier: read }
+  # 抽象轨记账写 Postgres，可回滚；真正写盘仍走 fs.request_edit / editions.publish
+  patterns.merge:         { tier: draft }
+  patterns.split:         { tier: draft }
+  patterns.route:         { tier: draft }
+  patterns.land:          { tier: draft }
+  patterns.bind_detector: { tier: draft }
+  patterns.promotion_check: { tier: read }
+  # 跨书症状检测器：试跑与回归只读，误报上报写 Postgres（可回滚）。
+  # 检测器 YAML 本身由 Agent 直接写 configs/checks/（在写白名单内）。
+  checks.list:            { tier: read }
+  checks.dry_run:         { tier: read }
+  checks.run_examples:    { tier: read }
+  checks.report_false_positive: { tier: draft }
+  # 词插件自检：只在沙箱里跑一遍这个草稿的正反例，不写盘、不加载
+  vocab.check_plugin:     { tier: read }
+  symptoms.for_job:       { tier: read }
+  symptoms.refresh:       { tier: run }   # 重跑检测并覆盖 job 症状快照，不改代码
+  # 改进点整理 / 完备路径拆分（Cursor Agent → buddy-api 硬闸）
+  ip.list_ready:          { tier: read }
+  ip.set_pattern:         { tier: draft }
+  ip.list_for_triage:     { tier: read }
+  ip.list_for_split:      { tier: read }
+  ip.conflict_hints:      { tier: read }
+  ip.triage_apply:        { tier: draft }
+  ip.split_propose:       { tier: read }
+  ip.split_apply:         { tier: draft }
+  ip.aggregate_resolve:   { tier: draft }
   edition.record_effective_change: { tier: draft }
   edition.finalize_from_session:   { tier: draft }
   # ---- 草稿修改（Postgres 草稿，可回滚） ----
@@ -59,6 +88,17 @@ tools:
     tier: gated
     risk: high
     gate_note: "重建并重启 buddy-api + buddy-worker 容器（分钟级中断）"
+  # 词插件专属闸：与 fs.request_edit 分开，因为批的东西性质不同——
+  # configs/checks/ 下别的文件都是「声明」，读进来当数据用；vocab_ext/*.py 是
+  # 会在 buddy-worker 进程里执行的受限 Python。批 configs/checks/ 不等于批这个。
+  vocab.request_plugin_edit:
+    tier: gated
+    risk: high
+    gate_note: >-
+      申请把词插件放进会被执行的目录（configs/checks/vocab_ext/）。
+      这是**会在 buddy-worker 进程里执行的受限 Python 代码**，不是声明文件。
+      批准前请在申请理由里核对 vocab.check_plugin 的正反例结果：沙箱能挡越权
+      （禁 import、禁属性穿透、禁 while 死循环、超时即停），挡不住算得不对。
 
 # 场景级工具可见性（接口隔离：每个场景只看到自己需要的工具面）
 scenarios:
@@ -78,59 +118,124 @@ scenarios:
       - corpus.page_context
       - corpus.page_html
       - corpus.start_import
-      - corpus.extend_import
       - corpus.reprocess_page
       - corpus.get_blocks
       - corpus.patch_block
       - corpus.replace_page_blocks
       - corpus.rerender_page
+      - corpus.rebuild_ir
       - corpus.render_preview
+      # 命名症状：worker 已把 symptom_findings 写进 job meta，这里给只读入口
+      # 让 Agent 改完能复查；判定检测器误报走 report_false_positive（只记账不抑制）
+      - symptoms.for_job
+      - symptoms.refresh
+      - checks.report_false_positive
       - minio.stat
       - harness.run_golden
       - harness.page_diff
       - session.update_todos
       - env.resource_map
       - fs.request_edit   # 代码级阻塞的唯一合法通道（白名单内，需批准）；docker.rebuild 仍走人工
-  page_assist:
+
+  # 抽象轨：从干净改进点归并规律；默认保持 L3.book_patch。
+  # route/land 只记账；写盘靠 fs.request_edit / editions.publish。
+  # 不给改页工具（patch_block / replace_page_blocks）—— 不修单页。
+  pattern_abstract:
     tools:
+      - patterns.list
+      - patterns.get
+      - patterns.merge
+      - patterns.split
+      - patterns.route
+      - patterns.land
+      - patterns.bind_detector # 抽象收尾：绑症状名、检测器、处置档位
+      - patterns.promotion_check
+      # 抽象的原料。以前这里只有 patterns.*，而模式桶全是空的，等于让 Agent
+      # 对着空表干活 —— 137 个空桶就是这么来的。
+      - ip.list_ready          # 只读：待抽象的改进点（原料）
+      - ip.list_for_triage
+      - ip.list_for_split
+      - ip.set_pattern         # 把改进点按症状名挂进模式
+      - checks.list            # 词表与现有检测器
+      - checks.dry_run         # 真实页上试跑，自验闭环的第一步
+      - checks.run_examples    # 正反例回归，自验闭环的第二步
+      - checks.report_false_positive
+      - vocab.check_plugin     # 词插件草稿自检（只读，沙箱里跑正反例）
+      - vocab.request_plugin_edit  # 把插件放进会被执行的目录，专属闸
+      - symptoms.for_job
       - editions.overview
       - editions.bundle
       - editions.draft
-      - editions.calibrate
       - editions.save_draft
-      - corpus.job
+      - editions.publish
       - corpus.page_context
       - corpus.page_html
-      - corpus.reprocess_page
-      - corpus.render_preview
-      - layout.judge_35b
-      - layout.anchor_mineru
-      - layout.compare
-      - layout.triad
-      - fs.request_edit
-      - docker.rebuild
-      - minio.stat
-      - harness.run_golden
-      - harness.run_pytest
-      - harness.page_diff
-      - env.resource_map
+      - corpus.get_blocks      # 读块几何：写 when 表达式的判据来源
+      - corpus.rebuild_ir      # 全书重跑，验证落地后的规则
+      - harness.page_diff      # 成员页前后对比
+      - harness.run_pytest     # 检测器正反例与 L0.normalize 类改动的回归
       - session.update_todos
+      - env.resource_map
+      - fs.request_edit        # 写 layout_rules.yaml / Python 的唯一通道，需批准
+
+  # 一书指纹一对话：整理 / 全部拆分 / 拆分本条 / 处理聚合（工具并集）
+  ip_book:
+    tools:
+      - ip.list_for_triage
+      - ip.list_for_split
+      - ip.conflict_hints
+      - ip.triage_apply
+      - ip.split_propose
+      - ip.split_apply
+      - ip.aggregate_resolve
+      - session.update_todos
+      - env.resource_map
+
+  # 旧场景别名（历史会话 kind 未升级时仍可用同一工具表）
+  ip_triage:
+    tools:
+      - ip.list_for_triage
+      - ip.list_for_split
+      - ip.conflict_hints
+      - ip.triage_apply
+      - ip.split_propose
+      - ip.split_apply
+      - ip.aggregate_resolve
+      - session.update_todos
+      - env.resource_map
+  ip_split:
+    tools:
+      - ip.list_for_triage
+      - ip.list_for_split
+      - ip.conflict_hints
+      - ip.triage_apply
+      - ip.split_propose
+      - ip.split_apply
+      - ip.aggregate_resolve
+      - session.update_todos
+      - env.resource_map
 
 # 预算护栏
 budgets:
-  run_timeout_s: 900        # 单轮 Agent 运行墙钟
+  run_timeout_s: 900        # 单轮 Agent 运行墙钟（等人点批准卡的时间不计入）
   idle_timeout_s: 300       # 无输出空转看门狗：连续 N 秒无流式文本、无工具活动、无待决批准 → 判定挂死，自动重连重试
   gate_timeout_s: 1800      # 批准卡等待超时（超时按拒绝处理）
   max_tool_calls: 120       # 每轮工具调用上限（按会话落库，多 MCP 进程共享）
   max_nudges: 2             # 未交最终报告时的追问次数
+  max_changed_files: 12     # 爆炸半径：一轮最多改几个文件，超限整轮回滚
+  max_changed_lines: 800    # 爆炸半径：一轮最多改多少行（新增+删除），超限整轮回滚
 
 # 文件边界（fs_guard 数据源）
 files:
   write_whitelist:
     - learning-buddy-api/configs/editions/
+    # 跨书症状检测器声明：抽象轨的产出面（解释器骨架在 app/ 内，仍禁改）
+    - learning-buddy-api/configs/checks/
     - learning-buddy-api/data/prompts/
     - learning-buddy-api/app/import_35b/prompts/
     - learning-buddy-api/tests/
+    # 教材 HTML 渲染用静态资源（CSS 等）——前台显示，非流水线骨架
+    - learning-buddy-api/app/static/
   forbidden:
     - .env
     - learning-buddy-c2/
@@ -147,3 +252,15 @@ files:
     - .json
     - .yaml
     - .yml
+    - .css
+    - .html
+  # 白名单内且匹配这些后缀：前台显示资产，免 fs.request_edit 闸门
+  # （仍须在 write_whitelist 内；.py / prompt / 测试等仍要先申请）
+  auto_allow_suffixes:
+    - .css
+    - .html
+  # 白名单内但**不由目录级前缀自动放行**的子路径：这里是会被执行的代码，
+  # 走 vocab.request_plugin_edit 专属闸；批了上级 configs/checks/ 也不覆盖它。
+  # 例外：vocab_ext/proposals/ 永远不会被加载器执行，走普通 fs.request_edit。
+  gated_subpaths:
+    - learning-buddy-api/configs/checks/vocab_ext/

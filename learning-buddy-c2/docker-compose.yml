@@ -266,6 +266,37 @@ services:
       retries: 5
       start_period: 60s
 
+  textbook-agent:
+    container_name: textbook-agent
+    build:
+      context: ../agents/textbook-agent
+      dockerfile: Dockerfile
+    networks:
+      - learning_buddy_c2
+    ports:
+      - "127.0.0.1:8210:8200"
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ../data/agent-home:/data/agent
+    env_file:
+      - .env
+    environment:
+      AGENT_HOME: /data/agent
+      HOME: /data/agent
+      PYTHONDONTWRITEBYTECODE: "1"
+      TEXTBOOK_AGENT_TOKEN: ${TEXTBOOK_AGENT_TOKEN:-change-me-textbook-agent}
+      CURSOR_MODEL: ${CURSOR_MODEL:-composer-2.5}
+      CURSOR_EVAL_TIMEOUT_S: ${TEXTBOOK_AGENT_TIMEOUT_S:-300}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
   buddy-api:
     container_name: buddy-api
     build:
@@ -292,6 +323,8 @@ services:
       - ../configs/textbook_profiles:/app/configs/textbook_profiles:ro
       - ../learning-buddy-api/configs/textbook_profiles:/app/configs/textbook_profiles-local:ro
       - ../learning-buddy-api/configs/editions:/app/configs/editions
+      # 跨书症状检测器：Agent 写 YAML，挂载热更，改完 rebuild_ir 即时生效
+      - ../learning-buddy-api/configs/checks:/app/configs/checks
       - ../learning-buddy-api/app/static:/app/app/static:ro
     environment:
       BUDDY_DATA_DIR: /data/buddy
@@ -342,6 +375,9 @@ services:
       EVAL_DEBUG_LOG: ${EVAL_DEBUG_LOG:-true}
       EVAL_LOG_TO_FILE: ${EVAL_LOG_TO_FILE:-true}
       EVAL_LOG_DIR: ${EVAL_LOG_DIR:-/data/buddy/logs/eval}
+      TEXTBOOK_AGENT_URL: ${TEXTBOOK_AGENT_URL:-http://textbook-agent:8200}
+      TEXTBOOK_AGENT_TOKEN: ${TEXTBOOK_AGENT_TOKEN:-change-me-textbook-agent}
+      TEXTBOOK_AGENT_TIMEOUT_S: ${TEXTBOOK_AGENT_TIMEOUT_S:-300}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:8100/api/v1/system/health"]
@@ -361,6 +397,8 @@ services:
     depends_on:
       buddy-api:
         condition: service_started
+      textbook-agent:
+        condition: service_started
       postgres:
         condition: service_healthy
       redis:
@@ -376,8 +414,12 @@ services:
       - ../configs/textbook_profiles:/app/configs/textbook_profiles:ro
       - ../learning-buddy-api/configs/textbook_profiles:/app/configs/textbook_profiles-local:ro
       - ../learning-buddy-api/configs/editions:/app/configs/editions
+      # 跨书症状检测器：Agent 写 YAML，挂载热更，改完 rebuild_ir 即时生效
+      - ../learning-buddy-api/configs/checks:/app/configs/checks
       - ../learning-buddy-api/app/static:/app/app/static:ro
+      - ../data/agent-home/textbooks:/data/agent/textbooks
     environment:
+      AGENT_TEXTBOOKS_DIR: /data/agent/textbooks
       BUDDY_DATA_DIR: /data/buddy
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://buddy:buddy@postgres:5432/buddy}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -421,6 +463,9 @@ services:
       MFR_BACKEND: ${MFR_BACKEND:-pix2text}
       MFR_TIMEOUT_S: ${MFR_TIMEOUT_S:-20}
       MFR_DPI: ${MFR_DPI:-200}
+      TEXTBOOK_AGENT_URL: ${TEXTBOOK_AGENT_URL:-http://textbook-agent:8200}
+      TEXTBOOK_AGENT_TOKEN: ${TEXTBOOK_AGENT_TOKEN:-change-me-textbook-agent}
+      TEXTBOOK_AGENT_TIMEOUT_S: ${TEXTBOOK_AGENT_TIMEOUT_S:-300}
     command: ["python", "-m", "app.jobs.worker"]
     restart: unless-stopped
     healthcheck:
@@ -437,6 +482,8 @@ services:
       vllm:
         condition: service_started
       buddy-api:
+        condition: service_started
+      textbook-agent:
         condition: service_started
       redis:
         condition: service_healthy
@@ -468,6 +515,8 @@ services:
       MINIO_SECURE: ${MINIO_SECURE:-false}
       SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-86400}
       COPILOT_BASE_URL: ${COPILOT_BASE_URL:-http://host.docker.internal:8200}
+      TEXTBOOK_AGENT_URL: ${TEXTBOOK_AGENT_URL:-http://textbook-agent:8200}
+      TEXTBOOK_AGENT_TOKEN: ${TEXTBOOK_AGENT_TOKEN:-change-me-textbook-agent}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://127.0.0.1:8000/api/v1/system/health"]

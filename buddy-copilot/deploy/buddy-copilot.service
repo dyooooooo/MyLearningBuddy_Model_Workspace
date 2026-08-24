@@ -1,0 +1,23 @@
+[Unit]
+Description=Buddy Copilot host orchestrator (:8200)
+Documentation=file:///home/mylearningbuddy/MyLearningBuddy_Model_Workspace/buddy-copilot/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/mylearningbuddy/MyLearningBuddy_Model_Workspace/buddy-copilot
+EnvironmentFile=-/home/mylearningbuddy/MyLearningBuddy_Model_Workspace/buddy-copilot/.env
+ExecStart=/home/mylearningbuddy/MyLearningBuddy_Model_Workspace/buddy-copilot/run.sh
+Restart=on-failure
+RestartSec=5
+# Agent 长任务；避免被闲置杀掉
+TimeoutStopSec=30
+KillMode=mixed
+
+# 日志
+StandardOutput=append:/home/mylearningbuddy/MyLearningBuddy_Model_Workspace/buddy-copilot/logs/systemd.out.log
+StandardError=append:/home/mylearningbuddy/MyLearningBuddy_Model_Workspace/buddy-copilot/logs/systemd.err.log
+
+[Install]
+WantedBy=default.target

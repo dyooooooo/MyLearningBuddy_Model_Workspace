@@ -50,9 +50,19 @@ def build(ctx: ToolContext) -> list[ToolSpec]:
         import fitz  # PyMuPDF（延迟导入：MCP 冷启动不付这个成本）
 
         url = f"{ctx.settings.gateway_base.rstrip('/')}/api/v1/studio/import/object"
+        headers = ctx.settings.studio_auth_headers()
         try:
-            r = httpx.get(url, params={"key": minio_key}, timeout=120)
+            r = httpx.get(url, params={"key": minio_key}, headers=headers, timeout=120)
             r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            code = e.response.status_code if e.response is not None else 0
+            if code in (401, 403):
+                return {
+                    "error": "下载 PDF 失败：Studio 令牌无效或缺失（网关 401/403）",
+                    "hint": "预览不可用时改用 page_html / get_blocks，不要停下来问用户。",
+                    "checked": False,
+                }
+            return {"error": f"下载 PDF 失败: {e}", "hint": "先用 minio.stat 确认对象存在"}
         except httpx.HTTPError as e:
             return {"error": f"下载 PDF 失败: {e}", "hint": "先用 minio.stat 确认对象存在"}
 

@@ -1,0 +1,28 @@
+suspect_type: LATIN_OCR_NOISE_IN_MAIN
+title: 主栏短拉丁 OCR 噪点碎片
+severity: medium
+enabled: true
+
+detect:
+  scope: block
+  when: >
+    zone == 'main' and not is_figure and not is_table and not is_heading
+    and not has_math and char_count >= 3 and char_count <= 16
+    and matches(text, '^[A-Za-z0-9 ]+$') and page_figure_count >= 1
+  min_hits: 1
+
+evidence: [zone, type, char_count, text_preview, page_figure_count]
+
+remediation:
+  kind: playbook
+  landing_target: L3.book_patch
+  # 图上的拉丁字符被识别成正文：认这一块，看它有多短、原文什么样
+  locate_by: [zone, char_count, text_preview]
+  playbook: |
+    1. 确认短拉丁串是封面/插图 OCR 噪点（非正文缩写、非单位符号）。
+    2. 删除噪点块；封面优先改为整页 page_scan（full_bleed），保留必要书名信息。
+    3. 同书回放走 L3 补丁；勿把具体噪点字符串写进跨书规则。
+
+examples:
+  positive: [configs/checks/fixtures/latin_ocr_noise_in_main_pos.json]
+  negative: [configs/checks/fixtures/latin_ocr_noise_in_main_neg.json]
