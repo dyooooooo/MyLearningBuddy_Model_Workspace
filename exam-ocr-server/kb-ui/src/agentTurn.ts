@@ -1,12 +1,132 @@
 import { marked } from "marked";
 import { agent, type AgentJob, type AgentTraceStep, type ChatAttachment } from "./api";
+import { collapseTrace, liveStatus, toolLabel, type CollapsedTool, type TimelineItem } from "./collapseTrace";
+import { extractPlanMarkdown, looksLikePlan, titleFromMarkdown } from "./planExtract";
 import { el } from "./util/dom";
 import { sanitizeHtml } from "./util/html-sanitize";
 
 marked.setOptions({ gfm: true, breaks: true });
 
-export function renderAgentTurn(root: HTMLElement, job: AgentJob, replay = false): void {
-  const openThink = Boolean(root.querySelector(".kb-turn-think[open]"));
+export type PlanCard = {
+  id: string;
+  title: string;
+  path: string;
+  markdown: string;
+  checkpoint: string;
+  rolled_back: boolean;
+};
+
+export type ApprovalCard = {
+  req_id: string;
+  path: string;
+  scope: string;
+  situation: string;
+  why: string;
+  changes: string;
+  impact: string;
+  status: string;
+  note: string;
+};
+
+export type TurnOpts = { latestPlan?: boolean };
+
+const SCOPE_LABEL: Record<string, string> = {
+  tools: "Python 工具",
+  hooks: "钩子脚本",
+  surfaces: "画面渲染",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "待确认",
+  granted: "已授权",
+  refused: "已拒绝",
+  revised: "已记下想法",
+};
+
+const reviseDraft: Record<string, string> = {};
+const reviseOpen: Record<string, boolean> = {};
+
+export function approvalOf(job: AgentJob): ApprovalCard | null {
+  const fromResult = parseApproval(job.result?.approval);
+  let fromTrace: ApprovalCard | null = null;
+  for (const step of [...(job.trace || [])].reverse()) {
+    if (step.kind !== "approval") continue;
+    try {
+      fromTrace = parseApproval(JSON.parse(step.detail || "{}"));
+    } catch {
+      continue;
+    }
+    if (fromTrace) break;
+  }
+  if (fromResult && fromTrace && fromResult.req_id === fromTrace.req_id) {
+    return { ...fromTrace, ...fromResult };
+  }
+  return fromResult || fromTrace;
+}
+
+function parseApproval(raw: unknown): ApprovalCard | null {
+  if (!raw || typeof raw !== "object") return null;
+  const p = raw as Record<string, unknown>;
+  const req = String(p.req_id || "").trim();
+  if (!req) return null;
+  return {
+    req_id: req,
+    path: String(p.path || ""),
+    scope: String(p.scope || ""),
+    situation: String(p.situation || ""),
+    why: String(p.why || ""),
+    changes: String(p.changes || ""),
+    impact: String(p.impact || ""),
+    status: String(p.status || "pending"),
+    note: String(p.note || ""),
+  };
+}
+
+export function planOf(job: AgentJob): PlanCard | null {
+  const raw = job.result?.plan;
+  if (raw && typeof raw === "object") {
+    const p = raw as Record<string, unknown>;
+    if (p.markdown || p.path) {
+      return {
+        id: String(p.id || ""),
+        title: String(p.title || "执行计划"),
+        path: String(p.path || ""),
+        markdown: String(p.markdown || ""),
+        checkpoint: String(p.checkpoint || ""),
+        rolled_back: Boolean(p.rolled_back),
+      };
+    }
+  }
+  const mode = String(job.payload?.mode || job.result?.mode || "").toLowerCase();
+  if (mode !== "plan" || job.status !== "completed") return null;
+  const md = extractPlanMarkdown(job.trace || []) || String(job.result?.reply || "");
+  if (!looksLikePlan(md)) return null;
+  return {
+    id: String(job.job_id || "").slice(0, 8),
+    title: titleFromMarkdown(md),
+    path: "",
+    markdown: md,
+    checkpoint: String(job.result?.checkpoint || ""),
+    rolled_back: false,
+  };
+}
+
+export function latestPlanJobId(jobs: AgentJob[]): string {
+  let best = "";
+  let when = "";
+  for (const job of jobs) {
+    if (!planOf(job)) continue;
+    const t = job.created_at || job.updated_at || "";
+    if (!best || t >= when) {
+      best = job.job_id;
+      when = t;
+    }
+  }
+  return best;
+}
+
+export function renderAgentTurn(root: HTMLElement, job: AgentJob, replay = false, opts: TurnOpts = {}): void {
+  const openOlder = Boolean(root.querySelector(".kb-turn-older[open]"));
   const folded = Boolean(root.querySelector(".kb-turn-assistant.is-folded"));
   const openTools = new Set(
     [...root.querySelectorAll<HTMLDetailsElement>(".kb-turn-tool[open]")].map((n) => n.dataset.tool || ""),
@@ -26,6 +146,7 @@ export function renderAgentTurn(root: HTMLElement, job: AgentJob, replay = false
     const meta: string[] = [];
     const mode = String(payload.mode || "");
     if (mode && mode !== "agent") meta.push(mode === "plan" ? "Plan" : mode === "ask" ? "Ask" : mode);
+    if (payload.auto_resume) meta.push("自动续传");
     if (payload.model) meta.push(String(payload.model));
     if (payload.student_answer) meta.push(`学生作答：${String(payload.student_answer)}`);
     if (payload.textbook_hint) meta.push(`书名提示：${String(payload.textbook_hint)}`);
@@ -35,7 +156,7 @@ export function renderAgentTurn(root: HTMLElement, job: AgentJob, replay = false
   }
 
   const deny = denyEarly;
-  const { thinks, tools, draft } = collapseTrace(job.trace || []);
+  const { thinks, tools, timeline, draft } = collapseTrace(job.trace || []);
   if (job.status === "completed" || job.status === "failed" || deny) {
     for (const tool of tools) {
       if (tool.status === "running") {
@@ -43,65 +164,76 @@ export function renderAgentTurn(root: HTMLElement, job: AgentJob, replay = false
       }
     }
   }
-  if (thinks.length || tools.length) {
-    const act = el("div", "kb-turn-activity");
-    if (thinks.length) {
-      const d = el("details", "kb-turn-think") as HTMLDetailsElement;
-      d.open = openThink || (job.status === "running" && !tools.length);
+  if (timeline.length) {
+    const act = el("div", "kb-turn-activity kb-turn-timeline");
+    const keep = job.status === "running" ? 10 : 8;
+    const recent = timeline.slice(-keep);
+    const older = timeline.slice(0, Math.max(0, timeline.length - keep));
+    if (older.length) {
+      const wrap = el("details", "kb-turn-older") as HTMLDetailsElement;
+      wrap.open = openOlder;
       const sum = el("summary", "");
-      sum.append(el("span", "kb-turn-thinkmark", "✦"));
-      sum.append(el("span", "", thinks.length > 1 ? `思考 · ${thinks.length}` : "思考"));
-      d.append(sum, el("pre", "kb-turn-thinkbody", thinks.join("\n\n")));
-      act.append(d);
+      sum.append(el("span", "", `更早的 ${older.length} 步`));
+      wrap.append(sum);
+      for (const item of older) wrap.append(timelineRow(item, openTools, false));
+      act.append(wrap);
     }
-    for (const tool of tools) {
-      const d = el("details", `kb-turn-tool is-${tool.status}`) as HTMLDetailsElement;
-      d.dataset.tool = tool.name;
-      d.open = openTools.has(tool.name);
-      const sum = el("summary", "");
-      sum.append(el("span", "kb-turn-toolmark", tool.status === "running" ? "◌" : tool.status === "failed" ? "✕" : "✓"));
-      sum.append(el("span", "", toolLabel(tool)));
-      for (const file of tool.files) sum.append(el("code", "kb-turn-file", file));
-      d.append(sum);
-      if (tool.detail) d.append(el("pre", "kb-turn-toolbody", prettyDetail(tool.detail)));
-      act.append(d);
-    }
+    recent.forEach((item, i) => {
+      const current = job.status === "running" && i === recent.length - 1 && item.kind === "think";
+      act.append(timelineRow(item, openTools, current));
+    });
     root.append(act);
   }
 
   if (job.status === "queued") {
     root.append(el("p", "kb-turn-live muted", "排队…"));
   } else if (job.status === "running" && !deny) {
-    const live = draft.trim();
-    if (live) {
-      const p = el("div", "kb-turn-assistant is-live kb-md");
-      p.innerHTML = chatMarkdown(live);
-      enhanceCode(p);
-      root.append(p);
-    }
-    const n = (job.trace || []).length;
-    const wait = el("p", "kb-turn-live muted");
-    wait.append(
-      el("span", "kb-dock-ring is-inline"),
-      el("span", "", n ? `正在运行 · 已 ${n} 步` : "正在运行…"),
-    );
+    appendDraft(root, draft, "is-live");
+    const status = liveStatus({
+      tools,
+      thinks,
+      draft,
+      createdAt: job.created_at,
+    });
+    const wait = el("p", "kb-turn-live is-status");
+    const line = status.elapsed ? `${status.headline} · ${status.elapsed}` : status.headline;
+    wait.append(el("span", "kb-dock-ring is-inline"), el("span", "", line));
     root.append(wait);
-  } else if (job.status === "cancelled") {
-    root.append(el("p", "kb-turn-live muted", "已停止"));
+  } else if (job.status === "cancelled" || job.status === "failed" || deny) {
+    // Stopping a turn must not swallow what the agent already wrote.
+    if (!String(job.result?.reply || "").trim()) appendDraft(root, draft, "is-partial");
+    if (job.status === "cancelled") root.append(el("p", "kb-turn-live muted", "已停止"));
   }
 
-  appendResult(root, job, folded);
+  appendResult(root, job, folded, { replay, latestPlan: Boolean(opts.latestPlan) });
+  const approval = approvalOf(job);
+  if (approval) root.append(renderApprovalCard(job, approval, !replay));
   const errText = job.status === "cancelled" ? "" : humanizeJobError(job.error || "") || deny;
   if (errText) root.append(el("p", "kb-turn-err", errText));
   if (job.status === "completed" || job.status === "failed" || job.status === "cancelled" || deny) {
-    root.append(actionBar(job));
+    root.append(actionBar(job, draft));
   }
 }
 
-function appendResult(root: HTMLElement, job: AgentJob, keepFolded: boolean): void {
+function appendDraft(root: HTMLElement, draft: string, tone: string): void {
+  const live = draft.trim();
+  if (!live) return;
+  const p = el("div", `kb-turn-assistant ${tone} kb-md`);
+  p.innerHTML = chatMarkdown(live);
+  enhanceCode(p);
+  root.append(p);
+}
+
+function appendResult(
+  root: HTMLElement,
+  job: AgentJob,
+  keepFolded: boolean,
+  opts: { replay?: boolean; latestPlan?: boolean } = {},
+): void {
   if (job.status !== "completed") return;
   const res = job.result;
   if (!res) return;
+  const plan = planOf(job);
 
   if (job.kind === "grade") {
     const missing = Boolean(res.book_missing);
@@ -131,6 +263,17 @@ function appendResult(root: HTMLElement, job: AgentJob, keepFolded: boolean): vo
   const body = String(res.reply || res.correct_solution || "").trim();
   const notes = String(res.notes || "").trim();
   const md = [body, notes && notes !== body ? notes : ""].filter(Boolean).join("\n\n");
+  if (plan) {
+    const extra = md && md !== plan.markdown.trim() ? md : "";
+    if (extra) {
+      const a = el("div", "kb-turn-assistant kb-md");
+      a.innerHTML = chatMarkdown(extra);
+      enhanceCode(a);
+      root.append(a);
+    }
+    root.append(renderPlanCard(job, plan, Boolean(opts.latestPlan) && !opts.replay));
+    return;
+  }
   if (!md) return;
   const a = el("div", "kb-turn-assistant kb-md");
   a.innerHTML = chatMarkdown(md);
@@ -153,74 +296,6 @@ function appendResult(root: HTMLElement, job: AgentJob, keepFolded: boolean): vo
   });
 }
 
-function collapseTrace(steps: AgentTraceStep[]): {
-  thinks: string[];
-  tools: { name: string; status: string; files: string[]; detail: string }[];
-  draft: string;
-} {
-  const thinks: string[] = [];
-  const tools: { name: string; status: string; files: string[]; detail: string }[] = [];
-  let draft = "";
-  for (const step of steps) {
-    if (step.kind === "think") {
-      if (step.detail) thinks.push(step.detail.trim());
-      continue;
-    }
-    if (step.kind === "answer") {
-      if (step.title === "作答中" && step.detail) draft += step.detail;
-      continue;
-    }
-    const parsed = parseTool(step);
-    const existing = [...tools].reverse().find((t) => t.name === parsed.name);
-    if (existing) {
-      existing.status = parsed.status;
-      if (parsed.file && !existing.files.includes(parsed.file)) existing.files.push(parsed.file);
-      if (parsed.detail) existing.detail = parsed.detail;
-      continue;
-    }
-    tools.push({
-      name: parsed.name,
-      status: parsed.status,
-      files: parsed.file ? [parsed.file] : [],
-      detail: parsed.detail,
-    });
-  }
-  return { thinks, tools, draft };
-}
-
-function parseTool(step: AgentTraceStep): { name: string; status: string; file: string; detail: string } {
-  const title = (step.title || step.kind || "tool").trim();
-  const m = title.match(/^(\S+)\s+(running|completed|failed)$/i);
-  return {
-    name: m ? m[1] : title,
-    status: m ? m[2].toLowerCase() : "completed",
-    file: extractFile(step.detail),
-    detail: step.detail || "",
-  };
-}
-
-function toolLabel(tool: { name: string; status: string; files?: string[] }): string {
-  const key = tool.name.toLowerCase();
-  const map: Record<string, string> = {
-    read: "读取",
-    search: "搜索",
-    search_md: "搜索教材",
-    open_pdf: "打开 PDF",
-    open_pdf_page: "打开 PDF",
-    list_config: "查看配置",
-    write_tool: "写入工具",
-    write_skill: "写入技能",
-    write_rule: "写入规则",
-    reload_config: "重载配置",
-    grep: "搜索",
-    edit: "编辑",
-    write: "写入",
-  };
-  const n = tool.files?.length || 0;
-  const label = n > 1 ? `${map[key] || tool.name} · ${n}` : map[key] || tool.name;
-  return tool.status === "running" ? `${label}…` : label;
-}
-
 function enhanceCode(root: HTMLElement): void {
   for (const pre of [...root.querySelectorAll("pre")]) {
     if (pre.parentElement?.classList.contains("kb-md-prewrap")) continue;
@@ -239,18 +314,24 @@ function enhanceCode(root: HTMLElement): void {
   }
 }
 
-function extractFile(detail: string): string {
-  const raw = (detail || "").trim();
-  if (!raw) return "";
-  try {
-    const obj = JSON.parse(raw) as { path?: string; file?: string };
-    const p = obj.path || obj.file || "";
-    if (p) return p.split("/").filter(Boolean).slice(-2).join("/");
-  } catch {
-    const m = raw.match(/[\w./-]+\.(md|mdc|py|json|yaml|pdf)\b/i);
-    if (m) return m[0].split("/").slice(-2).join("/");
-  }
-  return "";
+function timelineRow(item: TimelineItem, openTools: Set<string>, current: boolean): HTMLElement {
+  if (item.kind === "tool") return toolRow(item.tool, openTools);
+  const beat = el("div", `kb-turn-beat${current ? " is-current" : ""}`);
+  beat.append(el("span", "kb-turn-thinkmark", "✦"));
+  beat.append(el("p", "kb-turn-beat-text", item.text));
+  return beat;
+}
+
+function toolRow(tool: CollapsedTool, openTools: Set<string>): HTMLElement {
+  const d = el("details", `kb-turn-tool is-${tool.status}`) as HTMLDetailsElement;
+  d.dataset.tool = tool.name;
+  d.open = openTools.has(tool.name);
+  const sum = el("summary", "");
+  sum.append(el("span", "kb-turn-toolmark", tool.status === "running" ? "◌" : tool.status === "failed" ? "✕" : "✓"));
+  sum.append(el("span", "kb-turn-tool-label", toolLabel(tool)));
+  d.append(sum);
+  if (tool.detail) d.append(el("pre", "kb-turn-toolbody", prettyDetail(tool.detail)));
+  return d;
 }
 
 function prettyDetail(raw: string): string {
@@ -294,37 +375,205 @@ function attachRow(items: ChatAttachment[]): HTMLElement {
   return row;
 }
 
+function renderApprovalCard(job: AgentJob, card: ApprovalCard, interactive: boolean): HTMLElement {
+  const pending = card.status === "pending" && interactive;
+  const wrap = el(
+    "div",
+    `kb-plan-card kb-approval-card${pending ? "" : " is-readonly"}${card.status === "refused" ? " is-refused" : ""}${card.status === "granted" ? " is-granted" : ""}`,
+  );
+  const head = el("header", "kb-plan-card-head");
+  head.append(el("span", "kb-plan-card-icon", "✎"));
+  head.append(el("strong", "kb-plan-card-title", `申请修改 ${card.path || "代码"}`));
+  const status = el(
+    "span",
+    "kb-plan-card-status",
+    `${SCOPE_LABEL[card.scope] || card.scope || "代码"} · ${STATUS_LABEL[card.status] || card.status}`,
+  );
+  head.append(status);
+  wrap.append(head);
+
+  const body = el("div", "kb-plan-card-body kb-approval-body");
+  const sections: [string, string][] = [
+    ["实际情况", card.situation],
+    ["为什么要改", card.why],
+    ["具体改哪些地方", card.changes],
+    ["改完的影响", card.impact],
+  ];
+  for (const [label, text] of sections) {
+    const block = el("section", "kb-approval-sec");
+    block.append(el("h3", "kb-approval-h", label));
+    block.append(el("p", "kb-approval-p", text || "（未写）"));
+    body.append(block);
+  }
+  if (card.note && card.status === "revised") {
+    const block = el("section", "kb-approval-sec");
+    block.append(el("h3", "kb-approval-h", "你的想法"));
+    block.append(el("p", "kb-approval-p", card.note));
+    body.append(block);
+  }
+  wrap.append(body);
+
+  if (!pending) return wrap;
+
+  const foot = el("footer", "kb-plan-card-foot kb-approval-foot");
+  const grant = el("button", "btn-primary kb-approval-grant", "授权") as HTMLButtonElement;
+  const refuse = el("button", "btn kb-approval-refuse", "拒绝") as HTMLButtonElement;
+  const other = el("button", "btn kb-approval-other", "其他想法") as HTMLButtonElement;
+  grant.type = "button";
+  refuse.type = "button";
+  other.type = "button";
+
+  const setBusy = (busy: boolean): void => {
+    grant.disabled = busy;
+    refuse.disabled = busy;
+    other.disabled = busy;
+  };
+
+  const decide = async (choice: "grant" | "refuse" | "revise", note = ""): Promise<void> => {
+    setBusy(true);
+    try {
+      await agent.decideApproval(card.req_id, choice, job.job_id, note);
+      if (choice === "grant") {
+        window.dispatchEvent(new CustomEvent("kb:continue-breakpoint"));
+      } else if (choice === "revise") {
+        window.dispatchEvent(new CustomEvent("kb:approval-note", { detail: { text: note } }));
+      }
+    } catch (e) {
+      setBusy(false);
+      window.alert((e as Error).message || "提交失败");
+    }
+  };
+
+  grant.onclick = () => void decide("grant");
+  refuse.onclick = () => void decide("refuse");
+
+  const box = el("div", `kb-approval-revise${reviseOpen[card.req_id] ? "" : " hidden"}`);
+  const area = document.createElement("textarea");
+  area.className = "kb-approval-note";
+  area.rows = 3;
+  area.placeholder = "写下你的想法，Agent 会按这个重提申请";
+  area.value = reviseDraft[card.req_id] || "";
+  const send = el("button", "btn-primary kb-approval-send", "发送") as HTMLButtonElement;
+  send.type = "button";
+  send.disabled = !area.value.trim();
+  area.addEventListener("input", () => {
+    reviseDraft[card.req_id] = area.value;
+    send.disabled = !area.value.trim();
+  });
+  send.onclick = () => {
+    const note = area.value.trim();
+    if (!note) return;
+    void decide("revise", note);
+  };
+  box.append(area, send);
+
+  other.onclick = () => {
+    const open = !box.classList.contains("hidden") ? false : true;
+    reviseOpen[card.req_id] = open;
+    box.classList.toggle("hidden", !open);
+    if (open) area.focus();
+  };
+
+  foot.append(grant, refuse, other);
+  wrap.append(foot, box);
+  return wrap;
+}
+
+function renderPlanCard(job: AgentJob, plan: PlanCard, active: boolean): HTMLElement {
+  const card = el("div", `kb-plan-card${active ? "" : " is-readonly"}${plan.rolled_back ? " is-rolled" : ""}`);
+  const head = el("header", "kb-plan-card-head");
+  head.append(el("span", "kb-plan-card-icon", "☰"));
+  head.append(el("strong", "kb-plan-card-title", plan.title || "执行计划"));
+  if (plan.rolled_back) head.append(el("span", "kb-plan-card-status", "已回退"));
+  else if (!active) head.append(el("span", "kb-plan-card-status muted", "较早计划"));
+  card.append(head);
+  const body = el("div", "kb-plan-card-body kb-md");
+  body.innerHTML = chatMarkdown(plan.markdown || "");
+  enhanceCode(body);
+  card.append(body);
+  if (active) {
+    const foot = el("footer", "kb-plan-card-foot");
+    const build = el("button", "btn-primary kb-plan-build", "执行") as HTMLButtonElement;
+    build.type = "button";
+    build.disabled = plan.rolled_back;
+    build.onclick = () => {
+      const cid = String(job.payload?.conversation_id || job.result?.conversation_id || "");
+      window.dispatchEvent(
+        new CustomEvent("kb:execute-plan", {
+          detail: {
+            plan_id: plan.id,
+            path: plan.path,
+            title: plan.title,
+            markdown: plan.markdown,
+            conversation_id: cid,
+          },
+        }),
+      );
+    };
+    const rewind = el("button", "btn kb-plan-rewind", "回退") as HTMLButtonElement;
+    rewind.type = "button";
+    rewind.disabled = !plan.checkpoint || plan.rolled_back;
+    rewind.onclick = async () => {
+      if (!plan.checkpoint) return;
+      rewind.disabled = true;
+      try {
+        const { rememberRestore } = await import("./live");
+        rememberRestore(String(job.payload?.conversation_id || ""), "", {});
+        const out = await agent.restoreCheckpoint(plan.checkpoint);
+        rememberRestore(String(out.conversation_id || job.payload?.conversation_id || ""), String(out.message || ""), {
+          changes: out.changes || [],
+          removed: (out.removed_job_ids || []).length,
+          kept_plan: Boolean((out as { kept_plan?: boolean }).kept_plan),
+        });
+        window.dispatchEvent(new CustomEvent("kb:restore-applied", { detail: out }));
+      } catch (e) {
+        rewind.disabled = false;
+        window.alert((e as Error).message || "回退失败");
+      }
+    };
+    foot.append(build, rewind);
+    card.append(foot);
+  }
+  return card;
+}
+
 function checkpointOf(job: AgentJob): string {
   return String(job.result?.checkpoint || job.payload?.checkpoint || "").trim();
 }
 
 function restoreBtn(job: AgentJob): HTMLButtonElement {
   const checkpoint = checkpointOf(job);
-  const btn = iconBtn("restore", "restore checkpoint", ICONS.restore);
+  const btn = iconBtn("restore", "回退到这一轮", ICONS.restore);
   btn.classList.add("kb-turn-user-restore");
   btn.disabled = !checkpoint;
   btn.onclick = async () => {
     if (!checkpoint) return;
-    if (!window.confirm("Restore checkpoint？工作区回到这一轮开始前，聊天记录会留下。")) return;
-    const { hardReload } = await import("./live");
     btn.disabled = true;
+    const user = String(job.payload?.message || job.payload?.problem_text || "").trim();
+    const cid = String(job.payload?.conversation_id || job.result?.conversation_id || "").trim();
     try {
-      await agent.restoreCheckpoint(checkpoint);
-      hardReload();
+      const { rememberRestore } = await import("./live");
+      rememberRestore(cid, user, {});
+      const out = await agent.restoreCheckpoint(checkpoint);
+      rememberRestore(String(out.conversation_id || cid), String(out.message || user), {
+        changes: out.changes || [],
+        removed: (out.removed_job_ids || []).length,
+      });
+      window.dispatchEvent(new CustomEvent("kb:restore-applied", { detail: out }));
     } catch (e) {
       btn.disabled = false;
-      window.alert((e as Error).message || "恢复失败");
+      window.alert((e as Error).message || "回退失败");
     }
   };
   return btn;
 }
 
-function actionBar(job: AgentJob): HTMLElement {
+function actionBar(job: AgentJob, draft = ""): HTMLElement {
   const bar = el("div", "kb-turn-actions");
-  const reply = replyText(job);
+  const reply = replyText(job, draft);
   const checkpoint = checkpointOf(job);
 
-  const copyBtn = iconBtn("copy", "复制", ICONS.copy);
+  const copyBtn = actionChip("copy", "复制", ICONS.copy);
   copyBtn.disabled = !reply;
   copyBtn.onclick = async () => {
     if (!reply) return;
@@ -335,14 +584,30 @@ function actionBar(job: AgentJob): HTMLElement {
     }
     copyBtn.classList.add("is-done");
     copyBtn.title = "已复制";
+    const label = copyBtn.querySelector(".kb-turn-act-label");
+    if (label) label.textContent = "已复制";
     window.setTimeout(() => {
       copyBtn.classList.remove("is-done");
       copyBtn.title = "复制";
+      if (label) label.textContent = "复制";
     }, 1200);
   };
   bar.append(copyBtn);
 
-  const forkBtn = iconBtn("fork", "分叉", ICONS.fork);
+  const autoId = String((job.result || {}).auto_resume_job_id || "").trim();
+  if (autoId && (job.status === "failed" || job.status === "cancelled")) {
+    bar.append(el("span", "muted kb-turn-autoresume", "已自动续传一次"));
+  } else if (job.status === "failed" || job.status === "cancelled") {
+    const go = el("button", "btn kb-turn-continue", "从断点继续") as HTMLButtonElement;
+    go.type = "button";
+    go.title = "接着上一轮停住的地方做，不翻更早的对话";
+    go.onclick = () => {
+      window.dispatchEvent(new CustomEvent("kb:continue-breakpoint"));
+    };
+    bar.append(go);
+  }
+
+  const forkBtn = actionChip("fork", "分叉", ICONS.fork);
   forkBtn.disabled = !checkpoint;
   forkBtn.onclick = async () => {
     if (!checkpoint) return;
@@ -372,9 +637,12 @@ function actionBar(job: AgentJob): HTMLElement {
   return bar;
 }
 
-function replyText(job: AgentJob): string {
+function replyText(job: AgentJob, draft = ""): string {
   const res = job.result || {};
-  return String(res.reply || res.correct_solution || res.notes || job.payload?.message || "").trim();
+  const done = String(res.reply || res.correct_solution || res.notes || "").trim();
+  // A stopped turn has no final reply; copying the user's own prompt back is worse
+  // than copying the half-written answer.
+  return done || draft.trim() || String(job.payload?.message || "").trim();
 }
 
 function iconBtn(kind: string, title: string, svg: string): HTMLButtonElement {
@@ -386,10 +654,20 @@ function iconBtn(kind: string, title: string, svg: string): HTMLButtonElement {
   return btn;
 }
 
+function actionChip(kind: string, title: string, svg: string): HTMLButtonElement {
+  const btn = el("button", `kb-turn-act kb-turn-act--chip kb-turn-act--${kind}`) as HTMLButtonElement;
+  btn.type = "button";
+  btn.title = title;
+  btn.setAttribute("aria-label", title);
+  btn.insertAdjacentHTML("afterbegin", svg);
+  btn.append(el("span", "kb-turn-act-label", title));
+  return btn;
+}
+
 const ICONS = {
-  copy: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="2.5" y="2.5" width="8" height="8" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>`,
-  restore: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.2 8A4.8 4.8 0 1 0 4.6 4.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M2.2 2.8v3.1h3.1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  fork: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="4" cy="3.2" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="4" cy="12.8" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="8" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4 4.8v7M4 8h6.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  copy: `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="2.5" y="2.5" width="8" height="8" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>`,
+  restore: `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.2 8A4.8 4.8 0 1 0 4.6 4.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M2.2 2.8v3.1h3.1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  fork: `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="4" cy="3.2" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="4" cy="12.8" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="8" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M4 4.8v7M4 8h6.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
 };
 
 function examplesOf(raw: unknown): string {
@@ -400,8 +678,14 @@ function examplesOf(raw: unknown): string {
 export function humanizeJobError(raw: string): string {
   const t = (raw || "").trim();
   if (!t) return "";
-  if (/桥接超时|没有回包|任务超时|权限拒绝|本地桥接失败|桥接认证/.test(t)) return t;
+  if (/桥接超时|没有回包|任务超时|发送超时|权限拒绝|本地桥接失败|桥接认证|上一轮 Cursor 任务还在跑|残留任务/.test(t)) return t;
   const low = t.toLowerCase();
+  if (low.includes("detached running") || low.includes("no run event store")) {
+    return "上一轮残留任务无法接到前台，已失效";
+  }
+  if (low.includes("already has active run") || low.includes("agent_busy")) {
+    return "上一轮 Cursor 任务还在跑，接到前台失败，请再点一次";
+  }
   if (low.includes("readtimeout") || low.includes("bridge request timed out")) {
     return "Cursor 桥接超时，云端或本地桥没有回包";
   }

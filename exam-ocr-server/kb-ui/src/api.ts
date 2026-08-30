@@ -6,6 +6,7 @@ export type KbBook = {
   filename: string;
   subject: string;
   grade_band: string;
+  category: string;
   textbook_hint: string;
   minio_key: string;
   status: string;
@@ -85,6 +86,7 @@ export const kb = {
       textbook_hint?: string;
       subject?: string;
       grade_band?: string;
+      category?: string;
       is_default?: boolean;
     },
   ): Promise<KbBook> {
@@ -101,16 +103,67 @@ export const kb = {
     return json(`/api/v1/kb/proxy/books/${id}/reimport`, { method: "POST" });
   },
   async upload(
-    file: File,
-    opts: { label?: string; textbook_hint?: string; subject?: string; grade_band?: string } = {},
+    file: File | null,
+    opts: {
+      label?: string;
+      textbook_hint?: string;
+      subject?: string;
+      grade_band?: string;
+      category?: string;
+      book_id?: string;
+      conversation_id?: string;
+    } = {},
   ): Promise<KbBook> {
     const fd = new FormData();
-    fd.append("file", file);
+    if (file) fd.append("file", file);
     fd.append("label", opts.label || "");
     fd.append("textbook_hint", opts.textbook_hint || "");
     fd.append("subject", opts.subject || "math");
     fd.append("grade_band", opts.grade_band || "hs");
+    fd.append("category", opts.category || "textbook");
+    if (opts.book_id) fd.append("book_id", opts.book_id);
+    if (opts.conversation_id) fd.append("conversation_id", opts.conversation_id);
     return json("/api/v1/kb/import/pdf", { method: "POST", body: fd });
+  },
+  async stageDraft(file: File): Promise<KbBook> {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("label", file.name.replace(/\.pdf$/i, ""));
+    fd.append("textbook_hint", file.name.replace(/\.pdf$/i, ""));
+    fd.append("status", "draft");
+    return json("/api/v1/kb/agent/library", { method: "POST", body: fd });
+  },
+  patchDraft(
+    id: string,
+    body: {
+      label?: string;
+      textbook_hint?: string;
+      subject?: string;
+      grade_band?: string;
+      category?: string;
+      status?: string;
+      conversation_id?: string;
+    },
+  ): Promise<KbBook> {
+    return json(`/api/v1/kb/agent/library/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  removeDraft(id: string): Promise<{ deleted: string }> {
+    return json(`/api/v1/kb/agent/library/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+  identify(
+    id: string,
+  ): Promise<
+    KbBook & {
+      pages_used?: number;
+      preview?: string;
+      preview_path?: string;
+    }
+  > {
+    return json(`/api/v1/kb/identify/${encodeURIComponent(id)}`, { method: "POST" });
   },
   pageMarkdown(
     id: string,
@@ -180,6 +233,37 @@ export type AgentJob = {
   updated_at: string;
 };
 
+export type AgentTaskEvent = {
+  id: string;
+  label: string;
+  group: string;
+};
+
+export type AgentTask = {
+  id: string;
+  title: string;
+  enabled: boolean;
+  mode: string;
+  trigger: string;
+  cron: string;
+  next_run: string;
+  action: string;
+  prompt: string;
+  message: string;
+  identify_message?: string;
+  builtin: boolean;
+  last_run_at: string;
+  last_job_id: string;
+  prompt_text?: string;
+  last_job?: {
+    job_id: string;
+    kind: string;
+    status: string;
+    error: string;
+    updated_at: string;
+  };
+};
+
 export type AgentPrompt = {
   id: string;
   content: string;
@@ -215,6 +299,22 @@ export type AgentCheckpoint = {
   conversation_id?: string;
   files?: string[];
   file_count?: number;
+};
+
+export type RestoreChange = { path: string; change: string; label: string };
+
+export type AgentRestore = {
+  id: string;
+  restore_id?: string;
+  files?: string[];
+  changes?: RestoreChange[];
+  file_count?: number;
+  conversation_id?: string;
+  job_id?: string;
+  message?: string;
+  removed_job_ids?: string[];
+  kept_job_ids?: string[];
+  kept_plan?: boolean;
 };
 
 export type AgentConfig = {
@@ -337,8 +437,20 @@ export const agent = {
   checkpointDiff(ref: string): Promise<{ id: string; text: string; files: string[] }> {
     return json(`${AGENT}/checkpoints/${encodeURIComponent(ref)}/diff`);
   },
-  restoreCheckpoint(ref: string): Promise<unknown> {
+  restoreCheckpoint(ref: string): Promise<AgentRestore> {
     return json(`${AGENT}/checkpoints/${encodeURIComponent(ref)}/restore`, { method: "POST" });
+  },
+  decideApproval(
+    reqId: string,
+    choice: "grant" | "refuse" | "revise",
+    jobId = "",
+    note = "",
+  ): Promise<Record<string, unknown>> {
+    return json(`${AGENT}/approvals/${encodeURIComponent(reqId)}/decide`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ choice, job_id: jobId, note }),
+    });
   },
   forkCheckpoint(ref: string, name: string): Promise<{ conversation_id: string; title?: string; branch: string }> {
     return json(`${AGENT}/checkpoints/${encodeURIComponent(ref)}/fork`, {
@@ -376,6 +488,49 @@ export const agent = {
     const q = token ? `?access_token=${encodeURIComponent(token)}` : "";
     return `${AGENT}/inbox/${encodeURIComponent(name)}${q}`;
   },
+  tasks(): Promise<{ tasks: AgentTask[] }> {
+    return json(`${AGENT}/tasks`);
+  },
+  taskEvents(): Promise<{ events: AgentTaskEvent[] }> {
+    return json(`${AGENT}/tasks/events`);
+  },
+  task(id: string): Promise<AgentTask> {
+    return json(`${AGENT}/tasks/${encodeURIComponent(id)}`);
+  },
+  createTask(body: {
+    title: string;
+    mode?: string;
+    trigger?: string;
+    cron?: string;
+    next_run?: string;
+    message?: string;
+    action?: string;
+    prompt?: string;
+    enabled?: boolean;
+  }): Promise<AgentTask> {
+    return json(`${AGENT}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  patchTask(id: string, body: Partial<AgentTask>): Promise<AgentTask> {
+    return json(`${AGENT}/tasks/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+  cancelTask(id: string): Promise<{ task: AgentTask; cancelled_jobs: number }> {
+    return json(`${AGENT}/tasks/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+  runTask(id: string, body: { book_id?: string; message?: string } = {}): Promise<AgentJob> {
+    return json(`${AGENT}/tasks/${encodeURIComponent(id)}/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
   conversations(): Promise<{
     conversations: {
       id: string;
@@ -397,9 +552,12 @@ export const agent = {
     conversation_id?: string;
     mode?: ChatMode;
     model?: string;
+    plan_id?: string;
     model_params?: { id: string; value: string }[];
     images?: ChatImage[];
     files?: { data: string; name: string; mime_type: string }[];
+    task_id?: string;
+    trigger?: string;
   }): Promise<{ job_id: string; status: string; conversation_id?: string; title?: string }> {
     return json(`${AGENT}/chat`, {
       method: "POST",

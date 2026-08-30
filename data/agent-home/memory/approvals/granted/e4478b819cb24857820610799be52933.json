@@ -1,0 +1,17 @@
+{
+  "req_id": "e4478b819cb24857820610799be52933",
+  "status": "granted",
+  "path": "surfaces/page-body/theme.css",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "20ab076f-fc90-4a84-8f44-ff8c542d2d6d",
+  "conversation_id": "05fe04f0-bef6-4148-96aa-1cbec9d17461",
+  "requested_at": "2026-08-29T09:59:15.159088+00:00",
+  "situation": "这本课标原文（第9页、第23页版心）正文首行约在 x=118，换行回落到 x=91–94，差值约两个汉字宽；短段和①②条款同样首行缩进，标题另排。当前 page-body 的 p 只有上下边距、没有 text-indent，所以除标题外的段落都顶格，和原文不一致。",
+  "why": "中文教材和课标的段首缩进两字是全书共性，不该在每一页 Markdown 前面塞全角空格。缩进应由 page-body 的段落样式画出，标题、目录行、表格、已有 kb-list-item 保持现在的缩进，避免重复。",
+  "changes": "改 surfaces/page-body/theme.css：给普通 p 加上 text-indent: 2em。.kb-list-item、.kb-lead、.kb-solution、.kb-solution-tail、.kb-table-foot 明确 text-indent: 0，避免列表和表注再缩一次。不改 prepare.mjs，不改该书 pages，不加书名专名。授权前不写 surface 文件。",
+  "impact": "所有书的普通段落会按中文习惯段首缩进两字；标题层级、左栏目录、表格和已抬升的列表不受影响。金样比的是 HTML 不是 CSS，现有金样应仍全绿。授权前正文仍顶格。",
+  "granted_at": "2026-08-29T09:59:29.046090+00:00",
+  "expires_at": "2026-08-29T10:14:29.046090+00:00",
+  "one_shot": true
+}

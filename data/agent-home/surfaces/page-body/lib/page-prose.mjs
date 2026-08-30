@@ -3,11 +3,12 @@ import { wrapBareMath } from "./bare-math.mjs";
 const SPAN =
   /\{\s*['"]type['"]\s*:\s*['"][^'"]+['"]\s*,\s*['"]content['"]\s*:\s*['"]([\s\S]+?)['"]\s*\}/g;
 const HEADING =
-  /^(?:第[一二三四五六七八九十百零\d]+章.*|内容提要|复习题|\d+\.\d+\s+\S.*|例\s*\d+.*|练习\s*[\d.()]+.*|定理\s*\d+.*|\d+\s+[\u4e00-\u9fff]{2,16})$/;
+  /^(?:第[一二三四五六七八九十百零\d]+(?:章|部分).*|内容提要|复习题|\*?\d+\.\d+\s+\S.*|定理\s*\d+.*|\*?\d+\s+[一-鿿][一-鿿A-Za-z0-9、与及的之至和（）()·—－\-《》]{1,40})$/;
+const SKIP_LIFT = /^(?:例|练习)\b/;
 const MARKER = /(?<![\w.\-\u4e00-\u9fff])[（(]\s*([0-9０-９]+)\s*[）)]/g;
 const SHORT_FORMULA_ALT = /^[\[\(][^\[\]\(\)]{0,16}[\]\)]$/;
-const CHAPTER_TITLE = /^[\u4e00-\u9fff、]{2,20}$/;
-const LEAD = /^((?:[\u4e00-\u9fff]{1,6})?定理|定义|证明|探究与实践)(?:\s+|$)/;
+const CHAPTER_TITLE = /^[一-鿿、]{2,20}$/;
+const LEAD = /^((?:[一-鿿]{1,6})?定理|定义|证明|探究与实践)(?:\s+|$)/;
 const SOLUTION = /^解(?:[\s\u3000]+|(?=[（(]))(.*)$/;
 const SKIP_VISIBLE_CAPTION = new Set(["插图", "公式", "表格"]);
 
@@ -77,8 +78,8 @@ export function dropFormulaShots(md) {
 export function looksLikeHeading(text) {
   const t = (text || "").trim();
   if (!t || t.startsWith("#") || t.startsWith("<")) return false;
-  if (/^(?:例|练习|定理)/.test(t)) return t.length <= 56 && HEADING.test(t);
-  return t.length <= 40 && HEADING.test(t);
+  if (SKIP_LIFT.test(t)) return false;
+  return t.length <= 56 && HEADING.test(t);
 }
 
 export function liftHeadings(md) {
@@ -176,7 +177,7 @@ export function polishLists(md, profile = {}) {
       out.push(itemHtml(unifyMarker(body), "kb-list-item", profile));
       continue;
     }
-    if (/^\d+\.\s+[\u4e00-\u9fff]/.test(body) && !/^\d+\.\d+/.test(body)) {
+    if (/^\d+\.\s+[一-鿿]/.test(body) && !/^\d+\.\d+/.test(body)) {
       out.push(itemHtml(body, "kb-list-item", profile));
       continue;
     }

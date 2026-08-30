@@ -52,6 +52,10 @@ def _pdf_path(book_id: str) -> Path:
     return pdfs[0] if pdfs else named
 
 
+def pdf_path(book_id: str) -> Path:
+    return _pdf_path(book_id)
+
+
 def _page_path(book_id: str, page_no: int) -> Path:
     return book_dir(book_id) / "pages" / f"{int(page_no):04d}.md"
 
@@ -73,10 +77,7 @@ def _read_json(path: Path, default: Any) -> Any:
 def read_meta(book_id: str) -> dict[str, Any] | None:
     path = _meta_path(book_id)
     if not path.is_file():
-        folder = book_dir(book_id)
-        if not folder.is_dir():
-            return None
-        return _default_meta(book_id, folder)
+        return None
     data = _read_json(path, {})
     if not isinstance(data, dict) or not data:
         return None
@@ -95,6 +96,30 @@ def write_meta(book_id: str, meta: dict[str, Any]) -> dict[str, Any]:
     return meta
 
 
+CATEGORIES = {
+    "textbook": "textbook",
+    "教材": "textbook",
+    "knowledge": "knowledge",
+    "知识点": "knowledge",
+    "syllabus": "syllabus",
+    "考纲": "syllabus",
+    "material": "material",
+    "资料": "material",
+    "homework": "homework",
+    "作业": "homework",
+}
+
+
+def normalize_category(raw: str | None, fallback: str = "textbook") -> str:
+    text = (raw or "").strip()
+    if text:
+        hit = CATEGORIES.get(text.lower()) or CATEGORIES.get(text)
+        if hit:
+            return hit
+    fb = (fallback or "").strip()
+    return CATEGORIES.get(fb.lower()) or CATEGORIES.get(fb) or "textbook"
+
+
 def _default_meta(book_id: str, folder: Path) -> dict[str, Any]:
     pdf = next(iter(sorted(folder.glob("*.pdf"))), None)
     name = pdf.name if pdf else "book.pdf"
@@ -104,6 +129,7 @@ def _default_meta(book_id: str, folder: Path) -> dict[str, Any]:
         "filename": name,
         "subject": "math",
         "grade_band": "hs",
+        "category": "textbook",
         "textbook_hint": folder.name,
         "status": "uploaded",
         "page_count": len(list((folder / "pages").glob("*.md"))) if (folder / "pages").is_dir() else 0,
@@ -115,7 +141,7 @@ def _default_meta(book_id: str, folder: Path) -> dict[str, Any]:
 
 
 def empty_toc() -> dict[str, Any]:
-    return {"entries": [], "print_to_pdf": {}, "toc_pages": []}
+    return {"entries": [], "print_to_pdf": {}, "toc_pages": [], "source": ""}
 
 
 def read_toc(book_id: str) -> dict[str, Any]:
@@ -125,6 +151,7 @@ def read_toc(book_id: str) -> dict[str, Any]:
     data.setdefault("entries", [])
     data.setdefault("print_to_pdf", {})
     data.setdefault("toc_pages", [])
+    data.setdefault("source", "")
     return data
 
 
@@ -134,6 +161,7 @@ def write_toc(book_id: str, toc: dict[str, Any]) -> dict[str, Any]:
         "entries": toc.get("entries") if isinstance(toc.get("entries"), list) else [],
         "print_to_pdf": toc.get("print_to_pdf") if isinstance(toc.get("print_to_pdf"), dict) else {},
         "toc_pages": toc.get("toc_pages") if isinstance(toc.get("toc_pages"), list) else [],
+        "source": str(toc.get("source") or ""),
     }
     _toc_path(book_id).write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return payload
@@ -149,12 +177,14 @@ def book_to_dict(meta: dict[str, Any]) -> dict[str, Any]:
         "filename": str(meta.get("filename") or "book.pdf"),
         "subject": str(meta.get("subject") or "math"),
         "grade_band": str(meta.get("grade_band") or "hs"),
+        "category": normalize_category(meta.get("category")),
         "textbook_hint": str(meta.get("textbook_hint") or meta.get("label") or ""),
         "minio_key": f"textbooks/{book_id}/book.pdf" if book_id else "",
         "status": str(meta.get("status") or "uploaded"),
         "page_count": int(meta.get("page_count") or 0),
         "error": str(meta.get("error") or ""),
         "is_default": bool(meta.get("is_default")),
+        "conversation_id": str(meta.get("conversation_id") or ""),
         "toc_entry_count": len(entries),
         "created_at": str(meta.get("created_at") or ""),
         "updated_at": str(meta.get("updated_at") or ""),
@@ -172,7 +202,7 @@ def list_books() -> list[dict[str, Any]]:
         except PathJailError:
             continue
         meta = read_meta(folder.name)
-        if meta:
+        if meta and str(meta.get("status") or "") != "draft":
             rows.append(book_to_dict(meta))
     rows.sort(key=lambda r: str(r.get("updated_at") or ""), reverse=True)
     return rows
@@ -206,7 +236,10 @@ def create_book(
     label: str = "",
     subject: str = "math",
     grade_band: str = "hs",
+    category: str = "textbook",
     textbook_hint: str = "",
+    status: str = "uploaded",
+    conversation_id: str = "",
 ) -> dict[str, Any]:
     if not pdf_bytes:
         raise ValueError("file empty")
@@ -229,11 +262,13 @@ def create_book(
         "filename": name,
         "subject": (subject or "math").strip() or "math",
         "grade_band": (grade_band or "hs").strip() or "hs",
+        "category": normalize_category(category),
         "textbook_hint": hint or (label or name),
-        "status": "uploaded",
+        "status": (status or "uploaded").strip() or "uploaded",
         "page_count": 0,
         "error": "",
         "is_default": False,
+        "conversation_id": (conversation_id or "").strip(),
         "created_at": now,
         "updated_at": now,
     }
@@ -249,10 +284,12 @@ def patch_book(
     textbook_hint: str | None = None,
     subject: str | None = None,
     grade_band: str | None = None,
+    category: str | None = None,
     is_default: bool | None = None,
     status: str | None = None,
     error: str | None = None,
     page_count: int | None = None,
+    conversation_id: str | None = None,
 ) -> dict[str, Any] | None:
     sid = _safe_id(book_id)
     meta = read_meta(sid)
@@ -267,6 +304,8 @@ def patch_book(
         meta["subject"] = subject.strip() or meta.get("subject") or "math"
     if grade_band is not None:
         meta["grade_band"] = grade_band.strip() or meta.get("grade_band") or "hs"
+    if category is not None:
+        meta["category"] = normalize_category(category, fallback=str(meta.get("category") or "textbook"))
     if is_default is True:
         _clear_defaults(sid)
         meta["is_default"] = True
@@ -278,8 +317,21 @@ def patch_book(
         meta["error"] = error
     if page_count is not None:
         meta["page_count"] = int(page_count)
+    if conversation_id is not None:
+        meta["conversation_id"] = conversation_id.strip()
     write_meta(sid, meta)
     return book_to_dict(meta)
+
+
+def reset_derived(book_id: str) -> None:
+    """Drop pages, images, and the table of contents. Keep the PDF and meta."""
+    sid = _safe_id(book_id)
+    folder = book_dir(sid)
+    for name in ("pages", "images"):
+        path = folder / name
+        if path.is_dir():
+            shutil.rmtree(path)
+    write_toc(sid, empty_toc())
 
 
 def delete_book(book_id: str) -> bool:
@@ -287,9 +339,8 @@ def delete_book(book_id: str) -> bool:
         folder = book_dir(_safe_id(book_id))
     except (ValueError, PathJailError):
         return False
-    if not folder.is_dir():
-        return False
-    shutil.rmtree(folder)
+    if folder.is_dir():
+        shutil.rmtree(folder)
     return True
 
 
@@ -300,8 +351,10 @@ def reimport(book_id: str) -> dict[str, Any] | None:
         return None
     if not _pdf_path(sid).is_file():
         raise ValueError("pdf missing")
+    reset_derived(sid)
     meta["status"] = "uploaded"
     meta["error"] = ""
+    meta["page_count"] = 0
     write_meta(sid, meta)
     return book_to_dict(meta)
 
@@ -324,7 +377,9 @@ def write_page(book_id: str, page_no: int, markdown: str, image: bytes | None = 
     sid = _safe_id(book_id)
     md = _page_path(sid, page_no)
     md.parent.mkdir(parents=True, exist_ok=True)
-    md.write_text(markdown or "", encoding="utf-8")
+    tmp = md.with_suffix(".md.tmp")
+    tmp.write_text(markdown or "", encoding="utf-8")
+    tmp.replace(md)
     if image is not None:
         img = _image_path(sid, page_no)
         img.parent.mkdir(parents=True, exist_ok=True)

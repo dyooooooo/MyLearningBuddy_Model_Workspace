@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import logging
+import sys
 from pathlib import Path
 from typing import Any, Callable
 
@@ -9,9 +12,18 @@ from app.config_store import read_tools
 from app.manage_tools import BUILTINS
 from app.paths import PathJailError, resolve_in_home
 
+logger = logging.getLogger(__name__)
+
+
+def _ensure_tools_on_path() -> None:
+    tools_dir = str(settings.tools_dir.resolve())
+    if tools_dir and tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+
 
 def load_tool_specs() -> list[dict[str, Any]]:
     """Load Python tools listed in tools/manifest.yaml. No Cursor SDK import."""
+    _ensure_tools_on_path()
     specs: list[dict[str, Any]] = []
     for item in read_tools().get("tools") or []:
         if not isinstance(item, dict):
@@ -23,7 +35,11 @@ def load_tool_specs() -> list[dict[str, Any]]:
         path = (settings.tools_dir / rel).resolve()
         if not path.is_file() or settings.tools_dir.resolve() not in path.parents:
             continue
-        module = _load_module(tool_id, path)
+        try:
+            module = _load_module(tool_id, path)
+        except Exception:
+            logger.exception("skip tool %s (%s)", tool_id, path)
+            continue
         fn = getattr(module, tool_id, None)
         if not callable(fn):
             continue
@@ -52,10 +68,14 @@ def load_tool_specs() -> list[dict[str, Any]]:
 
 
 def _load_module(name: str, path: Path) -> Any:
-    spec = importlib.util.spec_from_file_location(f"agent_tool_{name}", path)
+    key = f"agent_tool_{name}"
+    spec = importlib.util.spec_from_file_location(key, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"cannot load tool {name} from {path}")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[key] = module
+    if name.isidentifier() and name not in sys.modules:
+        sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -76,11 +96,50 @@ def _wrap(fn: Callable[..., Any], tool_id: str = "") -> Callable[..., Any]:
             raw = Path(str(payload["path"]))
             if raw.is_absolute() or ".." in raw.parts:
                 payload["path"] = str(resolve_in_home(raw, base=settings.textbooks_dir))
-        result = fn(**payload)
-        _record_tool(tool_id or getattr(fn, "__name__", "tool"), payload, result)
-        return result
+        from app.context import current_job_id, live_sdk_job
+
+        inherited = live_sdk_job()
+        token = current_job_id.set(inherited) if inherited and not current_job_id.get() else None
+        try:
+            result = fn(**payload)
+            name = tool_id or getattr(fn, "__name__", "tool")
+            _record_tool(name, payload, result)
+            _emit_tool_success(name, payload)
+            return result
+        finally:
+            if token is not None:
+                current_job_id.reset(token)
 
     return execute
+
+
+_TASK_CRUD = frozenset({"create_task", "list_tasks", "update_task", "cancel_task"})
+
+
+def _emit_tool_success(tool_id: str, payload: dict[str, Any]) -> None:
+    name = (tool_id or "").strip()
+    if not name or name in _TASK_CRUD:
+        return
+    from app.context import current_job_id
+    from app import jobs, tasks
+
+    extra: dict[str, Any] = {}
+    book = str(payload.get("book_id") or "").strip()
+    job_id = current_job_id.get() or ""
+    if job_id:
+        extra["chat_job_id"] = job_id
+        row = jobs.get_job(job_id)
+        job_payload = row.get("payload") if row and isinstance(row.get("payload"), dict) else {}
+        extra["book_id"] = book or str((job_payload or {}).get("book_id") or "")
+        extra["conversation_id"] = str((job_payload or {}).get("conversation_id") or "")
+        if str((job_payload or {}).get("trigger") or "") == f"tool.{name}":
+            return
+    else:
+        extra["book_id"] = book
+    try:
+        tasks.emit(f"tool.{name}", extra)
+    except Exception:
+        logger.warning("tool emit failed tool=%s", name, exc_info=True)
 
 
 def _record_tool(tool_id: str, payload: dict[str, Any], result: Any) -> None:
@@ -102,7 +161,10 @@ def _record_tool(tool_id: str, payload: dict[str, Any], result: Any) -> None:
         title = f"打开 PDF 第 {payload.get('page') or 1} 页"
         detail = str((result or {}).get("path") if isinstance(result, dict) else result)
     else:
-        detail = str(result)[:800]
+        if isinstance(result, (dict, list)):
+            detail = json.dumps(result, ensure_ascii=False)[:4000]
+        else:
+            detail = str(result)[:800]
     jobs.append_trace(job_id, kind, title, detail)
 
 

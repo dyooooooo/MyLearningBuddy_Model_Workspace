@@ -61,14 +61,28 @@ function isTableShotAlt(alt) {
   return /^表/.test(s) || s === "插图" || /type['"]\s*:/.test(s);
 }
 
+function tableAlreadyWrapped(src, offset) {
+  const before = src.slice(0, offset);
+  const open = before.lastIndexOf('<div class="kb-table-wrap">');
+  if (open < 0) return false;
+  const afterOpen = before.slice(open);
+  const opens = (afterOpen.match(/<div\b/gi) || []).length;
+  const closes = (afterOpen.match(/<\/div>/gi) || []).length;
+  return opens > closes;
+}
+
 export function liftPageTables(md, bookId = "", profile = {}) {
   let text = md || "";
   text = text.replace(
     /(?:^|\n)[ \t]*(?:\*\*)?(表[^\n*]{0,48})(?:\*\*)?[ \t]*\n+(<table\b[\s\S]*?<\/table>)/g,
-    (_m, cap, table) => `\n${polishTable(table, String(cap).trim(), bookId, profile)}`,
+    (full, cap, table, offset) => {
+      const tableAt = offset + full.lastIndexOf(table);
+      if (tableAlreadyWrapped(text, tableAt)) return full;
+      return `\n${polishTable(table, String(cap).trim(), bookId, profile)}`;
+    },
   );
-  text = text.replace(/<table\b[\s\S]*?<\/table>/gi, (table) => {
-    if (table.includes("kb-table-wrap")) return table;
+  text = text.replace(/<table\b[\s\S]*?<\/table>/gi, (table, offset, src) => {
+    if (table.includes("kb-table-wrap") || tableAlreadyWrapped(src, offset)) return table;
     return polishTable(table, "", bookId, profile);
   });
   text = text.replace(

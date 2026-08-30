@@ -84,7 +84,7 @@ def reload_surfaces() -> dict:
 
 
 def write_prompt(name: str, content: str) -> dict:
-    """写入一段系统提示词（prompts/<name>.md：chat/plan/ask/grade/title）。"""
+    """写入一段系统提示词（prompts/<name>.md，含 page_refine / tasks）。"""
     return prompts_store.put_prompt(name, content)
 
 
@@ -129,8 +129,75 @@ def restore_checkpoint(ref: str) -> dict:
     return checkpoints.restore(ref)
 
 
+def request_code_edit(
+    path: str,
+    situation: str,
+    why: str,
+    changes: str,
+    impact: str,
+    scope: str = "",
+) -> dict[str, Any]:
+    """提交代码修改申请。四段说明缺一不可，通过后停下等用户在卡片上确认。"""
+    from app import approvals, jobs
+    from app.context import current_job_id
+
+    rel = approvals.norm_path(path)
+    got_scope = (scope or "").strip() or approvals.infer_scope(rel)
+    if not got_scope:
+        return {
+            "ok": False,
+            "missing": ["path"],
+            "hint": "只能申请改 tools/*.py、.cursor/hooks/* 或 surfaces/*。补齐后重提，不要直接写文件。",
+        }
+    fields = {
+        "situation": situation,
+        "why": why,
+        "changes": changes,
+        "impact": impact,
+    }
+    missing = approvals.validate(fields)
+    if missing:
+        return {
+            "ok": False,
+            "missing": missing,
+            "hint": "四段说明各至少 20 字：实际情况、为什么要改、具体改哪些地方、改完的影响。补齐后重提，不要直接写文件。",
+        }
+    job_id = current_job_id.get() or ""
+    conversation_id = ""
+    if job_id:
+        row = jobs.get_job(job_id) or {}
+        payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+        conversation_id = str((payload or {}).get("conversation_id") or "")
+    record = approvals.open_request(
+        rel,
+        situation,
+        why,
+        changes,
+        impact,
+        scope=got_scope,
+        job_id=job_id,
+        conversation_id=conversation_id,
+    )
+    if job_id:
+        jobs.append_trace(
+            job_id,
+            "approval",
+            "需要授权",
+            json.dumps(record, ensure_ascii=False),
+            persist=True,
+        )
+    return {
+        "ok": True,
+        "req_id": record["req_id"],
+        "path": record["path"],
+        "scope": record["scope"],
+        "next": "本轮到此为止，等用户在授权卡上确认。不要直接写文件，也不要把对话里的话当成许可。",
+    }
+
+
 BUILTINS = (
     list_config,
+    request_code_edit,
     write_tool,
     write_skill,
     write_rule,

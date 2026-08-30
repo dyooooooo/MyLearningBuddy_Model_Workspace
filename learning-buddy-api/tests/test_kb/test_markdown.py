@@ -59,6 +59,22 @@ def test_table_wrapped_with_caption_no_screenshot():
     assert "shot.jpg" not in md
 
 
+def test_table_caption_with_latex_backslash_does_not_crash():
+    """Third-book import died here: re.sub treated \\mathrm as a bad escape."""
+    md = blocks_to_page_markdown(
+        [
+            {
+                "type": "table",
+                "table_caption": "表 3-1 函数 $y=\\mathrm{e}^{x}$ 的值",
+                "table_body": "<table><tr><td>x</td><td>y</td></tr></table>",
+            }
+        ]
+    )
+    assert "<caption>" in md
+    assert "mathrm" in md
+    assert 'class="kb-table-wrap"' in md
+
+
 def test_index_block_becomes_page_toc():
     md = blocks_to_page_markdown(
         [

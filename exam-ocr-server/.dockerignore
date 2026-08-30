@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.git
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+frontend/node_modules
+studio-ui/node_modules
+kb-ui/node_modules
+static/vite
+static/studio
+static/kb

@@ -8,3 +8,44 @@ tools:
 - id: clear_traces
   path: clear_traces.py
   description: 清空工作区 traces/ 目录下所有轨迹文件
+- id: build_toc
+  path: build_toc.py
+  description: 从印刷目录抽出章/节，正文回补引论/第N部分/附录并写回目录页，合并 toc_agent.json 的小节，写入 toc.json。
+- id: toc_extract
+  path: toc_extract.py
+  description: 先看原文 PDF 目录页，再读 toc.json，然后一次抽各兄弟节区间的小节（对话里不另开会话）。
+- id: improve_render
+  path: improve_render.py
+  description: 扫描整本教材的渲染问题；apply=safe 含裸公式包装、text嵌套美元符、多项拆分、填空下划线和公式里的不等号。unwrap 拆回写的目录和表格包装。
+- id: propose_import_meta
+  path: propose_import_meta.py
+  description: 把判断出的显示名、书名提示、科目、学段写回导入表。不要开始识别。
+- id: refine_page
+  path: refine_page.py
+  description: 对教材一页 Markdown 做确定性清洗（去残留 JSON/HTML、收空白），原子写回
+- id: strip_sub_sup
+  path: strip_sub_sup.py
+  description: 剥除教材页内 sub/sup 导入残留（HTML 标签与 \lt sub\gt 等），scan 只统计，fix 原子写回
+- id: create_task
+  path: create_task.py
+  description: 在工作区建一条任务（定时或事件触发；对话发给 Agent）
+- id: list_tasks
+  path: list_tasks.py
+  description: 列出工作区任务（内置 + 用户）
+- id: cancel_task
+  path: cancel_task.py
+  description: 停用一条任务并取消它正在跑的 job
+- id: update_task
+  path: update_task.py
+  description: 改一条任务的名称、方式、时间、事件或发给 Agent 的对话
+- id: restore_cid
+  path: restore_cid.py
+  description: 还原 Adobe-Identity 不完整 ToUnicode 的 CID 错位字（中文 CID+0x30F2/0x30F3，拉丁 CID+31）。scan
+    只统计，fix 原子写回。无残留则不动。音标 ASCII 与规范汉字不改。
+- id: mark_toc_pages
+  path: mark_toc_pages.py
+  description: 对话手动指定印刷目录页（如 6,7）：从 Mineru 回收页码标记，按 build_toc 已认的章/节形状写回目录页，再调 build_toc。
+- id: restore_ipa
+  path: restore_ipa.py
+  description: 按书内 Phonetic symbols 表把斜杠音标里 TimesKKPhoneticNewRoman / Times-PhoneticIPA
+    字码还原成 IPA。scan 只统计，fix 原子写回。不按单词另编音标。无此类残留的书 0 hits。

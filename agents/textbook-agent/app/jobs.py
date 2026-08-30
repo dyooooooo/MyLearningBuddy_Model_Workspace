@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import queue
 import threading
 import uuid
@@ -8,7 +9,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+logger = logging.getLogger(__name__)
+
 from app.config import settings
+
+SDK_KINDS = frozenset({"chat", "grade", "page_refine", "toc_extract", "task"})
 
 _lock = threading.Lock()
 _jobs: dict[str, dict[str, Any]] = {}
@@ -90,10 +95,18 @@ def _load() -> None:
         except (OSError, json.JSONDecodeError):
             continue
         if isinstance(item, dict) and item.get("job_id"):
+            if is_rewound(item):
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
+                continue
             latest[str(item["job_id"])] = item
     rows = sorted(latest.values(), key=lambda r: str(r.get("updated_at") or ""))
     for item in rows[-_MAX_JOBS:]:
         job_id = str(item["job_id"])
+        if is_rewound(item):
+            continue
         _jobs[job_id] = {
             "job_id": job_id,
             "kind": item.get("kind") or "grade",
@@ -123,6 +136,8 @@ def _ingest_jsonl(latest: dict[str, dict[str, Any]]) -> None:
         except json.JSONDecodeError:
             continue
         if not (isinstance(item, dict) and item.get("job_id")):
+            continue
+        if is_rewound(item):
             continue
         job_id = str(item["job_id"])
         latest[job_id] = item
@@ -163,14 +178,40 @@ def get_job(job_id: str) -> dict[str, Any] | None:
         return dict(row) if row else None
 
 
+def is_rewound(row: dict[str, Any] | None) -> bool:
+    if not row:
+        return False
+    payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+    return bool((payload or {}).get("rewound"))
+
+
+def count_sdk_active(exclude: str = "") -> int:
+    """How many Cursor sends are in flight (running), not counting ``exclude``."""
+    skip = (exclude or "").strip()
+    n = 0
+    for row in list_jobs(200):
+        if skip and str(row.get("job_id") or "") == skip:
+            continue
+        if str(row.get("kind") or "") not in SDK_KINDS:
+            continue
+        if str(row.get("status") or "") == "running":
+            n += 1
+    return n
+
+
 def list_jobs(limit: int = 80) -> list[dict[str, Any]]:
     _load()
     with _lock:
-        rows = sorted(_jobs.values(), key=lambda r: str(r.get("updated_at") or ""), reverse=True)
+        rows = [
+            r
+            for r in _jobs.values()
+            if not is_rewound(r)
+        ]
+        rows = sorted(rows, key=lambda r: str(r.get("updated_at") or ""), reverse=True)
         return [public_view(r) for r in rows[: max(1, min(limit, _MAX_JOBS))]]
 
 
-def append_trace(job_id: str, kind: str, title: str, detail: str = "") -> None:
+def append_trace(job_id: str, kind: str, title: str, detail: str = "", persist: bool = False) -> None:
     step = {
         "t": _now(),
         "kind": kind,
@@ -184,6 +225,8 @@ def append_trace(job_id: str, kind: str, title: str, detail: str = "") -> None:
         row.setdefault("trace", []).append(step)
         row["updated_at"] = _now()
         _notify(row)
+        if persist:
+            _persist(row)
 
 
 def bind_checkpoint(job_id: str, sha: str) -> None:
@@ -205,12 +248,76 @@ def bind_checkpoint(job_id: str, sha: str) -> None:
         _notify(row)
 
 
+def detach_conversation(job_id: str) -> None:
+    """Mark a turn discarded. Prefer ``delete_job`` after rewind."""
+    _load()
+    with _lock:
+        row = _jobs.get(job_id)
+        if row is None:
+            return
+        payload = dict(row.get("payload") or {})
+        payload["conversation_id"] = ""
+        payload["rewound"] = True
+        row["payload"] = payload
+        result = dict(row.get("result") or {})
+        if result.get("conversation_id"):
+            result["conversation_id"] = ""
+        row["result"] = result
+        row["updated_at"] = _now()
+        _persist(row)
+
+
+def delete_job(job_id: str) -> bool:
+    """Remove a discarded turn from memory and traces/."""
+    job_id = (job_id or "").strip()
+    if not job_id:
+        return False
+    _load()
+    _cancel_ids.discard(job_id)
+    _runs.pop(job_id, None)
+    with _lock:
+        existed = _jobs.pop(job_id, None) is not None
+    path = _traces_dir() / f"{job_id}.json"
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
+    return existed
+
+
+def purge_rewound() -> int:
+    _load()
+    with _lock:
+        ids = [str(row.get("job_id") or "") for row in _jobs.values() if is_rewound(row)]
+    n = 0
+    for job_id in ids:
+        if job_id and delete_job(job_id):
+            n += 1
+    return n
+
+
 def job_checkpoint(row: dict[str, Any] | None) -> str:
     if not row:
         return ""
     payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
     result = row.get("result") if isinstance(row.get("result"), dict) else {}
     return str((result or {}).get("checkpoint") or (payload or {}).get("checkpoint") or "").strip()
+
+
+def job_plan_checkpoint(row: dict[str, Any] | None) -> str:
+    if not row:
+        return ""
+    result = row.get("result") if isinstance(row.get("result"), dict) else {}
+    plan = result.get("plan") if isinstance((result or {}).get("plan"), dict) else {}
+    return str((plan or {}).get("checkpoint") or "").strip()
+
+
+def job_plan_id(row: dict[str, Any] | None) -> str:
+    if not row:
+        return ""
+    result = row.get("result") if isinstance(row.get("result"), dict) else {}
+    plan = result.get("plan") if isinstance((result or {}).get("plan"), dict) else {}
+    return str((plan or {}).get("id") or "").strip()
 
 
 def reset_for_tests() -> None:
@@ -277,7 +384,38 @@ def cancel_active(reason: str = "interrupted") -> int:
     return n
 
 
-def patch_result(job_id: str, **fields: Any) -> None:
+def mark_approval(job_id: str, record: dict[str, Any]) -> None:
+    """Attach a grant/refuse/revise decision to the job so the card updates live."""
+    job_id = (job_id or "").strip()
+    if not job_id or not isinstance(record, dict):
+        return
+    req_id = str(record.get("req_id") or "").strip()
+    with _lock:
+        row = _jobs.get(job_id)
+        if row is None:
+            return
+        result = dict(row.get("result") or {})
+        result["approval"] = record
+        row["result"] = result
+        for step in row.get("trace") or []:
+            if not isinstance(step, dict) or step.get("kind") != "approval":
+                continue
+            try:
+                detail = json.loads(step.get("detail") or "{}")
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(detail, dict):
+                continue
+            if req_id and str(detail.get("req_id") or "") != req_id:
+                continue
+            detail.update(record)
+            step["detail"] = json.dumps(detail, ensure_ascii=False)[:4000]
+        row["updated_at"] = _now()
+        _persist(row)
+        _notify(row)
+
+
+def patch_result(job_id: str, persist: bool = False, **fields: Any) -> None:
     with _lock:
         row = _jobs.get(job_id)
         if row is None:
@@ -287,6 +425,8 @@ def patch_result(job_id: str, **fields: Any) -> None:
         row["result"] = result
         row["updated_at"] = _now()
         _notify(row)
+        if persist:
+            _persist(row)
 
 
 def _set(job_id: str, persist: bool = False, **fields: Any) -> None:
@@ -321,6 +461,69 @@ def unsubscribe(q: queue.Queue) -> None:
     bus.unsubscribe(q)
 
 
+def _kick_auto_resume(job_id: str) -> None:
+    try:
+        from app.auto_resume import kick_once
+
+        kick_once(job_id)
+    except Exception:
+        logger.warning("auto resume kick failed job=%s", job_id, exc_info=True)
+
+
+def _flush_working(job_id: str) -> None:
+    try:
+        from app import working_memory
+
+        row = get_job(job_id)
+        if row:
+            working_memory.write_from_job(row)
+    except Exception:
+        logger.warning("working memory flush failed job=%s", job_id, exc_info=True)
+
+
+def _emit_task_completed(job_id: str) -> None:
+    row = get_job(job_id)
+    if not row or row.get("kind") != "chat":
+        return
+    payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+    task_id = str((payload or {}).get("task_id") or "").strip()
+    if not task_id:
+        return
+    trigger = str((payload or {}).get("trigger") or "").strip()
+    try:
+        from app import tasks
+
+        task = tasks.get_task(task_id)
+        if not task:
+            return
+        if trigger != str(task.get("trigger") or ""):
+            return
+        extra = {
+            "book_id": str((payload or {}).get("book_id") or ""),
+            "conversation_id": str((payload or {}).get("conversation_id") or ""),
+            "chat_job_id": job_id,
+        }
+        tasks.emit(f"task.{task_id}.completed", extra)
+    except Exception:
+        logger.warning("task completed emit failed job=%s", job_id, exc_info=True)
+
+
+def _keep_live_result_fields(job_id: str, result: dict[str, Any]) -> dict[str, Any]:
+    """``_set(..., result=)`` replaces the whole blob; keep fields written mid-run."""
+    prior = get_job(job_id) or {}
+    prior_result = prior.get("result") if isinstance(prior.get("result"), dict) else {}
+    out = dict(result)
+    sha = job_checkpoint(prior)
+    if sha and not str(out.get("checkpoint") or "").strip():
+        out["checkpoint"] = sha
+    for key in ("agent_id", "run_id"):
+        if not str(out.get(key) or "").strip() and str(prior_result.get(key) or "").strip():
+            out[key] = prior_result[key]
+    if "resumed" not in out and "resumed" in prior_result:
+        out["resumed"] = prior_result["resumed"]
+    return out
+
+
 def start_background(job_id: str, fn: Callable[[], dict[str, Any]]) -> None:
     def _run() -> None:
         if is_cancelled(job_id):
@@ -329,17 +532,19 @@ def start_background(job_id: str, fn: Callable[[], dict[str, Any]]) -> None:
         try:
             result = fn()
             if is_cancelled(job_id):
+                _flush_working(job_id)
                 return
             if isinstance(result, dict):
-                sha = job_checkpoint(get_job(job_id))
-                if sha and not str(result.get("checkpoint") or "").strip():
-                    result = dict(result)
-                    result["checkpoint"] = sha
+                result = _keep_live_result_fields(job_id, result)
             _set(job_id, persist=True, status="completed", result=result)
+            _flush_working(job_id)
+            _emit_task_completed(job_id)
         except JobCancelled:
             request_cancel(job_id, "stopped")
+            _flush_working(job_id)
         except Exception as exc:
             if is_cancelled(job_id):
+                _flush_working(job_id)
                 return
             try:
                 from app.sdk_errors import humanize_sdk_error
@@ -348,6 +553,8 @@ def start_background(job_id: str, fn: Callable[[], dict[str, Any]]) -> None:
             except Exception:
                 err = str(exc)
             _set(job_id, persist=True, status="failed", error=err[:2000])
+            _flush_working(job_id)
+            _kick_auto_resume(job_id)
         finally:
             detach_run(job_id)
 

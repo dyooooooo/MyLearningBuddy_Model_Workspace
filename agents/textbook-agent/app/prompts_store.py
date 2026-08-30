@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -13,10 +14,12 @@ logger = logging.getLogger(__name__)
 
 MAX_CHARS = 32_768
 NAMES = ("chat", "plan", "ask", "grade", "title")
+EXTRA = ("page_refine", "tasks", "toc_extract")
 MODE_TO_NAME = {"agent": "chat", "plan": "plan", "ask": "ask"}
+_NAME_OK = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,40}$")
 
 SEEDS: dict[str, str] = {
-    "chat": """你是书库工作区里的通用 Agent。对工作区（textbooks/、traces/、.cursor/、tools/、inbox/、prompts/、surfaces/）拥有读、写、删、改的全部权限。工作区以外（包括 /app 源码和系统）绝对不能碰。
+    "chat": """你是书库工作区里的通用 Agent。对工作区（textbooks/、traces/、.cursor/、tools/、inbox/、prompts/、surfaces/、memory/）拥有读、写、删、改的全部权限。工作区以外（包括 /app 源码和系统）绝对不能碰。
 
 红线（钩子会拦，不要去碰）：
 - .cursor/projects/（会话存储，删了对话就显示不出来）
@@ -27,19 +30,25 @@ SEEDS: dict[str, str] = {
 2. 改技能、规则、Python 工具、外接 MCP、提示词、钩子、插件。
 3. 打检查点、回退、分叉。
 4. 整理 traces/ 里的过往轨迹。
+5. 读、改 memory/ 里的工作笔记和跨对话结论。
 没有教材时不要用通识冒充书上内容。
 
-改工具时：先 list_config，再 write_tool（函数名必须等于工具编号，并登记到 manifest），最后 reload_config。
+改 tools/*.py、钩子或 surfaces 前：先 request_code_edit 交四段说明，停下等用户在授权卡上点授权。不要自己写许可文件。授权后再 list_config，write_tool（函数名必须等于工具编号，并登记到 manifest），最后 reload_config。
 先读 .cursor/skills/manage-self/SKILL.md。
+开场先用消息里的【工作笔记】和【跨对话结论】。收工可把以后都成立的短句追加到 memory/DECISIONS.md。
+用户消息带「【断点续传】」时，按那段接着做，不要打开 traces/ 或 agent-transcripts 去翻前几轮。
 
 用户：
 """,
-    "plan": """你是规划模式（Plan）。先调查工作区再写出可执行计划，这一轮不要改 textbooks/、.cursor/、tools/、prompts/。工作区以外（包括 /app）绝对不能碰。
-没有教材时不要用通识冒充书上内容。先读 .cursor/skills/manage-self/SKILL.md。
+    "plan": """你是规划模式（Plan）。先调查工作区，再写出一份可执行计划。
+这一轮只允许把计划写到 .cursor/plans/（Markdown）。不要改 textbooks/、tools/、prompts/、tasks.json，也不要改其它 .cursor/ 文件。工作区以外（包括 /app）绝对不能碰。
+不要创建或更新定时任务。没有教材时不要用通识冒充书上内容。先读 .cursor/skills/manage-self/SKILL.md。
+计划写清步骤、改哪些文件、怎么验收。界面会把对话里最新一份计划显示成卡片，用户可以点「执行」或「回退」。
 
 用户：
 """,
-    "ask": """你是问答模式（Ask）。只读、解释、给建议，禁止改任何文件（包括 textbooks/、.cursor/、tools/、traces/、inbox/、prompts/）。工作区以外（包括 /app）绝对不能碰。
+    "ask": """你是问答模式（Ask）。只读、解释、给建议。建议写在对话里，不要落盘。
+禁止改任何文件（包括 textbooks/、.cursor/、tools/、traces/、inbox/、prompts/、tasks）。工作区以外（包括 /app）绝对不能碰。
 没有教材时不要用通识冒充书上内容。
 
 用户：
@@ -92,8 +101,37 @@ def ensure_prompt_files() -> None:
             path.write_text(text, encoding="utf-8")
 
 
+def _allowed(name: str) -> bool:
+    key = (name or "").strip()
+    if key in SEEDS or key in EXTRA:
+        return True
+    return bool(key) and _path(key).is_file()
+
+
+def read_file(rel: str) -> str:
+    """Read a workspace prompt by name or ``prompts/foo.md`` path."""
+    raw = (rel or "").strip()
+    if raw.startswith("prompts/"):
+        raw = raw[len("prompts/") :]
+    if raw.endswith(".md"):
+        raw = raw[:-3]
+    key = raw.strip()
+    if key in SEEDS:
+        return get(key)
+    path = _path(key)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise FileNotFoundError(f"prompt missing: {rel}") from exc
+    if len(text) > MAX_CHARS:
+        raise ValueError(f"prompt too long (>{MAX_CHARS})")
+    return text
+
+
 def get(name: str) -> str:
     key = (name or "").strip()
+    if key in EXTRA or (key not in SEEDS and _path(key).is_file()):
+        return read_file(key)
     if key not in SEEDS:
         raise ValueError(f"unknown prompt: {name}")
     path = _path(key)
@@ -121,31 +159,39 @@ def list_prompts() -> list[dict[str, Any]]:
     ensure_workspace()
     ensure_prompt_files()
     out: list[dict[str, Any]] = []
-    for name in NAMES:
+    names = list(NAMES)
+    for path in sorted(prompts_dir().glob("*.md")):
+        if path.stem not in names:
+            names.append(path.stem)
+    for extra in EXTRA:
+        if extra not in names:
+            names.append(extra)
+    for name in names:
         path = _path(name)
         live = ""
-        source = "seed"
+        source = "seed" if name in SEEDS else "workspace"
         try:
             live = path.read_text(encoding="utf-8") if path.is_file() else ""
         except OSError:
             live = ""
         if live.strip() and len(live) <= MAX_CHARS:
             source = "workspace"
-        out.append(
-            {
-                "id": name,
-                "content": get(name) if name != "title" else (live.strip() and live or SEEDS[name]),
-                "source": source,
-                "seed": SEEDS[name],
-            }
-        )
+        if name in SEEDS:
+            content = get(name) if name != "title" else (live.strip() and live or SEEDS[name])
+            seed = SEEDS[name]
+        else:
+            content = live
+            seed = ""
+        out.append({"id": name, "content": content, "source": source, "seed": seed})
     return out
 
 
 def put_prompt(name: str, content: str) -> dict[str, Any]:
     ensure_workspace()
     key = (name or "").strip()
-    if key not in SEEDS:
+    if not _NAME_OK.match(key):
+        raise ValueError(f"unknown prompt: {name}")
+    if key not in SEEDS and key not in EXTRA and not _path(key).is_file():
         raise ValueError(f"unknown prompt: {name}")
     text = content if content is not None else ""
     if len(text) > MAX_CHARS:
@@ -161,13 +207,14 @@ def put_prompt(name: str, content: str) -> dict[str, Any]:
 
 def delete_prompt(name: str) -> bool:
     key = (name or "").strip()
-    if key not in SEEDS:
+    if key not in SEEDS and key not in EXTRA and not _path(key).is_file():
         raise ValueError(f"unknown prompt: {name}")
     path = _path(key)
     if not path.exists():
         return False
     path.unlink()
-    ensure_prompt_files()
+    if key in SEEDS:
+        ensure_prompt_files()
     from app.change import after_write
 
     after_write("prompts", f"restore prompt {key}")

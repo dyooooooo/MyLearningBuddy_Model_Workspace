@@ -38,12 +38,117 @@ class KbParseResult:
     blocks: list[dict[str, Any]]
 
 
+_PERSIST_PATTERNS = (
+    ("content_list_v2", "*_content_list_v2.json"),
+    ("content_list", "*_content_list.json"),
+    ("layout", "layout.json"),
+    ("layout", "*_layout.json"),
+    ("middle", "*_middle.json"),
+    ("model", "*_model.json"),
+    ("model", "model.json"),
+)
+
+
+def persist_workdir(workdir: Path, dest: Path) -> dict[str, str]:
+    """Copy MinerU Cloud JSON out of the temp zip into ``dest``.
+
+    Official zip (non-HTML): content_list / content_list_v2 / layout.json
+    (≈ middle.json) / model.json.
+    """
+    dest.mkdir(parents=True, exist_ok=True)
+    found: dict[str, str] = {}
+    for label, pattern in _PERSIST_PATTERNS:
+        if label in found:
+            continue
+        matches = sorted(workdir.rglob(pattern))
+        if label == "content_list":
+            matches = [p for p in matches if not p.name.endswith("_content_list_v2.json")]
+        if not matches:
+            continue
+        src = matches[0]
+        shutil.copy2(src, dest / src.name)
+        found[label] = src.name
+    return found
+
+
+def probe_mineru_blocks(blocks: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize types, bbox coverage, side-notes, and left/right split."""
+    from collections import Counter, defaultdict
+
+    types: Counter[str] = Counter()
+    keys: Counter[str] = Counter()
+    layoutish: Counter[str] = Counter()
+    bbox_n = 0
+    aside_n = 0
+    by_page: dict[Any, list[dict[str, Any]]] = defaultdict(list)
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        btype = str(block.get("type") or "")
+        types[btype] += 1
+        if btype in ("aside_text", "page_aside_text"):
+            aside_n += 1
+        if block.get("bbox"):
+            bbox_n += 1
+        for key in block:
+            keys[str(key)] += 1
+            lower = str(key).lower()
+            if any(tag in lower for tag in ("col", "layout", "aside", "bbox", "angle")):
+                layoutish[str(key)] += 1
+        by_page[block.get("page_idx")].append(block)
+
+    pages: list[dict[str, Any]] = []
+    for page_idx, items in sorted(by_page.items(), key=lambda kv: (kv[0] is None, kv[0])):
+        left = mid = right = 0
+        buckets: Counter[int] = Counter()
+        for block in items:
+            raw = block.get("bbox")
+            if not isinstance(raw, (list, tuple)) or len(raw) < 4:
+                continue
+            try:
+                x0 = float(raw[0])
+                x1 = float(raw[2])
+            except (TypeError, ValueError):
+                continue
+            if max(abs(x0), abs(x1)) <= 1.5:
+                x0 *= 1000.0
+            if x0 < 280:
+                left += 1
+            elif x0 >= 500:
+                right += 1
+            else:
+                mid += 1
+            buckets[int(x0 // 50) * 50] += 1
+        pages.append(
+            {
+                "page_idx": page_idx,
+                "blocks": len(items),
+                "left": left,
+                "mid": mid,
+                "right": right,
+                "x0_buckets": dict(sorted(buckets.items())),
+            }
+        )
+    return {
+        "block_count": sum(types.values()),
+        "types": dict(types),
+        "keys": dict(keys),
+        "bbox_count": bbox_n,
+        "aside_count": aside_n,
+        "layoutish_keys": dict(layoutish),
+        "pages": pages,
+    }
+
+
 def parse_pdf(
     pdf_bytes: bytes,
     *,
     filename: str,
     book_id: str,
     cfg: KbMineruRuntime | None = None,
+    page_ranges: str = "",
+    upload_figures: bool = True,
+    persist_dir: Path | str | None = None,
 ) -> KbParseResult:
     runtime = cfg or require_export_config()
     if runtime.model_version not in ("vlm", "pipeline"):
@@ -52,21 +157,36 @@ def parse_pdf(
     try:
         pdf_path = tmp / Path(filename or "book.pdf").name
         pdf_path.write_bytes(pdf_bytes)
-        workdir = _run_cloud(pdf_path, tmp / "out", runtime)
+        workdir = _run_cloud(pdf_path, tmp / "out", runtime, page_ranges=page_ranges)
+        dest = Path(persist_dir) if persist_dir else None
+        if dest is not None:
+            persist_workdir(workdir, dest)
         markdown, blocks = _read_workdir(workdir)
-        markdown, blocks = _upload_figures(workdir, markdown, blocks, book_id)
+        if dest is not None:
+            dest.mkdir(parents=True, exist_ok=True)
+            (dest / "blocks.json").write_text(
+                json.dumps(blocks, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        if upload_figures:
+            markdown, blocks = _upload_figures(workdir, markdown, blocks, book_id)
         return KbParseResult(markdown=markdown, blocks=blocks)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def _run_cloud(pdf_path: Path, output_base: Path, cfg: KbMineruRuntime) -> Path:
+def _run_cloud(
+    pdf_path: Path,
+    output_base: Path,
+    cfg: KbMineruRuntime,
+    page_ranges: str = "",
+) -> Path:
     headers = {
         "Authorization": f"Bearer {cfg.api_token}",
         "Accept": "application/json",
     }
     with httpx.Client(base_url=cfg.api_base_url.rstrip("/"), headers=headers) as client:
-        batch_id, upload_url = _request_slot(client, pdf_path, cfg)
+        batch_id, upload_url = _request_slot(client, pdf_path, cfg, page_ranges=page_ranges)
         _put_pdf(pdf_path, upload_url)
         zip_url = _wait_zip(client, batch_id, pdf_path.name, cfg.timeout_s)
         archive = _download(zip_url)
@@ -78,9 +198,18 @@ def _run_cloud(pdf_path: Path, output_base: Path, cfg: KbMineruRuntime) -> Path:
     return workdir
 
 
-def _request_slot(client: httpx.Client, pdf_path: Path, cfg: KbMineruRuntime) -> tuple[str, str]:
+def _request_slot(
+    client: httpx.Client,
+    pdf_path: Path,
+    cfg: KbMineruRuntime,
+    page_ranges: str = "",
+) -> tuple[str, str]:
+    file_row: dict[str, Any] = {"name": pdf_path.name, "is_ocr": cfg.is_ocr}
+    ranges = (page_ranges or "").strip()
+    if ranges:
+        file_row["page_ranges"] = ranges
     body: dict[str, Any] = {
-        "files": [{"name": pdf_path.name, "is_ocr": cfg.is_ocr}],
+        "files": [file_row],
         "model_version": cfg.model_version,
         "enable_formula": cfg.enable_formula,
         "enable_table": cfg.enable_table,

@@ -1,0 +1,32 @@
+tasks:
+  - id: import-page-refine
+    title: 导入完成后逐页清洗
+    enabled: true
+    mode: trigger
+    trigger: kb.import.completed
+    action: chat
+    identify_message: |
+      刚拖入一本教材 PDF。文件名：{{filename}}。书号：{{book_id}}。
+      MinerU 已经识别了前三页，文本在下面。不要再 open_pdf_page，不要读 PDF，不要看图。
+      文本已在对话里：第一件事就调用 propose_import_meta，不要先读 SKILL、不要 glob、不要搜索工作区。
+      根据文本判断科目、学段、类型、显示名、书名提示。
+      显示名和书名提示里的册号用阿拉伯数字：写「第1册」不要写「第一册」，方便按标题排序。
+      科目只能是 math / chinese / physics / chemistry / biology / english，学段只能是 ms（初中）/ hs（高中）/ ps（小学）。
+      类型只能是 textbook（教材）/ knowledge（知识点）/ syllabus（考纲）/ material（资料）/ homework（作业）。课程标准、命题要求、考试说明归 syllabus。
+      然后只调用一次 propose_import_meta(book_id, label, textbook_hint, subject, grade_band, category)。
+      不要开始识别，不要 refine_page / toc_extract / improve_render / build_toc。
+      填完后用一两句话说明依据，等用户在导入页核对。用户点「开始识别」后才会导入和清洗。
+
+      ----- MinerU 前三页 -----
+      {{preview}}
+    message: |
+      教材已导入完成。书号：{{book_id}}。
+      请先读工作区 .cursor/skills/page-refine/SKILL.md 和 .cursor/skills/improve-render/SKILL.md，再按下面顺序调用清洗工具，对这本书做逐步清洗。没有书就说没有；禁止用通识改教材定义或题干。
+
+      1. checkpoint：note 写清书号与「导入后清洗前」。
+      2. 逐页确定性清洗：列出 textbooks/{{book_id}}/pages/ 下所有 NNNN.md，对每一页调用 refine_page(book_id={{book_id}}, page_no=页码)，去残留 JSON/HTML、收空白。
+      3. 整书渲染扫描：improve_render(book_id={{book_id}})，只扫不改；看返回的 by_kind 与 next_steps。
+      4. 按 next_steps 分层修，不要混。
+      5. 抽子目录：toc_extract(book_id={{book_id}})。它先看原文 PDF 目录页，再读 toc.json，然后一次写入 toc_agent.json；不要每个区间另开对话，也不要手写旁路。
+      6. 重抽目录：build_toc(book_id={{book_id}})。
+      7. 再扫一次 improve_render(book_id={{book_id}})。不要把整页正文贴进对话。到此结束。

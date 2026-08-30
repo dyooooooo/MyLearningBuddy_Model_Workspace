@@ -238,6 +238,62 @@ def _equation_markdown(block: dict[str, Any]) -> str:
     return _image_markdown(block, alt_default="公式")
 
 
+def _render_block(
+    block: dict[str, Any],
+    print_to_pdf: dict[int, int] | None,
+    *,
+    skip_chrome: bool = True,
+) -> str:
+    btype = str(block.get("type") or "").strip().lower()
+    if skip_chrome and btype in _SKIP_TYPES:
+        return ""
+    if btype == "discarded":
+        return ""
+    text = _plain_text(block)
+    if _is_toc_block(block, text):
+        return _toc_html(_block_lines(block, text), print_to_pdf)
+    if btype in _EQUATION_TYPES:
+        return _equation_markdown(block)
+    if btype in _FIGURE_TYPES:
+        return _image_markdown(block)
+    if btype == "table":
+        content = block.get("content") if isinstance(block.get("content"), dict) else {}
+        cap = _caption(
+            block.get("table_caption")
+            or content.get("table_caption")
+            or block.get("caption")
+            or content.get("caption")
+        )
+        foot = _caption(block.get("table_footnote") or content.get("table_footnote"))
+        table = (
+            block.get("table_body")
+            or block.get("html")
+            or block.get("table_html")
+            or content.get("table_body")
+            or content.get("html")
+            or content.get("table_html")
+            or ""
+        )
+        if isinstance(table, str) and table.strip().startswith("<"):
+            return polish_table_html(table, caption=cap, footnote=foot)
+        if _image_path(block):
+            return _image_markdown(block, alt_default=cap or "表格")
+        return cap
+    if btype in _TITLE_TYPES and text:
+        hashes = "##" if len(text) < 40 else "###"
+        return f"{hashes} {text}"
+    stripped = text.strip() if text else ""
+    if stripped in {"#", "第"} or (stripped and set(stripped) <= {"#"}):
+        return ""
+    if text and looks_like_heading(text):
+        return f"### {text.strip()}"
+    return text
+
+
+def _join_parts(parts: list[str]) -> str:
+    return wrap_bare_math(polish_page_prose("\n\n".join(p for p in parts if p)))
+
+
 def blocks_to_page_markdown(
     blocks: list[dict[str, Any]],
     *,
@@ -247,60 +303,8 @@ def blocks_to_page_markdown(
     for block in blocks:
         if not isinstance(block, dict):
             continue
-        btype = str(block.get("type") or "").strip().lower()
-        if btype in _SKIP_TYPES:
-            continue
-        text = _plain_text(block)
-        if _is_toc_block(block, text):
-            html = _toc_html(_block_lines(block, text), print_to_pdf)
-            if html:
-                parts.append(html)
-                continue
-        if btype in _EQUATION_TYPES:
-            eq = _equation_markdown(block)
-            if eq:
-                parts.append(eq)
-            continue
-        if btype in _FIGURE_TYPES:
-            img = _image_markdown(block)
-            if img:
-                parts.append(img)
-            continue
-        if btype == "table":
-            content = block.get("content") if isinstance(block.get("content"), dict) else {}
-            cap = _caption(
-                block.get("table_caption")
-                or content.get("table_caption")
-                or block.get("caption")
-                or content.get("caption")
-            )
-            foot = _caption(block.get("table_footnote") or content.get("table_footnote"))
-            table = (
-                block.get("table_body")
-                or block.get("html")
-                or block.get("table_html")
-                or content.get("table_body")
-                or content.get("html")
-                or content.get("table_html")
-                or ""
-            )
-            if isinstance(table, str) and table.strip().startswith("<"):
-                parts.append(polish_table_html(table, caption=cap, footnote=foot))
-            elif _image_path(block):
-                parts.append(_image_markdown(block, alt_default=cap or "表格"))
-            elif cap:
-                parts.append(cap)
-            continue
-        if btype in _TITLE_TYPES and text:
-            hashes = "##" if len(text) < 40 else "###"
-            parts.append(f"{hashes} {text}")
-            continue
-        stripped = text.strip() if text else ""
-        if stripped in {"#", "第"} or (stripped and set(stripped) <= {"#"}):
-            continue
-        if text and looks_like_heading(text):
-            parts.append(f"### {text.strip()}")
-            continue
-        if text:
-            parts.append(text)
-    return wrap_bare_math(polish_page_prose("\n\n".join(parts)))
+        piece = _render_block(block, print_to_pdf)
+        if piece:
+            parts.append(piece)
+    return _join_parts(parts)
+

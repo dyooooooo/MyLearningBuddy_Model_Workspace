@@ -5,4 +5,10 @@ pydantic>=2.10.0
 pydantic-settings>=2.6.0
 httpx>=0.28.0
 pyyaml>=6.0.2
-cursor-sdk>=1.0.0
+croniter>=2.0.0
+# Pinned, not floating: the wheel also carries the vendored node bridge, so the
+# version that runs must be a decision here rather than whatever the Docker layer
+# cache happens to hold. 1.0.28 misclassifies an expired exchanged token as a
+# terminal AuthenticationError; Cursor fixed that in 1.0.29.
+cursor-sdk==1.0.30
+pypdf>=5.0.0

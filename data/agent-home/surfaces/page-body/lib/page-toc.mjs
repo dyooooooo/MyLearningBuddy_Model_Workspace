@@ -1,6 +1,15 @@
 const TRAILING_PAGE = /^(.+?)\s+(\d{1,4})$/;
-const CHAPTER = /^第[一二三四五六七八九十百零\d]+章/;
+const SLASH_PAGE = /^(.+?)\/(\d{1,4})$/;
+const CHAPTER = /^[第][一二三四五六七八九十百零\d]+章/;
+const PART = /^[第][一二三四五六七八九十百零\d]+部分/;
 const SECTION = /^\*?\d+\.\d+/;
+const APPENDIX_ITEM = /^附录\s*\d+/;
+const APPENDIX_HEAD = /^附录$|^Appendices$/i;
+const INTRO = /^引论(?:\s|$)/;
+const LATIN_UNIT_NUM = /^\d+\s+[A-Z][A-Za-z]/;
+const LATIN_GROUP_BARE = /^[A-Z][A-Za-z]+(?:[ \-][A-Za-z]+){0,4}$/;
+const CN_ENUM_CHAPTER = /^[一二三四五六七八九十]+、/;
+const CN_ENUM_SECTION = /^[（(][一二三四五六七八九十]+[）)]/;
 const DEFAULT_TITLES = ["目录", "目 录", "CONTENTS", "Contents"];
 const HEADING_TAGS = new Set(["div", "p", "h1", "h2", "h3", "h4", "h5", "h6", "span"]);
 
@@ -10,9 +19,13 @@ function titleSet(profile) {
   return new Set(list.map((t) => String(t)));
 }
 
+function bareLine(line) {
+  return (line || "").trim().replace(/^#{1,6}\s+/, "");
+}
+
 export function asTocTitle(line, profile = {}) {
   const titles = titleSet(profile);
-  const t = (line || "").trim().replace(/^#{1,6}\s+/, "");
+  const t = bareLine(line);
   const compact = t.replace(/[\s\u3000]/g, "");
   if (compact === "目录") return "目录";
   if (compact.toLowerCase() === "contents") return "Contents";
@@ -20,31 +33,73 @@ export function asTocTitle(line, profile = {}) {
   return "";
 }
 
-export function parseTocLine(raw) {
-  let text = (raw || "").trim().replace(/^[-•·* ]+/, "");
-  if (text.startsWith("\\*")) text = `*${text.slice(2)}`;
-  const levelOf = (label) => {
-    if (CHAPTER.test(label)) return 0;
-    if (/^\*?\d+\.\d+\.\d+\b/.test(label)) return 2;
-    if (SECTION.test(label)) return 1;
-    return 1;
-  };
-  const match = TRAILING_PAGE.exec(text);
-  if (match) {
-    const label = match[1].replace(/[ .\u3000．…·•]+$/, "").trim();
-    const page = Number(match[2]);
-    if (label && !/^\d+$/.test(label)) {
-      return { label, printPage: page, isChapter: CHAPTER.test(label), level: levelOf(label) };
-    }
+function isSelfHeading(label) {
+  return /^self-?assessment$/i.test((label || "").replace(/\s+/g, ""));
+}
+
+function isGroupHeading(label, printPage = null) {
+  const t = (label || "").trim();
+  if (APPENDIX_ITEM.test(t) || CN_ENUM_SECTION.test(t)) return false;
+  if (
+    CHAPTER.test(t) ||
+    PART.test(t) ||
+    APPENDIX_HEAD.test(t) ||
+    INTRO.test(t) ||
+    LATIN_UNIT_NUM.test(t) ||
+    CN_ENUM_CHAPTER.test(t)
+  ) {
+    return true;
   }
-  return { label: text, printPage: null, isChapter: CHAPTER.test(text), level: levelOf(text) };
+  if (printPage != null || isSelfHeading(t) || asTocTitle(t)) return false;
+  return LATIN_GROUP_BARE.test(t);
+}
+
+function levelOf(label, printPage = null) {
+  if (APPENDIX_ITEM.test(label) || CN_ENUM_SECTION.test(label)) return 1;
+  if (isGroupHeading(label, printPage)) return 0;
+  if (/^\*?\d+\.\d+\.\d+\b/.test(label)) return 2;
+  if (SECTION.test(label)) return 1;
+  if (/^\*?\d+\s+\S/.test(label)) return 1;
+  return 1;
+}
+
+function splitPrintPage(text) {
+  const space = TRAILING_PAGE.exec(text);
+  if (space) {
+    const label = space[1].replace(/[ .\u3000．…·•]+$/, "").trim();
+    const page = Number(space[2]);
+    if (label && !/^\d+$/.test(label)) return { label, printPage: page };
+  }
+  const slash = SLASH_PAGE.exec(text);
+  if (slash) {
+    const label = slash[1].replace(/[ .\u3000．…·•]+$/, "").trim();
+    const page = Number(slash[2]);
+    if (label && !/^\d+$/.test(label)) return { label, printPage: page };
+  }
+  return null;
+}
+
+export function parseTocLine(raw) {
+  let text = bareLine(raw).replace(/^[-•·* ]+/, "");
+  if (text.startsWith("\\*")) text = `*${text.slice(2)}`;
+  const split = splitPrintPage(text);
+  if (split) {
+    return {
+      label: split.label,
+      printPage: split.printPage,
+      isChapter: isGroupHeading(split.label, split.printPage),
+      level: levelOf(split.label, split.printPage),
+    };
+  }
+  return { label: text, printPage: null, isChapter: isGroupHeading(text, null), level: levelOf(text, null) };
 }
 
 function looksLikeEntry(line, profile) {
-  const s = (line || "").trim();
+  const s = bareLine(line);
   if (!s || asTocTitle(s, profile) || titleSet(profile).has(s)) return false;
+  if (CN_ENUM_CHAPTER.test(s) || CN_ENUM_SECTION.test(s)) return true;
   if (/[=\\]/.test(s) || /^(?:\(|当|解)/.test(s)) return false;
-  if (CHAPTER.test(s) || SECTION.test(s)) return true;
+  if (isGroupHeading(s) || CHAPTER.test(s) || PART.test(s) || SECTION.test(s) || APPENDIX_ITEM.test(s)) return true;
   const ent = parseTocLine(s);
   return ent.printPage != null && Boolean(ent.label);
 }
@@ -81,7 +136,7 @@ function rowHtml(entry, printToPdf) {
     attrs.push(`data-goto-print-page="${entry.printPage}"`);
     const mapped = Number(printToPdf[String(entry.printPage)] || 0);
     if (mapped > 0) attrs.push(`data-goto-page="${mapped}"`);
-    attrs.push('role="link"', 'tabindex="0"');
+    attrs.push("role=\"link\"", "tabindex=\"0\"");
     leader = '<span class="kb-page-toc-leader" aria-hidden="true"></span>';
     page = `<span class="kb-page-toc-page">${entry.printPage}</span>`;
   }
@@ -106,7 +161,7 @@ export function liftPageToc(md, printToPdf = {}, profile = {}) {
       heading = titleText;
       continue;
     }
-    if (!looksLikeEntry(trimmed, profile) && !CHAPTER.test(trimmed)) continue;
+    if (!looksLikeEntry(trimmed, profile) && !isGroupHeading(bareLine(trimmed))) continue;
     rows.push(rowHtml(parseTocLine(trimmed), printToPdf));
   }
   if (rows.length < 2) return raw;

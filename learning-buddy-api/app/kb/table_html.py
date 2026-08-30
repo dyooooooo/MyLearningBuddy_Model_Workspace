@@ -11,6 +11,7 @@ from app.kb.math_text import wrap_bare_math
 _CELL = re.compile(r"(<t[dh]\b[^>]*>)([\s\S]*?)(</t[dh]>)", re.IGNORECASE)
 
 _TABLE_RE = re.compile(r"<table\b[\s\S]*?</table>", re.IGNORECASE)
+_TABLE_OPEN = re.compile(r"(<table\b[^>]*>)", re.IGNORECASE)
 _FIRST_ROW = re.compile(r"<tr\b[^>]*>[\s\S]*?</tr>", re.IGNORECASE)
 _TD = re.compile(r"<td\b", re.IGNORECASE)
 _TH = re.compile(r"<th\b", re.IGNORECASE)
@@ -48,13 +49,12 @@ def _wrap_cells(html: str) -> str:
 def _inject_caption(html: str, caption: str) -> str:
     if not caption or re.search(r"<caption\b", html, re.IGNORECASE):
         return html
-    return re.sub(
-        r"(<table\b[^>]*>)",
-        rf"\1<caption>{escape(caption)}</caption>",
-        html,
-        count=1,
-        flags=re.IGNORECASE,
-    )
+    cap = escape(caption)
+
+    def repl(match: re.Match[str]) -> str:
+        return f"{match.group(1)}<caption>{cap}</caption>"
+
+    return _TABLE_OPEN.sub(repl, html, count=1)
 
 
 def _add_table_class(html: str, extra: str) -> str:

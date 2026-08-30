@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import secrets
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app import (
+    approvals,
     bus,
     checkpoints,
     config_store,
@@ -26,9 +28,12 @@ from app import (
     prompts_store,
     sdk_runner,
     surfaces,
+    tasks,
 )
 from app.bridge_cleanup import close_sdk_bridge, sweep_orphan_bridges
 from app.config import settings
+from app.cursor_auth import ensure_cursor_credentials
+from app.sdk_client import close_owned_client, ensure_client
 from app.paths import PathJailError
 from app.sdk_patches import apply_cursor_sdk_patches
 from app.workspace import ensure_workspace, list_textbook_files
@@ -46,6 +51,14 @@ async def lifespan(_app: FastAPI):
         logger.warning("bridge sweep startup failed", exc_info=True)
     ensure_workspace()
     try:
+        ensure_cursor_credentials()
+    except Exception:
+        logger.warning("cursor credential seed failed", exc_info=True)
+    try:
+        ensure_client()
+    except Exception:
+        logger.warning("CursorClient.launch_bridge failed; first turn will retry", exc_info=True)
+    try:
         checkpoints.backfill_missing_jobs()
     except Exception:
         logger.warning("checkpoint backfill failed", exc_info=True)
@@ -53,11 +66,28 @@ async def lifespan(_app: FastAPI):
         jobs.cancel_active("interrupted")
     except Exception:
         logger.warning("stale job cancel failed", exc_info=True)
+    stop_tick = threading.Event()
+
+    def _tick_loop() -> None:
+        while True:
+            try:
+                tasks.tick()
+            except Exception:
+                logger.warning("task tick failed", exc_info=True)
+            if stop_tick.wait(30):
+                break
+
+    threading.Thread(target=_tick_loop, name="task-tick", daemon=True).start()
     yield
+    stop_tick.set()
     try:
-        close_sdk_bridge()
+        close_owned_client()
     except Exception:
-        logger.warning("close_sdk_bridge failed", exc_info=True)
+        logger.warning("close_owned_client failed", exc_info=True)
+        try:
+            close_sdk_bridge()
+        except Exception:
+            logger.warning("close_sdk_bridge failed", exc_info=True)
     try:
         n = sweep_orphan_bridges()
         logger.info("bridge sweep shutdown: %s orphan process(es)", n)
@@ -116,9 +146,18 @@ class ChatIn(BaseModel):
     conversation_id: str = ""
     mode: str = "agent"
     model: str = ""
+    plan_id: str = ""
+    task_id: str = ""
+    trigger: str = ""
     model_params: list[ModelParamIn] = Field(default_factory=list)
     images: list[ChatImage] = Field(default_factory=list)
     files: list[ChatFile] = Field(default_factory=list)
+
+
+class ApprovalDecideIn(BaseModel):
+    choice: str
+    job_id: str = ""
+    note: str = ""
 
 
 class McpIn(BaseModel):
@@ -144,7 +183,10 @@ class LibraryPatchIn(BaseModel):
     textbook_hint: str | None = None
     subject: str | None = None
     grade_band: str | None = None
+    category: str | None = None
     is_default: bool | None = None
+    status: str | None = None
+    conversation_id: str | None = None
 
 
 class SurfacePrepareIn(BaseModel):
@@ -182,9 +224,52 @@ class ForkIn(BaseModel):
     name: str = ""
 
 
+class TaskIn(BaseModel):
+    title: str
+    mode: str = "trigger"
+    trigger: str = ""
+    cron: str = ""
+    next_run: str = ""
+    message: str = ""
+    action: str = "chat"
+    prompt: str = ""
+    enabled: bool = True
+
+
+class TaskPatchIn(BaseModel):
+    title: str | None = None
+    mode: str | None = None
+    trigger: str | None = None
+    cron: str | None = None
+    next_run: str | None = None
+    message: str | None = None
+    action: str | None = None
+    prompt: str | None = None
+    enabled: bool | None = None
+
+
+class TaskRunIn(BaseModel):
+    book_id: str = ""
+    message: str = ""
+
+
+class TaskEmitIn(BaseModel):
+    event: str
+    book_id: str = ""
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "textbook-agent"}
+
+
+@app.get("/v1/cursor/auth", dependencies=[Depends(_bearer)])
+def cursor_auth_status() -> dict[str, Any]:
+    """Cloud key probe. Compose healthcheck stays on /health so Cursor outage does not restart the box."""
+    from app.cursor_auth import probe_status
+
+    return probe_status(force=True)
 
 
 @app.post("/v1/grade", status_code=202, dependencies=[Depends(_bearer)])
@@ -236,6 +321,9 @@ def chat(body: ChatIn) -> dict[str, str]:
         "conversation_id": cid,
         "mode": mode,
         "model": (body.model or "").strip(),
+        "plan_id": (body.plan_id or "").strip(),
+        "task_id": (body.task_id or "").strip(),
+        "trigger": (body.trigger or "").strip(),
         "model_params": [row.model_dump() for row in body.model_params],
         "attachments": [{k: v for k, v in row.items() if k != "mime_type"} for row in attachments],
     }
@@ -259,6 +347,85 @@ def chat(body: ChatIn) -> dict[str, str]:
 
     jobs.start_background(job_id, _run)
     return {"job_id": job_id, "status": "queued", "conversation_id": cid, "title": conv["title"]}
+
+
+@app.get("/v1/tasks", dependencies=[Depends(_bearer)])
+def list_task_rows() -> dict[str, Any]:
+    return {"tasks": tasks.list_tasks()}
+
+
+@app.get("/v1/tasks/events", dependencies=[Depends(_bearer)])
+def list_task_events() -> dict[str, Any]:
+    return {"events": tasks.list_events()}
+
+
+@app.get("/v1/tasks/{task_id}", dependencies=[Depends(_bearer)])
+def get_task_row(task_id: str) -> dict[str, Any]:
+    row = tasks.get_task_detail(task_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="task not found")
+    return row
+
+
+@app.post("/v1/tasks", dependencies=[Depends(_bearer)])
+def create_task_row(body: TaskIn) -> dict[str, Any]:
+    try:
+        return tasks.create_task(
+            title=body.title,
+            mode=body.mode,
+            trigger=body.trigger,
+            cron=body.cron,
+            next_run=body.next_run,
+            message=body.message,
+            action=body.action,
+            prompt=body.prompt,
+            enabled=body.enabled,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.patch("/v1/tasks/{task_id}", dependencies=[Depends(_bearer)])
+def patch_task_row(task_id: str, body: TaskPatchIn) -> dict[str, Any]:
+    try:
+        row = tasks.update_task(task_id, **body.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if row is None:
+        raise HTTPException(status_code=404, detail="task not found")
+    return row
+
+
+@app.delete("/v1/tasks/{task_id}", dependencies=[Depends(_bearer)])
+def cancel_task_row(task_id: str) -> dict[str, Any]:
+    try:
+        return tasks.cancel_task(task_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/v1/tasks/{task_id}/run", dependencies=[Depends(_bearer)])
+def run_task_row(task_id: str, body: TaskRunIn | None = None) -> dict[str, Any]:
+    row = tasks.get_task(task_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="task not found")
+    extra = body.model_dump() if body else {}
+    try:
+        job = tasks.start_task(row, extra)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if job is None:
+        raise HTTPException(status_code=400, detail="task did not start (missing book_id?)")
+    return job
+
+
+@app.post("/v1/tasks/emit", dependencies=[Depends(_bearer)])
+def emit_task_event(body: TaskEmitIn) -> dict[str, Any]:
+    payload = dict(body.payload or {})
+    if body.book_id:
+        payload.setdefault("book_id", body.book_id)
+    started = tasks.emit(body.event, payload)
+    return {"event": body.event, "started": started}
 
 
 @app.get("/v1/jobs", dependencies=[Depends(_bearer)])
@@ -288,6 +455,9 @@ def get_job(job_id: str) -> dict[str, Any]:
     row = jobs.get_job(job_id)
     if row is None:
         raise HTTPException(status_code=404, detail="job not found")
+    from app import plans
+
+    plans.hydrate(row)
     return jobs.public_view(row)
 
 
@@ -297,6 +467,41 @@ def cancel_job(job_id: str) -> dict[str, Any]:
     if row is None:
         raise HTTPException(status_code=404, detail="job not found")
     return row
+
+
+@app.get("/v1/approvals", dependencies=[Depends(_bearer)])
+def list_approvals() -> dict[str, Any]:
+    return {"pending": approvals.list_pending()}
+
+
+@app.post("/v1/approvals/{req_id}/decide", dependencies=[Depends(_bearer)])
+def decide_approval(req_id: str, body: ApprovalDecideIn) -> dict[str, Any]:
+    choice = (body.choice or "").strip().lower()
+    if choice not in ("grant", "refuse", "revise"):
+        raise HTTPException(status_code=400, detail="choice must be grant, refuse, or revise")
+    note = (body.note or "").strip()
+    if choice == "revise" and not note:
+        raise HTTPException(status_code=400, detail="revise 需要填写想法")
+    job_id = (body.job_id or "").strip()
+    conversation_id = ""
+    if job_id:
+        row = jobs.get_job(job_id) or {}
+        payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+        conversation_id = str((payload or {}).get("conversation_id") or "")
+    try:
+        if choice == "grant":
+            record = approvals.grant(req_id, job_id, conversation_id)
+        elif choice == "refuse":
+            record = approvals.refuse(req_id, note)
+        else:
+            record = approvals.revise(req_id, note)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="申请不存在或已处理") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if job_id:
+        jobs.mark_approval(job_id, record)
+    return record
 
 
 @app.get("/v1/events", dependencies=[Depends(_bearer)])
@@ -339,9 +544,12 @@ async def library_create(
     file: UploadFile = File(...),
     subject: str = Form("math"),
     grade_band: str = Form("hs"),
+    category: str = Form("textbook"),
     label: str = Form(""),
     textbook_hint: str = Form(""),
     book_id: str = Form(""),
+    status: str = Form("uploaded"),
+    conversation_id: str = Form(""),
 ) -> dict[str, Any]:
     name = Path(file.filename or "book.pdf").name
     if not name.lower().endswith(".pdf"):
@@ -355,7 +563,10 @@ async def library_create(
             label=label,
             subject=subject,
             grade_band=grade_band,
+            category=category,
             textbook_hint=textbook_hint,
+            status=status,
+            conversation_id=conversation_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -431,6 +642,21 @@ def library_page_image(book_id: str, page_no: int) -> Response:
     if not data:
         raise HTTPException(status_code=404, detail="page image not found")
     return Response(content=data, media_type="image/jpeg")
+
+
+@app.post("/v1/books/{book_id}/toc-extract", dependencies=[Depends(_bearer)])
+def start_book_toc_extract(book_id: str) -> dict[str, Any]:
+    if library.get_book(book_id) is None:
+        raise HTTPException(status_code=404, detail="book not found")
+    try:
+        return tasks.start_toc_extract(book_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/v1/library/{book_id}/toc-extract", dependencies=[Depends(_bearer)])
+def library_toc_extract(book_id: str) -> dict[str, Any]:
+    return start_book_toc_extract(book_id)
 
 
 @app.get("/v1/books", dependencies=[Depends(_bearer)])

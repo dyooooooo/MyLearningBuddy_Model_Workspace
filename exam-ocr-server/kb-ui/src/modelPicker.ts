@@ -75,8 +75,16 @@ export function statusLabel(model: CatalogModel | undefined, params: ModelParam[
 
 export function defaultParams(model: CatalogModel | undefined): ModelParam[] {
   if (!model) return [];
+  if (model.id === "grok-4.6") {
+    return [
+      { id: "effort", value: "xhigh" },
+      { id: "fast", value: "true" },
+    ];
+  }
   const variant = (model.variants || []).find((v) => v.is_default || v.isDefault) || (model.variants || [])[0];
-  return [...(variant?.params || [])];
+  return (variant?.params || []).map((p) =>
+    p.id === "effort" && p.value === "high" ? { ...p, value: "medium" } : { ...p },
+  );
 }
 
 export function openModelPicker(

@@ -164,11 +164,16 @@ def _read_profile(folder: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def _read_css(folder: Path) -> str:
-    path = folder / "theme.css"
-    if not path.is_file():
-        return ""
-    return sanitize_css(path.read_text(encoding="utf-8"))
+def _read_css(folder: Path, slot: str = "") -> str:
+    candidates = [folder / "theme.css"]
+    if slot:
+        for extra in (workspace_slot(slot) / "theme.css", seed_slot(slot) / "theme.css"):
+            if extra not in candidates:
+                candidates.append(extra)
+    for path in candidates:
+        if path.is_file():
+            return sanitize_css(path.read_text(encoding="utf-8"))
+    return ""
 
 
 def _node_bin() -> str:
@@ -319,7 +324,7 @@ def _activate(slot: str, *, force: bool = False) -> SlotState:
         source=source,
         loaded=loaded,
         profile=_read_profile(folder),
-        css=_read_css(folder),
+        css=_read_css(folder, slot),
         goldens=rows,
         error="" if loaded else (next((r.detail for r in rows if not r.ok), "") or "not loaded"),
     )

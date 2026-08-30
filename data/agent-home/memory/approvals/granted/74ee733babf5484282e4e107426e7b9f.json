@@ -1,0 +1,17 @@
+{
+  "req_id": "74ee733babf5484282e4e107426e7b9f",
+  "status": "granted",
+  "path": "surfaces/page-body/theme.css",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "834f5548-c831-428b-9cb6-1386b6478f70",
+  "conversation_id": "05fe04f0-bef6-4148-96aa-1cbec9d17461",
+  "requested_at": "2026-08-29T09:55:14.807714+00:00",
+  "situation": "课标全书标题已按一、/（一）/主题与【】/1．/（1）写成二到六级 ATX，左栏 toc.json 也按 0–4 级写好了共 329 条。但 page-body 的 theme.css 把 h1–h4 写成同一字号、没有缩进，也不认 h5/h6；toc-tree 只给 lv0–lv2 加了左内边距。结果正文看不出层次，左栏四级、五级会和章头齐平，缩进和着重号都落不下来。",
+  "why": "标题逐级缩小加粗、逐级缩进是所有书共用的标题样式，不是这一册专名。左栏本来就用 kb-toc-row--lvN，只是 CSS 停在 lv2；正文标题也只是补全 h2–h6 的字重和缩进。不该把缩进写进 Markdown 空格，也不该为一书改解析器。",
+  "changes": "改 surfaces/page-body/theme.css：h2 最大最重，h3–h6 字号递减、字重保持加粗或略减，左内边距递增，让一级到五级在正文里分得清。改 surfaces/toc-tree/theme.css：为 .kb-toc-row--lv3、lv4 增加比 lv2 更深的 padding-left（约 1.95rem / 2.55rem）。不改 paint.mjs / prepare.mjs，不加书名专名，不改金样输入。授权前不写 surface 文件。",
+  "impact": "所有书的 h2–h6 和左栏 lv3–lv4 都会按级缩进加粗；现有第N章三级目录金样只多两条用不到的 CSS，HTML 金样不变。这本课标刷新后正文和左栏应能看到五级层次。授权前画面仍是现在的齐头标题。",
+  "granted_at": "2026-08-29T09:55:43.371201+00:00",
+  "expires_at": "2026-08-29T10:10:43.371201+00:00",
+  "one_shot": true
+}

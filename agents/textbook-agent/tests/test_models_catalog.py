@@ -52,3 +52,11 @@ def test_model_selection_maps_auto_and_params() -> None:
     params = list(getattr(sel, "params", []) or [])
     assert params[0].id == "fast"
     assert params[0].value == "true"
+
+
+def test_model_selection_defaults_to_grok_xhigh_fast() -> None:
+    sel = sdk_runner.model_selection("", None)
+    assert getattr(sel, "id", None) == "grok-4.6"
+    pairs = {p.id: p.value for p in (getattr(sel, "params", []) or [])}
+    assert pairs.get("effort") == "xhigh"
+    assert pairs.get("fast") == "true"

@@ -15,12 +15,18 @@ def ensure_workspace() -> Path:
     settings.cursor_dir.mkdir(parents=True, exist_ok=True)
     (settings.cursor_dir / "rules").mkdir(parents=True, exist_ok=True)
     (settings.cursor_dir / "skills").mkdir(parents=True, exist_ok=True)
+    (settings.cursor_dir / "plans").mkdir(parents=True, exist_ok=True)
     settings.tools_dir.mkdir(parents=True, exist_ok=True)
     (settings.tools_dir / "mcp").mkdir(parents=True, exist_ok=True)
     settings.traces_dir.mkdir(parents=True, exist_ok=True)
     settings.inbox_dir.mkdir(parents=True, exist_ok=True)
     (settings.home / "logs").mkdir(parents=True, exist_ok=True)
     (settings.home / "prompts").mkdir(parents=True, exist_ok=True)
+    settings.tasks_dir.mkdir(parents=True, exist_ok=True)
+    settings.memory_dir.mkdir(parents=True, exist_ok=True)
+    (settings.memory_dir / "working").mkdir(parents=True, exist_ok=True)
+    for name in ("pending", "granted", "refused", "revised"):
+        (settings.memory_dir / "approvals" / name).mkdir(parents=True, exist_ok=True)
     (settings.cursor_dir / "hooks").mkdir(parents=True, exist_ok=True)
     (settings.cursor_dir / "plugins" / "local").mkdir(parents=True, exist_ok=True)
     (settings.cursor_dir / "plugins" / "disabled").mkdir(parents=True, exist_ok=True)
@@ -28,6 +34,8 @@ def ensure_workspace() -> Path:
         _copy_if_missing(_SEED / ".cursor", settings.cursor_dir)
         _copy_if_missing(_SEED / "tools", settings.tools_dir)
         _copy_if_missing(_SEED / "prompts", settings.home / "prompts")
+        _copy_if_missing(_SEED / "tasks", settings.tasks_dir)
+        _copy_if_missing(_SEED / "memory", settings.memory_dir)
         seed_ignore = _SEED / ".cursorignore"
         dest_ignore = settings.home / ".cursorignore"
         if seed_ignore.is_file() and not dest_ignore.exists():
@@ -45,8 +53,8 @@ def ensure_workspace() -> Path:
     if not hooks.exists():
         hooks.write_text(
             '{"version": 1, "hooks": {'
-            '"preToolUse": [{"type": "command", "command": ".cursor/hooks/guard-redline.sh", "failClosed": true}],'
-            '"beforeShellExecution": [{"type": "command", "command": ".cursor/hooks/guard-redline.sh", "failClosed": true}]'
+            '"preToolUse": [{"type": "command", "command": ".cursor/hooks/guard-redline.sh", "failClosed": true, "timeout": 10}],'
+            '"beforeShellExecution": [{"type": "command", "command": ".cursor/hooks/guard-redline.sh", "failClosed": true, "timeout": 10}]'
             "}}\n",
             encoding="utf-8",
         )

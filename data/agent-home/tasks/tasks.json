@@ -1,0 +1,28 @@
+{
+  "tasks": [
+    {
+      "id": "import-page-refine",
+      "enabled": true,
+      "next_run": "",
+      "last_run_at": "2026-08-30T04:20:23.767200+00:00",
+      "last_job_id": "16b90354-7a66-4390-bdb1-2e7a3029bb8a"
+    },
+    {
+      "id": "0f0496a1-fbd9-46ea-ab6d-30f9fd5a5fb0",
+      "title": "目录后试触发",
+      "enabled": false,
+      "mode": "trigger",
+      "trigger": "tool.build_toc",
+      "cron": "",
+      "next_run": "",
+      "action": "chat",
+      "prompt": "prompts/tasks.md",
+      "message": "目录已建 {{book_id}}",
+      "identify_message": "",
+      "builtin": false,
+      "last_run_at": "",
+      "last_job_id": ""
+    }
+  ],
+  "updated_at": "2026-08-30T04:20:23.772649+00:00"
+}

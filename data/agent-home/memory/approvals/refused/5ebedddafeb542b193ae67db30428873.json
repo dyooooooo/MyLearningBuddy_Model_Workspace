@@ -1,0 +1,16 @@
+{
+  "req_id": "5ebedddafeb542b193ae67db30428873",
+  "status": "refused",
+  "path": "tools/build_toc.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "",
+  "conversation_id": "",
+  "requested_at": "2026-08-28T04:00:21.387097+00:00",
+  "situation": "沪教高中数学第5页公式被拆成上下标，复现：打开 pages/0005.md。",
+  "why": "这是全书公式渲染的共性形状，不改则每本新书都会再拆一次。",
+  "changes": "改 tools/refine_page.py 的 strip_sub_sup，把连续上下标合并成一组。",
+  "impact": "已导入的书页不会自动变；新导入和 rebuild 会用新逻辑。可用检查点回退。",
+  "note": "不要改",
+  "refused_at": "2026-08-28T04:00:27.004425+00:00"
+}

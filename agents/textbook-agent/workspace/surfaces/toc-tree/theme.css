@@ -1,31 +1,58 @@
-:host { display: block; }
+:host { display: block; box-sizing: border-box; }
+:host *, :host *::before, :host *::after { box-sizing: border-box; }
 .muted { color: #8b97ad; font-size: 13px; }
-.kb-toc-list { list-style: none; padding: 0; margin: 0; }
+.kb-toc-list { list-style: none; padding: 0; margin: 0; max-width: 100%; overflow: hidden; }
+.kb-toc-children { padding-left: 0.75rem; }
+.kb-toc-node { list-style: none; margin: 0; padding: 0; }
+.kb-toc-node.is-collapsed > .kb-toc-children { display: none; }
 .kb-toc-row {
-  display: flex; align-items: baseline; width: 100%;
-  gap: 0; margin: 0; padding: 0.28rem 0; list-style: none;
+  display: grid;
+  grid-template-columns: 1.15rem minmax(0, max-content) minmax(0.35rem, 1fr) max-content;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  gap: 0;
+  margin: 0;
+  padding: 0.22rem 0.35rem 0.22rem 0;
   border-radius: 4px;
 }
-.kb-toc-row--lv0 { padding-left: 0; }
-.kb-toc-row--lv1 { padding-left: 0.85rem; }
-.kb-toc-row--lv2 { padding-left: 1.6rem; }
-.kb-toc-row--chapter {
-  margin-top: 0.55rem; font-weight: 700; font-size: 0.92rem;
-}
+.kb-toc-list > .kb-toc-node:first-child > .kb-toc-row--chapter { margin-top: 0; }
+.kb-toc-row--chapter { margin-top: 0.45rem; font-weight: 700; font-size: 0.92rem; }
 .kb-toc-row--link { cursor: pointer; }
 .kb-toc-row--link:hover { background: rgba(127, 156, 245, 0.16); }
 .kb-toc-row--link:hover .kb-toc-title,
 .kb-toc-row--link:hover .kb-toc-page { color: #7f9cf5; }
+.kb-toc-caret,
+.kb-toc-caret-spacer {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+.kb-toc-caret {
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.kb-toc-caret:hover { background: rgba(127, 156, 245, 0.22); }
+.kb-toc-caret .kb-chev { display: block; transition: transform 0.14s ease; }
+.kb-toc-node.is-collapsed > .kb-toc-row .kb-chev { transform: rotate(-90deg); }
 .kb-toc-title {
-  flex: 0 1 auto; min-width: 0; max-width: 72%;
+  min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 13px;
 }
 .kb-toc-leader {
-  flex: 1 1 auto; align-self: flex-end; min-width: 0.9rem; height: 0;
-  margin: 0 0.35rem 0.28rem; border-bottom: 1px dotted #6b7690;
+  align-self: end; min-width: 0; height: 0;
+  margin: 0 0.3rem 0.28rem; border-bottom: 1px dotted #6b7690;
 }
 .kb-toc-page {
-  flex: 0 0 auto; min-width: 1.8em; text-align: right;
+  min-width: 2.75ch; text-align: right; white-space: nowrap;
   color: #8b97ad; font-variant-numeric: tabular-nums; font-size: 12px;
 }

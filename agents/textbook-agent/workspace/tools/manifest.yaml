@@ -5,3 +5,33 @@ tools:
   - id: open_pdf_page
     path: open_pdf_page.py
     description: 按路径或书名定位原版 PDF，并给出要打开的页码
+  - id: clear_traces
+    path: clear_traces.py
+    description: 清空工作区 traces/ 目录下所有轨迹文件
+  - id: build_toc
+    path: build_toc.py
+    description: 从印刷目录抽出章/节，合并 toc_agent.json 的小节，写入 toc.json
+  - id: toc_extract
+    path: toc_extract.py
+    description: 先看原文 PDF 目录页，再读 toc.json，然后一次抽各兄弟节区间的小节（对话里不另开会话）
+  - id: propose_import_meta
+    path: propose_import_meta.py
+    description: 把判断出的显示名、书名提示、科目、学段写回导入表。不要开始识别。
+  - id: refine_page
+    path: refine_page.py
+    description: 对教材一页 Markdown 做确定性清洗（去残留 JSON/HTML、收空白），原子写回
+  - id: strip_sub_sup
+    path: strip_sub_sup.py
+    description: 剥除教材页内 sub/sup 导入残留（HTML 标签与 \lt sub\gt 等），scan 只统计，fix 原子写回
+  - id: create_task
+    path: create_task.py
+    description: 在工作区建一条任务（定时或事件触发；对话发给 Agent）
+  - id: list_tasks
+    path: list_tasks.py
+    description: 列出工作区任务（内置 + 用户）
+  - id: cancel_task
+    path: cancel_task.py
+    description: 停用一条任务并取消它正在跑的 job
+  - id: update_task
+    path: update_task.py
+    description: 改一条任务的名称、方式、时间、事件或发给 Agent 的对话

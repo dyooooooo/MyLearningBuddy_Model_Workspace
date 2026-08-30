@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from app.clients.redis_client import enqueue_kb_import
+from app.clients.redis_client import clear_kb_revoke, enqueue_kb_import
 from app.kb import assets as kb_assets
 from app.kb import import_service as svc
 from app.kb.settings import (
@@ -57,11 +57,38 @@ def get_asset(key: str = Query(..., min_length=1)) -> Response:
     return Response(content=data, media_type=kb_assets.content_type_for_name(normalized))
 
 
+@router.delete("/books/{book_id}")
+def delete_book(book_id: str) -> dict[str, Any]:
+    sid = (book_id or "").strip()
+    if not sid:
+        raise HTTPException(status_code=400, detail="id required")
+    try:
+        return svc.purge_kb_book(sid)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/identify/{book_id}")
+def identify_book(book_id: str, pages: int = Query(default=svc.IDENTIFY_PAGES, ge=1, le=20)) -> dict[str, Any]:
+    sid = (book_id or "").strip()
+    if not sid:
+        raise HTTPException(status_code=400, detail="id required")
+    try:
+        return svc.identify_kb_book(sid, pages=pages)
+    except svc.KbBookGone as exc:
+        raise HTTPException(status_code=404, detail="book not found") from exc
+    except KbMineruConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)[:400]) from exc
+
+
 @router.post("/convert/{book_id}")
 def convert_book(book_id: str) -> dict[str, Any]:
     sid = (book_id or "").strip()
     if not sid:
         raise HTTPException(status_code=400, detail="id required")
+    clear_kb_revoke(sid)
     enqueue_kb_import(sid)
     return {"book_id": sid, "queued": True}
 

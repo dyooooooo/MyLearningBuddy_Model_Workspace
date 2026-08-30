@@ -5,7 +5,8 @@ import {
   type AgentHookEntry,
   type AgentJob,
 } from "./api";
-import { renderAgentTurn } from "./agentTurn";
+import { latestPlanJobId, renderAgentTurn } from "./agentTurn";
+import { pickLiveConversationId } from "./liveConv";
 import { hardReload, isJob, onLive, type LiveEvent } from "./live";
 import { el } from "./util/dom";
 
@@ -39,7 +40,7 @@ export function mountAgentConsole(host: HTMLElement): {
   const config = el("div", "kb-agent-config hidden");
   const reloadBtn = el("button", "btn btn-primary", "重载") as HTMLButtonElement;
   reloadBtn.type = "button";
-  const cfgIntro = el("p", "muted", "改工作区里的规矩：技能、规则、提示词、钩子、插件和小工具。不影响书库导入。");
+  const cfgIntro = el("p", "muted", "改工作区里的规矩：技能、规则、提示词、钩子、插件和小工具。不影响知识库导入。");
   const cfgHead = el("div", "kb-agent-cfghead");
   cfgHead.append(el("h3", "kb-agent-h", "设置"), reloadBtn);
   const cfgTabs = el("div", "kb-settings-tabs");
@@ -127,10 +128,10 @@ export function mountAgentConsole(host: HTMLElement): {
   async function refreshJobs(): Promise<void> {
     const [cOut, jOut] = await Promise.all([agent.conversations(), agent.jobs()]);
     convs = cOut.conversations || [];
-    grades = (jOut.jobs || []).filter((j) => j.kind === "grade");
+    grades = (jOut.jobs || []).filter((j) => j.kind === "grade" || j.kind === "page_refine" || j.kind === "task");
     if (!activeConv && !activeGrade) {
-      if (convs[0]) activeConv = convs[0].id;
-      else if (grades[0]) activeGrade = grades[0].job_id;
+      activeConv = pickLiveConversationId(convs) || convs[0]?.id || "";
+      if (!activeConv && grades[0]) activeGrade = grades[0].job_id;
     }
     renderJobs();
     if (activeConv) await renderConv(activeConv);
@@ -545,7 +546,7 @@ export function mountAgentConsole(host: HTMLElement): {
       return;
     }
     hostEl.replaceChildren();
-    hostEl.append(el("p", "muted kb-settings-hint", "每轮对话开始前自动打点。恢复默认不动聊天记录。"));
+    hostEl.append(el("p", "muted kb-settings-hint", "每轮对话开始前自动打点。回退会还原文件，并把对话退到那一轮。"));
     const snapBtn = el("button", "btn btn-secondary", "现在打一个点") as HTMLButtonElement;
     snapBtn.type = "button";
     snapBtn.onclick = async () => {
@@ -579,9 +580,19 @@ export function mountAgentConsole(host: HTMLElement): {
         pre.style.display = "";
       };
       restBtn.onclick = async () => {
-        if (!window.confirm("回到这个检查点？聊天记录会留下。")) return;
-        await agent.restoreCheckpoint(row.id);
-        hardReload();
+        const { rememberRestore } = await import("./live");
+        rememberRestore(String(row.conversation_id || ""), "", {});
+        const out = await agent.restoreCheckpoint(row.id);
+        rememberRestore(String(out.conversation_id || row.conversation_id || ""), String(out.message || ""), {
+          changes: out.changes || [],
+          removed: (out.removed_job_ids || []).length,
+        });
+        window.dispatchEvent(new CustomEvent("kb:restore-applied", { detail: out }));
+        if (out.conversation_id) {
+          window.dispatchEvent(
+            new CustomEvent("kb:open-conversation", { detail: { id: out.conversation_id } }),
+          );
+        }
       };
       forkBtn.onclick = async () => {
         const name = window.prompt("分叉名称", row.kind || "try") || "";
@@ -632,8 +643,8 @@ export function mountAgentConsole(host: HTMLElement): {
       btn.type = "button";
       btn.append(
         badge(statusZh(job.status), `is-${job.status}`),
-        el("span", "kb-agent-jobkind", "判题"),
-        el("span", "kb-agent-jobq", questionOf(job) || "（无摘要）"),
+        el("span", "kb-agent-jobkind", job.kind === "page_refine" ? "清洗" : job.kind === "task" ? "任务" : "判题"),
+        el("span", "kb-agent-jobq", questionOf(job) || String(job.payload?.book_id || "（无摘要）")),
         el("span", "muted kb-agent-jobt", clock(job.updated_at)),
       );
       btn.onclick = () => {
@@ -665,10 +676,11 @@ export function mountAgentConsole(host: HTMLElement): {
       detail.append(el("p", "muted kb-agent-empty", "还没有回合。"));
       return;
     }
+    const latest = latestPlanJobId(turns);
     for (const job of turns) {
       const turn = el("article", "kb-turn kb-turn--replay");
       turn.dataset.jobId = job.job_id;
-      renderAgentTurn(turn, job, true);
+      renderAgentTurn(turn, job, true, { latestPlan: job.job_id === latest });
       detail.append(turn);
     }
   }
@@ -678,7 +690,7 @@ export function mountAgentConsole(host: HTMLElement): {
     const head = el("header", "kb-agent-case");
     head.append(
       badge(statusZh(job.status), `is-${job.status}`),
-      el("strong", "", "判题"),
+      el("strong", "", job.kind === "page_refine" ? "清洗" : job.kind === "task" ? "任务" : "判题"),
       el("span", "muted", clock(job.updated_at)),
     );
     const turn = el("article", "kb-turn kb-turn--replay");
@@ -698,8 +710,12 @@ export function mountAgentConsole(host: HTMLElement): {
 
   function onEvent(ev: LiveEvent): void {
     if (ev.type && ev.type !== "job") {
-      if (ev.type === "reload" || (ev.type === "checkpoint" && (ev.action === "restore" || ev.action === "fork"))) {
+      if (ev.type === "reload" || (ev.type === "checkpoint" && ev.action === "fork")) {
         hardReload();
+        return;
+      }
+      if (ev.type === "checkpoint" && ev.action === "restore") {
+        void refreshJobs();
         return;
       }
       if (["config", "hooks", "plugins", "prompts"].includes(String(ev.type))) {

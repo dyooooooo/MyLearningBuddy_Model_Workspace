@@ -8,6 +8,12 @@ def search_md(root: str, query: str, limit: int = 20) -> list[dict[str, str]]:
     needle = (query or "").strip()
     if not needle:
         return []
+    try:
+        cap = int(limit)
+    except (TypeError, ValueError):
+        cap = 20
+    if cap <= 0:
+        cap = 20
     hits: list[dict[str, str]] = []
     base = Path(root)
     if not base.is_dir():
@@ -21,6 +27,6 @@ def search_md(root: str, query: str, limit: int = 20) -> list[dict[str, str]]:
         idx = text.find(needle)
         snippet = text[max(0, idx) : max(0, idx) + 160] if idx >= 0 else path.stem
         hits.append({"path": str(path), "snippet": snippet})
-        if len(hits) >= limit:
+        if len(hits) >= cap:
             break
     return hits

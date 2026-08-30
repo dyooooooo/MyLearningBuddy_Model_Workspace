@@ -12,7 +12,7 @@ export function closePopover(): void {
 export function openPopover(
   anchor: HTMLElement,
   build: (close: () => void) => HTMLElement,
-  opts: { align?: "left" | "right"; width?: number } = {},
+  opts: { align?: "left" | "right"; width?: number; onClose?: () => void } = {},
 ): void {
   closePopover();
   const root = el("div", "kb-pop");
@@ -32,11 +32,20 @@ export function openPopover(
   const onKey = (ev: KeyboardEvent) => {
     if (ev.key === "Escape") close();
   };
+  const openedAt = Date.now();
+  const onScroll = (ev: Event) => {
+    if (Date.now() - openedAt < 200) return;
+    const t = ev.target;
+    if (!(t instanceof Node)) return;
+    if (root.contains(t)) return;
+    if (t instanceof Element && t.closest(".kb-dock-stream, .kb-dock-body, .kb-pop")) return;
+    close();
+  };
   window.setTimeout(() => {
     document.addEventListener("pointerdown", onDoc, true);
     document.addEventListener("keydown", onKey);
     window.addEventListener("resize", close);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", onScroll, true);
   }, 0);
   open = {
     root,
@@ -44,7 +53,8 @@ export function openPopover(
       document.removeEventListener("pointerdown", onDoc, true);
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", close);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", onScroll, true);
+      opts.onClose?.();
     },
   };
 }
@@ -76,6 +86,9 @@ function placePopover(
   }
 }
 
-export function chevron(): string {
-  return `<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path fill="currentColor" d="M2.4 4.2 6 7.8l3.6-3.6z"/></svg>`;
+export type ChevronDir = "down" | "up" | "left" | "right";
+
+/** Stroke chevron, 16px — same scale as plus / paperclip / copy. */
+export function chevron(dir: ChevronDir = "down", size = 16): string {
+  return `<svg class="kb-chev kb-chev--${dir}" viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
 }

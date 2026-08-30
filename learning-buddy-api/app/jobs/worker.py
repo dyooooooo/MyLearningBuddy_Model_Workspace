@@ -150,13 +150,17 @@ def _handle_import35b(payload: dict) -> None:
 
 
 def _handle_kb_import(payload: dict) -> None:
-    from app.kb.import_service import mark_failed, process_kb_book
+    from app.kb.import_service import KbBookGone, mark_failed, process_kb_book
+    from app.kb.workspace_store import delete_book_dir
 
     book_id = payload.get("job_id", "")
     logger.info("kb import worker dequeue id=%s", book_id)
     try:
         book = process_kb_book(book_id)
         logger.info("kb import done id=%s status=%s pages=%s", book.get("id"), book.get("status"), book.get("page_count"))
+    except KbBookGone:
+        logger.info("kb import aborted, book gone id=%s", book_id)
+        delete_book_dir(book_id)
     except Exception as exc:
         logger.exception("kb import failed id=%s", book_id)
         mark_failed(book_id, str(exc))

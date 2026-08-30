@@ -1,0 +1,17 @@
+{
+  "req_id": "0479a278732e49fea3c58f58ef5adea4",
+  "status": "granted",
+  "path": "surfaces/page-body/lib/page-toc.mjs",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "d64a63b6-9ea8-4383-b2fa-9970097884a2",
+  "conversation_id": "05fe04f0-bef6-4148-96aa-1cbec9d17461",
+  "requested_at": "2026-08-29T09:36:00.397431+00:00",
+  "situation": "这本课标第7–8页是印刷目录，标题已还原为「目录」。章行是「一、标题 …… 页」，节行是「（一）标题/页」。page-body 的 liftPageToc 只认第N章、1.2 和行末空格页码，斜杠页码的节行全部不算条目，命中率低于 0.55，两页都没有抬升成带虚线和页码的 kb-page-toc，所以左栏正常、正文目录仍是素段落。",
+  "why": "「一、标题」和「（一）标题/页」是课程标准、考试说明一类官方文件的共用印刷目录形状，不是这一册的专名。正文目录的虚线、层级和跳转都由 page-toc.mjs 在渲染时抬升，不该把 kb-page-toc HTML 写回书页（unwrap 会拆掉）。要让已有抬升工具吃下这种形状，只能给共用解析补上这两种行，不能为一书改 Markdown 去假装成第N章。",
+  "changes": "改 surfaces/page-body/lib/page-toc.mjs：页码除行末空格数字外，也认「标题/页」；「一、」到「十、」这种汉字枚举加顿号当章；「（一）」到「（十）」当节、不当章；附录1 仍从斜杠或空格取页。补一条金样 toc-cn-enum.in.md / .out.md / .ctx.json，形状用通用「一、标题 …… 页」和「（一）标题/页」，不写这本课标的专名。不改 build_toc.py，也不改该书已写好的 toc.json。",
+  "impact": "所有印刷目录用汉字枚举部和斜杠页码的书，正文目录会按已有样式画出章加粗、节缩进、虚线和可点击页码；已有第N章、Contents、第N部分金样不受影响。这本课标第7–8页不用改成第N章，渲染后应和左栏同一套条目。授权前不会改任何 surface 文件。",
+  "granted_at": "2026-08-29T09:36:55.480291+00:00",
+  "expires_at": "2026-08-29T09:51:55.480291+00:00",
+  "one_shot": true
+}

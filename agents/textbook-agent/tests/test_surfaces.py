@@ -116,3 +116,28 @@ def test_sanitize_css_strips_import() -> None:
     assert "@import" not in clean.lower()
     assert "https://evil" not in clean
     assert "</style" not in clean.lower() or "&lt;/style" in clean
+
+
+def test_theme_css_falls_back_if_folder_missing_file(tmp_path, monkeypatch) -> None:
+    _settings, surfaces = _home(tmp_path, monkeypatch)
+    surfaces.ensure_surfaces()
+    empty = tmp_path / "no-css"
+    empty.mkdir()
+    css = surfaces._read_css(empty, "page-body")
+    assert "kb-page-toc" in css
+    assert "kb-table-wrap" in css
+
+
+def test_prepare_table_is_single_wrap(tmp_path, monkeypatch) -> None:
+    _settings, surfaces = _home(tmp_path, monkeypatch)
+    surfaces.reload_all()
+    raw = "表 1-1 符号\n\n<table><tr><td>数集</td><td>符号</td></tr><tr><td>自然数集</td><td>N</td></tr></table>\n"
+    already = (
+        '<div class="kb-table-wrap"><table><caption>表 1-1</caption>'
+        "<tr><th>数集</th><th>符号</th></tr><tr><td>自然数集</td><td>N</td></tr></table></div>\n"
+    )
+    for md in (raw, already):
+        out = surfaces.prepare_page(md, book_id="demo")
+        assert out.count("kb-table-wrap") == 1
+        assert "$$" not in out
+        assert "<table" in out

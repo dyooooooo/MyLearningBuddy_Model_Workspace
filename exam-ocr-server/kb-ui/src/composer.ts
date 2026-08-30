@@ -50,7 +50,13 @@ export function mountComposer(
     onStop?: () => Promise<void>;
     onReview?: () => void;
   },
-): { setBusy: (on: boolean) => void; setFiles: (rows: FileRow[]) => void; focus: () => void } {
+): {
+    setBusy: (on: boolean) => void;
+    setFiles: (rows: FileRow[]) => void;
+    setDraft: (text: string, select?: boolean) => void;
+    submit: () => void;
+    focus: () => void;
+  } {
   form.className = "kb-dock-composer";
   const box = el("div", "kb-dock-box");
   const ctx = el("div", "kb-dock-ctx");
@@ -69,7 +75,9 @@ export function mountComposer(
   ta.rows = 1;
   const foot = el("div", "kb-dock-toolbar");
   const modeBtn = pillBtn("kb-dock-mode");
+  modeBtn.setAttribute("aria-label", "对话模式");
   const modelBtn = pillBtn("kb-dock-model");
+  modelBtn.setAttribute("aria-label", "模型");
   const fileInput = document.createElement("input");
   fileInput.type = "file";
   fileInput.multiple = true;
@@ -110,8 +118,9 @@ export function mountComposer(
     .then((out) => {
       models = out.models || [];
       const auto = models.find((m) => m.id === "auto-smart") || models.find((m) => m.id === "default" || m.id === "auto");
-      if (!modelId) modelId = auto?.id || out.default || "";
-      if (modelId && !models.some((m) => m.id === modelId)) modelId = auto?.id || out.default || modelId;
+      const preferred = out.default || "grok-4.6";
+      if (!modelId || modelId.startsWith("composer")) modelId = preferred;
+      if (modelId && !models.some((m) => m.id === modelId)) modelId = preferred || auto?.id || modelId;
       const row = models.find((m) => m.id === modelId);
       if (!modelParams.length) modelParams = defaultParams(row);
       if (modelId) saveModelState(modelId, modelParams);
@@ -126,6 +135,7 @@ export function mountComposer(
     modeBtn.replaceChildren();
     modeBtn.append(el("span", "kb-pill-ico", row.icon), el("span", "", row.label));
     modeBtn.insertAdjacentHTML("beforeend", chevron());
+    modeBtn.title = `${row.label} · ${row.hint}`;
     ta.placeholder = HINTS[mode];
   }
 
@@ -140,7 +150,9 @@ export function mountComposer(
 
   function paintFiles(): void {
     const n = files.length;
-    filesBtn.textContent = n ? `▸ ${n} 个文件` : "▸ 工作区";
+    filesBtn.replaceChildren();
+    filesBtn.insertAdjacentHTML("afterbegin", chevron("right"));
+    filesBtn.append(document.createTextNode(n ? `${n} 个文件` : "工作区"));
     filesBtn.classList.toggle("is-empty", n === 0);
   }
 
@@ -347,6 +359,15 @@ export function mountComposer(
       files = rows;
       paintFiles();
     },
+    setDraft(text: string, select = true) {
+      ta.value = text;
+      grow();
+      ta.focus();
+      if (select) ta.setSelectionRange(0, ta.value.length);
+    },
+    submit() {
+      form.requestSubmit();
+    },
     focus() {
       ta.focus();
     },
@@ -364,7 +385,7 @@ function paperclipSvg(): string {
 }
 
 function sendSvg(): string {
-  return `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>`;
+  return `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>`;
 }
 
 function stopSvg(): string {

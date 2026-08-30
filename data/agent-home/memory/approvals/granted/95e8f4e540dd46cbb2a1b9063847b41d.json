@@ -1,0 +1,17 @@
+{
+  "req_id": "95e8f4e540dd46cbb2a1b9063847b41d",
+  "status": "granted",
+  "path": "tools/polish_syllabus.py",
+  "scope": "new-tool",
+  "tool_name": "request_code_edit",
+  "job_id": "6f7878b8-8913-459c-8b15-2fb5ea0c5c5d",
+  "conversation_id": "67093747-c1af-4fd4-ac2e-452c1ad9130a",
+  "requested_at": "2026-08-30T02:15:35.638901+00:00",
+  "situation": "刚入库的各科课程标准都要把标题按一、／（一）／主题／1．／（1）分级，用本书正文补印刷目录缺的章头，按全文标题重写 toc.json，并把空的 ![表格](images/) 按该书 PDF 版面文字回补。上一轮是在对话里手跑一次性脚本，脚本不会进工具清单，下次再来同类书无法直接调用。这些形状是课程标准一类官方文件的共性，不是某一科或某一册的专名。",
+  "why": "开闭原则要求新能力用新工具，而不是给 build_toc 或 refine_page 打补丁。对话脚本下一轮看不见，也无法在导入完成后复用。做成可调用的 polish_syllabus 后，对任意书号执行即可；书上没有这些形状就统计为零、不改文件。工具里不准写科目名，也不准写英语下册印张加 102 这种一书常数。",
+  "changes": "只新建 tools/polish_syllabus.py，函数名必须等于 polish_syllabus，参数为 book_id 与 apply（scan 只统计，fix 才写回）。fix 做这些全书共性步骤：拆回写进书页的 kb-page-toc；按课标层级改 ATX 标题；同组短标题（1）（2）（3）补升为五级，习题问句和算式不升；用本书正文已有的「一、」章题补目录页缺行；按全文标题重写 toc.json，印张偏移用正文「一、课程性质」所在页减一，推不出来就保留原印张或只用 PDF 页；空表格占位按该书 book.pdf 版面文字回补。登记到 tools/manifest.yaml。不改 build_toc.py，不改 surfaces。授权后如需导入后自动跑，再单独建一条 create_task 监听 kb.import.completed，无匹配形状则不动。",
+  "impact": "授权并写入后，对话里可对任一 book_id 调用 polish_syllabus。有课标标题或空表占位的书一次能出层级、左栏和缺表；没有这些形状的教材保持原样。可能把少数短句误升成标题，规则会挡住问句和算式。空表回补可能是整段落在一个单元格，比空图可读，行列仍可再对照原图收细。授权前不写 tools 文件，也不改现有清洗工具。",
+  "granted_at": "2026-08-30T02:15:41.217653+00:00",
+  "expires_at": "2026-08-30T02:30:41.217653+00:00",
+  "one_shot": true
+}

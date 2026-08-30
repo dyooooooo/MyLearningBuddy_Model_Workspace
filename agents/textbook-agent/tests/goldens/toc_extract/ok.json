@@ -1,0 +1,9 @@
+{
+  "start_pdf": 10,
+  "end_pdf": 16,
+  "reply": "[{\"label\": \"1 命题\", \"pdf_page\": 10}, {\"label\": \"2 充分条件与必要条件\", \"pdf_page\": 13}]",
+  "expected": [
+    {"label": "1 命题", "pdf_page": 10, "num": 1},
+    {"label": "2 充分条件与必要条件", "pdf_page": 13, "num": 2}
+  ]
+}

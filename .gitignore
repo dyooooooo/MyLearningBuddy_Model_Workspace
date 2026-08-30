@@ -44,6 +44,14 @@ learning-buddy-c2/data/
 data/agent-home/textbooks/**
 data/agent-home/traces/**
 data/agent-home/inbox/**
+data/agent-home/.cache/
+data/agent-home/.local/
+data/agent-home/.npm/
+data/agent-home/.docker/
+data/agent-home/logs/
+data/agent-home/.checkpoints.git/
+data/agent-home/.config/cursor/auth.json
+data/agent-home/.cursor/sdk/auth.json
 !data/agent-home/**/.gitkeep
 
 # Cursor project cache (lives under ~/.cursor/projects/, not here)

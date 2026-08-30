@@ -1,0 +1,17 @@
+{
+  "req_id": "6ea2d1ea454746d19f4d8e12ff8adb06",
+  "status": "granted",
+  "path": "tools/restore_cid.py, tools/restore_ipa.py, tools/mark_toc_pages.py, tools/build_toc.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "094d1ce7-f088-4460-a7fd-58348ebe6094",
+  "conversation_id": "7e42a125-9dff-4a9c-840c-dc0dfbc6670a",
+  "requested_at": "2026-08-28T04:36:58.593006+00:00",
+  "situation": "上海版英语导入后，CID 乱码、斜杠音标、无 Contents 标题的两栏目录在各册都会出现。三个工具已按书号工作，但 MCP 工作目录若已在 textbooks/ 会叠一层路径；拉丁部头带装饰尾符、无页码的 Self-assessment、回补附录默认写到第一张目录页、拉丁 CID+31 拒掉 $ ( - 和全大写 ROT31。用户已回复「可以」。",
+  "why": "这些是所有英文教材共用的形状，不是某一册专名。路径解析与 refine_page 对齐后各册都能经 MCP 调用；部头剥尾标点、Self-assessment 去连字符当节、附录写到最后一张目录页，适用于同一套印刷目录版式；拉丁 +31 放宽后致同学们一类页才能还原 Reading and interaction，年份数字仍不动。",
+  "changes": "1) restore_cid / restore_ipa / mark_toc_pages：cwd 下有 textbooks/ 用它，否则把 cwd 当 textbooks/。2) restore_cid：已有中文残留时允许 $ ( - 和全大写 ROT31，拒绝纯数字年份。3) build_toc（mark_toc_pages 转调）：拉丁部头先剥 ?！* 等尾符；Self-assessment 去连字符后仍当节，无印张页也写入；回补附录默认落到最后一张印刷目录页。不写任何一册单元专名。",
+  "impact": "以后各册英语导入都走同一套清洗和目录形状；已导入的第二册可再跑一次 restore_cid / mark_toc_pages 补上致同学们残留和 Progress 部头。数学等无此类残留的书仍是 0 hits。不改渲染插槽、不改钩子。",
+  "granted_at": "2026-08-28T04:37:09.973226+00:00",
+  "expires_at": "2026-08-28T04:52:09.973226+00:00",
+  "one_shot": true
+}

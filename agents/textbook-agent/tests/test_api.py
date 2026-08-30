@@ -22,6 +22,32 @@ def test_health_no_auth() -> None:
     assert r.json()["status"] == "ok"
 
 
+def test_cursor_auth_requires_token() -> None:
+    r = _client().get("/v1/cursor/auth")
+    assert r.status_code == 401
+
+
+def test_cursor_auth_status_payload(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AGENT_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("TEXTBOOK_AGENT_TOKEN", "test-token")
+    from app.config import settings
+    from app import cursor_auth
+
+    settings.agent_home = str(tmp_path / "home")
+    settings.textbook_agent_token = "test-token"
+    settings.cursor_api_key = ""
+    monkeypatch.delenv("CURSOR_API_KEY", raising=False)
+    cursor_auth._probe_cache = None
+    ensure_workspace()
+    client = TestClient(app)
+    r = client.get("/v1/cursor/auth", headers={"Authorization": "Bearer test-token"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["key_present"] is False
+    assert body["cloud_ok"] is False
+    assert "CURSOR_API_KEY" in body["detail"]
+
+
 def test_jobs_reject_missing_token() -> None:
     r = _client().get("/v1/jobs")
     assert r.status_code == 401
@@ -212,6 +238,7 @@ def test_models_fallback(tmp_path, monkeypatch) -> None:
     r = client.get("/v1/models", headers={"Authorization": "Bearer test-token"})
     assert r.status_code == 200
     ids = [m["id"] for m in r.json()["models"]]
+    assert r.json()["default"] == "grok-4.6"
     assert "composer-2.5" in ids
     grok = next(m for m in r.json()["models"] if m["id"] == "grok-4.6")
     assert grok["group"] == "cursor"
@@ -278,3 +305,56 @@ def test_chat_rejects_empty(tmp_path, monkeypatch) -> None:
         json={"message": ""},
     )
     assert r.status_code == 400
+
+
+def test_tasks_crud_and_emit(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AGENT_HOME", str(tmp_path / "home"))
+    from app import jobs, sdk_runner, tasks
+    from app.config import settings
+
+    settings.agent_home = str(tmp_path / "home")
+    settings.textbook_agent_token = "test-token"
+    jobs.reset_for_tests()
+    tasks.reset_for_tests()
+    ensure_workspace()
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer test-token"}
+    listed = client.get("/v1/tasks", headers=headers)
+    assert listed.status_code == 200
+    assert any(t["id"] == "import-page-refine" for t in listed.json()["tasks"])
+    events = client.get("/v1/tasks/events", headers=headers)
+    assert events.status_code == 200
+    event_ids = {e["id"] for e in events.json()["events"]}
+    assert "kb.import.completed" in event_ids
+    assert "task.import-page-refine.completed" in event_ids
+    assert "tool.build_toc" in event_ids
+    assert "tool.create_task" not in event_ids
+    created = client.post(
+        "/v1/tasks",
+        headers=headers,
+        json={"title": "夜间", "mode": "schedule", "cron": "0 4 * * *", "message": "夜间检查默认教材"},
+    )
+    assert created.status_code == 200
+    assert created.json()["next_run"]
+    tid = created.json()["id"]
+    patched = client.patch(
+        f"/v1/tasks/{tid}",
+        headers=headers,
+        json={"title": "凌晨", "cron": "15 4 * * *"},
+    )
+    assert patched.status_code == 200
+    assert patched.json()["title"] == "凌晨"
+    one = client.get(f"/v1/tasks/{tid}", headers=headers)
+    assert one.status_code == 200
+    assert one.json()["title"] == "凌晨"
+    assert "夜间检查" in (one.json().get("message") or one.json().get("prompt_text") or "")
+    off = client.delete(f"/v1/tasks/{tid}", headers=headers)
+    assert off.status_code == 200
+    assert off.json()["task"]["enabled"] is False
+    emit = client.post(
+        "/v1/tasks/emit",
+        headers=headers,
+        json={"event": "kb.import.completed", "book_id": "missing-book"},
+    )
+    assert emit.status_code == 200

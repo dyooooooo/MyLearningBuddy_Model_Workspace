@@ -1,0 +1,37 @@
+"""Tell textbook-agent that a KB book finished importing."""
+
+from __future__ import annotations
+
+import logging
+
+import httpx
+
+from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+def notify_import_completed(book_id: str, conversation_id: str = "") -> None:
+    base = (settings.textbook_agent_url or "").strip().rstrip("/")
+    sid = (book_id or "").strip()
+    if not base or not sid:
+        return
+    headers = {"Content-Type": "application/json"}
+    token = (settings.textbook_agent_token or "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    timeout = min(15.0, float(getattr(settings, "textbook_agent_timeout_s", 30) or 30))
+    url = f"{base}/v1/tasks/emit"
+    payload = {"book_id": sid}
+    cid = (conversation_id or "").strip()
+    if cid:
+        payload["conversation_id"] = cid
+    body = {"event": "kb.import.completed", "book_id": sid, "payload": payload}
+    try:
+        with httpx.Client(timeout=timeout) as client:
+            r = client.post(url, json=body, headers=headers)
+            r.raise_for_status()
+    except Exception:
+        logger.warning("textbook-agent import notify failed book=%s", sid, exc_info=True)
+
+

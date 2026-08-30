@@ -1,10 +1,11 @@
 import { el } from "./util/dom";
 
-export type KbTabId = "books" | "import" | "agent" | "agent-config";
+export type KbTabId = "books" | "import" | "agent" | "agent-config" | "tasks";
 
 const ITEMS: { id: KbTabId; icon: string; label: string; sub?: boolean }[] = [
   { id: "import", icon: "📥", label: "导入" },
-  { id: "books", icon: "📚", label: "书库" },
+  { id: "books", icon: "📚", label: "知识库" },
+  { id: "tasks", icon: "☑", label: "任务" },
   { id: "agent", icon: "✦", label: "轨迹" },
   { id: "agent-config", icon: "⚙", label: "配置", sub: true },
 ];

@@ -21,6 +21,16 @@ def test_asset_url_and_rewrite():
     assert url in md
 
 
+def test_delete_book_assets_uses_kb_prefix():
+    from unittest.mock import patch
+
+    from app.kb.assets import delete_book_assets
+
+    with patch("app.kb.assets.delete_objects_by_prefix", return_value=4) as purge:
+        assert delete_book_assets("b1") == 4
+    purge.assert_called_once_with("kb/pdfs/b1")
+
+
 def test_rewrite_block_rewrites_table_html():
     url = asset_url("kb/pdfs/b1/assets/mineru/fig.png")
     out = _rewrite_block(

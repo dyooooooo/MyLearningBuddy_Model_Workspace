@@ -116,6 +116,57 @@ def enqueue_kb_import(book_id: str) -> str:
     return book_id
 
 
+def purge_kb_import_queue(book_id: str) -> int:
+    r = get_redis()
+    removed = 0
+    try:
+        for raw in r.lrange(settings.kb_import_queue, 0, -1):
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if payload.get("job_id") == book_id and payload.get("type") == "kb_import":
+                if r.lrem(settings.kb_import_queue, 0, raw):
+                    removed += 1
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("purge kb import queue failed book=%s: %s", book_id, exc)
+    return removed
+
+
+KB_REVOKE_PREFIX = "lb:kb:revoked:"
+KB_REVOKE_TTL_S = 7 * 86400
+
+
+def revoke_kb_book(book_id: str) -> None:
+    sid = (book_id or "").strip()
+    if not sid:
+        return
+    try:
+        get_redis().set(f"{KB_REVOKE_PREFIX}{sid}", "1", ex=KB_REVOKE_TTL_S)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("revoke kb book failed book=%s: %s", sid, exc)
+
+
+def clear_kb_revoke(book_id: str) -> None:
+    sid = (book_id or "").strip()
+    if not sid:
+        return
+    try:
+        get_redis().delete(f"{KB_REVOKE_PREFIX}{sid}")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("clear kb revoke failed book=%s: %s", sid, exc)
+
+
+def is_kb_book_revoked(book_id: str) -> bool:
+    sid = (book_id or "").strip()
+    if not sid:
+        return False
+    try:
+        return bool(get_redis().get(f"{KB_REVOKE_PREFIX}{sid}"))
+    except Exception:
+        return False
+
+
 def enqueue_textbook_eval(request_id: str) -> str:
     payload = {"job_id": request_id, "type": "textbook_eval", "request_id": request_id}
     get_redis().lpush(settings.textbook_eval_queue, json.dumps(payload))

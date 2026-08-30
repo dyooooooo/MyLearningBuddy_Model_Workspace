@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from urllib.parse import quote
 
-from app.clients.minio_client import get_object_bytes, put_import_bytes
+from app.clients.minio_client import delete_objects_by_prefix, get_object_bytes, put_import_bytes
 
 KB_PREFIX = "kb/pdfs"
 KB_ASSET_PATH = "/api/v1/kb/proxy/asset"
@@ -20,6 +20,13 @@ def assert_kb_key(key: str) -> str:
 
 def book_prefix(book_id: str) -> str:
     return f"{KB_PREFIX}/{book_id}"
+
+
+def delete_book_assets(book_id: str) -> int:
+    sid = (book_id or "").strip()
+    if not sid:
+        return 0
+    return delete_objects_by_prefix(book_prefix(sid))
 
 
 def asset_url(minio_key: str) -> str:

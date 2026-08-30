@@ -89,6 +89,11 @@ def _normalize_entry(raw: Any) -> dict[str, Any]:
         entry["matcher"] = str(raw.get("matcher"))
     if "failClosed" in raw:
         entry["failClosed"] = bool(raw.get("failClosed"))
+    if raw.get("timeout") is not None:
+        try:
+            entry["timeout"] = max(1, int(raw.get("timeout")))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("hook timeout must be an integer") from exc
     return entry
 
 

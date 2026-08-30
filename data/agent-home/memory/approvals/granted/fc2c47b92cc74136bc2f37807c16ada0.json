@@ -1,0 +1,17 @@
+{
+  "req_id": "fc2c47b92cc74136bc2f37807c16ada0",
+  "status": "granted",
+  "path": "tools/restore_cid.py, tools/restore_ipa.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "f4a2624f-955c-432b-9465-71af8fd3a540",
+  "conversation_id": "7e42a125-9dff-4a9c-840c-dc0dfbc6670a",
+  "requested_at": "2026-08-28T04:58:17.258570+00:00",
+  "situation": "上海版英语导入后，符号区 CID（下标、箭头、几何号）和碰巧落在《通用规范汉字表》里的错位字（嬉→读、嫔→识）洗不掉；斜杠音标里若带 pres/belt 等小写会被当成英文跳过。用户已回复可以，并要求 Progress 补成 3 Progress。",
+  "why": "这些是各册英语同一套方正兰亭 / Times 音标字体的共性，不是某一册专名。符号区在公式算出规范汉字时应当还原，标点除外；规范汉字只在源字不在一级字、目标在一级字时才改，避免把同学/必修再加一次偏移。斜杠里有 9/0/I 等音标字码就按书内表还原，不按单词另编。",
+  "changes": "restore_cid：受保护范围不再挡住上标/箭头/几何/数学符号（保留、。《》和全角标点）；规范汉字仅当源字不在一级字表、目标在一级字表时按 CID+0x30F2 还原。restore_ipa：斜杠内只要有音标字码就还原，不再因连续小写英文而跳过；HTML 碎片仍跳过。Progress 补 3 只改该书目录数据。",
+  "impact": "以后各册英语致同学们、词汇表、附录中的符号 CID 和稀有错位汉字、斜杠音标可一次洗掉。已导入的第二册会再跑 restore_cid / restore_ipa。数学书无此类残留仍是 0 hits。不改钩子和画面插槽。",
+  "granted_at": "2026-08-28T04:59:14.015732+00:00",
+  "expires_at": "2026-08-28T05:14:14.015732+00:00",
+  "one_shot": true
+}

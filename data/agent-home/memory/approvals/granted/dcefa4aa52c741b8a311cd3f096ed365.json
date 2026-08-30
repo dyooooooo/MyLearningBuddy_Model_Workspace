@@ -1,0 +1,17 @@
+{
+  "req_id": "dcefa4aa52c741b8a311cd3f096ed365",
+  "status": "granted",
+  "path": "surfaces/page-body/lib/page-prose.mjs",
+  "scope": "page-body",
+  "tool_name": "request_code_edit",
+  "job_id": "a5edae3c-32bd-4c7d-8b05-1bb933826f47",
+  "conversation_id": "05fe04f0-bef6-4148-96aa-1cbec9d17461",
+  "requested_at": "2026-08-29T10:31:10.716379+00:00",
+  "situation": "沪教版数学教材里，正文标题要按章/节/小节渲成标题；例题、练习不能再被抬成标题或着重号样式。书页 Markdown 已按层级标好，但渲染器仍会把素文「例1」「练习1.1」抬成 ###。",
+  "why": "looksLikeHeading / HEADING 把「例 + 数字」和「练习」当成标题。不改这里，书页里刚退回正文的例题一刷新又会变成标题。",
+  "changes": "1. looksLikeHeading：例、练习不再抬成标题。\n2. HEADING：从正则里去掉例/ 练习；小节标题长度放到40字，仍认第N部分。\n3. 补一条金样：章/节/小节能抬，例1、练习1.1 保留正文。",
+  "impact": "所有用 page-body 的书：例题不再显成标题；真标题仍按 h2–h4 显示。不动 toc.json、不动解析器。",
+  "granted_at": "2026-08-29T10:33:54.026795+00:00",
+  "expires_at": "2026-08-29T10:48:54.026795+00:00",
+  "one_shot": true
+}
