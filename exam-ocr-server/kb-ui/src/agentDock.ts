@@ -3,6 +3,13 @@ import { latestPlanJobId, renderAgentTurn } from "./agentTurn";
 import { mountComposer } from "./composer";
 import { isImportChatJob, jobConversationId, pickLiveConversationId } from "./liveConv";
 import { clearRestore, hardReload, isJob, onLive, readState, rememberRestore, rememberState, type LiveEvent, type RestoreNotice } from "./live";
+import {
+  PAGE_FOCUS_EVENT,
+  buildFocusChip,
+  buildFocusComposerText,
+  focusConversationTitle,
+  type PageFocusDetail,
+} from "./pageFocus";
 import { chevron, closePopover, openPopover } from "./popover";
 import { el } from "./util/dom";
 
@@ -39,6 +46,7 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
   const app = () => host.closest(".kb-app") || host.parentElement;
   let cid = readCid();
   let title = "";
+  let pageFocus: PageFocusDetail | null = null;
   type ConvRow = { id: string; title: string; status?: string; updated_at?: string };
   let convs: ConvRow[] = [];
   let jobs: AgentJob[] = [];
@@ -63,6 +71,8 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
   async function openConversation(id: string, nextTitle = ""): Promise<void> {
     cid = id;
     writeCid(id);
+    pageFocus = null;
+    composer.setFocusChip("");
     setTitle(nextTitle);
     pendingId = "";
     pendingTurn = null;
@@ -192,16 +202,23 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
     return out;
   }
 
-  newBtn.onclick = () => {
+  function startNewConversation(focus?: PageFocusDetail): void {
     cid = "";
     pendingId = "";
     writeCid("");
-    setTitle("");
+    pageFocus = focus || null;
+    setTitle(focus ? focusConversationTitle(focus) : "");
     clearStream();
     composer.setBusy(false);
+    composer.setFocusChip(focus ? buildFocusChip(focus) : "");
+    if (focus) composer.setDraft(buildFocusComposerText(focus), true);
+    else composer.setDraft("", false);
     composer.focus();
     paintHead();
-  };
+    setCollapsed(false);
+  }
+
+  newBtn.onclick = () => startNewConversation();
 
   function turnOf(jobId: string): HTMLElement | null {
     return stream.querySelector<HTMLElement>(`[data-job-id="${cssEscape(jobId)}"]`);
@@ -445,6 +462,7 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
     files?: { data: string; name: string; mime_type: string }[];
     attachments?: ChatAttachment[];
   }): Promise<void> {
+    const focus = pageFocus;
     stream.querySelector(".kb-dock-empty")?.remove();
     stream.querySelector(".kb-dock-rewind")?.remove();
     clearRestore();
@@ -481,6 +499,13 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
         model_params: body.model_params,
         images: body.images,
         files: body.files,
+        ...(focus?.book_id ? { book_id: focus.book_id } : {}),
+        ...(focus?.book ? { book: focus.book } : {}),
+        ...(focus?.page_no ? { page_no: focus.page_no } : {}),
+        ...(focus?.block_id ? { block_id: focus.block_id } : {}),
+        ...(focus?.block_label ? { block_label: focus.block_label } : {}),
+        ...(focus?.quote ? { quote: focus.quote } : {}),
+        ...(focus ? { title: focusConversationTitle(focus) } : {}),
       });
       pendingId = out.job_id;
       if (out.conversation_id) {
@@ -519,6 +544,7 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
       /* ignore */
     }
     window.addEventListener("kb:open-conversation", onOpenConv as EventListener);
+    window.addEventListener(PAGE_FOCUS_EVENT, onPageFocus as EventListener);
     window.addEventListener("kb:restore-applied", onRestore as EventListener);
     window.addEventListener("kb:continue-breakpoint", onContinue);
     window.addEventListener("kb:approval-note", onApprovalNote as EventListener);
@@ -711,9 +737,16 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
     void openConversation(id, String(detail.title || ""));
   }
 
+  function onPageFocus(ev: Event): void {
+    const detail = (ev as CustomEvent<PageFocusDetail>).detail;
+    if (!detail?.book_id || !detail.page_no) return;
+    startNewConversation(detail);
+  }
+
   return {
     destroy() {
       window.removeEventListener("kb:open-conversation", onOpenConv as EventListener);
+      window.removeEventListener(PAGE_FOCUS_EVENT, onPageFocus as EventListener);
       window.removeEventListener("kb:restore-applied", onRestore as EventListener);
       window.removeEventListener("kb:continue-breakpoint", onContinue);
       window.removeEventListener("kb:approval-note", onApprovalNote as EventListener);

@@ -25,7 +25,7 @@ tools:
     description: 剥除教材页内 sub/sup 导入残留（HTML 标签与 \lt sub\gt 等），scan 只统计，fix 原子写回
   - id: create_task
     path: create_task.py
-    description: 在工作区建一条任务（定时或事件触发；对话发给 Agent）
+    description: 在工作区建一条任务（定时或事件触发；对话发给 Agent。触发任务可写 condition，由 Agent 判断是否执行）
   - id: list_tasks
     path: list_tasks.py
     description: 列出工作区任务（内置 + 用户）
@@ -34,4 +34,4 @@ tools:
     description: 停用一条任务并取消它正在跑的 job
   - id: update_task
     path: update_task.py
-    description: 改一条任务的名称、方式、时间、事件或发给 Agent 的对话
+    description: 改一条任务的名称、方式、时间、事件、触发条件或发给 Agent 的对话

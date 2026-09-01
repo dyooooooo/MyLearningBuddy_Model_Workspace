@@ -1,0 +1,17 @@
+{
+  "req_id": "f9e4f7270b6e43e2923afec4f3e3c376",
+  "status": "granted",
+  "path": "tools/continue_fn_series.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "cac04792-8aa9-4967-ad48-fb21143fafe9",
+  "conversation_id": "d3e7d44e-38cf-46f1-b3a3-46cffcbaa671",
+  "requested_at": "2026-08-31T05:46:33.340192+00:00",
+  "situation": "并段顺延后，21 以上的注释常被 MinerU 写成 ②2、③0（圈号十位加阿拉伯个位）。工具写回时只改第二段映射，第一段拼号原样留下，画面就是②+1、中间缺号。圈号字符类只收到 ㊲，㊳–㊿ 不认成注释。切段只认第二个①，④ 后又出现的②（如「逝者」）不会顺延成 ㉒。",
+  "why": "不改的话，后页注释接过来数字对了，画面仍是拼号；21 以后的注释还可能认不成页注。一书手改得了这一次，下次导入仍会再写出 ②2。",
+  "changes": "1) `_CIRCLED` 收到 U+32BF（㊿），与 `_label` 的 36–50 一致。\n2) 写回前把本页注释圈号和正文 `$^{n}$` 都走 `_label` / `_body_mark`，②2 改成 ㉑，第一段也改。\n3) `_split_runs`：第一段已到 10 以上又出现 ≤5 的小号，也当后页重新起号，不只认第二个①。\n不改 restore_footnotes / build_toc / improve_render。不另编注释原文。",
+  "impact": "只动 continue_fn_series。没有并段或拼号的书 scan 后不变。目录页和活动题行首 ① 仍不改。",
+  "granted_at": "2026-08-31T05:47:15.533332+00:00",
+  "expires_at": "2026-08-31T06:02:15.533332+00:00",
+  "one_shot": true
+}

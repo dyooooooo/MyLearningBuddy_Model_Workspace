@@ -18,13 +18,16 @@ h5 { font-size: 0.98rem; font-weight: 600; padding-left: 1.4em; }
 h6 { font-size: 0.95rem; font-weight: 600; padding-left: 1.9em; }
 img {
   display: block; max-width: 100%; height: auto;
-  margin: 0.55rem auto; border-radius: 4px;
+  margin: 0.55rem 0; border-radius: 4px;
 }
 img[alt*="数学家"] { max-width: 200px; }
 em, i {
-  display: block; text-align: center;
   color: #667085; font-size: 0.88rem; font-style: normal;
 }
+.kb-center { text-align: center; text-indent: 0; }
+.kb-center p { text-indent: 0; }
+.kb-center img { margin-left: auto; margin-right: auto; }
+.kb-center em, .kb-center i { display: block; text-align: center; }
 .kb-list-item {
   margin: 0.15rem 0; padding-left: 2em; text-indent: 0;
 }

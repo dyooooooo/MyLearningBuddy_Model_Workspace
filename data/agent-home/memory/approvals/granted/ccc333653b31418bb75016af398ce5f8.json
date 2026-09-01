@@ -1,0 +1,17 @@
+{
+  "req_id": "ccc333653b31418bb75016af398ce5f8",
+  "status": "granted",
+  "path": "tools/fill_unit_toc.py",
+  "scope": "tools,skills,tasks",
+  "tool_name": "request_code_edit",
+  "job_id": "47e5b830-5706-43b7-a1a2-7dde6e705992",
+  "conversation_id": "d3e7d44e-38cf-46f1-b3a3-46cffcbaa671",
+  "requested_at": "2026-08-31T03:39:30.112551+00:00",
+  "situation": "现有 build_toc 只认第N章、第N部分和拉丁单元号，不认「第N单元」加数字课文、星号自学篇和「单元学习任务」。人教等语文教材导入后，左栏往往只剩目录页上能解析的几条，pdf_page 还经常是 0。上一册只能手写 toc.json 和 kb-page-toc 才补全。下一本同类书导入时还会再缺目录，没有可复用的工具和事件。",
+  "why": "「第N单元 / N 标题 / *自学 / 单元学习任务 / 后记」是多册语文教材共有的目录形状，不是某一课、某一册的专名。按开闭原则应新建工具加事件，而不是给 build_toc 打补丁，更不能把「沁园春」或「印张加 7」写进共用代码。导入完成后自动补目录，对话里才不必每本再手补左栏和主栏。",
+  "changes": "新建 tools/fill_unit_toc.py，函数名必须是 fill_unit_toc：只认第N单元等共性形状，用目录印张页和正文标题首现页推偏移，写入 toc.json 并重写目录页为 kb-page-toc 的 lv0/lv1/lv2；无该形状则 0 改动。新建技能 fill-unit-toc，写明何时调用、目录页禁止 unwrap/mark_toc_pages、补完后不要再跑 build_toc。用 create_task 挂 kb.import.completed（对话带书号），不改 build_toc.py，不写一书课文名，不新增 Cursor 红线钩子。",
+  "impact": "带「第N单元」的书在导入完成后，左栏和正文目录页会按印刷目录加正文首现页写成三级，页码用现在的 PDF 页。英语、数学等没有该形状的书不会被改，仍走原来的 build_toc。已写好的 kb-page-toc 若再 unwrap 仍会拆掉，技能里会写明不要拆。授权前不会写入任何工具、技能或任务。",
+  "granted_at": "2026-08-31T03:39:33.452136+00:00",
+  "expires_at": "2026-08-31T03:54:33.452136+00:00",
+  "one_shot": true
+}

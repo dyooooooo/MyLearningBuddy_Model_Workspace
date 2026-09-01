@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.kb.markdown import blocks_to_page_markdown
+from app.kb.mid import tag_source
 from app.kb.prose import fix_mineru_captions, polish_page_prose
 
 
@@ -43,9 +44,9 @@ def test_caption_picks_figure_over_interval_dicts():
 def test_polish_page12_like_studio_prose():
     out = polish_page_prose(PAGE12)
     assert "### 例4 选择适当的方法表示下列集合：" in out
-    assert 'class="kb-list-item"' in out
-    assert "（2）被 3" in out
-    assert 'class="kb-solution-label"' in out
+    assert 'class="kb-' not in out
+    assert "(2) 被 3" in out
+    assert "（2）被 3" in tag_source(out)
     assert "shot.jpg" not in out
     assert "label.jpg" in out
     assert "axis.jpg" in out
@@ -54,7 +55,9 @@ def test_polish_page12_like_studio_prose():
     assert not any(ln.strip() == "#" for ln in out.splitlines())
     assert "(1)(2)(3)(4)(6)都是真命题" in out
     assert "（6）都是真命题" not in out
-    assert out.count("kb-list-item") == 3
+    tagged = tag_source(out)
+    assert tagged.count("::: kb-list-item") == 3
+    assert "::: kb-solution" in tagged
 
 
 def test_new_import_heading_and_skip_hash():
@@ -67,7 +70,8 @@ def test_new_import_heading_and_skip_hash():
     )
     assert "### 1.1 集合初步" in md
     assert md.count("#") == 3
-    assert "kb-list-item" in md
+    assert 'class="kb-' not in md
+    assert "::: kb-list-item" in tag_source(md)
 
 
 def test_does_not_split_function_or_figure_refs():
@@ -105,8 +109,10 @@ def test_keeps_portrait_caption_and_exercise_heading():
     )
     assert "纳皮尔" in out
     assert "### 练习 2.1(2)" in out
-    assert "kb-list-item" in out
-    assert "kb-solution-label" in out
+    assert 'class="kb-' not in out
+    tagged = tag_source(out)
+    assert "::: kb-list-item" in tagged
+    assert "::: kb-solution" in tagged
 
 
 def test_chapter_title_after_splash_image():
@@ -116,5 +122,6 @@ def test_chapter_title_after_splash_image():
 
 def test_named_theorem_becomes_lead():
     out = polish_page_prose("定理 如果 f(a)·f(b)<0，那么一定有零点.")
-    assert "kb-lead-label" in out
+    assert 'class="kb-' not in out
     assert "一定有零点" in out
+    assert "::: kb-lead" in tag_source(out)

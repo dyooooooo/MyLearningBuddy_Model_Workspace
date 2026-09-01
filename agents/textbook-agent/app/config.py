@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     max_concurrent_sends: int = 4
     buddy_api_url: str = "http://buddy-api:8100"
     buddy_admin_token: str = ""
+    page_sync_watch: bool = True
+    page_sync_debounce_ms: int = 400
 
     @property
     def home(self) -> Path:

@@ -1,0 +1,14 @@
+{
+  "req_id": "f8902176eb484fb6b39474c74d70b838",
+  "status": "pending",
+  "path": "surfaces/page-body/lib/page-prose.mjs",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "ca2c8f3c-e3a8-484e-937d-6f80579a0f45",
+  "conversation_id": "d3e7d44e-38cf-46f1-b3a3-46cffcbaa671",
+  "requested_at": "2026-08-31T06:30:30.901547+00:00",
+  "situation": "语文课文篇名和作者要在画面居中。标准 Markdown 没有居中语法，这本书的渲染也只给图说斜体、公式和表格标题居中。先前把居中写进书页 HTML，wrapBareMath 把作者标签收进美元符，作者从画面消失。书页现已改回 ## 篇名加下一行作者，这是对的，但 h2 和正文段落默认左对齐、段首缩进，看起来就像把居中改回去了。",
+  "why": "居中是画面怎么画，应留在 page-body，不要写回书页 HTML。prepare 在渲染时把「二级标题加紧随的作者行」抬成 kb-article-title / kb-article-author，CSS 负责居中加粗。公式保护要认这两个 class，避免再被收进美元符。数学书的节号、例题不会被误抬。",
+  "changes": "在 page-prose.mjs 增加抬升：源是 ## 篇名，下一行是短作者（中间可有以——起头的 ## 副标题或括号年月日）时，输出不带 style 的 p.kb-article-title 和 p.kb-article-author。不同时抬第N章、X.Y、例、练习、学习提示。theme.css 给这两个 class 居中、标题加粗且字号与 h2 相同、取消段首缩进。bare-math.mjs 的保护列表加上这两个 class。补一条金样。不改书页 Markdown，不改 center_article_heads。",
+  "impact": "有「## 篇名 + 作者行」的语文页刷新后标题和作者居中，作者仍在标题下面。数学、英语的章节目、例题、图说不受影响。书页里不再出现带 style 的 HTML。金样不过不切线上。"
+}

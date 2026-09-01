@@ -195,6 +195,11 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
   triggerSel.className = "kb-agent-input";
   fillTriggerSelect(triggerSel, [{ id: IMPORT_DONE, label: "导入教材完成后", group: "系统" }], IMPORT_DONE);
 
+  const conditionIn = document.createElement("textarea");
+  conditionIn.className = "kb-agent-ta kb-task-condition";
+  conditionIn.rows = 2;
+  conditionIn.placeholder = "例如：这本书是高中数学，且还没有清洗过。空着则事件一到就执行。";
+
   const messageIn = document.createElement("textarea");
   messageIn.className = "kb-agent-ta kb-task-message";
   messageIn.rows = 6;
@@ -216,7 +221,10 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
   scheduleBox.append(repeatField, dowField, monthField, timeField, onceField);
 
   const triggerBox = el("div", "kb-task-when hidden");
-  triggerBox.append(field("事件", triggerSel));
+  triggerBox.append(
+    field("事件", triggerSel),
+    field("条件（给 Agent 判断，可空）", conditionIn),
+  );
 
   form.append(
     field("名称", titleIn),
@@ -295,6 +303,7 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
     const mode = row?.mode === "schedule" ? "schedule" : "trigger";
     modeSel.value = mode;
     fillTriggerSelect(triggerSel, catalog, row?.trigger || IMPORT_DONE);
+    conditionIn.value = row?.mode === "trigger" ? row.condition || "" : "";
     messageIn.value = row?.message || "";
     fillSchedule(row);
     syncWhen();
@@ -364,7 +373,10 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
     if (src.mode === "schedule") {
       box.append(kv("定时", scheduleZh(src)), kv("下次运行", clock(src.next_run)));
     }
-    if (src.mode === "trigger") box.append(kv("事件", triggerZh(src.trigger, catalog)));
+    if (src.mode === "trigger") {
+      box.append(kv("事件", triggerZh(src.trigger, catalog)));
+      if ((src.condition || "").trim()) box.append(kv("条件", src.condition || ""));
+    }
     box.append(kv("上次运行", clock(src.last_run_at)));
     if (src.last_job) {
       const jobLine = `${src.last_job.status} · ${src.last_job.job_id.slice(0, 8)}`;
@@ -404,7 +416,10 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
       const meta = el("p", "muted kb-task-meta");
       const bits = [preview(row.message)];
       if (row.mode === "schedule") bits.push(scheduleZh(row), row.next_run ? `下次 ${clock(row.next_run)}` : "");
-      if (row.mode === "trigger") bits.push(triggerZh(row.trigger, catalog));
+      if (row.mode === "trigger") {
+        bits.push(triggerZh(row.trigger, catalog));
+        if ((row.condition || "").trim()) bits.push(`条件 ${preview(row.condition || "", 24)}`);
+      }
       if (row.builtin) bits.push("内置");
       meta.textContent = bits.filter(Boolean).join(" · ");
       const bar = el("div", "kb-agent-actions");
@@ -469,6 +484,7 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
       cron: string;
       next_run: string;
       trigger: string;
+      condition: string;
       message: string;
     } = {
       title: titleIn.value.trim() || "任务",
@@ -476,6 +492,7 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
       cron: "",
       next_run: "",
       trigger: "",
+      condition: "",
       message,
     };
     try {
@@ -485,6 +502,7 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
         body.next_run = when.next_run;
       } else {
         body.trigger = triggerSel.value || IMPORT_DONE;
+        body.condition = conditionIn.value.trim();
       }
       if (editingId) await agent.patchTask(editingId, body);
       else await agent.createTask({ ...body, enabled: true });

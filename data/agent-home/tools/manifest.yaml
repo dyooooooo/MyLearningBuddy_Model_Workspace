@@ -28,7 +28,7 @@ tools:
   description: 剥除教材页内 sub/sup 导入残留（HTML 标签与 \lt sub\gt 等），scan 只统计，fix 原子写回
 - id: create_task
   path: create_task.py
-  description: 在工作区建一条任务（定时或事件触发；对话发给 Agent）
+  description: 在工作区建一条任务（定时或事件触发；对话发给 Agent。触发任务可写 condition，由 Agent 判断是否执行）
 - id: list_tasks
   path: list_tasks.py
   description: 列出工作区任务（内置 + 用户）
@@ -37,7 +37,7 @@ tools:
   description: 停用一条任务并取消它正在跑的 job
 - id: update_task
   path: update_task.py
-  description: 改一条任务的名称、方式、时间、事件或发给 Agent 的对话
+  description: 改一条任务的名称、方式、时间、事件、触发条件或发给 Agent 的对话
 - id: restore_cid
   path: restore_cid.py
   description: 还原 Adobe-Identity 不完整 ToUnicode 的 CID 错位字（中文 CID+0x30F2/0x30F3，拉丁 CID+31）。scan
@@ -49,3 +49,15 @@ tools:
   path: restore_ipa.py
   description: 按书内 Phonetic symbols 表把斜杠音标里 TimesKKPhoneticNewRoman / Times-PhoneticIPA
     字码还原成 IPA。scan 只统计，fix 原子写回。不按单词另编音标。无此类残留的书 0 hits。
+- id: fill_unit_toc
+  path: fill_unit_toc.py
+  description: 有「第N单元」的书：课序号为节、同课篇名并列为小节，写入 toc.json 与目录页 kb-page-toc。无该形状则不改。
+- id: restore_footnotes
+  path: restore_footnotes.py
+  description: 从 MinerU 回补圈号页注，正文圈号改成 $^{n}$，注释块上方加横杠。无该形状则不改。
+- id: continue_fn_series
+  path: continue_fn_series.py
+  description: 后页正文并进前页时，把从①起号的注释接到第一段最大号之后，正文上标一起改。无该形状则不改。
+- id: center_article_heads
+  path: center_article_heads.py
+  description: '目录末级是「篇名 / 作者」时，正文写成 ## 篇名加下一行作者。不写带 style 的 HTML。无该形状则不改。'

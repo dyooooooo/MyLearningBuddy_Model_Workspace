@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.kb.markdown import blocks_to_page_markdown, group_blocks_by_page
+from app.kb.mid import tag_source
 
 
 def test_group_and_markdown_with_figure():
@@ -53,10 +54,11 @@ def test_table_wrapped_with_caption_no_screenshot():
             }
         ]
     )
-    assert 'class="kb-table-wrap"' in md
+    assert 'class="kb-table-wrap"' not in md
     assert "<caption>表 1-1 常用数集的符号</caption>" in md
     assert "<th" in md
     assert "shot.jpg" not in md
+    assert "::: kb-table-wrap" in tag_source(md)
 
 
 def test_table_caption_with_latex_backslash_does_not_crash():
@@ -72,7 +74,8 @@ def test_table_caption_with_latex_backslash_does_not_crash():
     )
     assert "<caption>" in md
     assert "mathrm" in md
-    assert 'class="kb-table-wrap"' in md
+    assert 'class="kb-table-wrap"' not in md
+    assert "::: kb-table-wrap" in tag_source(md)
 
 
 def test_index_block_becomes_page_toc():
@@ -85,7 +88,8 @@ def test_index_block_becomes_page_toc():
         ],
         print_to_pdf={2: 9},
     )
-    assert 'class="kb-page-toc"' in md
-    assert "kb-page-toc-row--chapter" in md
-    assert 'data-goto-print-page="2"' in md
-    assert 'data-goto-page="9"' in md
+    assert 'class="kb-' not in md
+    assert "1.1 集合初步 2" in md
+    assert "第1章 集合与逻辑" in md
+    tagged = tag_source(md)
+    assert "::: kb-page-toc" in tagged

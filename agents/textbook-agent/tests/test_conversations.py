@@ -19,12 +19,31 @@ def _home(tmp_path, monkeypatch):
 
 
 def test_title_from_first_message() -> None:
-    from app.conversations import clean_agent_title, make_title
+    from app.conversations import clean_agent_title, focus_title, make_title
 
     assert make_title("帮我把目录标题修好") == "把目录标题修好"
     assert make_title("") == "新对话"
     assert clean_agent_title("「修目录显示」\n其他") == "修目录显示"
     assert clean_agent_title("") == ""
+    assert focus_title({"book": "沪教", "page_no": 12}) == "沪教 · 第 12 页"
+    assert focus_title({"book_id": "b1", "page_no": 2}) == "b1 · 第 2 页"
+    assert focus_title({"page_no": 3}) == "第 3 页"
+
+
+def test_ensure_stores_page_focus(tmp_path, monkeypatch) -> None:
+    _settings, conversations = _home(tmp_path, monkeypatch)
+    row = conversations.ensure(
+        "",
+        message="【聚焦目标】",
+        title="沪教 · 第 12 页",
+        focus={"book_id": "b1", "book": "沪教", "page_no": 12, "block_id": "p-3"},
+    )
+    assert row["title"] == "沪教 · 第 12 页"
+    assert row["focus"]["book_id"] == "b1"
+    assert row["focus"]["page_no"] == 12
+    again = conversations.ensure(row["id"], message="再问一句", focus={"block_label": "例 3"})
+    assert again["focus"]["book_id"] == "b1"
+    assert again["focus"]["block_label"] == "例 3"
 
 
 def test_chained_cursor_ids_merge_into_one_thread(tmp_path, monkeypatch) -> None:

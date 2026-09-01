@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.kb.markdown import _plain_text, blocks_to_page_markdown, group_blocks_by_page
+from app.kb.mid import centered_texts_from_blocks, tag_source, write_mid
 from app.kb.mineru_client import parse_pdf, probe_mineru_blocks
 from app.kb.pdf_pages import open_pdf
 from app.kb.pdf_slice import slice_pdf_pages
@@ -233,6 +234,14 @@ def process_kb_book(book_id: str) -> dict[str, Any]:
             page_texts[page_no] = page_md
             jpeg = pages.page_jpeg(page_no, dpi=120)
             write_page(book_id, page_no, page_md, jpeg)
+            write_mid(
+                book_id,
+                page_no,
+                tag_source(
+                    page_md,
+                    center_texts=centered_texts_from_blocks(grouped.get(page_no, [])),
+                ),
+            )
 
     _assert_book_alive(book_id)
     write_mineru_toc(book_id, toc)

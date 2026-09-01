@@ -186,9 +186,9 @@ def _run_js(folder: Path, op: str, *, markdown: str = "", payload: Any = None, c
         raise RuntimeError("node not found")
     if not RUNNER.is_file():
         raise RuntimeError("surface runner missing")
-    entry = "prepare.mjs" if op == "prepare" else "paint.mjs"
-    if not (folder / entry).is_file():
-        raise RuntimeError(f"missing {entry}")
+    entry = {"prepare": "prepare.mjs", "paint": "paint.mjs", "tag": "tag.mjs"}.get(op, "")
+    if not entry or not (folder / entry).is_file():
+        raise RuntimeError(f"missing {entry or op}")
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": str(folder),
@@ -390,6 +390,34 @@ def get_slot(slot: str) -> dict[str, Any]:
 
 def theme_css(slot: str) -> str:
     return _ensure_slot(slot).css
+
+
+def tag_page(
+    markdown: str,
+    *,
+    print_to_pdf: dict[str, Any] | None = None,
+    book_id: str = "",
+    center_texts: list[str] | None = None,
+) -> str:
+    state = _ensure_slot("page-body")
+    raw = markdown or ""
+    if not state.loaded:
+        return raw
+    try:
+        result = _run_js(
+            slot_dir("page-body"),
+            "tag",
+            markdown=raw,
+            ctx={
+                "profile": state.profile,
+                "printToPdf": print_to_pdf or {},
+                "bookId": book_id,
+                "centerTexts": list(center_texts or []),
+            },
+        )
+        return str(result if result is not None else raw)
+    except Exception:
+        return raw
 
 
 def prepare_page(markdown: str, *, print_to_pdf: dict[str, Any] | None = None, book_id: str = "") -> str:

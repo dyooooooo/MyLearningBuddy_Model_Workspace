@@ -54,6 +54,7 @@ export function mountComposer(
     setBusy: (on: boolean) => void;
     setFiles: (rows: FileRow[]) => void;
     setDraft: (text: string, select?: boolean) => void;
+    setFocusChip: (label: string) => void;
     submit: () => void;
     focus: () => void;
   } {
@@ -70,6 +71,7 @@ export function mountComposer(
   ctx.append(filesBtn, ctxSpace, reviewBtn);
 
   const chips = el("div", "kb-dock-attach-row hidden");
+  const focusRow = el("div", "kb-dock-focus hidden");
   const ta = document.createElement("textarea");
   ta.className = "kb-dock-input";
   ta.rows = 1;
@@ -99,7 +101,7 @@ export function mountComposer(
     void opts.onStop?.();
   };
   foot.append(modeBtn, modelBtn, el("span", "kb-dock-toolbar-space"), attachBtn, fileInput, send, stop);
-  box.append(ctx, chips, ta, foot);
+  box.append(ctx, focusRow, chips, ta, foot);
   form.replaceChildren(box);
 
   const pending: Pending[] = [];
@@ -364,6 +366,24 @@ export function mountComposer(
       grow();
       ta.focus();
       if (select) ta.setSelectionRange(0, ta.value.length);
+    },
+    setFocusChip(label: string) {
+      const text = (label || "").trim();
+      if (!text) {
+        focusRow.classList.add("hidden");
+        focusRow.replaceChildren();
+        return;
+      }
+      focusRow.classList.remove("hidden");
+      const rm = el("button", "kb-dock-chip-rm", "×") as HTMLButtonElement;
+      rm.type = "button";
+      rm.title = "关掉聚焦提示";
+      rm.setAttribute("aria-label", "关掉聚焦提示");
+      rm.onclick = () => {
+        focusRow.classList.add("hidden");
+        focusRow.replaceChildren();
+      };
+      focusRow.replaceChildren(el("span", "kb-dock-focus-text", text), rm);
     },
     submit() {
       form.requestSubmit();

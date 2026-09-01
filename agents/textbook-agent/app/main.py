@@ -78,7 +78,18 @@ async def lifespan(_app: FastAPI):
                 break
 
     threading.Thread(target=_tick_loop, name="task-tick", daemon=True).start()
+    from app import page_watch
+
+    if settings.page_sync_watch:
+        try:
+            page_watch.start()
+        except Exception:
+            logger.warning("page pair watch failed", exc_info=True)
     yield
+    try:
+        page_watch.stop()
+    except Exception:
+        logger.warning("page pair watch stop failed", exc_info=True)
     stop_tick.set()
     try:
         close_owned_client()
@@ -152,6 +163,35 @@ class ChatIn(BaseModel):
     model_params: list[ModelParamIn] = Field(default_factory=list)
     images: list[ChatImage] = Field(default_factory=list)
     files: list[ChatFile] = Field(default_factory=list)
+    book_id: str = ""
+    book: str = ""
+    page_no: int = 0
+    block_id: str = ""
+    block_label: str = ""
+    quote: str = ""
+    title: str = ""
+
+
+def _chat_focus(body: ChatIn) -> dict[str, Any]:
+    focus: dict[str, Any] = {}
+    book_id = (body.book_id or "").strip()
+    book = (body.book or "").strip()
+    block_id = (body.block_id or "").strip()
+    block_label = (body.block_label or "").strip()
+    quote = (body.quote or "").strip()[:400]
+    if book_id:
+        focus["book_id"] = book_id
+    if book:
+        focus["book"] = book
+    if body.page_no > 0:
+        focus["page_no"] = int(body.page_no)
+    if block_id:
+        focus["block_id"] = block_id
+    if block_label:
+        focus["block_label"] = block_label
+    if quote:
+        focus["quote"] = quote
+    return focus
 
 
 class ApprovalDecideIn(BaseModel):
@@ -231,6 +271,7 @@ class TaskIn(BaseModel):
     cron: str = ""
     next_run: str = ""
     message: str = ""
+    condition: str = ""
     action: str = "chat"
     prompt: str = ""
     enabled: bool = True
@@ -243,6 +284,7 @@ class TaskPatchIn(BaseModel):
     cron: str | None = None
     next_run: str | None = None
     message: str | None = None
+    condition: str | None = None
     action: str | None = None
     prompt: str | None = None
     enabled: bool | None = None
@@ -314,7 +356,9 @@ def chat(body: ChatIn) -> dict[str, str]:
     except PathJailError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     attachments = saved_images + saved_files
-    conv = conversations.ensure(body.conversation_id, body.message)
+    focus = _chat_focus(body)
+    want_title = (body.title or "").strip() or (conversations.focus_title(focus) if focus else "")
+    conv = conversations.ensure(body.conversation_id, body.message, title=want_title, focus=focus or None)
     cid = str(conv["id"])
     stored = {
         "message": body.message,
@@ -326,6 +370,7 @@ def chat(body: ChatIn) -> dict[str, str]:
         "trigger": (body.trigger or "").strip(),
         "model_params": [row.model_dump() for row in body.model_params],
         "attachments": [{k: v for k, v in row.items() if k != "mime_type"} for row in attachments],
+        **focus,
     }
     row = jobs.create_job("chat", stored)
     job_id = row["job_id"]
@@ -377,6 +422,7 @@ def create_task_row(body: TaskIn) -> dict[str, Any]:
             cron=body.cron,
             next_run=body.next_run,
             message=body.message,
+            condition=body.condition,
             action=body.action,
             prompt=body.prompt,
             enabled=body.enabled,
@@ -624,9 +670,19 @@ def library_page_md(book_id: str, page_no: int) -> dict[str, Any]:
     md = library.get_page_markdown(book_id, page_no)
     if md is None:
         raise HTTPException(status_code=404, detail="page not found")
+    from app.mid_text import looks_like_skin, strip_skin
+    from app.page_sync import sync_page
+
+    if looks_like_skin(md):
+        md = strip_skin(md)
+        library.write_page(book_id, page_no, md, sync=False)
+    surfaces.get_slot("page-body")
+    sync_page(book_id, page_no)
+    md = library.get_page_markdown(book_id, page_no) or md
     toc = library.read_toc(book_id)
     print_to_pdf = toc.get("print_to_pdf") if isinstance(toc.get("print_to_pdf"), dict) else {}
-    prepared = surfaces.prepare_page(md, print_to_pdf=print_to_pdf, book_id=book_id)
+    mid = library.get_page_mid(book_id, page_no) or md
+    prepared = surfaces.prepare_page(mid, print_to_pdf=print_to_pdf, book_id=book_id)
     return {
         "book_id": book_id,
         "page_no": page_no,

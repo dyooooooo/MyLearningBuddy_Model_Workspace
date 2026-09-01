@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import uuid
 from datetime import datetime, timezone
@@ -56,8 +57,24 @@ def pdf_path(book_id: str) -> Path:
     return _pdf_path(book_id)
 
 
+def safe_id(book_id: str) -> str:
+    return _safe_id(book_id)
+
+
 def _page_path(book_id: str, page_no: int) -> Path:
     return book_dir(book_id) / "pages" / f"{int(page_no):04d}.md"
+
+
+def page_path(book_id: str, page_no: int) -> Path:
+    return _page_path(_safe_id(book_id), page_no)
+
+
+def _mid_path(book_id: str, page_no: int) -> Path:
+    return book_dir(book_id) / "mid" / f"{int(page_no):04d}.md"
+
+
+def mid_path(book_id: str, page_no: int) -> Path:
+    return _mid_path(_safe_id(book_id), page_no)
 
 
 def _image_path(book_id: str, page_no: int) -> Path:
@@ -327,7 +344,7 @@ def reset_derived(book_id: str) -> None:
     """Drop pages, images, and the table of contents. Keep the PDF and meta."""
     sid = _safe_id(book_id)
     folder = book_dir(sid)
-    for name in ("pages", "images"):
+    for name in ("pages", "images", "mid"):
         path = folder / name
         if path.is_dir():
             shutil.rmtree(path)
@@ -366,6 +383,52 @@ def get_page_markdown(book_id: str, page_no: int) -> str | None:
     return path.read_text(encoding="utf-8")
 
 
+def get_page_mid(book_id: str, page_no: int) -> str | None:
+    path = _mid_path(_safe_id(book_id), page_no)
+    if not path.is_file():
+        return None
+    return path.read_text(encoding="utf-8")
+
+
+def _owner(path: Path) -> tuple[int, int] | None:
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return stat.st_uid, stat.st_gid
+
+
+def _retain_owner(path: Path, prior: tuple[int, int] | None) -> None:
+    if prior is None:
+        return
+    try:
+        os.chown(path, prior[0], prior[1])
+    except OSError:
+        pass
+
+
+def write_mid(book_id: str, page_no: int, tagged: str, *, sync: bool = True) -> Path:
+    sid = _safe_id(book_id)
+    path = _mid_path(sid, page_no)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    prior = _owner(path)
+    tmp = path.with_suffix(".md.tmp")
+    tmp.write_text(tagged or "", encoding="utf-8")
+    tmp.replace(path)
+    _retain_owner(path, prior)
+    if sync:
+        from app.page_sync import sync_page
+
+        sync_page(sid, page_no)
+    return path
+
+
+def delete_mid(book_id: str, page_no: int) -> None:
+    path = _mid_path(_safe_id(book_id), page_no)
+    if path.is_file():
+        path.unlink()
+
+
 def get_page_image(book_id: str, page_no: int) -> bytes | None:
     path = _image_path(_safe_id(book_id), page_no)
     if not path.is_file():
@@ -373,17 +436,40 @@ def get_page_image(book_id: str, page_no: int) -> bytes | None:
     return path.read_bytes()
 
 
-def write_page(book_id: str, page_no: int, markdown: str, image: bytes | None = None) -> None:
+def surfaces_ready() -> bool:
+    try:
+        from app import surfaces
+
+        state = surfaces._state.get("page-body")
+        return bool(state and state.loaded)
+    except Exception:
+        return False
+
+
+def write_page(
+    book_id: str,
+    page_no: int,
+    markdown: str,
+    image: bytes | None = None,
+    *,
+    sync: bool = True,
+) -> None:
     sid = _safe_id(book_id)
     md = _page_path(sid, page_no)
     md.parent.mkdir(parents=True, exist_ok=True)
+    prior = _owner(md)
     tmp = md.with_suffix(".md.tmp")
     tmp.write_text(markdown or "", encoding="utf-8")
     tmp.replace(md)
+    _retain_owner(md, prior)
     if image is not None:
         img = _image_path(sid, page_no)
         img.parent.mkdir(parents=True, exist_ok=True)
         img.write_bytes(image)
+    if sync:
+        from app.page_sync import sync_page
+
+        sync_page(sid, page_no)
 
 
 def mark_failed(book_id: str, error: str) -> None:

@@ -7,8 +7,10 @@ def create_task(
     trigger: str = "",
     cron: str = "",
     message: str = "",
+    condition: str = "",
 ) -> dict:
-    """Create a workspace task. mode is schedule or trigger; message is sent to the Agent."""
+    """Create a workspace task. mode is schedule or trigger; message is sent to the Agent.
+    Trigger tasks may set condition: a sentence the Agent judges before running."""
     from app import tasks
 
     return tasks.create_task(
@@ -17,4 +19,5 @@ def create_task(
         trigger=trigger,
         cron=cron,
         message=message,
+        condition=condition,
     )

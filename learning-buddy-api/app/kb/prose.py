@@ -10,6 +10,7 @@ import re
 from html import escape
 
 from app.kb.math_text import wrap_bare_math
+from app.kb.toc import looks_like_toc_blob
 
 _SPAN = re.compile(
     r"""\{\s*['"]type['"]\s*:\s*['"][^'"]+['"]\s*,\s*['"]content['"]\s*:\s*['"]([\s\S]+?)['"]\s*\}"""
@@ -248,6 +249,17 @@ def polish_leads(md: str) -> str:
     return "\n".join(out)
 
 
+_HASH_LINE = re.compile(r"^#{1,6}\s+", re.M)
+
+
+def unhash_lines(md: str) -> str:
+    return _HASH_LINE.sub("", md or "")
+
+
 def polish_page_prose(md: str) -> str:
+    """Official markdown only: captions, noise, headings. No kb-* HTML."""
     cleaned = drop_formula_shots(drop_noise_lines(fix_mineru_captions(md)))
-    return polish_leads(polish_lists(lift_headings(cleaned)))
+    plain = unhash_lines(cleaned)
+    if looks_like_toc_blob(plain):
+        return plain
+    return lift_headings(cleaned)

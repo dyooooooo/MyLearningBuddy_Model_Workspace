@@ -128,6 +128,22 @@ def test_theme_css_falls_back_if_folder_missing_file(tmp_path, monkeypatch) -> N
     assert "kb-table-wrap" in css
 
 
+def test_existing_mid_is_not_retagged(tmp_path, monkeypatch) -> None:
+    _settings, surfaces = _home(tmp_path, monkeypatch)
+    surfaces.reload_all()
+    mid = "::: kb-page-toc\n目录\n\n第1章 集合\n1.1 集合初步 2\n:::\n"
+    first = surfaces.prepare_page(mid, print_to_pdf={"2": 8})
+    surfaces.write_surface(
+        "page-body",
+        "tag.mjs",
+        "export function tag(md) { return '::: kb-center\\nCHANGED\\n:::\\n' + (md || ''); }\n",
+    )
+    again = surfaces.prepare_page(mid, print_to_pdf={"2": 8})
+    assert first == again
+    assert "kb-page-toc-heading" in again
+    assert "CHANGED" not in again
+
+
 def test_prepare_table_is_single_wrap(tmp_path, monkeypatch) -> None:
     _settings, surfaces = _home(tmp_path, monkeypatch)
     surfaces.reload_all()

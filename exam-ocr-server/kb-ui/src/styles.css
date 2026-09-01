@@ -449,6 +449,10 @@ select.kb-agent-input option, .kb-settings select option, .kb-import select opti
   margin-bottom: 1.25rem; padding: 0.75rem 1rem;
   background: var(--canvas); color: #1b2230; border-radius: 8px; min-height: 8rem;
 }
+.kb-page-block.is-ai-focus {
+  outline: 2px solid #d4a017;
+  outline-offset: 2px;
+}
 .kb-page-body.is-unloaded { min-height: 6rem; }
 .kb-page-body { min-height: 4rem; }
 .btn-secondary.is-active { border-color: rgba(212, 160, 23, 0.55); color: #f0d58a; }
@@ -553,6 +557,7 @@ body.kb-resizing .kb-sash::after { background: var(--accent); }
 .kb-task-meta { margin: 0.35rem 0 0; }
 .kb-task-form { display: grid; gap: 0.45rem; max-width: 520px; }
 .kb-task-form .kb-task-message { min-height: 7rem; font-family: inherit; }
+.kb-task-form .kb-task-condition { min-height: 3.2rem; font-family: inherit; }
 .kb-task-when { display: grid; gap: 0.45rem; }
 .kb-task-form input[type="time"],
 .kb-task-form input[type="datetime-local"] {
@@ -864,6 +869,17 @@ body.kb-resizing .kb-sash::after { background: var(--accent); }
   border: none; background: #2a3140; color: var(--text);
   border-radius: 7px; padding: 0.18rem 0.55rem; font-size: 12px; cursor: pointer;
 }
+.kb-dock-focus {
+  display: flex; align-items: center; gap: 0.35rem;
+  margin: 0 0.1rem 0.25rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(212, 160, 23, 0.35);
+  font-size: 12px;
+  color: var(--text);
+}
+.kb-dock-focus-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kb-dock-attach-row { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0 0.1rem; }
 .kb-dock-chip {
   display: inline-flex; align-items: center; gap: 0.3rem;

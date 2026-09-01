@@ -8,6 +8,7 @@ import { mountKbTasks } from "./tasks";
 import { bindSash } from "./sash";
 import { startLive, onLive, readState, rememberState, hardReload } from "./live";
 import { fillShadow, invalidateSurface, setShadowText, setSurfaceGeneration } from "./surfaces";
+import { PAGE_FOCUS_EVENT, flashFocusTarget, resolvePageFocus, stampBlocks } from "./pageFocus";
 import {
   BOOK_SORTS,
   bookSortLabel,
@@ -230,6 +231,19 @@ export function mountApp(root: HTMLElement): void {
     onRefreshPage: async (pageNo) => {
       await fillPage(pageNo, true);
     },
+  });
+
+  previewPages.addEventListener("dblclick", (ev) => {
+    if (!activeId) return;
+    const book = books.find((row) => row.id === activeId);
+    const detail = resolvePageFocus(ev, {
+      bookId: activeId,
+      bookLabel: book?.label || book?.filename || "",
+    });
+    if (!detail) return;
+    ev.preventDefault();
+    flashFocusTarget(ev);
+    window.dispatchEvent(new CustomEvent(PAGE_FOCUS_EVENT, { detail }));
   });
 
   function setPlaceholder(on: boolean): void {
@@ -694,6 +708,8 @@ export function mountApp(root: HTMLElement): void {
       const out = await kb.pageMarkdown(activeId, pageNo);
       const html = renderMarkdown(out.prepared || out.markdown || "（本页无文本）");
       await fillShadow(body, "page-body", html);
+      const inner = body.shadowRoot?.querySelector(".kb-surface-inner");
+      if (inner) stampBlocks(inner);
       body.classList.remove("is-unloaded", "is-error");
       compare.wrapIfNeeded(pageNo);
     } catch (e) {

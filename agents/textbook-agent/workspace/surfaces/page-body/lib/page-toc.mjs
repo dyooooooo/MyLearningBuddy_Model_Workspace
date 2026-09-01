@@ -56,7 +56,7 @@ function levelOf(label, printPage = null) {
 }
 
 export function parseTocLine(raw) {
-  let text = (raw || "").trim().replace(/^[-•·* ]+/, "");
+  let text = (raw || "").trim().replace(/^#{1,6}\s+/, "").replace(/^[-•·* ]+/, "");
   if (text.startsWith("\\*")) text = `*${text.slice(2)}`;
   const match = TRAILING_PAGE.exec(text);
   if (match) {

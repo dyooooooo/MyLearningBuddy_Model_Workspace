@@ -328,6 +328,96 @@ def test_tool_success_can_start_task(tmp_path, monkeypatch) -> None:
     assert str((payload or {}).get("trigger") or "") == "tool.build_toc"
 
 
+def test_schedule_drops_condition(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    row = tasks.create_task(
+        "夜间",
+        mode="schedule",
+        cron="0 3 * * *",
+        message="夜间检查",
+        condition="这本书是高中数学",
+    )
+    assert row["condition"] == ""
+    assert "条件不满足" not in tasks._render_message(row)
+
+
+def test_trigger_empty_condition_runs_plain(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    row = tasks.create_task("入库", mode="trigger", message="导入后清洗 {{book_id}}")
+    assert row["condition"] == ""
+    job = tasks.start_task(row, {"book_id": "b1"})
+    assert job is not None
+    payload = job.get("payload") if isinstance(job.get("payload"), dict) else {}
+    assert str((payload or {}).get("message") or "") == "导入后清洗 b1"
+
+
+def test_trigger_condition_wraps_agent_message(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    row = tasks.create_task(
+        "入库",
+        mode="trigger",
+        message="请清洗 {{book_id}}",
+        condition="这本书是高中数学",
+    )
+    assert row["condition"] == "这本书是高中数学"
+    job = tasks.start_task(row, {"book_id": "b1"})
+    assert job is not None
+    payload = job.get("payload") if isinstance(job.get("payload"), dict) else {}
+    text = str((payload or {}).get("message") or "")
+    assert "这本书是高中数学" in text
+    assert "请清洗 b1" in text
+    assert tasks.CONDITION_SKIP in text
+    assert text.count("条件：这本书是高中数学") == 1
+    assert text.count(tasks.CONDITION_SKIP) == 1
+
+
+def test_builtin_condition_overlay_persists(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    updated = tasks.update_task("import-page-refine", condition="仅高中数学教材")
+    assert updated is not None
+    assert updated["condition"] == "仅高中数学教材"
+    tasks.reset_for_tests()
+    again = tasks.get_task("import-page-refine")
+    assert again is not None
+    assert again["condition"] == "仅高中数学教材"
+    assert "toc_extract" in (again.get("message") or "")
+
+
+def test_switch_to_schedule_clears_condition(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    row = tasks.create_task(
+        "入库",
+        mode="trigger",
+        message="清洗",
+        condition="这本书是高中数学",
+    )
+    switched = tasks.update_task(row["id"], mode="schedule", cron="0 3 * * *")
+    assert switched is not None
+    assert switched["mode"] == "schedule"
+    assert switched["condition"] == ""
+
+
+def test_create_task_tool_accepts_condition(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    from app.tools_loader import load_tool_specs
+
+    specs = {s["id"]: s for s in load_tool_specs()}
+    created = specs["create_task"]["execute"](
+        {
+            "title": "有条件",
+            "mode": "trigger",
+            "trigger": "kb.import.completed",
+            "message": "清洗",
+            "condition": "科目是数学",
+        }
+    )
+    assert created["condition"] == "科目是数学"
+    specs["update_task"]["execute"]({"task_id": created["id"], "condition": "科目是语文"})
+    assert tasks.get_task(created["id"])["condition"] == "科目是语文"
+
+
 def test_emit_reentrancy_skips_same_event(tmp_path, monkeypatch) -> None:
     _home(tmp_path, monkeypatch)
     monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))

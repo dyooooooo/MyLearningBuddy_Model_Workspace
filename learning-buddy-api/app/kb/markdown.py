@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from html import escape
 from typing import Any
 
 from app.kb.math_text import wrap_bare_math
 from app.kb.prose import looks_like_heading, polish_page_prose
 from app.kb.table_html import polish_table_html
-from app.kb.toc import is_index_block, keep_entry, looks_like_toc_blob, parse_entry
+from app.kb.toc import is_index_block, looks_like_toc_blob
 
 _SKIP_TYPES = frozenset(
     {
@@ -145,63 +144,13 @@ def _image_markdown(block: dict[str, Any], *, alt_default: str = "插图") -> st
     return md
 
 
-def _toc_row_html(
-    item: dict[str, Any],
-    print_to_pdf: dict[int, int] | None,
-) -> str:
-    label = str(item.get("label") or "").strip()
-    if not label:
-        return ""
-    is_chapter = bool(item.get("is_chapter"))
-    try:
-        level = int(item.get("level") if item.get("level") is not None else (0 if is_chapter else 1))
-    except (TypeError, ValueError):
-        level = 0 if is_chapter else 1
-    classes = [f"kb-page-toc-row kb-page-toc-row--lv{level}"]
-    if is_chapter:
-        classes.append("kb-page-toc-row--chapter")
-    attrs: list[str] = []
-    leader = ""
-    page_html = ""
-    print_page = item.get("print_page")
-    if print_page is not None:
-        try:
-            pp = int(print_page)
-        except (TypeError, ValueError):
-            pp = None
-        if pp is not None:
-            classes.append("kb-page-toc-row--link")
-            attrs.append(f'data-goto-print-page="{pp}"')
-            mapped = (print_to_pdf or {}).get(pp)
-            if mapped:
-                attrs.append(f'data-goto-page="{int(mapped)}"')
-            attrs.append('role="link"')
-            attrs.append('tabindex="0"')
-            leader = '<span class="kb-page-toc-leader" aria-hidden="true"></span>'
-            page_html = f'<span class="kb-page-toc-page">{pp}</span>'
-    attr_s = (" " + " ".join(attrs)) if attrs else ""
-    return (
-        f'<li class="{" ".join(classes)}"{attr_s}>'
-        f'<span class="kb-page-toc-title">{escape(label)}</span>'
-        f"{leader}{page_html}</li>"
-    )
-
-
-def _toc_html(lines: list[str], print_to_pdf: dict[int, int] | None) -> str:
-    items: list[str] = []
+def _toc_plain(lines: list[str]) -> str:
+    out: list[str] = []
     for line in lines:
         raw = (line or "").strip().lstrip("-•·* ").strip()
-        if not raw or raw in {"目录", "目 录", "CONTENTS", "Contents"}:
-            continue
-        entry = parse_entry(raw)
-        if not keep_entry(entry) and not entry.get("is_chapter"):
-            continue
-        row = _toc_row_html(entry, print_to_pdf)
-        if row:
-            items.append(row)
-    if not items:
-        return ""
-    return f'<nav class="kb-page-toc"><ol class="kb-page-toc-list">{"".join(items)}</ol></nav>'
+        if raw:
+            out.append(raw)
+    return "\n".join(out)
 
 
 def _block_lines(block: dict[str, Any], text: str) -> list[str]:
@@ -251,7 +200,7 @@ def _render_block(
         return ""
     text = _plain_text(block)
     if _is_toc_block(block, text):
-        return _toc_html(_block_lines(block, text), print_to_pdf)
+        return _toc_plain(_block_lines(block, text))
     if btype in _EQUATION_TYPES:
         return _equation_markdown(block)
     if btype in _FIGURE_TYPES:
@@ -275,7 +224,7 @@ def _render_block(
             or ""
         )
         if isinstance(table, str) and table.strip().startswith("<"):
-            return polish_table_html(table, caption=cap, footnote=foot)
+            return polish_table_html(table, caption=cap, footnote=foot, wrap=False)
         if _image_path(block):
             return _image_markdown(block, alt_default=cap or "表格")
         return cap

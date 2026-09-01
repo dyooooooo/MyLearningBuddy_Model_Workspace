@@ -28,6 +28,7 @@ TASK_CRUD_TOOLS = frozenset({"create_task", "list_tasks", "update_task", "cancel
 TRIGGER_PREFIXES = ("kb.", "task.", "tool.")
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 DEFAULT_MESSAGE = "执行任务「{{title}}」。先读工作区技能，再按对话里的要求做。"
+CONDITION_SKIP = "条件不满足，跳过本任务"
 IDENTIFY_MESSAGE = (
     "刚拖入一本教材 PDF。文件名：{{filename}}。书号：{{book_id}}。\n"
     "MinerU 已经识别了前三页，文本在下面。不要再 open_pdf_page，不要读 PDF，不要看图。\n"
@@ -61,6 +62,7 @@ _OVERLAY_KEYS = (
     "action",
     "prompt",
     "message",
+    "condition",
     "next_run",
     "last_run_at",
     "last_job_id",
@@ -69,6 +71,7 @@ _OVERLAY_KEYS = (
 # yaml edit (e.g. insert toc_extract) is not frozen by an old tasks.json message.
 _RUNTIME_OVERLAY_KEYS = (
     "enabled",
+    "condition",
     "next_run",
     "last_run_at",
     "last_job_id",
@@ -168,6 +171,7 @@ def _normalize(row: dict[str, Any]) -> dict[str, Any]:
         "action": action,
         "prompt": str(row.get("prompt") or "prompts/tasks.md").strip(),
         "message": message,
+        "condition": str(row.get("condition") or "").strip() if mode == "trigger" else "",
         "identify_message": str(row.get("identify_message") or "").strip()
         or (IDENTIFY_MESSAGE if tid == "import-page-refine" else ""),
         "builtin": bool(row.get("builtin")),
@@ -373,14 +377,34 @@ def _prepare_schedule(cron: str, next_run: str) -> tuple[str, str]:
     raise ValueError("schedule task needs a time")
 
 
+def _fill_vars(text: str, values: dict[str, str]) -> str:
+    for key, val in values.items():
+        text = text.replace("{{" + key + "}}", val)
+    return text
+
+
+def _wrap_condition(condition: str, message: str) -> str:
+    return (
+        "先根据实际情况判断下面条件是否成立。\n"
+        f"不成立则只回复「{CONDITION_SKIP}」，不要调用任何工具，不要执行后面的任务。\n"
+        "成立才执行后面的任务。\n\n"
+        f"条件：{condition}\n\n"
+        f"任务：\n{message}"
+    )
+
+
 def _render_message(task: dict[str, Any], extra: dict[str, Any] | None = None) -> str:
     extra = dict(extra or {})
     title = str(task.get("title") or "任务")
     text = str(extra.get("message") or task.get("message") or "").strip() or DEFAULT_MESSAGE
     values = {"title": title, **{str(k): "" if v is None else str(v) for k, v in extra.items()}}
-    for key, val in values.items():
-        text = text.replace("{{" + key + "}}", val)
-    return text
+    text = _fill_vars(text, values)
+    if str(task.get("mode") or "") != "trigger":
+        return text
+    condition = _fill_vars(str(task.get("condition") or "").strip(), values)
+    if not condition:
+        return text
+    return _wrap_condition(condition, text)
 
 
 def create_task(
@@ -393,6 +417,7 @@ def create_task(
     enabled: bool = True,
     next_run: str = "",
     message: str = "",
+    condition: str = "",
 ) -> dict[str, Any]:
     mode = (mode or "trigger").strip().lower()
     if mode in LEGACY_MODES:
@@ -419,6 +444,7 @@ def create_task(
             "action": action,
             "prompt": prompt or "prompts/tasks.md",
             "message": (message or "").strip() or DEFAULT_MESSAGE.replace("{{title}}", (title or "").strip() or "任务"),
+            "condition": (condition or "").strip() if mode == "trigger" else "",
             "builtin": False,
         }
     )
@@ -438,7 +464,7 @@ def update_task(task_id: str, **fields: Any) -> dict[str, Any] | None:
             break
     if found is None:
         return None
-    for key in ("title", "enabled", "mode", "trigger", "cron", "action", "prompt", "message", "next_run"):
+    for key in ("title", "enabled", "mode", "trigger", "cron", "action", "prompt", "message", "condition", "next_run"):
         if key in fields and fields[key] is not None:
             found[key] = fields[key]
     if fields.get("mode") in LEGACY_MODES:
@@ -563,7 +589,6 @@ def tick() -> list[dict[str, Any]]:
 def start_task(task: dict[str, Any], extra: dict[str, Any] | None = None) -> dict[str, Any] | None:
     extra = dict(extra or {})
     tid = str(task.get("id") or "")
-    extra["message"] = _render_message(task, extra)
     extra.setdefault("title", str(task.get("title") or "任务"))
     extra.setdefault("trigger", str(task.get("trigger") or ""))
     job = start_chat_task(task, extra)

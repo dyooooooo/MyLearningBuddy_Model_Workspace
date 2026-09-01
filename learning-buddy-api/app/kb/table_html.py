@@ -82,6 +82,7 @@ def polish_table_html(
     caption: str = "",
     footnote: str = "",
     url_map: dict[str, str] | None = None,
+    wrap: bool = True,
 ) -> str:
     raw = (html or "").strip()
     if not raw:
@@ -96,7 +97,7 @@ def polish_table_html(
     if _column_count(table) >= 5:
         table = _add_table_class(table, "kb-table--fit")
     foot = f'<p class="kb-table-foot">{escape(footnote.strip())}</p>' if footnote.strip() else ""
-    if 'class="kb-table-wrap"' in raw:
+    if not wrap or 'class="kb-table-wrap"' in raw:
         return table + foot
     return f'<div class="kb-table-wrap">{table}</div>{foot}'
 

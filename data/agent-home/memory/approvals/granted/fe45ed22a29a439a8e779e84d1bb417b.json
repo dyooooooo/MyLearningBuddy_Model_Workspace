@@ -1,0 +1,17 @@
+{
+  "req_id": "fe45ed22a29a439a8e779e84d1bb417b",
+  "status": "granted",
+  "path": "tools/continue_fn_series.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "b065de18-e533-4e4b-866e-5ff28983cfb1",
+  "conversation_id": "d3e7d44e-38cf-46f1-b3a3-46cffcbaa671",
+  "requested_at": "2026-08-31T05:30:06.984720+00:00",
+  "situation": "语文教材里，印张常把一段课文从中间省断。MinerU 转成 Markdown 时把下半段并进上一页，下半段在原页从①重新起号。并进后同一页会出现两个①，上标和页注对不上。这是全部有圈号页注的书共有的形状，不是一书特例。",
+  "why": "restore_footnotes 只负责从 MinerU 拼回页注和改上标包装，不负责跨页并段后的编号顺延。按开闭原则要新建工具，不要给它打补丁。导入清洗回补页注之后自动跑一遍，后书不用再手改编号。",
+  "changes": "新建 tools/continue_fn_series.py，函数名 continue_fn_series，参数 book_id 与 apply=scan|fix。按正文上标顺序切成两段，偏移取第一段最大号；把后页里词头在本页合并段里的注释搬过来，从偏移接着编正文与注释圈号。不另编注释，不拆已并的段落，不用圈号全书合并。再登一条任务，触发 tool.restore_footnotes，对话里调 continue_fn_series。",
+  "impact": "有圈号页注的语文书在回补页注后会再跑一遍顺延。并段页上的二段①会变成接在第一段后面的①②。没有该形状的书 0 hits，不改页。目录页和活动题不动。不改 restore_footnotes 本身。",
+  "granted_at": "2026-08-31T05:30:27.741472+00:00",
+  "expires_at": "2026-08-31T05:45:27.741472+00:00",
+  "one_shot": true
+}

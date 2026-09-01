@@ -5,7 +5,7 @@ const UNICODE_MATH = /[√∞∪∩≤≥≠παβγθ∈∉∅]/;
 const LETTER_REL = /[a-zA-Z]\s*[=<>]/;
 const DISPLAY_HINT = /\\begin\{|\\frac\{|\\sum(?![a-zA-Z])|\\int(?![a-zA-Z])/;
 const PROTECTED_SOURCE =
-  '\\$\\$[\\s\\S]+?\\$\\$|\\$[^$\\n]+?\\$|\\\\\\[[\\s\\S]+?\\\\\\]|\\\\\\([\\s\\S]+?\\\\\\)|!\\[[^\\]]*\\]\\([^)]+\\)|<div class="kb-table-wrap"[\\s\\S]+?<\\/div>|<div class="kb-page-toc-heading"[\\s\\S]+?<\\/div>|<table[\\s\\S]+?<\\/table>|<img\\b[^>]*>|<nav[\\s\\S]+?<\\/nav>|<p class="kb-(?:list-item|solution|solution-tail|lead|page-toc-heading)"[\\s\\S]+?<\\/p>';
+  '\\$\\$[\\s\\S]+?\\$\\$|\\$[^$\\n]+?\\$|\\\\\\[[\\s\\S]+?\\\\\\]|\\\\\\([\\s\\S]+?\\\\\\)|!\\[[^\\]]*\\]\\([^)]+\\)|<div class="kb-table-wrap"[\\s\\S]+?<\\/div>|<div class="kb-center"[\\s\\S]+?<\\/div>|<div class="kb-page-toc-heading"[\\s\\S]+?<\\/div>|<table[\\s\\S]+?<\\/table>|<img\\b[^>]*>|<nav[\\s\\S]+?<\\/nav>|<p class="kb-(?:list-item|solution|solution-tail|lead|page-toc-heading)"[\\s\\S]+?<\\/p>';
 
 function isMathRun(part) {
   const text = part.trim();

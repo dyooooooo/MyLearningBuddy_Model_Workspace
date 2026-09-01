@@ -1,0 +1,17 @@
+{
+  "req_id": "cf1fad6e83674a2485e9ee2784ce3dce",
+  "status": "granted",
+  "path": "tools/center_article_heads.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "d92a7e45-4059-4b1a-b14c-ad5cb8e8cb90",
+  "conversation_id": "d3e7d44e-38cf-46f1-b3a3-46cffcbaa671",
+  "requested_at": "2026-08-31T06:22:24.341894+00:00",
+  "situation": "center_article_heads 把篇名和作者写成带 style 的 p 标签。page-body 的 wrapBareMath 看到标签里的等号和连字符，会把整段收进美元符。画面上只剩篇名，作者行像被删掉。这是所有走该工具的书共有的问题，不是一书特例。",
+  "why": "工具必须改成写 Markdown：篇名用二级标题，作者单独一行写在下面。这样作者不会被公式保护吃掉，后书也不会再丢作者。按开闭原则只改这个新工具，不给 improve_render 打补丁。",
+  "changes": "改 tools/center_article_heads.py 的写回格式：标题写成 ## 篇名，下一行写作者原文；副标题仍用 ##，日期保持原括号行。不要再输出 kb-article-title / kb-article-author 的 p 标签和内联 style。已经是 ## 加作者行的页跳过。扫描到旧 HTML 时收成上述 Markdown。不另编标题，不删作者。",
+  "impact": "以后跑 center_article_heads 只会写可见的标题和作者，不会再把作者收进公式。已经改回 Markdown 的这一册 scan 为 0。不改 build_toc / fill_unit_toc / improve_render。居中仍须画面插槽另授权后才能做。",
+  "granted_at": "2026-08-31T06:22:44.583878+00:00",
+  "expires_at": "2026-08-31T06:37:44.583878+00:00",
+  "one_shot": true
+}

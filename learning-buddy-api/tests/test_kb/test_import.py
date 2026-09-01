@@ -6,7 +6,7 @@ from unittest.mock import patch
 from app.kb.import_service import book_to_dict, create_kb_book, identify_kb_book, process_kb_book
 from app.kb.mineru_client import KbParseResult
 from app.kb.settings import KbMineruRuntime
-from app.kb.workspace_store import page_path, read_meta, read_toc
+from app.kb.workspace_store import mid_path, page_path, read_meta, read_toc
 
 
 class _FakePages:
@@ -66,6 +66,10 @@ def test_process_kb_book_writes_workspace_files(tmp_path, monkeypatch) -> None:
     assert out["status"] == "ready"
     assert out["page_count"] == 2
     assert "例3" in page_path("b1", 2).read_text(encoding="utf-8")
+    assert 'class="kb-' not in page_path("b1", 1).read_text(encoding="utf-8")
+    assert "1.1 集合初步 2" in page_path("b1", 1).read_text(encoding="utf-8")
+    mid1 = mid_path("b1", 1).read_text(encoding="utf-8")
+    assert "::: kb-page-toc" in mid1
     assert read_meta("b1")["status"] == "ready"
     d = book_to_dict(read_meta("b1"))
     assert d["textbook_hint"] == "沪教版数学必修第一册"

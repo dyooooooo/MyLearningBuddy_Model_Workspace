@@ -17,6 +17,43 @@ WORKING_MAX = 2000
 DECISIONS_MAX = 1500
 
 
+def _focus_line(job: dict[str, Any] | None, conversation_id: str) -> str:
+    payload = job.get("payload") if job and isinstance(job.get("payload"), dict) else {}
+    focus: dict[str, Any] = {}
+    for key in ("book_id", "book", "page_no", "block_id", "block_label"):
+        value = (payload or {}).get(key)
+        if value not in (None, "", 0):
+            focus[key] = value
+    if not focus and conversation_id:
+        from app import conversations
+
+        row = conversations.get(conversation_id)
+        stored = (row or {}).get("focus") if row else None
+        if isinstance(stored, dict):
+            focus = {k: v for k, v in stored.items() if v not in (None, "", 0)}
+    if not focus:
+        return ""
+    book = str(focus.get("book") or focus.get("book_id") or "").strip()
+    try:
+        page = int(focus.get("page_no") or 0)
+    except (TypeError, ValueError):
+        page = 0
+    block = str(focus.get("block_id") or "").strip()
+    label = str(focus.get("block_label") or "").strip()
+    bits = ["聚焦："]
+    if book:
+        bits.append(f"书 {book}")
+    if page > 0:
+        bits.append(f"第 {page} 页")
+    if block:
+        bits.append(f"块 {block}")
+    if label:
+        bits.append(f"「{label}」")
+    if len(bits) <= 1:
+        return ""
+    return " ".join(bits)
+
+
 def conversation_id_of(job: dict[str, Any] | None) -> str:
     if not job:
         return ""
@@ -92,6 +129,9 @@ def write_from_job(job: dict[str, Any] | None) -> str:
         f"状态：{status or 'unknown'}",
         f"用户任务：{task or last_user or '（无）'}",
     ]
+    focus_line = _focus_line(job, cid)
+    if focus_line:
+        lines.append(focus_line)
     if last_user and last_user != task:
         lines.append(f"本轮原话：{last_user}")
     lines.append(f"停住原因：{why}")

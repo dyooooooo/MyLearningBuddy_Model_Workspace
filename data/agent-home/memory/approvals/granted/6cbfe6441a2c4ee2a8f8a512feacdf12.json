@@ -1,0 +1,17 @@
+{
+  "req_id": "6cbfe6441a2c4ee2a8f8a512feacdf12",
+  "status": "granted",
+  "path": "tools/restore_footnotes.py",
+  "scope": "tools,skills,tasks",
+  "tool_name": "request_code_edit",
+  "job_id": "8803ffb9-c4b1-4147-9b14-9901e44e67b3",
+  "conversation_id": "d3e7d44e-38cf-46f1-b3a3-46cffcbaa671",
+  "requested_at": "2026-08-31T03:59:08.433277+00:00",
+  "situation": "语文教材页脚注释常排成两栏。MinerU 把左栏标成 page_footnote、右栏常标成正文，转成 pages/*.md 后左栏整栏消失，右栏有时只剩半句。正文圈号上标有的是裸 ①、有的是 ^{①}，画面里不够明显。这本书已按 mineru 回补 77 页并统一成 $^{①}$，活动题里的 ①② 没有当成注释。下一本还会再丢。",
+  "why": "「圈号上标 + 〔词〕释义 / 选自」是多册语文教材共有的页注形状，不是某一课专名。按开闭原则应新建工具加事件，不改 improve_render，也不手写一书注释。导入后自动从 mineru 的 page_footnote 和带圈号的底栏正文拼回，避免每本再对照原图。",
+  "changes": "授权后才写入：新建 tools/restore_footnotes.py，函数名 restore_footnotes。只认 ①〔 和 ① 选自 / 节选；用 bbox 分左右栏，半句接到同一条注释。正文圈号改成 $^{①}$，行首的活动 ① 不动。封面和目录页不改。无 mineru 或无该形状则 0 改动。新建技能 restore-footnotes。create_task 挂在导入清洗完成之后（task.import-page-refine.completed）。不改 build_toc，不写一书注释原文，不新增 Cursor 红线钩子。",
+  "impact": "有圈号页注的书导入后，左栏注释和半截右栏会按 mineru 拼回书页，正文上标统一成可渲染的 $^{①}$。英语等没有该形状的书不被改。活动清单里的 ①② 不会被收进页脚。这本书已经按此修过，授权只加工具、技能和任务。授权前不写入共用代码。",
+  "granted_at": "2026-08-31T03:59:13.370349+00:00",
+  "expires_at": "2026-08-31T04:14:13.370349+00:00",
+  "one_shot": true
+}

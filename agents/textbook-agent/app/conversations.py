@@ -231,21 +231,51 @@ def get(cid: str) -> dict[str, Any] | None:
     return None
 
 
-def ensure(conversation_id: str = "", message: str = "") -> dict[str, Any]:
+def focus_title(focus: dict[str, Any] | None, message: str = "") -> str:
+    data = focus if isinstance(focus, dict) else {}
+    book = str(data.get("book") or "").strip() or str(data.get("book_id") or "").strip()
+    try:
+        page = int(data.get("page_no") or 0)
+    except (TypeError, ValueError):
+        page = 0
+    if book and page > 0:
+        return f"{book} · 第 {page} 页"
+    if page > 0:
+        return f"第 {page} 页"
+    return fallback_title(message)
+
+
+def _merge_focus(row: dict[str, Any], focus: dict[str, Any] | None) -> None:
+    if not focus:
+        return
+    current = row.get("focus")
+    base = dict(current) if isinstance(current, dict) else {}
+    base.update({k: v for k, v in focus.items() if v not in (None, "", 0)})
+    row["focus"] = base
+
+
+def ensure(
+    conversation_id: str = "",
+    message: str = "",
+    title: str = "",
+    focus: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     _load()
     coalesce_linked_threads()
     cid = (conversation_id or "").strip()
     if cid in ("none", "local"):
         cid = ""
     found = get(cid) if cid else None
+    want_title = (title or "").strip()
     if found:
         with _lock:
             row = _convs.get(str(found["id"]))
             if row is None:
                 return found
-            if not row.get("title") and message.strip():
-                row["title"] = fallback_title(message)
-                row["title_source"] = "fallback"
+            _merge_focus(row, focus)
+            if not row.get("title") and (want_title or message.strip()):
+                row["title"] = want_title or fallback_title(message)
+                row["title_source"] = "focus" if want_title else "fallback"
             row["updated_at"] = _now()
             _persist(row)
             return dict(row)
@@ -254,13 +284,14 @@ def ensure(conversation_id: str = "", message: str = "") -> dict[str, Any]:
         cid = cid or str(uuid.uuid4())
         row = {
             "id": cid,
-            "title": fallback_title(message),
-            "title_source": "fallback",
+            "title": want_title or focus_title(focus, message),
+            "title_source": "focus" if want_title or focus else "fallback",
             "sdk_id": "",
             "alias_ids": [] if created else [cid],
             "created_at": _now(),
             "updated_at": _now(),
             "job_ids": [],
+            "focus": dict(focus) if focus else {},
         }
         _convs[cid] = row
         _persist(row)

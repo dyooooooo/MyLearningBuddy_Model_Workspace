@@ -1,0 +1,17 @@
+{
+  "req_id": "8df5b9cf1d3f49dca3ce64e4cb8d91ea",
+  "status": "granted",
+  "path": "tools/center_article_heads.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "0036b06b-9ad4-4c30-bc71-191ae26faf54",
+  "conversation_id": "d3e7d44e-38cf-46f1-b3a3-46cffcbaa671",
+  "requested_at": "2026-08-31T06:02:24.504427+00:00",
+  "situation": "语文教材目录最后一级是「篇名 / 作者」。正文里标题有的是 ##、有的落成普通段落，作者有的也被抬成 ##。画面上就不居中、不加粗、字号也不齐。这是所有以篇名加作者作末级的书共有的形状，不是一书特例。",
+  "why": "导入清洗补完单元目录之后应自动把末级篇名和作者收成居中标题块，后书不用再手改。按开闭原则要新建工具，不要给 build_toc、fill_unit_toc 或 improve_render 打补丁。refine_page 会剥掉 div，所以写成 p 标签并自带居中与加粗样式。",
+  "changes": "新建 tools/center_article_heads.py，函数名 center_article_heads，参数 book_id 与 apply=scan|fix。读 toc.json 里带「 / 」的末级条目，在对应页找标题行和紧随的作者行（可夹副标题、括号日期），写成 kb-article-title / kb-article-author（日期用 kb-article-date）。已是该标签的不改。不另编标题。目录页、学习提示、单元学习任务不改。再登一条任务，触发 tool.fill_unit_toc，对话里调本工具。",
+  "impact": "有「篇名 / 作者」末级的书在补完单元目录后会再跑一遍。标题和作者居中；未加粗的篇名会与其他课文标题同粗、同字号。没有该形状的书 0 hits，不改页。不改 build_toc / fill_unit_toc / improve_render 本身。",
+  "granted_at": "2026-08-31T06:05:47.214106+00:00",
+  "expires_at": "2026-08-31T06:20:47.214106+00:00",
+  "one_shot": true
+}

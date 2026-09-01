@@ -3,9 +3,10 @@
     {
       "id": "import-page-refine",
       "enabled": true,
+      "condition": "",
       "next_run": "",
-      "last_run_at": "2026-08-30T04:20:23.767200+00:00",
-      "last_job_id": "16b90354-7a66-4390-bdb1-2e7a3029bb8a"
+      "last_run_at": "2026-08-31T03:25:32.139638+00:00",
+      "last_job_id": "e6ef264e-bb8d-481d-8415-d107fce6af2c"
     },
     {
       "id": "0f0496a1-fbd9-46ea-ab6d-30f9fd5a5fb0",
@@ -18,11 +19,80 @@
       "action": "chat",
       "prompt": "prompts/tasks.md",
       "message": "目录已建 {{book_id}}",
+      "condition": "",
+      "identify_message": "",
+      "builtin": false,
+      "last_run_at": "",
+      "last_job_id": ""
+    },
+    {
+      "id": "2d560aeb-3a76-407e-9fb2-1080013280dc",
+      "title": "build_toc 后按单元课号补目录",
+      "enabled": true,
+      "mode": "trigger",
+      "trigger": "tool.build_toc",
+      "cron": "",
+      "next_run": "",
+      "action": "chat",
+      "prompt": "prompts/tasks.md",
+      "message": "书号：{{book_id}}。请先读工作区 .cursor/skills/fill-unit-toc/SKILL.md，再只调用一次 fill_unit_toc(book_id={{book_id}})。\n\n书页里没有「第N单元」就说一句结束。有则让工具按课序号与篇名分层写回 toc.json 和目录页，不要手写旁路。\n\n不要 mark_toc_pages，不要对目录页 unwrap，补完后不要再调 build_toc。不要贴整页正文。到此结束。",
+      "condition": "",
+      "identify_message": "",
+      "builtin": false,
+      "last_run_at": "",
+      "last_job_id": ""
+    },
+    {
+      "id": "896ae234-2875-464d-b80f-04fc88b5df2d",
+      "title": "导入清洗后回补圈号页注",
+      "enabled": true,
+      "mode": "trigger",
+      "trigger": "task.import-page-refine.completed",
+      "cron": "",
+      "next_run": "",
+      "action": "chat",
+      "prompt": "prompts/tasks.md",
+      "message": "书号：{{book_id}}。请先读工作区 .cursor/skills/restore-footnotes/SKILL.md，再只调用一次 restore_footnotes(book_id={{book_id}}, apply=fix)。\n\n书页或 mineru 里没有「①〔」「① 选自」「① 节选」就说一句结束。有则让工具从 mineru 拼回页注、把正文圈号改成 $^{n}$、在注释块上方加横杠。行首活动题的 ① 不要收进页脚。封面和目录页不要改。\n\n不要改 build_toc，不要对目录页 unwrap，不要贴整页正文。到此结束。",
+      "condition": "",
+      "identify_message": "",
+      "builtin": false,
+      "last_run_at": "",
+      "last_job_id": ""
+    },
+    {
+      "id": "d4daf591-3629-4591-aac0-c7b9750f241b",
+      "title": "页注回补后顺延并段编号",
+      "enabled": true,
+      "mode": "trigger",
+      "trigger": "tool.restore_footnotes",
+      "cron": "",
+      "next_run": "",
+      "action": "chat",
+      "prompt": "prompts/tasks.md",
+      "message": "书号：{{book_id}}。请先读工作区 .cursor/skills/continue-fn-series/SKILL.md，再只调用一次 continue_fn_series(book_id={{book_id}}, apply=fix)。\n\n正文上标没有「顺增后又出现第二个①」就说一句结束。有则让工具把后页并段里从①起号的注释接到本页第一段最大号之后，正文上标一起改。不要拆回两页，不要另编注释，不要用圈号全书合并。目录页和活动题不要改。\n\n不要改 restore_footnotes / build_toc，不要对目录页 unwrap，不要贴整页正文。到此结束。",
+      "condition": "",
+      "identify_message": "",
+      "builtin": false,
+      "last_run_at": "",
+      "last_job_id": ""
+    },
+    {
+      "id": "7bd35ae5-3af0-4f54-8296-a3a53694f863",
+      "title": "目录后居中课文标题和作者",
+      "enabled": true,
+      "mode": "trigger",
+      "trigger": "tool.fill_unit_toc",
+      "cron": "",
+      "next_run": "",
+      "action": "chat",
+      "prompt": "prompts/tasks.md",
+      "message": "书号：{{book_id}}。请先读工作区 .cursor/skills/center-article-heads/SKILL.md，再只调用一次 center_article_heads(book_id={{book_id}}, apply=fix)。\n\ntoc.json 里没有「篇名 / 作者」就说一句结束。有则让工具把对应页的标题和作者收成居中标题块，未加粗的篇名与其他课文标题同粗、同字号。学习提示、阅读指导、单元学习任务、目录页不要改。不要另编标题。\n\n不要改 build_toc / fill_unit_toc / improve_render，不要对目录页 unwrap，不要贴整页正文。到此结束。",
+      "condition": "",
       "identify_message": "",
       "builtin": false,
       "last_run_at": "",
       "last_job_id": ""
     }
   ],
-  "updated_at": "2026-08-30T04:20:23.772649+00:00"
+  "updated_at": "2026-08-31T06:12:17.528264+00:00"
 }

@@ -96,6 +96,10 @@ def page_path(book_id: str, page_no: int) -> Path:
     return book_dir(book_id) / "pages" / f"{int(page_no):04d}.md"
 
 
+def mid_path(book_id: str, page_no: int) -> Path:
+    return book_dir(book_id) / "mid" / f"{int(page_no):04d}.md"
+
+
 def image_path(book_id: str, page_no: int) -> Path:
     return book_dir(book_id) / "images" / f"p{int(page_no):04d}.jpg"
 
@@ -171,7 +175,7 @@ def write_mineru_toc(book_id: str, toc: dict[str, Any]) -> dict[str, Any]:
 def reset_derived(book_id: str) -> None:
     """Drop pages, images, MinerU JSON, and the table of contents. Keep the PDF and meta."""
     folder = book_dir(book_id)
-    for name in ("pages", "images", "mineru"):
+    for name in ("pages", "images", "mineru", "mid"):
         path = folder / name
         if path.is_dir():
             shutil.rmtree(path)

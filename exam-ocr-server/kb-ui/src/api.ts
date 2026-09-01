@@ -250,6 +250,7 @@ export type AgentTask = {
   action: string;
   prompt: string;
   message: string;
+  condition?: string;
   identify_message?: string;
   builtin: boolean;
   last_run_at: string;
@@ -504,6 +505,7 @@ export const agent = {
     cron?: string;
     next_run?: string;
     message?: string;
+    condition?: string;
     action?: string;
     prompt?: string;
     enabled?: boolean;
@@ -558,6 +560,13 @@ export const agent = {
     files?: { data: string; name: string; mime_type: string }[];
     task_id?: string;
     trigger?: string;
+    book_id?: string;
+    book?: string;
+    page_no?: number;
+    block_id?: string;
+    block_label?: string;
+    quote?: string;
+    title?: string;
   }): Promise<{ job_id: string; status: string; conversation_id?: string; title?: string }> {
     return json(`${AGENT}/chat`, {
       method: "POST",

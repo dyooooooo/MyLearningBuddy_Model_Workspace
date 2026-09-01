@@ -16,12 +16,14 @@ try {
   }
   const mod = await import(pathToFileURL(entry).href);
   const op = String(input.op || "");
-  const fn = op === "prepare" ? mod.prepare : op === "paint" ? mod.paint : null;
+  const fn =
+    op === "prepare" ? mod.prepare : op === "paint" ? mod.paint : op === "tag" ? mod.tag : null;
   if (typeof fn !== "function") {
-    fail(`missing export ${op || "prepare|paint"}`);
+    fail(`missing export ${op || "prepare|paint|tag"}`);
   }
   const ctx = input.ctx && typeof input.ctx === "object" ? input.ctx : {};
-  const result = op === "prepare" ? fn(String(input.markdown || ""), ctx) : fn(input.payload ?? {}, ctx);
+  const result =
+    op === "paint" ? fn(input.payload ?? {}, ctx) : fn(String(input.markdown || ""), ctx);
   process.stdout.write(JSON.stringify({ ok: true, result }));
 } catch (err) {
   fail(err && err.message ? err.message : err);

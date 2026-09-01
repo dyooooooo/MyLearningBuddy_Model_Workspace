@@ -293,6 +293,57 @@ def test_chat_stores_attachments_without_bytes(tmp_path, monkeypatch) -> None:
     raise AssertionError("job did not finish")
 
 
+def test_chat_stores_page_focus(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AGENT_HOME", str(tmp_path / "home"))
+    from app.config import settings
+    from app import conversations
+
+    settings.agent_home = str(tmp_path / "home")
+    settings.textbook_agent_token = "test-token"
+    conversations.reset_for_tests()
+    ensure_workspace()
+
+    def fake_chat(message: str, conversation_id: str = "", job_id: str = "", **_kw) -> dict:
+        return {"conversation_id": conversation_id, "reply": f"收到：{message}", "book_missing": False}
+
+    monkeypatch.setattr("app.sdk_runner.run_chat", fake_chat)
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer test-token"}
+    r = client.post(
+        "/v1/chat",
+        headers=headers,
+        json={
+            "message": "【聚焦目标】\n请改这一段",
+            "book_id": "book-1",
+            "book": "沪教高中数学",
+            "page_no": 12,
+            "block_id": "p-3",
+            "block_label": "例 3",
+            "title": "沪教高中数学 · 第 12 页",
+        },
+    )
+    assert r.status_code == 202
+    cid = r.json()["conversation_id"]
+    assert r.json()["title"] == "沪教高中数学 · 第 12 页"
+    job_id = r.json()["job_id"]
+    for _ in range(20):
+        body = client.get(f"/v1/jobs/{job_id}", headers=headers).json()
+        if body["status"] == "completed":
+            payload = body["payload"]
+            assert payload["book_id"] == "book-1"
+            assert payload["page_no"] == 12
+            assert payload["block_id"] == "p-3"
+            conv = conversations.get(cid)
+            assert conv is not None
+            assert conv["title"] == "沪教高中数学 · 第 12 页"
+            assert conv["focus"]["book_id"] == "book-1"
+            assert conv["focus"]["page_no"] == 12
+            return
+        if body["status"] == "failed":
+            raise AssertionError(body["error"])
+    raise AssertionError("job did not finish")
+
+
 def test_chat_rejects_empty(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("AGENT_HOME", str(tmp_path / "home"))
     from app.config import settings
@@ -333,10 +384,30 @@ def test_tasks_crud_and_emit(tmp_path, monkeypatch) -> None:
     created = client.post(
         "/v1/tasks",
         headers=headers,
-        json={"title": "夜间", "mode": "schedule", "cron": "0 4 * * *", "message": "夜间检查默认教材"},
+        json={
+            "title": "夜间",
+            "mode": "schedule",
+            "cron": "0 4 * * *",
+            "message": "夜间检查默认教材",
+            "condition": "不该留下",
+        },
     )
     assert created.status_code == 200
     assert created.json()["next_run"]
+    assert created.json()["condition"] == ""
+    gated = client.post(
+        "/v1/tasks",
+        headers=headers,
+        json={
+            "title": "有条件",
+            "mode": "trigger",
+            "trigger": "kb.import.completed",
+            "message": "清洗",
+            "condition": "这本书是高中数学",
+        },
+    )
+    assert gated.status_code == 200
+    assert gated.json()["condition"] == "这本书是高中数学"
     tid = created.json()["id"]
     patched = client.patch(
         f"/v1/tasks/{tid}",

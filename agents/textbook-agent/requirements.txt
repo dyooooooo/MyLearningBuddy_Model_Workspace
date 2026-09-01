@@ -12,3 +12,4 @@ croniter>=2.0.0
 # terminal AuthenticationError; Cursor fixed that in 1.0.29.
 cursor-sdk==1.0.30
 pypdf>=5.0.0
+watchdog>=4.0.0

@@ -52,6 +52,35 @@ def test_write_from_job_chat_only(tmp_path, monkeypatch) -> None:
     assert working_memory.write_from_job({"kind": "chat", "payload": {}}) == ""
 
 
+def test_write_from_job_includes_page_focus(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    cid = "conv-focus"
+    chat = {
+        "job_id": "j-focus",
+        "kind": "chat",
+        "status": "completed",
+        "payload": {
+            "message": "改这段",
+            "conversation_id": cid,
+            "book_id": "book-1",
+            "book": "沪教",
+            "page_no": 12,
+            "block_id": "p-3",
+            "block_label": "例 3",
+        },
+        "result": {"conversation_id": cid},
+        "error": "",
+        "trace": [],
+    }
+    working_memory.write_from_job(chat)
+    text = (settings.memory_dir / "working" / f"{cid}.md").read_text(encoding="utf-8")
+    assert "聚焦：" in text
+    assert "书 沪教" in text
+    assert "第 12 页" in text
+    assert "块 p-3" in text
+    assert "例 3" in text
+
+
 def test_flush_before_auto_resume(tmp_path, monkeypatch) -> None:
     _home(tmp_path, monkeypatch)
     cid = "conv-flush"
