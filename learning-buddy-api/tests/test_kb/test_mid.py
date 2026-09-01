@@ -25,6 +25,16 @@ def test_strip_skin_list_and_toc() -> None:
     assert "Contents" in glued
     assert "1 The media" in glued
     assert "Contents1" not in strip_skin("Contents1 The media")
+    bare = strip_skin(
+        "目录\n"
+        '<ol class="kb-page-toc kb-page-toc-list">'
+        '<li class="kb-page-toc-row"><span class="kb-page-toc-title">第一单元</span></li>'
+        '<li class="kb-page-toc-row"><span class="kb-page-toc-title">沁园春·长沙 / 毛泽东</span>'
+        '<span class="kb-page-toc-page">9</span></li></ol>'
+    )
+    assert 'class="kb-' not in bare
+    assert "第一单元" in bare
+    assert "沁园春·长沙 / 毛泽东 9" in bare
 
 
 def test_tag_source_writes_fences_not_html() -> None:

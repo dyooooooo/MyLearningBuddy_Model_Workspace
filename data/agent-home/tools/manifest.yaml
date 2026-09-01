@@ -51,7 +51,7 @@ tools:
     字码还原成 IPA。scan 只统计，fix 原子写回。不按单词另编音标。无此类残留的书 0 hits。
 - id: fill_unit_toc
   path: fill_unit_toc.py
-  description: 有「第N单元」的书：课序号为节、同课篇名并列为小节，写入 toc.json 与目录页 kb-page-toc。无该形状则不改。
+  description: '有「第N单元」的书：课序号为节、同课篇名并列为小节，写入 toc.json；目录源页写官方 Markdown，中间文件写 ::: kb-page-toc。无该形状则不改。'
 - id: restore_footnotes
   path: restore_footnotes.py
   description: 从 MinerU 回补圈号页注，正文圈号改成 $^{n}$，注释块上方加横杠。无该形状则不改。

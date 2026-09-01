@@ -10,6 +10,11 @@ const LATIN_UNIT_NUM = /^\d+\s+[A-Z][A-Za-z]/;
 const LATIN_GROUP_BARE = /^[A-Z][A-Za-z]+(?:[ \-][A-Za-z]+){0,4}$/;
 const CN_ENUM_CHAPTER = /^[一二三四五六七八九十]+、/;
 const CN_ENUM_SECTION = /^[（(][一二三四五六七八九十]+[）)]/;
+const UNIT = /^第[一二三四五六七八九十百零〇两\d]+单元/;
+const LESSON_ONLY = /^\d{1,2}$/;
+const UNIT_TASK = /^单元学习任务$/;
+const BACK_MATTER = /^后记$/;
+const CN_ACTIVITY = /^[一二三四五六七八九十]+\s+\S/;
 const DEFAULT_TITLES = ["目录", "目 录", "CONTENTS", "Contents"];
 const HEADING_TAGS = new Set(["div", "p", "h1", "h2", "h3", "h4", "h5", "h6", "span"]);
 
@@ -46,7 +51,9 @@ function isGroupHeading(label, printPage = null) {
     APPENDIX_HEAD.test(t) ||
     INTRO.test(t) ||
     LATIN_UNIT_NUM.test(t) ||
-    CN_ENUM_CHAPTER.test(t)
+    CN_ENUM_CHAPTER.test(t) ||
+    UNIT.test(t) ||
+    BACK_MATTER.test(t)
   ) {
     return true;
   }
@@ -68,19 +75,19 @@ function splitPrintPage(text) {
   if (space) {
     const label = space[1].replace(/[ .\u3000．…·•]+$/, "").trim();
     const page = Number(space[2]);
-    if (label && !/^\d+$/.test(label)) return { label, printPage: page };
+    if (label) return { label, printPage: page };
   }
   const slash = SLASH_PAGE.exec(text);
   if (slash) {
     const label = slash[1].replace(/[ .\u3000．…·•]+$/, "").trim();
     const page = Number(slash[2]);
-    if (label && !/^\d+$/.test(label)) return { label, printPage: page };
+    if (label) return { label, printPage: page };
   }
   return null;
 }
 
 export function parseTocLine(raw) {
-  let text = bareLine(raw).replace(/^[-•·* ]+/, "");
+  let text = bareLine(raw).replace(/^[-•·]\s+|^\*\s+/, "");
   if (text.startsWith("\\*")) text = `*${text.slice(2)}`;
   const split = splitPrintPage(text);
   if (split) {
@@ -94,10 +101,37 @@ export function parseTocLine(raw) {
   return { label: text, printPage: null, isChapter: isGroupHeading(text, null), level: levelOf(text, null) };
 }
 
+function classifyUnitRow(ent, afterLesson) {
+  const t = (ent.label || "").trim();
+  if (UNIT.test(t) || BACK_MATTER.test(t)) {
+    return { ...ent, level: 0, isChapter: true, afterLesson: false };
+  }
+  if (LESSON_ONLY.test(t)) {
+    return { ...ent, level: 1, isChapter: false, afterLesson: true };
+  }
+  if (UNIT_TASK.test(t) || CN_ACTIVITY.test(t)) {
+    return { ...ent, level: 1, isChapter: false, afterLesson: false };
+  }
+  if (afterLesson && !ent.isChapter) {
+    return { ...ent, level: 2, isChapter: false, afterLesson: true };
+  }
+  if (
+    ent.printPage == null &&
+    !ent.isChapter &&
+    /^[\u4e00-\u9fff]{2,12}$/.test(t) &&
+    !UNIT_TASK.test(t)
+  ) {
+    return { ...ent, level: 0, isChapter: true, afterLesson: false };
+  }
+  return { ...ent, afterLesson: false };
+}
+
 function looksLikeEntry(line, profile) {
   const s = bareLine(line);
   if (!s || asTocTitle(s, profile) || titleSet(profile).has(s)) return false;
   if (CN_ENUM_CHAPTER.test(s) || CN_ENUM_SECTION.test(s)) return true;
+  if (UNIT.test(s) || BACK_MATTER.test(s) || UNIT_TASK.test(s) || LESSON_ONLY.test(s)) return true;
+  if (/^[\u4e00-\u9fff]{2,12}$/.test(s)) return true;
   if (/[=\\]/.test(s) || /^(?:\(|当|解)/.test(s)) return false;
   if (isGroupHeading(s) || CHAPTER.test(s) || PART.test(s) || SECTION.test(s) || APPENDIX_ITEM.test(s)) return true;
   const ent = parseTocLine(s);
@@ -153,6 +187,7 @@ export function liftPageToc(md, printToPdf = {}, profile = {}) {
   const lines = raw.split("\n");
   const rows = [];
   let heading = "";
+  let afterLesson = false;
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
@@ -162,7 +197,9 @@ export function liftPageToc(md, printToPdf = {}, profile = {}) {
       continue;
     }
     if (!looksLikeEntry(trimmed, profile) && !isGroupHeading(bareLine(trimmed))) continue;
-    rows.push(rowHtml(parseTocLine(trimmed), printToPdf));
+    const ent = classifyUnitRow(parseTocLine(trimmed), afterLesson);
+    afterLesson = ent.afterLesson;
+    rows.push(rowHtml(ent, printToPdf));
   }
   if (rows.length < 2) return raw;
   const tag = headingTag(profile);

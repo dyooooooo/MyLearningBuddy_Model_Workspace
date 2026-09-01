@@ -3,6 +3,8 @@ import { liftPageToc } from "./page-toc.mjs";
 
 export const FENCE_NAMES = new Set([
   "kb-center",
+  "kb-verse",
+  "kb-verse-center",
   "kb-list-item",
   "kb-lead",
   "kb-solution",
@@ -61,6 +63,10 @@ export function paintFences(md, ctx = {}) {
     if (name === "kb-solution-tail") return itemHtml(body, "kb-solution-tail", profile);
     if (name === "kb-lead") return paintLead(body, profile);
     if (name === "kb-center") return `<div class="kb-center">\n\n${body}\n\n</div>`;
+    if (name === "kb-verse") {
+      return `<div class="kb-verse"><div class="kb-verse-inner">\n\n${body}\n\n</div></div>`;
+    }
+    if (name === "kb-verse-center") return `<div class="kb-verse-center">\n\n${body}\n\n</div>`;
     if (name === "kb-table-wrap") return `<div class="kb-table-wrap">${body}</div>`;
     return body;
   });

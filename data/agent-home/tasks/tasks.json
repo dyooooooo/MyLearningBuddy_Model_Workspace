@@ -36,7 +36,7 @@
       "action": "chat",
       "prompt": "prompts/tasks.md",
       "message": "书号：{{book_id}}。请先读工作区 .cursor/skills/fill-unit-toc/SKILL.md，再只调用一次 fill_unit_toc(book_id={{book_id}})。\n\n书页里没有「第N单元」就说一句结束。有则让工具按课序号与篇名分层写回 toc.json 和目录页，不要手写旁路。\n\n不要 mark_toc_pages，不要对目录页 unwrap，补完后不要再调 build_toc。不要贴整页正文。到此结束。",
-      "condition": "",
+      "condition": "教材的科目只能是语文，且类型是教材",
       "identify_message": "",
       "builtin": false,
       "last_run_at": "",
@@ -53,7 +53,7 @@
       "action": "chat",
       "prompt": "prompts/tasks.md",
       "message": "书号：{{book_id}}。请先读工作区 .cursor/skills/restore-footnotes/SKILL.md，再只调用一次 restore_footnotes(book_id={{book_id}}, apply=fix)。\n\n书页或 mineru 里没有「①〔」「① 选自」「① 节选」就说一句结束。有则让工具从 mineru 拼回页注、把正文圈号改成 $^{n}$、在注释块上方加横杠。行首活动题的 ① 不要收进页脚。封面和目录页不要改。\n\n不要改 build_toc，不要对目录页 unwrap，不要贴整页正文。到此结束。",
-      "condition": "",
+      "condition": "教材的科目只能是语文，且类型是教材",
       "identify_message": "",
       "builtin": false,
       "last_run_at": "",
@@ -70,7 +70,7 @@
       "action": "chat",
       "prompt": "prompts/tasks.md",
       "message": "书号：{{book_id}}。请先读工作区 .cursor/skills/continue-fn-series/SKILL.md，再只调用一次 continue_fn_series(book_id={{book_id}}, apply=fix)。\n\n正文上标没有「顺增后又出现第二个①」就说一句结束。有则让工具把后页并段里从①起号的注释接到本页第一段最大号之后，正文上标一起改。不要拆回两页，不要另编注释，不要用圈号全书合并。目录页和活动题不要改。\n\n不要改 restore_footnotes / build_toc，不要对目录页 unwrap，不要贴整页正文。到此结束。",
-      "condition": "",
+      "condition": "教材的科目只能是语文，且类型是教材",
       "identify_message": "",
       "builtin": false,
       "last_run_at": "",
@@ -81,18 +81,18 @@
       "title": "目录后居中课文标题和作者",
       "enabled": true,
       "mode": "trigger",
-      "trigger": "tool.fill_unit_toc",
+      "trigger": "task.d4daf591-3629-4591-aac0-c7b9750f241b.completed",
       "cron": "",
       "next_run": "",
       "action": "chat",
       "prompt": "prompts/tasks.md",
       "message": "书号：{{book_id}}。请先读工作区 .cursor/skills/center-article-heads/SKILL.md，再只调用一次 center_article_heads(book_id={{book_id}}, apply=fix)。\n\ntoc.json 里没有「篇名 / 作者」就说一句结束。有则让工具把对应页的标题和作者收成居中标题块，未加粗的篇名与其他课文标题同粗、同字号。学习提示、阅读指导、单元学习任务、目录页不要改。不要另编标题。\n\n不要改 build_toc / fill_unit_toc / improve_render，不要对目录页 unwrap，不要贴整页正文。到此结束。",
-      "condition": "",
+      "condition": "教材的科目只能是语文，且类型是教材",
       "identify_message": "",
       "builtin": false,
-      "last_run_at": "",
-      "last_job_id": ""
+      "last_run_at": "2026-09-01T01:02:34.592116+00:00",
+      "last_job_id": "aed45f9d-bc90-4c21-9978-a5905ecd7f06"
     }
   ],
-  "updated_at": "2026-08-31T06:12:17.528264+00:00"
+  "updated_at": "2026-09-01T01:48:07.304968+00:00"
 }

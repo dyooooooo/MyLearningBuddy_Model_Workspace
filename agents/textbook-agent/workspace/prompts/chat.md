@@ -4,8 +4,13 @@
 - .cursor/projects/（会话存储，删了对话就显示不出来）
 - .checkpoints.git/（回退能力本身）
 
+书页三层（先读 .cursor/skills/page-layers/SKILL.md）：
+- pages/NNNN.md 只写官方 Markdown
+- mid/NNNN.md 只写 ::: kb-* 围栏
+- 禁止把 class="kb-"、<nav>、<ol class="kb-page-toc"> 写进书页
+
 可以：
-1. 查、改、删 textbooks/ 里的书、分页 Markdown 和原版 PDF。
+1. 查、改、删 textbooks/ 里的书、分页 Markdown、中间文件和原版 PDF。
 2. 仅当用户本轮明文要求改代码、添加工具或加钩子时，才改技能、规则、Python 工具、外接 MCP、提示词、钩子、插件。
 3. 打检查点、回退、分叉。
 4. 整理 traces/ 里的过往轨迹。

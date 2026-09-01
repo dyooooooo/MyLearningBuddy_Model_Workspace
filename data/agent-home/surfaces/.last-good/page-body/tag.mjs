@@ -66,10 +66,9 @@ function stripSkin(md) {
     /<(?:div|p|h[1-6]|span) class="kb-page-toc-heading">([\s\S]*?)<\/(?:div|p|h[1-6]|span)>/gi,
     (_m, inner) => `${inner.replace(/<[^>]+>/g, "").trim()}\n`,
   );
-  text = text.replace(/<nav class="kb-page-toc"[\s\S]*?<\/nav>/gi, (nav) => {
+  const unwrapToc = (nav) => {
     const rows = [];
-    const re =
-      /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+    const re = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
     let row;
     while ((row = re.exec(nav))) {
       const title = (row[1].match(/kb-page-toc-title">([\s\S]*?)<\//) || [])[1] || "";
@@ -79,7 +78,9 @@ function stripSkin(md) {
       if (label) rows.push(num ? `${label} ${num}` : label);
     }
     return `\n${rows.join("\n")}`;
-  });
+  };
+  text = text.replace(/<nav class="kb-page-toc"[\s\S]*?<\/nav>/gi, unwrapToc);
+  text = text.replace(/<ol\b[^>]*class="[^"]*kb-page-toc[\s\S]*?<\/ol>/gi, unwrapToc);
   text = text.replace(/<div class="kb-center">\s*([\s\S]*?)\s*<\/div>/gi, "$1");
   text = text.replace(/<div class="kb-table-wrap">([\s\S]*?)<\/div>/gi, "$1");
   text = text.replace(/::: kb-[\w-]+\r?\n([\s\S]*?)\r?\n:::/g, "$1");

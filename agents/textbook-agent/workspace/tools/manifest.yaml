@@ -35,3 +35,6 @@ tools:
   - id: update_task
     path: update_task.py
     description: 改一条任务的名称、方式、时间、事件、触发条件或发给 Agent 的对话
+  - id: fill_unit_toc
+    path: fill_unit_toc.py
+    description: '有「第N单元」的书：课序号为节、同课篇名并列为小节，写入 toc.json；目录源页写官方 Markdown，中间文件写 ::: kb-page-toc。无该形状则不改。'

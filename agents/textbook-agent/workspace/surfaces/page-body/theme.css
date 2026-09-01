@@ -28,6 +28,14 @@ em, i {
 .kb-center p { text-indent: 0; }
 .kb-center img { margin-left: auto; margin-right: auto; }
 .kb-center em, .kb-center i { display: block; text-align: center; }
+.kb-verse { text-align: center; text-indent: 0; margin: 0.65rem 0; }
+.kb-verse-inner {
+  display: inline-block; text-align: left; text-indent: 0;
+  max-width: 100%;
+}
+.kb-verse-inner p, .kb-verse-inner pre { text-indent: 0; text-align: left; margin: 0.15rem 0; }
+.kb-verse-center { text-align: center; text-indent: 0; margin: 0.65rem 0; }
+.kb-verse-center p, .kb-verse-center pre { text-indent: 0; text-align: center; }
 .kb-list-item {
   margin: 0.15rem 0; padding-left: 2em; text-indent: 0;
 }

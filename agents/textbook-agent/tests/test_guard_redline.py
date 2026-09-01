@@ -18,6 +18,7 @@ decide = _mod.decide
 DENY = _mod.DENY
 ALLOW = _mod.ALLOW
 DENY_MANAGED = _mod.DENY_MANAGED
+DENY_LAYERS = _mod.DENY_LAYERS
 
 
 def _payload(tool_input: dict, **extra) -> str:
@@ -187,6 +188,61 @@ def test_sh_fallback_is_deny() -> None:
     text = _SH.read_text(encoding="utf-8")
     assert '"permission":"deny"' in text
     assert '"permission":"allow"' not in text
+
+
+def test_write_page_skin_html_denied() -> None:
+    raw = _payload(
+        {
+            "path": "/data/agent/textbooks/demo/pages/0004.md",
+            "contents": '<ol class="kb-page-toc kb-page-toc-list"><li>第一单元</li></ol>\n',
+        },
+        tool_name="Write",
+    )
+    assert decide(raw) == DENY_LAYERS
+
+
+def test_write_page_fence_denied() -> None:
+    raw = _payload(
+        {
+            "path": "/data/agent/textbooks/demo/pages/0004.md",
+            "contents": "::: kb-page-toc\n目录\n第一单元\n:::\n",
+        },
+        tool_name="Write",
+    )
+    assert decide(raw) == DENY_LAYERS
+
+
+def test_write_mid_fence_allowed() -> None:
+    raw = _payload(
+        {
+            "path": "/data/agent/textbooks/demo/mid/0004.md",
+            "contents": "::: kb-page-toc\n目录\n第一单元\n:::\n",
+        },
+        tool_name="Write",
+    )
+    assert decide(raw) == ALLOW
+
+
+def test_write_mid_skin_html_denied() -> None:
+    raw = _payload(
+        {
+            "path": "/data/agent/textbooks/demo/mid/0004.md",
+            "contents": '<nav class="kb-page-toc"><ol class="kb-page-toc-list"></ol></nav>\n',
+        },
+        tool_name="Write",
+    )
+    assert decide(raw) == DENY_LAYERS
+
+
+def test_write_page_official_md_allowed() -> None:
+    raw = _payload(
+        {
+            "path": "/data/agent/textbooks/demo/pages/0004.md",
+            "contents": "目录\n\n第一单元\n1\n沁园春·长沙 / 毛泽东 9\n",
+        },
+        tool_name="Write",
+    )
+    assert decide(raw) == ALLOW
 
 
 def test_sh_prints_deny_when_python_missing(tmp_path) -> None:

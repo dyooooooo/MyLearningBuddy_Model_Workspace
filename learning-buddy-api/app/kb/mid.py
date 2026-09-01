@@ -23,6 +23,7 @@ _TOC_HEAD = re.compile(
     re.I,
 )
 _TOC_NAV = re.compile(r'<nav class="kb-page-toc"[\s\S]*?</nav>', re.I)
+_TOC_OL = re.compile(r'<ol\b[^>]*class="[^"]*kb-page-toc[\s\S]*?</ol>', re.I)
 _TOC_LI = re.compile(r"<li\b[^>]*>([\s\S]*?)</li>", re.I)
 _TOC_TITLE = re.compile(r'kb-page-toc-title">([\s\S]*?)<', re.I)
 _TOC_PAGE = re.compile(r'kb-page-toc-page">([\s\S]*?)<', re.I)
@@ -43,7 +44,7 @@ def has_kb_fences(md: str) -> bool:
 
 def looks_like_skin(md: str) -> bool:
     text = md or ""
-    return 'class="kb-' in text or "<nav class=\"kb-page-toc\"" in text
+    return 'class="kb-' in text or "kb-page-toc" in text
 
 
 def _plain(html: str) -> str:
@@ -85,6 +86,7 @@ def strip_skin(md: str) -> str:
         return "\n".join(rows)
 
     text = _TOC_NAV.sub(lambda m: "\n" + _nav(m), text)
+    text = _TOC_OL.sub(lambda m: "\n" + _nav(m), text)
     text = _CENTER_DIV.sub(lambda m: m.group(1).strip(), text)
     text = _TABLE_WRAP.sub(lambda m: m.group(1).strip(), text)
     text = _FENCE.sub(lambda m: m.group(2).strip(), text)

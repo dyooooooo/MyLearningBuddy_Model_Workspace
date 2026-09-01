@@ -22,6 +22,10 @@ TRAIL_PAGE = re.compile(r"^(.*?)\s+(\d{1,3})$")
 HTML_NAV = re.compile(
     r"<nav\b[^>]*class=\"[^\"]*kb-page-toc[\s\S]*?</nav>", re.I
 )
+HTML_OL = re.compile(
+    r"<ol\b[^>]*class=\"[^\"]*kb-page-toc[\s\S]*?</ol>", re.I
+)
+HTML_FENCE = re.compile(r"::: kb-page-toc\r?\n([\s\S]*?)\r?\n:::")
 HTML_LI = re.compile(r"<li\b[^>]*>(.*?)</li>", re.I | re.S)
 HTML_TITLE = re.compile(r"kb-page-toc-title\">([^<]*)</span>")
 HTML_PAGE = re.compile(r"kb-page-toc-page\">(\d+)</span>")
@@ -53,7 +57,8 @@ def fill_unit_toc(book_id: str, root: str = "") -> dict[str, Any]:
         raise FileNotFoundError(str(pages_dir))
     page_files = sorted(pages_dir.glob("*.md"))
     texts = {int(p.stem): p.read_text(encoding="utf-8") for p in page_files if p.stem.isdigit()}
-    if not any(_has_unit_shape(t) for t in texts.values()):
+    existing_early = _load_existing_unit_toc(book)
+    if not any(_has_unit_shape(t) for t in texts.values()) and existing_early is None:
         return {
             "book_id": sid,
             "skipped": True,
@@ -62,10 +67,17 @@ def fill_unit_toc(book_id: str, root: str = "") -> dict[str, Any]:
         }
 
     toc_pages = _toc_page_nos(book, texts)
+    existing = existing_early or _load_existing_unit_toc(book)
     parsed_pages: list[list[dict[str, Any]]] = []
     for n in toc_pages:
         parsed_pages.append(_parse_toc_page(texts.get(n, "")))
-    entries = [e for chunk in parsed_pages for e in chunk]
+    parsed_entries = [e for chunk in parsed_pages for e in chunk]
+    if existing:
+        entries = existing
+        reused = True
+    else:
+        entries = parsed_entries
+        reused = False
     if not any(e["level"] == 0 and UNIT_LINE.match(e["label"]) for e in entries):
         return {
             "book_id": sid,
@@ -74,8 +86,9 @@ def fill_unit_toc(book_id: str, root: str = "") -> dict[str, Any]:
             "entries": 0,
         }
 
-    _attach_pdf_pages(entries, texts, toc_pages)
-    _fill_lesson_pages_from_children(entries)
+    if not reused:
+        _attach_pdf_pages(entries, texts, toc_pages)
+        _fill_lesson_pages_from_children(entries)
     html_pages = _split_like_source(parsed_pages, entries)
     _write_toc_json(book, entries, toc_pages)
     _write_toc_markdown(pages_dir, toc_pages, html_pages)
@@ -89,6 +102,8 @@ def fill_unit_toc(book_id: str, root: str = "") -> dict[str, Any]:
             "1": sum(1 for e in entries if e["level"] == 1),
             "2": sum(1 for e in entries if e["level"] == 2),
         },
+        "reused_toc_json": reused,
+        "wrote": "official_md_and_mid_fence",
     }
 
 
@@ -156,8 +171,9 @@ def _norm_title(title: str) -> str:
 
 def _parse_toc_page(text: str) -> list[dict[str, Any]]:
     rows: list[tuple[str, int | None]] = []
-    for nav in HTML_NAV.findall(text):
-        for li in HTML_LI.findall(nav):
+    blocks = HTML_NAV.findall(text) or HTML_OL.findall(text)
+    for block in blocks:
+        for li in HTML_LI.findall(block):
             tm = HTML_TITLE.search(li)
             if not tm:
                 continue
@@ -167,16 +183,51 @@ def _parse_toc_page(text: str) -> list[dict[str, Any]]:
             if title:
                 rows.append((title, page))
     if not rows:
+        for inner in HTML_FENCE.findall(text):
+            text = inner
+            break
         for raw in text.splitlines():
             line = ATX.sub("", raw).strip()
-            line = re.sub(r"^[-*]·\s*", "", line)
-            if not line or line in {"目录", "目 录", "Contents"}:
+            line = re.sub(r"^[-*·]\s*", "", line)
+            if not line or line in {"目录", "目 录", "Contents"} or line.startswith(":::"):
                 continue
             title, page = _strip_trail_page(line)
             title = _norm_title(title)
             if title:
                 rows.append((title, page))
     return _rows_to_entries(rows)
+
+
+def _load_existing_unit_toc(book: Path) -> list[dict[str, Any]] | None:
+    path = book / "toc.json"
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+    entries = data.get("entries") if isinstance(data, dict) else None
+    if not isinstance(entries, list) or not entries:
+        return None
+    cleaned: list[dict[str, Any]] = []
+    for raw in entries:
+        if not isinstance(raw, dict):
+            continue
+        label = _norm_title(str(raw.get("label") or ""))
+        if not label:
+            continue
+        cleaned.append(
+            {
+                "label": label,
+                "print_page": raw.get("print_page"),
+                "is_chapter": bool(raw.get("is_chapter")),
+                "level": int(raw.get("level") or 0),
+                "pdf_page": int(raw.get("pdf_page") or 0),
+            }
+        )
+    if not any(e["level"] == 0 and UNIT_LINE.match(e["label"]) for e in cleaned):
+        return None
+    return cleaned
 
 
 def _rows_to_entries(rows: list[tuple[str, int | None]]) -> list[dict[str, Any]]:
@@ -383,28 +434,20 @@ def _write_toc_json(book: Path, entries: list[dict[str, Any]], toc_pages: list[i
     tmp.replace(path)
 
 
-def _row_html(e: dict[str, Any]) -> str:
-    level = int(e["level"])
-    pdf = int(e["pdf_page"] or 0)
+def _official_line(e: dict[str, Any]) -> str:
     label = e["label"]
-    classes = [f"kb-page-toc-row--lv{level}"]
-    if e["is_chapter"]:
-        classes.append("kb-page-toc-row--chapter")
-    classes.append("kb-page-toc-row--link")
-    cls = "kb-page-toc-row " + " ".join(classes)
-    title = f'<span class="kb-page-toc-title">{label}</span>'
-    if e["is_chapter"]:
-        attrs = f'data-goto-page="{pdf}" role="link" tabindex="0"'
-        return f'<li class="{cls}" {attrs}>{title}</li>'
-    attrs = (
-        f'data-goto-print-page="{pdf}" data-goto-page="{pdf}" '
-        'role="link" tabindex="0"'
-    )
-    rest = (
-        '<span class="kb-page-toc-leader" aria-hidden="true"></span>'
-        f'<span class="kb-page-toc-page">{pdf}</span>'
-    )
-    return f'<li class="{cls}" {attrs}>{title}{rest}</li>'
+    if e.get("is_chapter") or LESSON_ONLY.match(label):
+        return label
+    page = e.get("pdf_page") or e.get("print_page")
+    if page:
+        return f"{label} {int(page)}"
+    return label
+
+
+def _official_page(rows: list[dict[str, Any]], heading: bool) -> str:
+    lines = ["目录"] if heading else []
+    lines.extend(_official_line(e) for e in rows)
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def _write_toc_markdown(
@@ -413,11 +456,16 @@ def _write_toc_markdown(
     if len(chunks) != len(toc_pages):
         chunks = [sum(chunks, [])] if chunks else [[]]
         toc_pages = toc_pages[:1] or [1]
+    mid_dir = pages_dir.parent / "mid"
+    mid_dir.mkdir(parents=True, exist_ok=True)
     for i, (n, rows) in enumerate(zip(toc_pages, chunks)):
-        items = "".join(_row_html(e) for e in rows)
-        head = '<div class="kb-page-toc-heading">目录</div>' if i == 0 else ""
-        body = f'{head}<nav class="kb-page-toc"><ol class="kb-page-toc-list">{items}</ol></nav>\n'
+        body = _official_page(rows, heading=(i == 0))
         path = pages_dir / f"{n:04d}.md"
         tmp = path.with_suffix(".md.tmp")
         tmp.write_text(body, encoding="utf-8")
         tmp.replace(path)
+        mid = f"::: kb-page-toc\n{body.rstrip()}\n:::\n"
+        mid_path = mid_dir / f"{n:04d}.md"
+        mid_tmp = mid_path.with_suffix(".md.tmp")
+        mid_tmp.write_text(mid, encoding="utf-8")
+        mid_tmp.replace(mid_path)
