@@ -41,3 +41,6 @@ Cursor 的错误文案不可信，官方已确认两处误标：一个从有效 
   Docker 层缓存替你选运行时。
 - **agent 流走 HTTP/1.1**（`CURSOR_USE_HTTP1`，经 `local.useHttp1ForAgent` 下传）。
   实测同一对话两轮从 143s / 超时降到 15s / 9s。
+- **共享桥同时只发 1 路**（`MAX_CONCURRENT_SENDS`，默认 1）。官方本地运行时没有
+  「一座桥扛多条长流」的产品；多开的对话排队（轨迹 `queued`），不关桥。只改数字
+  不够——排队中的 `running` 不得计入占用，否则 cap=1 会互相堵死。

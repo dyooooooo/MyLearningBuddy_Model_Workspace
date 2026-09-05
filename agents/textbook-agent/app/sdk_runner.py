@@ -8,7 +8,7 @@ from typing import Any, Callable
 
 from app import checkpoints, conversations, jobs, plans, prompts_store, sdk_client, transport_breaker
 from app.bridge_cleanup import close_sdk_bridge, sweep_orphan_bridges
-from app.config import default_model, default_model_params, settings
+from app.config import default_model, default_model_params, settings, title_model, title_model_params
 from app.config_store import read_mcp
 from app.context import bind_live_sdk_job, current_job_id
 from app.json_util import extract_json_object
@@ -285,7 +285,7 @@ def summarize_title(blob: str) -> str:
     tmp.mkdir(parents=True, exist_ok=True)
     opt_kw: dict[str, Any] = {
         "api_key": key,
-        "model": model_selection(default_model(), default_model_params()),
+        "model": model_selection(title_model(), title_model_params()),
         "name": "conversation-title",
         "local": LocalAgentOptions(cwd=str(tmp), setting_sources=[]),
     }
@@ -293,24 +293,28 @@ def summarize_title(blob: str) -> str:
         opts = AgentOptions(**opt_kw, mode="ask")
     except TypeError:
         opts = AgentOptions(**opt_kw)
-    client = sdk_client.ensure_client()
-    if client is not None:
-        result = Agent.prompt(
-            prompts_store.title_template().format(blob=(blob or "")[:1800]),
-            opts,
-            client=client,
-        )
-    else:
-        result = Agent.prompt(prompts_store.title_template().format(blob=(blob or "")[:1800]), opts)
-    text = getattr(result, "result", None) or getattr(result, "text", None) or ""
-    if callable(text):
-        text = text()
-    return conversations.clean_agent_title(str(text or ""))
+    wait_send_slot(_TITLE_SLOT)
+    try:
+        client = sdk_client.ensure_client()
+        if client is not None:
+            result = Agent.prompt(
+                prompts_store.title_template().format(blob=(blob or "")[:1800]),
+                opts,
+                client=client,
+            )
+        else:
+            result = Agent.prompt(prompts_store.title_template().format(blob=(blob or "")[:1800]), opts)
+        text = getattr(result, "result", None) or getattr(result, "text", None) or ""
+        if callable(text):
+            text = text()
+        return conversations.clean_agent_title(str(text or ""))
+    finally:
+        release_send_slot(_TITLE_SLOT)
 
 
 def prepare_sdk_turn(job_id: str = "") -> None:
     apply_cursor_sdk_patches()
-    if jobs.count_sdk_active(exclude=job_id) > 0:
+    if count_held_slots(exclude=job_id) > 0:
         return
     try:
         sweep_orphan_bridges(grace_s=1.0)
@@ -319,9 +323,9 @@ def prepare_sdk_turn(job_id: str = "") -> None:
 
 
 def recover_bridge(job_id: str = "") -> None:
-    others = jobs.count_sdk_active(exclude=job_id)
+    others = count_held_slots(exclude=job_id)
     if others > 0:
-        logger.info("recover_bridge skip; %s other sdk job(s) running", others)
+        logger.info("recover_bridge skip; %s other send(s) on the shared bridge", others)
         return
     try:
         sdk_client.close_owned_client()
@@ -341,11 +345,51 @@ def recover_bridge(job_id: str = "") -> None:
         logger.warning("relaunch CursorClient after recover failed", exc_info=True)
 
 
+_slot_lock = threading.Lock()
+_slot_held: set[str] = set()
+_TITLE_SLOT = "title"
+
+
+def reset_send_slots_for_tests() -> None:
+    with _slot_lock:
+        _slot_held.clear()
+
+
+def count_held_slots(exclude: str = "") -> int:
+    """How many turns have claimed the shared bridge, not counting ``exclude``.
+
+    A job can be ``running`` while it is only queued. Those waiters must not
+    fill the cap (that deadlocks at cap=1) and must not block ``recover_bridge``.
+    """
+    skip = (exclude or "").strip()
+    with _slot_lock:
+        return sum(1 for item in _slot_held if item and item != skip)
+
+
+def release_send_slot(job_id: str = "") -> None:
+    key = (job_id or "").strip()
+    if not key:
+        return
+    with _slot_lock:
+        _slot_held.discard(key)
+
+
 def wait_send_slot(job_id: str = "", max_n: int | None = None) -> None:
-    cap = max(1, int(max_n if max_n is not None else getattr(settings, "max_concurrent_sends", 4) or 4))
-    while jobs.count_sdk_active(exclude=job_id) >= cap:
-        if job_id and jobs.is_cancelled(job_id):
+    cap = max(1, int(max_n if max_n is not None else getattr(settings, "max_concurrent_sends", 1) or 1))
+    key = (job_id or "").strip()
+    announced = False
+    while True:
+        if key and jobs.is_cancelled(key):
             raise jobs.JobCancelled()
+        with _slot_lock:
+            others = sum(1 for item in _slot_held if item and item != key)
+            if others < cap:
+                if key:
+                    _slot_held.add(key)
+                return
+        if key and not announced:
+            jobs.append_trace(key, "tool", "queued", "另一条对话占用共享桥，排队等待")
+            announced = True
         time.sleep(0.4)
 
 
@@ -825,24 +869,24 @@ def _prompt_sdk(
     from app.cursor_auth import assert_cursor_ready, key_is_live
 
     wait_send_slot(job_id)
-    assert_cursor_ready()
-    bind_live_sdk_job(job_id)
-    resume = _breaker_gate(resume_id, job_id)
-
-    def _once() -> tuple[str, str]:
-        return _prompt_sdk_once(
-            prompt,
-            conversation_id=conversation_id,
-            job_id=job_id,
-            mode=mode,
-            model=model,
-            model_params=model_params,
-            images=images,
-            resume_id=resume,
-            followup=followup,
-        )
-
     try:
+        assert_cursor_ready()
+        bind_live_sdk_job(job_id)
+        resume = _breaker_gate(resume_id, job_id)
+
+        def _once() -> tuple[str, str]:
+            return _prompt_sdk_once(
+                prompt,
+                conversation_id=conversation_id,
+                job_id=job_id,
+                mode=mode,
+                model=model,
+                model_params=model_params,
+                images=images,
+                resume_id=resume,
+                followup=followup,
+            )
+
         try:
             out = _once()
         except Exception as exc:
@@ -874,6 +918,7 @@ def _prompt_sdk(
         return out
     finally:
         bind_live_sdk_job("")
+        release_send_slot(job_id)
 
 
 def _local_options(local_cls: Any, local_kw: dict[str, Any]) -> Any:

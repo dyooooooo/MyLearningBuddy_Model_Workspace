@@ -153,12 +153,12 @@ def _drop_dead_bridge() -> bool:
     what aborts the sibling stream with ``This operation was aborted``.
     """
     try:
-        from app import jobs
         from app.bridge_cleanup import sweep_orphan_bridges
         from app.sdk_client import close_owned_client, ensure_client
+        from app.sdk_runner import count_held_slots
 
-        if jobs.count_sdk_active() > 0:
-            logger.info("skip dropping bridge; sibling sdk job is still running")
+        if count_held_slots() > 0:
+            logger.info("skip dropping bridge; another send is on the shared bridge")
             return False
         close_owned_client()
         sweep_orphan_bridges(grace_s=1.0)

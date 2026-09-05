@@ -27,6 +27,7 @@ def _home(tmp_path, monkeypatch):
     jobs.reset_for_tests()
     conversations.reset_for_tests()
     sdk_client.reset_for_tests()
+    sdk_runner.reset_send_slots_for_tests()
 
 
 def test_drop_dead_bridge_skips_when_sibling_running(tmp_path, monkeypatch) -> None:
@@ -35,8 +36,10 @@ def test_drop_dead_bridge_skips_when_sibling_running(tmp_path, monkeypatch) -> N
     monkeypatch.setattr(sdk_client, "close_owned_client", lambda: closed.append(1))
     other = jobs.create_job("chat", {})
     jobs._set(other["job_id"], status="running")
+    sdk_runner.wait_send_slot(other["job_id"])
     assert cursor_auth._drop_dead_bridge() is False
     assert closed == []
+    sdk_runner.release_send_slot(other["job_id"])
 
 
 def test_drop_dead_bridge_closes_only_when_idle(tmp_path, monkeypatch) -> None:
