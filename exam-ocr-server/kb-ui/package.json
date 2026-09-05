@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/collapseTrace.test.ts src/planExtract.test.ts src/liveConv.test.ts src/importMeta.test.ts src/toc-html.test.ts src/bookSort.test.ts src/pageFocus.test.ts"
+    "test": "node --experimental-strip-types --test src/collapseTrace.test.ts src/planExtract.test.ts src/liveConv.test.ts src/importMeta.test.ts src/toc-html.test.ts src/bookSort.test.ts src/pageFocus.test.ts src/turnReply.test.ts"
   },
   "dependencies": {
     "marked": "^15.0.6",

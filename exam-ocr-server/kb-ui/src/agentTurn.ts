@@ -2,6 +2,8 @@ import { marked } from "marked";
 import { agent, type AgentJob, type AgentTraceStep, type ChatAttachment } from "./api";
 import { collapseTrace, liveStatus, toolLabel, type CollapsedTool, type TimelineItem } from "./collapseTrace";
 import { extractPlanMarkdown, looksLikePlan, titleFromMarkdown } from "./planExtract";
+import { copyText } from "./copyText";
+import { replyText } from "./turnReply";
 import { el } from "./util/dom";
 import { sanitizeHtml } from "./util/html-sanitize";
 
@@ -45,6 +47,85 @@ const STATUS_LABEL: Record<string, string> = {
 
 const reviseDraft: Record<string, string> = {};
 const reviseOpen: Record<string, boolean> = {};
+const cardBodyScroll: Record<string, number> = {};
+
+function approvalFingerprint(card: ApprovalCard, interactive: boolean): string {
+  return [
+    card.req_id,
+    card.path,
+    card.scope,
+    card.status,
+    card.situation,
+    card.why,
+    card.changes,
+    card.impact,
+    card.note,
+    interactive ? "1" : "0",
+  ].join("\u0001");
+}
+
+function planFingerprint(plan: PlanCard, active: boolean): string {
+  return [
+    plan.id,
+    plan.path,
+    plan.title,
+    plan.markdown,
+    plan.checkpoint,
+    plan.rolled_back ? "1" : "0",
+    active ? "1" : "0",
+  ].join("\u0001");
+}
+
+function takeReusableCard(pool: HTMLElement[], fp: string): HTMLElement | null {
+  const i = pool.findIndex((n) => n.dataset.cardFp === fp);
+  if (i < 0) return null;
+  return pool.splice(i, 1)[0];
+}
+
+function captureCardScrolls(root: HTMLElement): void {
+  for (const n of root.querySelectorAll<HTMLElement>(".kb-plan-card-body")) {
+    const id = n.closest("[data-card-id]")?.getAttribute("data-card-id") || "";
+    if (id) cardBodyScroll[id] = n.scrollTop;
+  }
+}
+
+function restoreCardScrolls(root: HTMLElement): void {
+  const apply = (): void => {
+    for (const n of root.querySelectorAll<HTMLElement>(".kb-plan-card-body")) {
+      const id = n.closest("[data-card-id]")?.getAttribute("data-card-id") || "";
+      const top = id ? cardBodyScroll[id] : 0;
+      if (top) n.scrollTop = top;
+    }
+  };
+  apply();
+  requestAnimationFrame(apply);
+}
+
+function bindCardBodyScroll(card: HTMLElement): void {
+  const id = card.dataset.cardId || "";
+  const body = card.querySelector<HTMLElement>(".kb-plan-card-body");
+  if (!id || !body || body.dataset.scrollBound) return;
+  body.dataset.scrollBound = "1";
+  body.addEventListener(
+    "scroll",
+    () => {
+      cardBodyScroll[id] = body.scrollTop;
+    },
+    { passive: true },
+  );
+}
+
+function stampCard(card: HTMLElement, id: string, fp: string): HTMLElement {
+  card.dataset.cardId = id;
+  card.dataset.cardFp = fp;
+  bindCardBodyScroll(card);
+  return card;
+}
+
+function adoptCard(card: HTMLElement): HTMLElement {
+  bindCardBodyScroll(card);
+  return card;
+}
 
 export function approvalOf(job: AgentJob): ApprovalCard | null {
   const fromResult = parseApproval(job.result?.approval);
@@ -126,6 +207,9 @@ export function latestPlanJobId(jobs: AgentJob[]): string {
 }
 
 export function renderAgentTurn(root: HTMLElement, job: AgentJob, replay = false, opts: TurnOpts = {}): void {
+  captureCardScrolls(root);
+  const reusable = [...root.querySelectorAll<HTMLElement>("[data-card-id]")];
+  for (const card of reusable) card.remove();
   const openOlder = Boolean(root.querySelector(".kb-turn-older[open]"));
   const folded = Boolean(root.querySelector(".kb-turn-assistant.is-folded"));
   const openTools = new Set(
@@ -205,14 +289,24 @@ export function renderAgentTurn(root: HTMLElement, job: AgentJob, replay = false
     if (job.status === "cancelled") root.append(el("p", "kb-turn-live muted", "已停止"));
   }
 
-  appendResult(root, job, folded, { replay, latestPlan: Boolean(opts.latestPlan) });
+  appendResult(root, job, folded, { replay, latestPlan: Boolean(opts.latestPlan), reusable });
   const approval = approvalOf(job);
-  if (approval) root.append(renderApprovalCard(job, approval, !replay));
+  if (approval) {
+    const interactive = !replay;
+    const fp = approvalFingerprint(approval, interactive);
+    const reused = takeReusableCard(reusable, fp);
+    root.append(
+      reused
+        ? adoptCard(reused)
+        : stampCard(renderApprovalCard(job, approval, interactive), `approval:${approval.req_id}`, fp),
+    );
+  }
   const errText = job.status === "cancelled" ? "" : humanizeJobError(job.error || "") || deny;
   if (errText) root.append(el("p", "kb-turn-err", errText));
   if (job.status === "completed" || job.status === "failed" || job.status === "cancelled" || deny) {
     root.append(actionBar(job, draft));
   }
+  restoreCardScrolls(root);
 }
 
 function appendDraft(root: HTMLElement, draft: string, tone: string): void {
@@ -228,7 +322,7 @@ function appendResult(
   root: HTMLElement,
   job: AgentJob,
   keepFolded: boolean,
-  opts: { replay?: boolean; latestPlan?: boolean } = {},
+  opts: { replay?: boolean; latestPlan?: boolean; reusable?: HTMLElement[] } = {},
 ): void {
   if (job.status !== "completed") return;
   const res = job.result;
@@ -271,7 +365,14 @@ function appendResult(
       enhanceCode(a);
       root.append(a);
     }
-    root.append(renderPlanCard(job, plan, Boolean(opts.latestPlan) && !opts.replay));
+    const active = Boolean(opts.latestPlan) && !opts.replay;
+    const fp = planFingerprint(plan, active);
+    const reused = takeReusableCard(opts.reusable || [], fp);
+    root.append(
+      reused
+        ? adoptCard(reused)
+        : stampCard(renderPlanCard(job, plan, active), `plan:${plan.id || plan.path || job.job_id}`, fp),
+    );
     return;
   }
   if (!md) return;
@@ -303,11 +404,12 @@ function enhanceCode(root: HTMLElement): void {
     const btn = el("button", "kb-md-copy", "复制") as HTMLButtonElement;
     btn.type = "button";
     btn.onclick = () => {
-      void navigator.clipboard.writeText(pre.textContent || "");
-      btn.textContent = "已复制";
-      window.setTimeout(() => {
-        btn.textContent = "复制";
-      }, 1200);
+      void copyText(pre.textContent || "").then((ok) => {
+        btn.textContent = ok ? "已复制" : "复制失败";
+        window.setTimeout(() => {
+          btn.textContent = "复制";
+        }, 1600);
+      });
     };
     pre.replaceWith(wrap);
     wrap.append(btn, pre);
@@ -574,23 +676,22 @@ function actionBar(job: AgentJob, draft = ""): HTMLElement {
   const checkpoint = checkpointOf(job);
 
   const copyBtn = actionChip("copy", "复制", ICONS.copy);
+  copyBtn.title = "复制这一轮回答";
+  copyBtn.setAttribute("aria-label", "复制这一轮回答");
   copyBtn.disabled = !reply;
   copyBtn.onclick = async () => {
     if (!reply) return;
-    try {
-      await navigator.clipboard.writeText(reply);
-    } catch {
-      return;
-    }
-    copyBtn.classList.add("is-done");
-    copyBtn.title = "已复制";
+    const ok = await copyText(reply);
+    copyBtn.classList.toggle("is-done", ok);
+    copyBtn.classList.toggle("is-fail", !ok);
+    copyBtn.title = ok ? "已复制" : "复制失败";
     const label = copyBtn.querySelector(".kb-turn-act-label");
-    if (label) label.textContent = "已复制";
+    if (label) label.textContent = ok ? "已复制" : "复制失败";
     window.setTimeout(() => {
-      copyBtn.classList.remove("is-done");
-      copyBtn.title = "复制";
+      copyBtn.classList.remove("is-done", "is-fail");
+      copyBtn.title = "复制这一轮回答";
       if (label) label.textContent = "复制";
-    }, 1200);
+    }, 1600);
   };
   bar.append(copyBtn);
 
@@ -608,13 +709,15 @@ function actionBar(job: AgentJob, draft = ""): HTMLElement {
   }
 
   const forkBtn = actionChip("fork", "分叉", ICONS.fork);
+  forkBtn.title = "从这一轮开新对话（工作区也回到这一轮的文件）";
+  forkBtn.setAttribute("aria-label", "从这一轮开新对话（工作区也回到这一轮的文件）");
   forkBtn.disabled = !checkpoint;
   forkBtn.onclick = async () => {
     if (!checkpoint) return;
     const { hardReload, rememberState } = await import("./live");
     forkBtn.disabled = true;
     try {
-      const name = `turn-${checkpoint.slice(0, 8)}`;
+      const name = `turn-${checkpoint.slice(0, 8)}-${Date.now().toString(36)}`;
       const out = await agent.forkCheckpoint(checkpoint, name);
       if (out.conversation_id) {
         try {
@@ -635,14 +738,6 @@ function actionBar(job: AgentJob, draft = ""): HTMLElement {
   };
   bar.append(forkBtn);
   return bar;
-}
-
-function replyText(job: AgentJob, draft = ""): string {
-  const res = job.result || {};
-  const done = String(res.reply || res.correct_solution || res.notes || "").trim();
-  // A stopped turn has no final reply; copying the user's own prompt back is worse
-  // than copying the half-written answer.
-  return done || draft.trim() || String(job.payload?.message || "").trim();
 }
 
 function iconBtn(kind: string, title: string, svg: string): HTMLButtonElement {
