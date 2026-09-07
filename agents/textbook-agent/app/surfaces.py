@@ -7,11 +7,13 @@ otherwise last-good or the image seed is used. proposals/ is never executed.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -89,27 +91,18 @@ def ensure_surfaces() -> Path:
     root.mkdir(parents=True, exist_ok=True)
     last_good_dir().mkdir(parents=True, exist_ok=True)
     if SEED.is_dir():
+        # 与 tools/prompts/configs 等六个目录共用 workspace 的哈希台账：没人动过的
+        # 文件随镜像升级，动过的一律保留。surfaces 早先自带一份「存在即跳过」的
+        # 播种，那会让运行态永远停在第一次启动那版，改完镜像也不生效。
+        from app.workspace import seed_missing
+
+        seed_missing(
+            [(seed_slot(slot), workspace_slot(slot)) for slot in SLOTS],
+            skip_dirs=(PROPOSALS,),
+        )
         for slot in SLOTS:
-            _copy_if_missing(seed_slot(slot), workspace_slot(slot))
             (workspace_slot(slot) / PROPOSALS).mkdir(parents=True, exist_ok=True)
     return root
-
-
-def _copy_if_missing(src: Path, dest: Path) -> None:
-    if not src.is_dir():
-        return
-    dest.mkdir(parents=True, exist_ok=True)
-    for item in src.rglob("*"):
-        if item.is_dir():
-            continue
-        if PROPOSALS in item.parts:
-            continue
-        rel = item.relative_to(src)
-        target = dest / rel
-        if target.exists():
-            continue
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(item, target)
 
 
 def _copy_tree(src: Path, dest: Path) -> None:
@@ -213,14 +206,30 @@ def _run_js(folder: Path, op: str, *, markdown: str = "", payload: Any = None, c
         env=env,
         check=False,
     )
+    stderr = (proc.stderr or "").strip()
+    if stderr:
+        try:
+            from app.logsetup import event
+
+            event("surface.node_stderr", op=op, slot=str(folder.name), text=stderr[:2000])
+        except Exception:
+            pass
     if proc.returncode != 0 and not (proc.stdout or "").strip():
-        raise RuntimeError((proc.stderr or proc.stdout or "node failed")[:400])
+        raise RuntimeError((proc.stderr or proc.stdout or "node failed")[:2000])
     try:
         data = json.loads(proc.stdout or "{}")
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"node output is not JSON: {proc.stdout[:200]}") from exc
     if not isinstance(data, dict) or not data.get("ok"):
-        raise RuntimeError(str((data or {}).get("error") or "surface failed")[:400])
+        raise RuntimeError(str((data or {}).get("error") or "surface failed")[:2000])
+    logs = data.get("logs") if isinstance(data.get("logs"), list) else []
+    if logs:
+        try:
+            from app.logsetup import event
+
+            event("surface.node_logs", op=op, slot=str(folder.name), logs=logs[:40])
+        except Exception:
+            pass
     return data.get("result")
 
 
@@ -251,6 +260,12 @@ def _ctx_for(src: Path, profile: dict[str, Any]) -> dict[str, Any]:
         except json.JSONDecodeError:
             extra = {}
     ctx = {"profile": profile}
+    try:
+        from app.toc_lexicon import export_for_js
+
+        ctx["lexicon"] = export_for_js()
+    except Exception:
+        pass
     ctx.update(extra)
     return ctx
 
@@ -413,6 +428,7 @@ def tag_page(
                 "printToPdf": print_to_pdf or {},
                 "bookId": book_id,
                 "centerTexts": list(center_texts or []),
+                "lexicon": _lexicon_for_js(),
             },
         )
         return str(result if result is not None else raw)
@@ -420,26 +436,111 @@ def tag_page(
         return raw
 
 
-def prepare_page(markdown: str, *, print_to_pdf: dict[str, Any] | None = None, book_id: str = "") -> str:
+def _lexicon_for_js() -> dict[str, Any]:
+    try:
+        from app.toc_lexicon import export_for_js
+
+        return export_for_js()
+    except Exception:
+        return {}
+
+
+def _lexicon_stamp() -> str:
+    try:
+        from app.toc_lexicon import lexicon_stamp
+
+        return lexicon_stamp()
+    except Exception:
+        return ""
+
+
+def _entries_sha(toc_entries: Any) -> str:
+    if not toc_entries:
+        return ""
+    blob = json.dumps(toc_entries, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
+def prepare_page(
+    markdown: str,
+    *,
+    print_to_pdf: dict[str, Any] | None = None,
+    book_id: str = "",
+    toc_entries: list[dict[str, Any]] | None = None,
+    fig_widths: dict[str, float] | None = None,
+    fig_rows: list[list[str]] | None = None,
+) -> str:
     state = _ensure_slot("page-body")
     raw = markdown or ""
     if not state.loaded:
         return raw
-    key = (state.source, raw, json.dumps({"p": print_to_pdf or {}, "b": book_id, "pr": state.profile}, sort_keys=True, ensure_ascii=False))
+    entries = toc_entries if isinstance(toc_entries, list) else []
+    widths = fig_widths if isinstance(fig_widths, dict) else {}
+    rows = [list(row) for row in fig_rows] if isinstance(fig_rows, list) else []
+    key = (
+        state.source,
+        raw,
+        json.dumps(
+            {
+                "p": print_to_pdf or {},
+                "b": book_id,
+                "pr": state.profile,
+                "e": _entries_sha(entries),
+                "lx": _lexicon_stamp(),
+                "fw": widths,
+                "fr": rows,
+            },
+            sort_keys=True,
+            ensure_ascii=False,
+        ),
+    )
     cached = _prepare_cache.get(key)
+    started = time.monotonic()
     if cached is not None:
+        try:
+            from app.logsetup import event
+
+            event(
+                "surface.prepare",
+                book_id=book_id,
+                cache=True,
+                entries=len(entries),
+                ms=0,
+            )
+        except Exception:
+            pass
         return cached
     try:
         result = _run_js(
             slot_dir("page-body"),
             "prepare",
             markdown=raw,
-            ctx={"profile": state.profile, "printToPdf": print_to_pdf or {}, "bookId": book_id},
+            ctx={
+                "profile": state.profile,
+                "printToPdf": print_to_pdf or {},
+                "bookId": book_id,
+                "tocEntries": entries,
+                "lexicon": _lexicon_for_js(),
+                "figWidths": widths,
+                "figRows": rows,
+            },
         )
         text = str(result if result is not None else raw)
     except Exception:
         text = raw
     _prepare_cache[key] = text
+    try:
+        from app.logsetup import event
+
+        event(
+            "surface.prepare",
+            book_id=book_id,
+            cache=False,
+            entries=len(entries),
+            ms=int((time.monotonic() - started) * 1000),
+        )
+    except Exception:
+        pass
     return text
 
 
@@ -455,11 +556,32 @@ def paint(slot: str, payload: dict[str, Any] | None = None) -> str:
         return ""
 
 
+def _live_agent_home() -> bool:
+    name = settings.home.resolve().name
+    return name in {"agent", "agent-home"}
+
+
 def write_surface(slot: str, path: str, content: str) -> dict[str, Any]:
     dest = resolve_surface_path(slot, path)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(content if content is not None else "", encoding="utf-8")
-    return {"slot": slot, "path": path, "bytes": len(content or "")}
+    seed_ok = _mirror_surface_seed(slot, path, content if content is not None else "")
+    return {"slot": slot, "path": path, "bytes": len(content or ""), "seed": seed_ok}
+
+
+def _mirror_surface_seed(slot: str, rel: str, content: str) -> bool:
+    if not _live_agent_home():
+        return False
+    try:
+        dest = (SEED / slot / rel).resolve()
+        root = (SEED / slot).resolve()
+        if dest != root and root not in dest.parents:
+            return False
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(content, encoding="utf-8")
+        return True
+    except OSError:
+        return False
 
 
 def test_surface(slot: str = "") -> dict[str, Any]:
