@@ -281,32 +281,6 @@ def apply_pilot_migrations(engine: Engine) -> None:
             reviewed_at VARCHAR(64) DEFAULT '',
             created_at VARCHAR(64) DEFAULT ''
         )""",
-        """CREATE TABLE IF NOT EXISTS kb_books (
-            id VARCHAR(64) PRIMARY KEY,
-            label VARCHAR(512) DEFAULT '',
-            filename VARCHAR(512) DEFAULT '',
-            subject VARCHAR(32) DEFAULT 'math',
-            grade_band VARCHAR(16) DEFAULT 'hs',
-            textbook_hint VARCHAR(512) DEFAULT '',
-            minio_key VARCHAR(512) DEFAULT '',
-            status VARCHAR(32) DEFAULT 'uploaded',
-            page_count INTEGER DEFAULT 0,
-            error TEXT DEFAULT '',
-            created_at VARCHAR(64) DEFAULT '',
-            updated_at VARCHAR(64) DEFAULT ''
-        )""",
-        "CREATE INDEX IF NOT EXISTS ix_kb_books_status ON kb_books (status)",
-        "ALTER TABLE kb_books ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE kb_books ADD COLUMN IF NOT EXISTS toc_json TEXT DEFAULT '{}'",
-        """CREATE TABLE IF NOT EXISTS kb_pages (
-            book_id VARCHAR(64) NOT NULL,
-            page_no INTEGER NOT NULL,
-            markdown TEXT DEFAULT '',
-            image_key VARCHAR(512) DEFAULT '',
-            updated_at VARCHAR(64) DEFAULT '',
-            PRIMARY KEY (book_id, page_no)
-        )""",
-        "CREATE INDEX IF NOT EXISTS ix_kb_page_book ON kb_pages (book_id)",
         """CREATE TABLE IF NOT EXISTS textbook_eval_requests (
             request_id VARCHAR(128) PRIMARY KEY,
             question_id VARCHAR(64) DEFAULT '',

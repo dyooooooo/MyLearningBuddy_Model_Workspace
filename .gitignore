@@ -52,6 +52,9 @@ data/agent-home/logs/
 data/agent-home/.checkpoints.git/
 data/agent-home/.config/cursor/auth.json
 data/agent-home/.cursor/sdk/auth.json
+# Runtime cache of the last surface build; recreated by ensure_surfaces().
+data/agent-home/surfaces/.last-good/
+data/backups/
 !data/agent-home/**/.gitkeep
 
 # Cursor project cache (lives under ~/.cursor/projects/, not here)

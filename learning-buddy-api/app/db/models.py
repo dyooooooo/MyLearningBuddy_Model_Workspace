@@ -671,39 +671,10 @@ class EditionCorrectionQueue(Base):
 
 
 # ---------------------------------------------------------------------------
-# Knowledge-base line — isolated from corpus_import_jobs.
-# PDF + MinerU page markdown only. Textbook Agent reads the original PDF.
+# Knowledge-base line stores everything on disk under
+# data/agent-home/textbooks/<book_id>/: meta.json, toc.json, pages/, mid/.
+# There is deliberately no ORM model here — see doc/kb-platform-topology.md.
 # ---------------------------------------------------------------------------
-class KbBook(Base):
-    __tablename__ = "kb_books"
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=_uuid)
-    label: Mapped[str] = mapped_column(String(512), default="")
-    filename: Mapped[str] = mapped_column(String(512), default="")
-    subject: Mapped[str] = mapped_column(String(32), default="math")
-    grade_band: Mapped[str] = mapped_column(String(16), default="hs")
-    textbook_hint: Mapped[str] = mapped_column(String(512), default="")
-    minio_key: Mapped[str] = mapped_column(String(512), default="")
-    status: Mapped[str] = mapped_column(String(32), default="uploaded", index=True)
-    page_count: Mapped[int] = mapped_column(Integer, default=0)
-    error: Mapped[str] = mapped_column(Text, default="")
-    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
-    toc_json: Mapped[str] = mapped_column(Text, default="{}")
-    created_at: Mapped[str] = mapped_column(String(64), default="")
-    updated_at: Mapped[str] = mapped_column(String(64), default="")
-
-
-class KbPage(Base):
-    __tablename__ = "kb_pages"
-    __table_args__ = (Index("ix_kb_page_book", "book_id"),)
-
-    book_id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    page_no: Mapped[int] = mapped_column(Integer, primary_key=True)
-    markdown: Mapped[str] = mapped_column(Text, default="")
-    image_key: Mapped[str] = mapped_column(String(512), default="")
-    updated_at: Mapped[str] = mapped_column(String(64), default="")
-
-
 class TextbookEvalRequest(Base):
     __tablename__ = "textbook_eval_requests"
 
