@@ -1,0 +1,12 @@
+{
+  "printToPdf": {"1": 9, "2": 10, "3": 11, "4": 12},
+  "bookId": "demo",
+  "tocEntries": [
+    {"label": "一、第一部分", "print_page": 1, "level": 0, "is_chapter": true},
+    {"label": "（一）第一节", "print_page": 1, "level": 1, "is_chapter": false},
+    {"label": "1.1 主题", "print_page": 2, "level": 2, "is_chapter": false},
+    {"label": "1.1.1 要点", "print_page": 2, "level": 3, "is_chapter": false},
+    {"label": "细则甲", "print_page": 3, "level": 4, "is_chapter": false},
+    {"label": "细则乙", "print_page": 4, "level": 4, "is_chapter": false}
+  ]
+}

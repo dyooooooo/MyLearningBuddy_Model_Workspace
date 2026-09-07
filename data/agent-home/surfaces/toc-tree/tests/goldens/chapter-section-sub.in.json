@@ -1,0 +1,29 @@
+{
+  "entries": [
+    {
+      "label": "第1章 运动的描述",
+      "print_page": 1,
+      "is_chapter": true,
+      "level": 0,
+      "pdf_page": 8
+    },
+    {
+      "label": "第一节 质点 物理模型",
+      "print_page": 2,
+      "is_chapter": false,
+      "level": 1,
+      "pdf_page": 9
+    },
+    {
+      "label": "何种条件下可将物体抽象为质点？",
+      "print_page": null,
+      "is_chapter": false,
+      "level": 2,
+      "pdf_page": 10
+    }
+  ],
+  "printToPdf": {
+    "1": 8,
+    "2": 9
+  }
+}

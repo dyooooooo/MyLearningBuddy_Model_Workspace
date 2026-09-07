@@ -7,3 +7,5 @@ heading_tag: div
 protect_selectors:
   - kb-page-toc-heading
   - kb-page-toc
+  - kb-section-icon
+  - kb-dash

@@ -131,10 +131,10 @@ function tagListsAndLeads(md) {
   return out.join("\n");
 }
 
-function tagToc(md, profile) {
+function tagToc(md, profile, lexicon = null) {
   const raw = md || "";
   if (raw.includes("::: kb-page-toc") || raw.includes('class="kb-page-toc"')) return raw;
-  if (!looksLikeTocBlob(raw, profile)) return raw;
+  if (!looksLikeTocBlob(raw, profile, lexicon)) return raw;
   return fence("kb-page-toc", raw.trim());
 }
 
@@ -172,8 +172,8 @@ export function tag(md, ctx = {}) {
   const bookId = String(ctx.bookId || "");
   const cleaned = polishPageProse(stripSkin(md || ""));
   const plain = (cleaned || "").replace(/^#{1,6}\s+/gm, "");
-  if (looksLikeTocBlob(plain, profile)) {
-    return tagToc(plain, profile);
+  if (looksLikeTocBlob(plain, profile, ctx.lexicon)) {
+    return tagToc(plain, profile, ctx.lexicon);
   }
   const structured = liftPageTables(liftHeadings(cleaned), bookId, profile).replace(
     /<div class="kb-table-wrap">([\s\S]*?)<\/div>/gi,

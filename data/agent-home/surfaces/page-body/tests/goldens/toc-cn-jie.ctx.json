@@ -1,0 +1,27 @@
+{
+  "tocEntries": [
+    {
+      "label": "第三章·相互作用与力的平衡",
+      "print_page": 46,
+      "level": 0,
+      "is_chapter": true
+    },
+    {
+      "label": "第一节 生活中常见的力",
+      "print_page": 47,
+      "level": 1,
+      "is_chapter": false
+    },
+    {
+      "label": "第二节 力的合成",
+      "print_page": 58,
+      "level": 1,
+      "is_chapter": false
+    }
+  ],
+  "printToPdf": {
+    "46": 53,
+    "47": 54,
+    "58": 65
+  }
+}

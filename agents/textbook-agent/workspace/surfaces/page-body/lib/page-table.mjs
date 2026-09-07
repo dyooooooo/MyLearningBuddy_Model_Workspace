@@ -63,6 +63,10 @@ function isTableShotAlt(alt) {
 
 function tableAlreadyWrapped(src, offset) {
   const before = src.slice(0, offset);
+  const fence = before.lastIndexOf("::: kb-table-wrap");
+  if (fence >= 0 && !before.slice(fence + "::: kb-table-wrap".length).includes("\n:::")) {
+    return true;
+  }
   const open = before.lastIndexOf('<div class="kb-table-wrap">');
   if (open < 0) return false;
   const afterOpen = before.slice(open);

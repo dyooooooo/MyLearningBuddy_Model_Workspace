@@ -1,0 +1,13 @@
+{
+  "bookId": "demo",
+  "figWidths": {
+    "a.jpg": 22.0,
+    "b.jpg": 22.0,
+    "c.jpg": 22.0,
+    "alone.jpg": 71.1,
+    "glyph.jpg": 4.6
+  },
+  "figRows": [
+    ["a.jpg", "b.jpg", "c.jpg"]
+  ]
+}

@@ -16,26 +16,122 @@ h3 { font-size: 1.08rem; font-weight: 700; padding-left: 0.4em; }
 h4 { font-size: 1.02rem; font-weight: 700; padding-left: 0.9em; }
 h5 { font-size: 0.98rem; font-weight: 600; padding-left: 1.4em; }
 h6 { font-size: 0.95rem; font-weight: 600; padding-left: 1.9em; }
+/* Figures measured from the book carry an inline `width` (see fig-size.mjs);
+   these values only catch the ones we have no measurement for. Capping height
+   would override that width and squash tall figures, so height stays free. */
 img {
-  display: block; max-width: 100%; height: auto;
-  margin: 0.55rem 0; border-radius: 4px;
+  display: block;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  margin: 1.2rem auto;
+  object-fit: contain;
+  border-radius: 4px;
 }
 img[alt*="数学家"] { max-width: 200px; }
+/* Glyph-sized figures. A border radius on ~40px is all you can see, so both
+   drop it; only the one sitting between words leaves the centered block flow. */
+img.kb-fig-sm {
+  border-radius: 0;
+  margin: 0.35rem auto;
+}
+img.kb-fig-inline {
+  display: inline-block;
+  border-radius: 0;
+  margin: 0 0.15em;
+  vertical-align: -0.18em;
+}
+/* Same-row plates from the printed page. Each cell keeps the original
+   width percentage; the img inside fills that cell. */
+.kb-fig-row {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 1.1rem auto;
+  max-width: 100%;
+}
+.kb-fig-row .kb-fig-cell {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  text-indent: 0;
+}
+.kb-fig-row .kb-fig-cell img {
+  width: 100%;
+  margin: 0 auto 0.25rem;
+  display: block;
+}
+.kb-fig-row .kb-fig-cell em,
+.kb-fig-row .kb-fig-cell i {
+  display: block;
+  text-align: center;
+  text-indent: 0;
+}
 em, i {
   color: #667085; font-size: 0.88rem; font-style: normal;
 }
 .kb-center { text-align: center; text-indent: 0; }
 .kb-center p { text-indent: 0; }
-.kb-center img { margin-left: auto; margin-right: auto; }
-.kb-center em, .kb-center i { display: block; text-align: center; }
-.kb-verse { text-align: center; text-indent: 0; margin: 0.65rem 0; }
-.kb-verse-inner {
-  display: inline-block; text-align: left; text-indent: 0;
+.kb-center img {
   max-width: 100%;
+  margin: 1.2rem auto;
 }
-.kb-verse-inner p, .kb-verse-inner pre { text-indent: 0; text-align: left; margin: 0.15rem 0; }
+.kb-center em, .kb-center i { display: block; text-align: center; }
+.kb-title, .kb-author, .kb-subtitle, .kb-section-center { text-align: center; text-indent: 0; }
+.kb-title p, .kb-author p, .kb-subtitle p, .kb-work-head p, .kb-section-center p {
+  text-indent: 0; text-align: center;
+}
+.kb-title h1, .kb-title h2, .kb-title h3, .kb-title h4,
+.kb-subtitle h1, .kb-subtitle h2, .kb-subtitle h3, .kb-subtitle h4,
+.kb-section-center h1, .kb-section-center h2, .kb-section-center h3, .kb-section-center h4,
+.kb-work-head h1, .kb-work-head h2, .kb-work-head h3, .kb-work-head h4 {
+  margin: 0; padding-left: 0;
+}
+.kb-work-head {
+  text-align: center;
+  text-indent: 0;
+  margin: 2.75rem 0 2.15rem;
+}
+.kb-work-head:first-child { margin-top: 0.4rem; }
+.kb-work-head .kb-title { margin: 0; }
+.kb-work-head .kb-subtitle { margin: 0.35rem 0 0; }
+.kb-work-head .kb-author { margin: 0.55rem 0 0; }
+.kb-title { margin: 2.75rem 0 2.15rem; }
+.kb-subtitle { margin: 0.2rem 0 1.4rem; }
+.kb-author { margin: 0.35rem 0 2.15rem; }
+.kb-section {
+  text-align: left; text-indent: 0;
+  margin: 1.1rem 0 0.45rem;
+}
+.kb-section p, .kb-section h1, .kb-section h2, .kb-section h3, .kb-section h4 {
+  text-indent: 0; text-align: left; margin: 0; padding-left: 0;
+}
+.kb-section-center { margin: 1.1rem 0 0.45rem; }
+.kb-verse {
+  width: fit-content; max-width: 100%;
+  margin: 0.65rem auto; text-align: left; text-indent: 0;
+}
+.kb-verse p, .kb-verse pre { text-indent: 0; text-align: left; margin: 0.15rem 0; }
 .kb-verse-center { text-align: center; text-indent: 0; margin: 0.65rem 0; }
 .kb-verse-center p, .kb-verse-center pre { text-indent: 0; text-align: center; }
+.kb-verse-stack {
+  width: fit-content; max-width: 100%;
+  margin: 0.65rem auto;
+}
+.kb-verse-stack .kb-verse,
+.kb-verse-stack .kb-verse-center {
+  width: auto; max-width: 100%; margin: 0;
+}
+.kb-date {
+  text-align: right; text-indent: 0;
+  margin: 0.25rem 0 0.65rem; padding-right: 1.2em;
+}
+.kb-date p { text-indent: 0; text-align: right; margin: 0.1rem 0; }
+.kb-verse-stack .kb-date { margin-bottom: 0; padding-right: 0; }
 .kb-list-item {
   margin: 0.15rem 0; padding-left: 2em; text-indent: 0;
 }
@@ -44,6 +140,168 @@ em, i {
 .kb-solution-tail { margin: 0.15rem 0 0.45rem; padding-left: 2em; text-indent: 0; }
 .kb-lead { margin: 0.65rem 0 0.35rem; text-indent: 0; }
 .kb-lead-label { font-weight: 700; margin-right: 0.35em; }
+.kb-section-icon {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.3rem;
+  width: 100%;
+  margin: 1.5rem 0 1.65rem;
+  padding: 0;
+  text-align: left;
+  text-indent: 0;
+  color: #9a4032;
+  font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+.kb-section-icon + p,
+.kb-section-icon + .kb-list-item {
+  margin-top: 1.05rem;
+}
+.kb-section-icon ~ p,
+.kb-section-icon ~ .kb-list-item {
+  margin-bottom: 0.45rem;
+  text-indent: 0;
+  font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 0.92em;
+}
+.kb-dash ~ p {
+  font-family: inherit;
+  font-size: inherit;
+  text-indent: 2em;
+}
+.kb-dash ~ .kb-list-item {
+  font-family: inherit;
+  font-size: inherit;
+}
+.kb-section-icon img {
+  display: inline-block;
+  flex: 0 0 1.1em;
+  width: 1.1em;
+  height: 1.1em;
+  max-width: 1.1em;
+  max-height: 1.1em;
+  margin: 0;
+  border-radius: 50%;
+  object-fit: contain;
+  vertical-align: middle;
+}
+.kb-section-icon-label {
+  flex: 0 0 auto;
+  color: #9a4032;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.kb-section-icon::after {
+  content: "";
+  flex: 1 1 auto;
+  min-width: 2em;
+  height: 0;
+  margin: 0 0 0.08em 0.2rem;
+  border-bottom: 1px dashed #9aa4b2;
+}
+.kb-dash {
+  border: none;
+  height: 0;
+  margin: 1.35rem 0 2.15rem;
+  padding: 0;
+  border-bottom: 1px dashed #9aa4b2;
+}
+.kb-chem-mod {
+  margin: 1.2rem 0 1.25rem;
+  padding: 0.65rem 0.7rem 0.55rem;
+  background: #eef2f6;
+  border-radius: 2px;
+}
+.kb-chem-mod .kb-section-icon {
+  margin: 0.55rem 0 1.35rem;
+}
+.kb-chem-mod .kb-dash {
+  margin: 1.15rem 0 1.15rem;
+}
+.kb-chem-mod p,
+.kb-chem-mod .kb-list-item {
+  text-indent: 0;
+  font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 0.92em;
+}
+.kb-chem-mod--think {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-top: 1px dashed #9aa4b2;
+  border-bottom: 1px dashed #9aa4b2;
+  background: #eef2f6;
+}
+.kb-chem-mod--think .kb-section-icon::after {
+  content: none;
+  flex: 0 0 0;
+  min-width: 0;
+  margin: 0;
+  border: none;
+}
+.kb-chem-mod--think .kb-dash {
+  display: none;
+}
+.kb-stage {
+  margin: 0.75rem 2.2em;
+  text-align: left;
+  text-indent: 0;
+  color: #3d4654;
+}
+.kb-stage p { text-indent: 0; text-align: left; margin: 0.25rem 0; }
+.kb-drama {
+  margin: 0.7rem 0 0.85rem;
+  text-indent: 0;
+}
+.kb-speech {
+  display: grid;
+  grid-template-columns: 4.2em minmax(0, 1fr);
+  column-gap: 0.55em;
+  align-items: start;
+  margin: 0.38rem 0;
+  text-indent: 0;
+  text-align: left;
+}
+.kb-speech-role {
+  font-weight: 700;
+  text-align: left;
+  text-indent: 0;
+}
+.kb-speech-body,
+.kb-speech-line,
+.kb-drama-note,
+.kb-drama-yuan {
+  text-indent: 0;
+  text-align: left;
+}
+.kb-speech-dir {
+  color: #667085;
+}
+.kb-drama-aria {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.45em;
+  align-items: start;
+  margin: 0.38rem 0;
+  text-indent: 0;
+}
+.kb-speech-aria {
+  font-weight: 700;
+  color: #9a4032;
+  text-indent: 0;
+  white-space: nowrap;
+}
+.kb-drama-yuan,
+.kb-drama-note {
+  margin: 0.38rem 0;
+}
 .math-block, .kb-equation {
   margin: 0.7rem 0; padding: 0.45rem 0.6rem;
   overflow-x: auto; text-align: center;
@@ -70,6 +328,8 @@ em, i {
 .kb-page-toc-row--lv0 { padding-left: 0; }
 .kb-page-toc-row--lv1 { padding-left: 1.4em; }
 .kb-page-toc-row--lv2 { padding-left: 2.6em; }
+.kb-page-toc-row--lv3 { padding-left: 3.8em; }
+.kb-page-toc-row--lv4 { padding-left: 5em; }
 .kb-page-toc-row--chapter { margin-top: 0.55rem; font-weight: 700; }
 .kb-page-toc-row--link { cursor: pointer; border-radius: 4px; }
 .kb-page-toc-row--link:hover { background: rgba(37, 99, 235, 0.08); }
@@ -85,10 +345,24 @@ em, i {
   min-width: 3ch; text-align: right;
   color: #667085; font-variant-numeric: tabular-nums;
 }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 0.92rem;
+  margin: 0.75rem 0;
+}
+th, td {
+  padding: 0.42rem 0.55rem;
+  border: 1px solid #c5cdd8;
+  vertical-align: top;
+}
+th { background: #e8eef6; font-weight: 700; }
 .kb-table-wrap { margin: 0.75rem 0; overflow-x: auto; }
 .kb-table-wrap table {
   width: 100%; border-collapse: collapse;
   background: #fff; font-size: 0.92rem;
+  margin: 0;
 }
 .kb-table-wrap caption {
   caption-side: top; text-align: center;

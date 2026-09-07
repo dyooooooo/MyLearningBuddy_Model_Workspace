@@ -1,0 +1,13 @@
+{
+  "printToPdf": {"2": 10, "4": 12, "8": 16, "12": 20, "14": 22, "15": 23},
+  "bookId": "demo",
+  "tocEntries": [
+    {"label": "1 Friendship", "print_page": 2, "level": 0, "is_chapter": true},
+    {"label": "A Listening and speaking", "print_page": 4, "level": 1, "is_chapter": false},
+    {"label": "B Reading", "print_page": 8, "level": 1, "is_chapter": false},
+    {"label": "Reading: A letter", "print_page": 8, "level": 2, "is_chapter": false},
+    {"label": "C Grammar", "print_page": 12, "level": 1, "is_chapter": false},
+    {"label": "Mini-project: Poster", "print_page": 14, "level": 2, "is_chapter": false},
+    {"label": "Focus on language: Words", "print_page": 15, "level": 2, "is_chapter": false}
+  ]
+}
