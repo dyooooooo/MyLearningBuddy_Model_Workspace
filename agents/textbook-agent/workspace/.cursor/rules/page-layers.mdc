@@ -1,0 +1,13 @@
+---
+description: 书页三层：源官方 MD、中间围栏、显示才出 HTML
+alwaysApply: true
+---
+
+# 书页三层
+
+先读 `.cursor/skills/page-layers/SKILL.md`。
+
+- `pages/NNNN.md`：只写官方 Markdown。禁止 `class="kb-"`、`<nav>`、`<ol class="kb-page-toc">`、`::: kb-`。
+- `mid/NNNN.md`：只加 `::: kb-*` 围栏，禁止皮肤 HTML。
+- 点线、居中、缩进只在读页时由 `prepare` + `theme.css` 画，不写回书页。
+- 人教语文「第N单元」目录：源写纯文本行，中间包 `::: kb-page-toc`；调 `fill_unit_toc`，不要手写 HTML。

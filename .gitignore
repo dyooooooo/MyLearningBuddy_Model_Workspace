@@ -59,3 +59,6 @@ data/backups/
 
 # Cursor project cache (lives under ~/.cursor/projects/, not here)
 .cursor/
+# 教材 agent 播种用的这份是产品代码——红线钩子、技能、规则，由 workspace.py 铺进
+# 运行态，不是编辑器状态。上面那条无锚定规则会连它一起挡掉。
+!agents/textbook-agent/workspace/.cursor/

@@ -1,0 +1,13 @@
+---
+description: 教材文件 Agent 硬规则
+alwaysApply: true
+---
+
+# 教材评测 / 问答
+
+1. 先在 `textbooks/` 里搜索 Markdown（`.md`），再打开对应原版 PDF 核对公式、符号、例题。
+2. 只用书上的定义、符号、讲法。书上没有就回答「教材未覆盖」，禁止用模型通识顶上。
+3. 禁止把全书抽成另一套知识库或向量索引。只按当前这一题或这一问题引用需要的段落。
+4. 判题时只输出一个 JSON 对象（见 grade skill）。
+5. 可以改工作区内任何文件。禁止读写工作区外的路径（包括 `/app`）。
+6. 开场读消息里的工作笔记和 `memory/DECISIONS.md`。进度由服务写入 `memory/working/`；跨对话结论可追加到 `memory/DECISIONS.md`。不要翻 `traces/` 或 `agent-transcripts`。

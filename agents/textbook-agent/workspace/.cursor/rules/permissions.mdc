@@ -1,0 +1,20 @@
+---
+description: Agent 工作区权限边界
+alwaysApply: true
+---
+
+# 权限
+
+三档：自由面可读写；受管面改代码必须先走授权卡；红线永久禁止。
+
+| 档 | 位置 | 权限 |
+|---|---|---|
+| 自由面 | `textbooks/` `memory/`（不含 approvals）`inbox/` `traces/` `.cursor/plans/` `.cursor/skills` `.cursor/rules` `prompts/` | 读写。默认只动该书 `textbooks/` |
+| 受管面 | `tools/*.py` `.cursor/hooks/*` `surfaces/*` | 可读。写入必须先 `request_code_edit` 交四段说明，等用户在授权卡上点「授权」 |
+| 红线 | `.cursor/projects/` `.checkpoints.git/` `/app` `memory/approvals/` | 禁止。钩子会拦，无票可申请 |
+
+钩子只看工具真正要读/写/执行的路径，不看会话元数据。`transcript_path` 里带 `.cursor/projects` 不会误拦。文件内容里提到 `/app` 也不拦。
+
+默认不改代码：用户本轮没明文要求改代码、添加工具或加钩子时，只动该书 `textbooks/`，不要改 `tools/`、`surfaces/`、钩子、技能。
+
+目录（TOC）：只有确认是全书共性的形状才能改已有 `tools/build_toc.py`；一书专名不准进共用文件。新能力优先新建工具并用事件触发。导入流水线读工作区这个文件，不在 `/app` 里维护第二套目录算法。
