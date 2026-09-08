@@ -1,0 +1,10 @@
+# docker build 把整个目录读进构建上下文再发给守护进程。.venv 有 258 MB，
+# 镜像里用不到（依赖是 requirements.txt 现装的），不排掉每次构建都白传一遍。
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# 测试不进镜像（Dockerfile 只 COPY app / workspace / client.py / requirements.txt）。
+tests/
