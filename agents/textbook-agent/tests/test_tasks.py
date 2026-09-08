@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from app import bus, jobs, library, refine, sdk_runner, tasks
+from app import bus, conversations, jobs, library, refine, sdk_runner, tasks
 from app.config import settings
 from app.workspace import ensure_workspace
 
@@ -13,6 +13,7 @@ def _home(tmp_path, monkeypatch):
     settings.agent_home = str(home)
     jobs.reset_for_tests()
     tasks.reset_for_tests()
+    conversations.reset_for_tests()
     bus.reset_for_tests()
     ensure_workspace()
     return home
@@ -50,7 +51,18 @@ def test_builtin_trigger_starts_agent_chat(tmp_path, monkeypatch) -> None:
 
     started = tasks.emit("kb.import.completed", {"book_id": "b1"})
     assert started
-    row = _wait(started[0]["job_id"])
+    refine = next(
+        job
+        for job in started
+        if str(((job.get("payload") or {}) if isinstance(job.get("payload"), dict) else {}).get("task_id") or "")
+        == "import-page-refine"
+    )
+    assert all(
+        str(((job.get("payload") or {}) if isinstance(job.get("payload"), dict) else {}).get("task_id") or "")
+        != "import-book-toc"
+        for job in started
+    )
+    row = _wait(refine["job_id"])
     assert row["status"] == "completed"
     assert row["kind"] == "chat"
     payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
@@ -59,11 +71,53 @@ def test_builtin_trigger_starts_agent_chat(tmp_path, monkeypatch) -> None:
     assert str((payload or {}).get("task_id") or "") == "import-page-refine"
     assert str((payload or {}).get("model") or "") == "grok-4.6"
     assert (payload or {}).get("model_params") == [
-        {"id": "effort", "value": "xhigh"},
+        {"id": "effort", "value": "high"},
         {"id": "fast", "value": "true"},
     ]
     assert (row.get("result") or {}).get("model") == "grok-4.6"
     assert "start_layout_refine" not in str((payload or {}).get("message") or "")
+
+
+def test_import_book_toc_starts_printed_job(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    library.create_book(pdf_bytes=b"%PDF", filename="demo.pdf", book_id="b2", label="生物")
+    library.write_page("b2", 1, "目录\n第1章 遗传 1\n")
+    library.write_page("b2", 2, "第1章 遗传\n")
+    library.patch_book("b2", status="ready", page_count=2, subject="biology", category="textbook")
+
+    conv = conversations.ensure("", "先判断科目")
+    cid = str(conv["id"])
+    library.patch_book("b2", conversation_id=cid)
+    started = tasks.emit("task.import-page-refine.completed", {"book_id": "b2", "conversation_id": cid})
+    toc_jobs = [
+        job
+        for job in started
+        if str(((job.get("payload") or {}) if isinstance(job.get("payload"), dict) else {}).get("task_id") or "")
+        == "import-book-toc"
+    ]
+    assert toc_jobs
+    assert all(job.get("kind") == "printed_toc" for job in toc_jobs)
+    assert all(job.get("kind") != "chat" or (job.get("payload") or {}).get("task_id") != "import-book-toc" for job in started)
+
+    row = _wait(toc_jobs[0]["job_id"], timeout=8.0)
+    assert row["status"] == "completed"
+    assert row["kind"] == "printed_toc"
+    payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+    assert str((payload or {}).get("trigger") or "") == "task.import-page-refine.completed"
+    cid = str((payload or {}).get("conversation_id") or "")
+    assert cid == str(conv["id"])
+    live = conversations.get(cid)
+    assert live is not None
+    assert "建目录" not in str(live.get("title") or "")
+    assert str(row["job_id"]) in [str(x) for x in (live.get("job_ids") or [])]
+
+    write = _wait_task_job("write-toc-pages", timeout=4.0)
+    assert write["kind"] == "chat"
+    write_payload = write.get("payload") if isinstance(write.get("payload"), dict) else {}
+    assert str((write_payload or {}).get("conversation_id") or "") == cid
+    write_row = _wait(write["job_id"])
+    assert write_row["status"] == "completed"
 
 
 def test_schedule_persists_next_run(tmp_path, monkeypatch) -> None:
@@ -167,7 +221,7 @@ def test_builtin_message_ignores_stale_overlay(tmp_path, monkeypatch) -> None:
             {
                 "tasks": [
                     {
-                        "id": "import-page-refine",
+                        "id": "import-book-toc",
                         "message": "旧文案只有 build_toc，没有抽子目录",
                         "title": "旧标题",
                         "enabled": True,
@@ -180,9 +234,11 @@ def test_builtin_message_ignores_stale_overlay(tmp_path, monkeypatch) -> None:
         encoding="utf-8",
     )
     tasks.reset_for_tests()
-    row = tasks.get_task("import-page-refine")
+    row = tasks.get_task("import-book-toc")
     assert row is not None
+    assert row.get("action") == "printed_toc"
     assert "toc_extract" in (row.get("message") or "")
+    assert "resolve_printed_toc" in (row.get("message") or "")
     assert row["title"] != "旧标题"
     assert row["last_run_at"] == "2026-01-01T00:00:00+00:00"
 
@@ -195,7 +251,8 @@ def test_builtin_message_ignores_stale_overlay(tmp_path, monkeypatch) -> None:
     tasks.reset_for_tests()
     again = tasks.get_task("import-page-refine")
     assert again is not None
-    assert "toc_extract" in (again.get("message") or "")
+    # 跑过一轮之后 message 仍要跟 builtin.yaml 走，不能被 overlay 冻住
+    assert "refine_book" in (again.get("message") or "")
     stored = json.loads((home / "tasks" / "tasks.json").read_text(encoding="utf-8"))
     overlay = next(item for item in stored["tasks"] if item["id"] == "import-page-refine")
     assert "message" not in overlay
@@ -224,8 +281,9 @@ def test_emit_reuses_conversation(tmp_path, monkeypatch) -> None:
     cid = str(conv["id"])
     started = tasks.emit("kb.import.completed", {"book_id": "b1", "conversation_id": cid})
     assert started
-    payload = started[0].get("payload") if isinstance(started[0].get("payload"), dict) else {}
-    assert str((payload or {}).get("conversation_id") or "") == cid
+    for job in started:
+        payload = job.get("payload") if isinstance(job.get("payload"), dict) else {}
+        assert str((payload or {}).get("conversation_id") or "") == cid
 
 
 def _wait_task_job(task_id: str, timeout: float = 3.0) -> dict:
@@ -245,7 +303,11 @@ def test_list_events_catalog(tmp_path, monkeypatch) -> None:
     ids = {e["id"] for e in events}
     assert "kb.import.completed" in ids
     assert "kb.import.dropped" in ids
+    assert "kb.import.converting" in ids
     assert "task.import-page-refine.completed" in ids
+    assert "task.import-book-toc.completed" in ids
+    assert "task.chinese-textbook-layout.completed" in ids
+    assert "tool.write_toc_pages" in ids
     assert "task.layout-after-clean.completed" not in ids
     assert "tool.refine_page" in ids
     assert "tool.build_toc" in ids
@@ -267,16 +329,23 @@ def test_clean_complete_does_not_start_layout(tmp_path, monkeypatch) -> None:
     cid = str(conv["id"])
     started = tasks.emit("kb.import.completed", {"book_id": "b1", "conversation_id": cid})
     assert started
-    first = started[0]
-    payload = first.get("payload") if isinstance(first.get("payload"), dict) else {}
+    refine = next(
+        job
+        for job in started
+        if str(((job.get("payload") or {}) if isinstance(job.get("payload"), dict) else {}).get("task_id") or "")
+        == "import-page-refine"
+    )
+    payload = refine.get("payload") if isinstance(refine.get("payload"), dict) else {}
     assert str((payload or {}).get("task_id") or "") == "import-page-refine"
     assert "start_layout_refine" not in str((payload or {}).get("message") or "")
-    row = _wait(first["job_id"])
+    assert "build_toc" not in str((payload or {}).get("message") or "")
+    row = _wait(refine["job_id"])
     assert row["status"] == "completed"
     time.sleep(0.25)
     for item in jobs.list_jobs(80):
         extra = item.get("payload") if isinstance(item.get("payload"), dict) else {}
         assert str((extra or {}).get("task_id") or "") != "layout-after-clean"
+        assert str((extra or {}).get("task_id") or "") != "chinese-textbook-layout"
 
 
 def test_identify_chat_does_not_start_layout(tmp_path, monkeypatch) -> None:
@@ -382,7 +451,8 @@ def test_builtin_condition_overlay_persists(tmp_path, monkeypatch) -> None:
     again = tasks.get_task("import-page-refine")
     assert again is not None
     assert again["condition"] == "仅高中数学教材"
-    assert "toc_extract" in (again.get("message") or "")
+    # 只覆盖了 condition，message 仍应取 builtin.yaml 的正文
+    assert "refine_book" in (again.get("message") or "")
 
 
 def test_switch_to_schedule_clears_condition(tmp_path, monkeypatch) -> None:
@@ -436,3 +506,145 @@ def test_emit_reentrancy_skips_same_event(tmp_path, monkeypatch) -> None:
     assert started
     assert nested
     assert nested[0] == []
+
+
+def test_when_gates_chemistry_layout(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    library.create_book(pdf_bytes=b"%PDF", filename="demo.pdf", book_id="c1", label="化学")
+    library.patch_book("c1", status="ready", subject="math", category="textbook")
+    row = tasks.get_task("chemistry-textbook-layout")
+    assert row is not None
+    assert row["when"]["subject"] == "chemistry"
+    assert not (row.get("condition") or "").strip()
+    wash = (tasks.get_task("import-page-refine") or {}).get("message") or ""
+    assert "只调用一次 refine_book" in wash
+    assert tasks.start_task(row, {"book_id": "c1"}) is None
+    library.patch_book("c1", subject="chemistry", category="textbook")
+    job = tasks.start_task(row, {"book_id": "c1"})
+    assert job is not None
+
+
+def test_when_gates_chinese_layout(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    library.create_book(pdf_bytes=b"%PDF", filename="demo.pdf", book_id="b1", label="演示")
+    library.patch_book("b1", status="ready", subject="math", category="textbook")
+    row = tasks.get_task("chinese-textbook-layout")
+    assert row is not None
+    assert row["when"]["subject"] == "chinese"
+    assert tasks.start_task(row, {"book_id": "b1"}) is None
+    library.patch_book("b1", subject="chinese", category="textbook")
+    job = tasks.start_task(row, {"book_id": "b1"})
+    assert job is not None
+
+
+def test_when_accepts_category_list(tmp_path, monkeypatch) -> None:
+    home = _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    library.create_book(pdf_bytes=b"%PDF", filename="demo.pdf", book_id="s1", label="课标")
+    meta = library.read_meta("s1")
+    meta["category"] = "考纲"
+    meta["subject"] = "math"
+    library.write_meta("s1", meta)
+    row = tasks.get_task("write-toc-pages-syllabus")
+    assert row is not None
+    job = tasks.start_task(row, {"book_id": "s1"})
+    assert job is not None
+    assert (home / "textbooks" / "s1" / "meta.json").is_file()
+
+
+def test_create_task_tool_accepts_when(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    from app.tools_loader import load_tool_specs
+
+    specs = {s["id"]: s for s in load_tool_specs()}
+    created = specs["create_task"]["execute"](
+        {
+            "title": "带 when",
+            "mode": "trigger",
+            "trigger": "kb.import.completed",
+            "message": "清洗",
+            "when": '{"subject":"math","category":["textbook","syllabus"]}',
+        }
+    )
+    assert created["when"]["subject"] == "math"
+    assert created["when"]["category"] == ["textbook", "syllabus"]
+    specs["update_task"]["execute"]({"task_id": created["id"], "when": '{"subject":"chinese"}'})
+    assert tasks.get_task(created["id"])["when"]["subject"] == "chinese"
+
+
+def test_tool_skipped_status_is_emitted(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    seen: list[tuple] = []
+    orig = tasks.emit
+
+    def wrapped(event, payload=None):
+        seen.append((event, dict(payload or {})))
+        return orig(event, payload)
+
+    monkeypatch.setattr(tasks, "emit", wrapped)
+    from app.tools_loader import _wrap
+
+    fn = _wrap(lambda book_id="": {"skipped": True, "reason": "no_shape"}, "fill_unit_toc")
+    fn({"book_id": "b1"})
+    hit = next(item for item in seen if item[0] == "tool.fill_unit_toc")
+    assert hit[1]["status"] == "skipped"
+    assert hit[1]["skipped"] is True
+
+
+def test_convert_progress_stays_on_same_conversation(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(tasks, "_CONVERT_POLL_S", 0.01)
+    monkeypatch.setattr(tasks, "_CONVERT_HEARTBEAT_S", 30.0)
+    library.create_book(pdf_bytes=b"%PDF", filename="demo.pdf", book_id="c1", label="生物")
+    library.patch_book("c1", status="converting")
+    conv = conversations.ensure("", "先判断科目")
+    cid = str(conv["id"])
+    library.patch_book("c1", conversation_id=cid)
+
+    started = tasks.emit("kb.import.converting", {"book_id": "c1", "conversation_id": cid})
+    assert started
+    job = started[0]
+    assert job["kind"] == "convert"
+    payload = job.get("payload") if isinstance(job.get("payload"), dict) else {}
+    assert str((payload or {}).get("conversation_id") or "") == cid
+    assert "开始识别全书" in str((payload or {}).get("message") or "")
+    live = conversations.get(cid)
+    assert str(job["job_id"]) in [str(x) for x in (live.get("job_ids") or [])]
+    assert "建目录" not in str(live.get("title") or "")
+
+    library.write_page("c1", 1, "正文\n")
+    library.patch_book("c1", status="ready", page_count=1)
+    row = _wait(job["job_id"], timeout=3.0)
+    assert row["status"] == "completed"
+    assert (row.get("result") or {}).get("page_count") == 1
+    assert "全书识别完成" in str((row.get("result") or {}).get("reply") or "")
+
+
+def test_convert_progress_needs_existing_conversation(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    library.create_book(pdf_bytes=b"%PDF", filename="demo.pdf", book_id="c2", label="生物")
+    library.patch_book("c2", status="converting")
+    assert tasks.emit("kb.import.converting", {"book_id": "c2"}) == []
+
+
+def test_printed_toc_uses_book_conversation(tmp_path, monkeypatch) -> None:
+    _home(tmp_path, monkeypatch)
+    monkeypatch.setattr(sdk_runner, "_prompt_sdk", lambda *a, **k: ("ok", "sdk"))
+    library.create_book(pdf_bytes=b"%PDF", filename="demo.pdf", book_id="b3", label="生物")
+    library.write_page("b3", 1, "目录\n第1章 遗传 1\n")
+    library.patch_book("b3", status="ready", page_count=1, subject="biology", category="textbook")
+    conv = conversations.ensure("", "先判断")
+    cid = str(conv["id"])
+    library.patch_book("b3", conversation_id=cid)
+    started = tasks.emit("task.import-page-refine.completed", {"book_id": "b3"})
+    toc = next(
+        job
+        for job in started
+        if str(((job.get("payload") or {}) if isinstance(job.get("payload"), dict) else {}).get("task_id") or "")
+        == "import-book-toc"
+    )
+    payload = toc.get("payload") if isinstance(toc.get("payload"), dict) else {}
+    assert str((payload or {}).get("conversation_id") or "") == cid

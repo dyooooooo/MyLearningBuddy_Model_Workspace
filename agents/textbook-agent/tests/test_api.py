@@ -378,6 +378,7 @@ def test_tasks_crud_and_emit(tmp_path, monkeypatch) -> None:
     assert events.status_code == 200
     event_ids = {e["id"] for e in events.json()["events"]}
     assert "kb.import.completed" in event_ids
+    assert "kb.import.converting" in event_ids
     assert "task.import-page-refine.completed" in event_ids
     assert "tool.build_toc" in event_ids
     assert "tool.create_task" not in event_ids

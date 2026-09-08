@@ -35,7 +35,7 @@ FALLBACK_MODELS: list[dict[str, Any]] = [
             {
                 "display_name": "Cursor Grok 4.6",
                 "is_default": True,
-                "params": [{"id": "effort", "value": "xhigh"}, {"id": "fast", "value": "true"}],
+                "params": [{"id": "effort", "value": "high"}, {"id": "fast", "value": "true"}],
             }
         ],
     },

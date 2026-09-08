@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 MAX_CHARS = 32_768
 NAMES = ("chat", "plan", "ask", "grade", "title")
-EXTRA = ("page_refine", "tasks", "toc_extract")
+EXTRA = ("page_refine", "tasks", "toc_extract", "toc_locate", "toc_read", "toc_reconcile")
 MODE_TO_NAME = {"agent": "chat", "plan": "plan", "ask": "ask"}
 _NAME_OK = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,40}$")
 

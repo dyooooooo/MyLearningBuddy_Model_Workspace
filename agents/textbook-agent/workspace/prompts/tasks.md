@@ -3,7 +3,7 @@
 两种 mode（没有手动）：
 - schedule：到点把「对话」发给 Agent（本机时区；每天 / 每周 / 每月 / 指定日期）
 - trigger：事件发生时发给 Agent。事件以任务页目录为准（系统 / 任务完成 / 本机工具），例如 `kb.import.completed`（导入教材完成后）、`task.<任务id>.completed`、`tool.<工具id>`。payload 常带 book_id。可选 `condition`：一句话，空则直接跑；非空则先把这句话发给 Agent，成立才执行任务，不成立只回复「条件不满足，跳过本任务」。定时任务没有条件。
-- 拖入 PDF：MinerU 先认前三页，identify_message 带上这段文本让 Agent 抽科目学段；点「开始识别」后才走清洗（message）。payload 可带 conversation_id 续上原对话。
+- 拖入 PDF：MinerU 先认前三页，identify_message 带上这段文本让 Agent 抽科目学段；`propose_import_meta` 写回后立刻入队全书识别，同一条对话里接着清洗。payload 可带 conversation_id 续上原对话。
 
 对话是一段普通文字，丢给 AI Agent 去执行。触发里可以用 `{{book_id}}` 表示刚导入的书号。
 

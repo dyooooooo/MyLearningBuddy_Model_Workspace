@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
+import time
 from pathlib import Path
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -72,7 +73,21 @@ def schedule(book_id: str, page_no: int) -> None:
         with _timer_lock:
             _timers.pop(key, None)
         try:
-            sync_page(book_id, page_no)
+            from app.logsetup import bind, event, new_trace
+            from app.page_sync import read_stamp
+
+            stamp = read_stamp(book_id, page_no)
+            prev = str(stamp.get("last_trace_id") or "")
+            with bind(trace_id=new_trace(), book_id=book_id, origin="watch"):
+                event(
+                    "watch.fire",
+                    book_id=book_id,
+                    page_no=page_no,
+                    prev_trace_id=prev,
+                    prev_origin=str(stamp.get("last_origin") or ""),
+                    fired_at_ms=int(time.time() * 1000),
+                )
+                sync_page(book_id, page_no)
         except Exception:
             logger.warning("page sync failed %s/%s", book_id, page_no, exc_info=True)
 

@@ -99,9 +99,16 @@ def strip_sub_sup(book_id: str, apply: str = "scan", root: str = "") -> dict[str
         if mode == "fix":
             cleaned = strip_sub_sup_tags(original)
             if cleaned != original:
-                tmp = path.with_suffix(".md.tmp")
-                tmp.write_text(cleaned, encoding="utf-8")
-                tmp.replace(path)
+                try:
+                    from source_text import write_source_atomic
+                except ImportError:
+                    write_source_atomic = None
+                if write_source_atomic is not None:
+                    write_source_atomic(path, cleaned)
+                else:
+                    tmp = path.with_suffix(".md.tmp")
+                    tmp.write_text(cleaned, encoding="utf-8")
+                    tmp.replace(path)
                 changed_pages += 1
 
     result: dict[str, object] = {

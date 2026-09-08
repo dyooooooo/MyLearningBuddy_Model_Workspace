@@ -54,9 +54,46 @@ def test_model_selection_maps_auto_and_params() -> None:
     assert params[0].value == "true"
 
 
-def test_model_selection_defaults_to_grok_xhigh_fast() -> None:
+def test_model_selection_defaults_to_grok_high_fast() -> None:
     sel = sdk_runner.model_selection("", None)
     assert getattr(sel, "id", None) == "grok-4.6"
     pairs = {p.id: p.value for p in (getattr(sel, "params", []) or [])}
-    assert pairs.get("effort") == "xhigh"
+    assert pairs.get("effort") == "high"
     assert pairs.get("fast") == "true"
+
+
+def test_title_model_is_composer_fast() -> None:
+    from app.config import title_model, title_model_params
+
+    assert title_model() == "composer-2.5"
+    assert title_model_params() == [{"id": "fast", "value": "true"}]
+    sel = sdk_runner.model_selection(title_model(), title_model_params())
+    assert getattr(sel, "id", None) == "composer-2.5"
+    pairs = {p.id: p.value for p in (getattr(sel, "params", []) or [])}
+    assert "effort" not in pairs
+    assert pairs.get("fast") == "true"
+
+
+def test_summarize_title_uses_composer(tmp_path, monkeypatch) -> None:
+    import cursor_sdk
+    from app.config import settings
+
+    captured: dict = {}
+
+    class FakeAgent:
+        @staticmethod
+        def prompt(_text, opts, client=None):
+            captured["model"] = getattr(opts, "model", None)
+            return SimpleNamespace(result="修目录")
+
+    monkeypatch.setattr(settings, "cursor_api_key", "k")
+    monkeypatch.setattr(settings, "agent_home", str(tmp_path))
+    monkeypatch.setattr(cursor_sdk, "Agent", FakeAgent)
+    monkeypatch.setattr(sdk_runner.sdk_client, "ensure_client", lambda: None)
+
+    title = sdk_runner.summarize_title("请把目录页整理一下")
+    assert title == "修目录"
+    model = captured.get("model")
+    assert getattr(model, "id", None) == "composer-2.5"
+    pairs = {p.id: p.value for p in (getattr(model, "params", []) or [])}
+    assert "effort" not in pairs

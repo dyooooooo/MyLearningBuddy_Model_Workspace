@@ -22,9 +22,15 @@ def test_load_seed_tools(tmp_path, monkeypatch) -> None:
     assert "search_md" in specs
     assert "open_pdf_page" in specs
     assert "build_toc" in specs
+    assert "write_toc_pages" in specs
+    assert "fill_unit_toc" in specs
+    assert "mineru_status" in specs
     assert "toc_extract" in specs
+    assert "resolve_printed_toc" in specs
     assert "clear_traces" in specs
     assert "refine_page" in specs
+    assert "refine_book" in specs
+    assert "tag_chinese_layout" in specs
     assert "start_layout_refine" not in specs
     assert "layout_refine_status" not in specs
     assert "create_task" in specs
@@ -166,7 +172,13 @@ def test_propose_import_meta_publishes(tmp_path, monkeypatch) -> None:
     assert "propose_import_meta" in specs
     from app import jobs
     from app.context import current_job_id
+    from app.workspace_module import load
 
+    monkeypatch.setattr(
+        load("mineru_convert"),
+        "mineru_convert",
+        lambda book_id, pages="": {"queued": True, "book_id": book_id},
+    )
     job = jobs.create_job("chat", {"trigger": "kb.import.dropped"})
     token = current_job_id.set(job["job_id"])
     try:
@@ -190,6 +202,9 @@ def test_propose_import_meta_publishes(tmp_path, monkeypatch) -> None:
     assert patched["label"] == "普通高中教科书·数学必修第1册"
     assert patched["textbook_hint"] == "数学必修第1册"
     assert patched["category"] == "syllabus"
+    assert patched["status"] == "uploaded"
+    assert out["started_convert"] is True
+    assert out["convert"]["queued"] is True
     while True:
         try:
             events.append(q.get_nowait())

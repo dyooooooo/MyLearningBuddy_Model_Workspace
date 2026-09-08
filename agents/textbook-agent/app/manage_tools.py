@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
+from pathlib import Path
 from typing import Any
 
 from app import checkpoints, config_store, hooks_store, plugins_store, prompts_store, surfaces
+from app.config import settings
+
+logger = logging.getLogger(__name__)
+_SEED = Path(__file__).resolve().parent.parent / "workspace"
 
 
 def list_config() -> dict[str, Any]:
@@ -35,20 +41,42 @@ def list_config() -> dict[str, Any]:
     }
 
 
+def _mirror_seed(rel: str, content: str) -> bool:
+    if settings.home.resolve().name not in {"agent", "agent-home"}:
+        return False
+    try:
+        dest = (_SEED / rel).resolve()
+        root = _SEED.resolve()
+        if dest != root and root not in dest.parents:
+            return False
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(content if content is not None else "", encoding="utf-8")
+        return True
+    except OSError:
+        logger.warning("seed mirror failed path=%s", rel, exc_info=True)
+        return False
+
+
 def write_tool(tool_id: str, content: str, description: str = "", path: str = "") -> dict[str, Any]:
     """写入一个 Python 工具并登记到 manifest。函数名必须等于 tool_id。"""
     row = config_store.put_tool(tool_id, path=path, description=description, content=content)
+    rel = str(row.get("path") or f"{tool_id}.py")
+    seed_ok = _mirror_seed(f"tools/{rel}", content)
     return {
         "id": row.get("id"),
         "path": row.get("path"),
         "description": row.get("description"),
         "bytes": len(content or ""),
+        "seed": seed_ok,
     }
 
 
 def write_skill(skill_id: str, content: str) -> dict[str, str]:
     """写入一条技能（.cursor/skills/<id>/SKILL.md）。"""
-    return config_store.put_skill(skill_id, content)
+    row = config_store.put_skill(skill_id, content)
+    sid = str(row.get("id") or skill_id)
+    row["seed"] = str(_mirror_seed(f".cursor/skills/{sid}/SKILL.md", content))
+    return row
 
 
 def write_rule(rule_id: str, content: str) -> dict[str, str]:

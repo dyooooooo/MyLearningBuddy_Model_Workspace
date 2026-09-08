@@ -91,11 +91,54 @@ def test_merge_catalog_pdf_wins_toc_fills_page() -> None:
 
 
 def test_scan_unnumbered_activity_headings(tmp_path, monkeypatch) -> None:
+    """无编号小节要被采纳，必须是 ATX 标题（`## 建立模型`），纯正文行不算。
+
+    「提出问题」已进 configs/toc_lexicon.yaml 的栏目停用词（物理书里它是「学生实验」
+    栏目的固定小标题，出现几十次），所以即便写成 ATX 标题也不会进目录。
+    """
     library = _book_home(tmp_path, monkeypatch, "act", "活动")
-    library.write_page("act", 11, "1 刹车距离\n提出问题\n汽车刹车后…\n建立模型\n")
-    library.write_page("act", 12, "求解模型\n")
+    library.write_page("act", 11, "1 刹车距离\n## 提出问题\n汽车刹车后…\n## 建立模型\n")
+    library.write_page("act", 12, "## 求解模型\n")
     kids = toc_extract.scan_interval_entries("act", 11, 13, "1 刹车距离", set())
-    assert [row["label"] for row in kids] == ["提出问题", "建立模型", "求解模型"]
+    assert [row["label"] for row in kids] == ["建立模型", "求解模型"]
+
+
+def test_interval_hash_tracks_extraction_rules(tmp_path, monkeypatch) -> None:
+    """区间缓存必须跟着规则失效，否则改了停用词重跑也纹丝不动。
+
+    缓存原来只按页文本哈希命中：往 configs/toc_lexicon.yaml 加一个栏目停用词、
+    或收紧无编号小节的判定，正文没变就直接复用上一轮结果 —— 看着像「改了没用」。
+    """
+    texts = ["## 学生实验\n正文\n"]
+    before = toc_extract.interval_hash(texts)
+    assert before != toc_extract.page_hash(texts)
+
+    monkeypatch.setattr(toc_extract, "rules_stamp", lambda: "v99|other")
+    assert toc_extract.interval_hash(texts) != before
+
+
+def test_scan_skips_plain_body_sentences(tmp_path, monkeypatch) -> None:
+    """UNNUMBERED 不再收正文短句 —— 物理必修第1册就是被这些行灌满了小节。"""
+    library = _book_home(tmp_path, monkeypatch, "phy2", "物理")
+    library.write_page(
+        "phy2",
+        30,
+        "也可用等式表示为\n得飞机起飞阶段所需的最短时间\n数据分析\n## 真正的小节\n",
+    )
+    kids = toc_extract.scan_interval_entries("phy2", 30, 31, "第一节 加速度", set())
+    assert [row["label"] for row in kids] == ["真正的小节"]
+
+
+def test_scan_atx_headings_skip_column_labels(tmp_path, monkeypatch) -> None:
+    library = _book_home(tmp_path, monkeypatch, "phy", "物理")
+    library.write_page(
+        "phy",
+        20,
+        "## 第一节 质点 物理模型\n\n## 何种条件下可将物体抽象为质点？\n\n## 自主活动\n\n正文。\n",
+    )
+    kids = toc_extract.scan_interval_entries("phy", 20, 21, "第一节 质点 物理模型", set())
+    assert [row["label"] for row in kids] == ["何种条件下可将物体抽象为质点？"]
+    assert kids[0]["level"] == 2
 
 
 def test_parse_book_payload() -> None:
@@ -240,7 +283,7 @@ def test_standalone_asks_once_for_whole_book(tmp_path, monkeypatch) -> None:
     from app import jobs, sdk_runner
 
     library = _book_home(tmp_path, monkeypatch, "b4", "一次问")
-    library.write_page("b4", 1, "目录\n第1章 集合\n1.1 集合初步 2\n")
+    library.write_page("b4", 1, "目录\n第1章 集合 1\n1.1 集合初步 2\n")
     library.write_page("b4", 3, "1.1 集合初步\n这里没有可用标题行，只有一段说明。\n")
     library.patch_book("b4", status="ready", page_count=3)
     (library.book_dir("b4") / "mineru_toc.json").write_text(

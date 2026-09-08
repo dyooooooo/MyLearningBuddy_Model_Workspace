@@ -30,8 +30,9 @@ def textbooks_root() -> Path:
 
 
 def book_dir(book_id: str) -> Path:
-    dest = resolve_in_home(_safe_id(book_id), base=textbooks_root())
-    if dest == textbooks_root().resolve():
+    root = textbooks_root()
+    dest = resolve_in_home(_safe_id(book_id), base=root)
+    if dest == root.resolve():
         raise ValueError("id required")
     return dest
 
@@ -409,11 +410,14 @@ def _retain_owner(path: Path, prior: tuple[int, int] | None) -> None:
 
 def write_mid(book_id: str, page_no: int, tagged: str, *, sync: bool = True) -> Path:
     sid = _safe_id(book_id)
+    from app.mid_text import peel_mid_remnants
+
+    tagged = peel_mid_remnants(tagged or "")
     path = _mid_path(sid, page_no)
     path.parent.mkdir(parents=True, exist_ok=True)
     prior = _owner(path)
     tmp = path.with_suffix(".md.tmp")
-    tmp.write_text(tagged or "", encoding="utf-8")
+    tmp.write_text(tagged, encoding="utf-8")
     tmp.replace(path)
     _retain_owner(path, prior)
     if sync:
@@ -455,11 +459,14 @@ def write_page(
     sync: bool = True,
 ) -> None:
     sid = _safe_id(book_id)
+    from app.mid_text import strip_skin
+
+    markdown = strip_skin(markdown or "")
     md = _page_path(sid, page_no)
     md.parent.mkdir(parents=True, exist_ok=True)
     prior = _owner(md)
     tmp = md.with_suffix(".md.tmp")
-    tmp.write_text(markdown or "", encoding="utf-8")
+    tmp.write_text(markdown, encoding="utf-8")
     tmp.replace(md)
     _retain_owner(md, prior)
     if image is not None:

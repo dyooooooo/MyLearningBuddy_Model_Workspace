@@ -4,6 +4,8 @@ import importlib.util
 import json
 import logging
 import sys
+import time
+import traceback
 from pathlib import Path
 from typing import Any, Callable
 
@@ -16,9 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 def _ensure_tools_on_path() -> None:
-    tools_dir = str(settings.tools_dir.resolve())
-    if tools_dir and tools_dir not in sys.path:
-        sys.path.insert(0, tools_dir)
+    # workspace tools/ 优先，镜像 seed 兜底；与 app/workspace_module.py 共用一套解析
+    from app.workspace_module import ensure_on_path
+
+    ensure_on_path()
 
 
 def load_tool_specs() -> list[dict[str, Any]]:
@@ -68,14 +71,17 @@ def load_tool_specs() -> list[dict[str, Any]]:
 
 
 def _load_module(name: str, path: Path) -> Any:
+    # tools/<id>.py 走统一加载器，保证与 app shim 共用同一个模块实例
+    if name.isidentifier() and path.name == f"{name}.py":
+        from app.workspace_module import load
+
+        return load(name)
     key = f"agent_tool_{name}"
     spec = importlib.util.spec_from_file_location(key, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"cannot load tool {name} from {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[key] = module
-    if name.isidentifier() and name not in sys.modules:
-        sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -100,12 +106,33 @@ def _wrap(fn: Callable[..., Any], tool_id: str = "") -> Callable[..., Any]:
 
         inherited = live_sdk_job()
         token = current_job_id.set(inherited) if inherited and not current_job_id.get() else None
+        name = tool_id or getattr(fn, "__name__", "tool")
+        book = str(payload.get("book_id") or "").strip()
+        from app.logsetup import bind, current_trace, digest_obj, dump_payload, event, new_trace
+
+        started = time.monotonic()
+        event("tool.start", tool=name, args=digest_obj(payload), book_id=book)
         try:
-            result = fn(**payload)
-            name = tool_id or getattr(fn, "__name__", "tool")
+            with bind(book_id=book, origin="tool", trace_id=current_trace() or new_trace()):
+                result = fn(**payload)
+            ms = int((time.monotonic() - started) * 1000)
+            status = _result_status(result)
             _record_tool(name, payload, result)
-            _emit_tool_success(name, payload)
+            _emit_tool_success(name, payload, result)
+            extra: dict[str, Any] = {}
+            if isinstance(result, dict):
+                for key in ("levels", "level_hist", "entries", "toc_pages", "skipped", "ok", "reason"):
+                    if key in result:
+                        extra[key] = result[key]
+                if any(k in result for k in ("levels", "level_hist", "entries")):
+                    event("toc.compute", tool=name, **extra)
+            event("tool.end", tool=name, status=status, ms=ms, result=digest_obj(result), **extra)
             return result
+        except Exception as exc:
+            ms = int((time.monotonic() - started) * 1000)
+            payload_path = dump_payload(f"{name}.error.txt", traceback.format_exc())
+            event("tool.end", tool=name, status="error", ms=ms, error=str(exc)[:400], payload=payload_path)
+            raise
         finally:
             if token is not None:
                 current_job_id.reset(token)
@@ -116,7 +143,18 @@ def _wrap(fn: Callable[..., Any], tool_id: str = "") -> Callable[..., Any]:
 _TASK_CRUD = frozenset({"create_task", "list_tasks", "update_task", "cancel_task"})
 
 
-def _emit_tool_success(tool_id: str, payload: dict[str, Any]) -> None:
+def _result_status(result: Any) -> str:
+    if isinstance(result, dict):
+        if result.get("skipped") is True:
+            return "skipped"
+        if result.get("ok") is False:
+            return "error"
+        if result.get("ok") is True:
+            return "ok"
+    return "ok"
+
+
+def _emit_tool_success(tool_id: str, payload: dict[str, Any], result: Any = None) -> None:
     name = (tool_id or "").strip()
     if not name or name in _TASK_CRUD:
         return
@@ -126,6 +164,13 @@ def _emit_tool_success(tool_id: str, payload: dict[str, Any]) -> None:
     extra: dict[str, Any] = {}
     book = str(payload.get("book_id") or "").strip()
     job_id = current_job_id.get() or ""
+    status = _result_status(result)
+    extra["status"] = status
+    if isinstance(result, dict):
+        if "skipped" in result:
+            extra["skipped"] = bool(result.get("skipped"))
+        if "ok" in result:
+            extra["ok"] = bool(result.get("ok"))
     if job_id:
         extra["chat_job_id"] = job_id
         row = jobs.get_job(job_id)

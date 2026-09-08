@@ -865,6 +865,7 @@ def _prompt_sdk(
     images: list[dict[str, Any]] | None = None,
     resume_id: str = "",
     followup: str = "",
+    workspace_tools: bool = True,
 ) -> tuple[str, str]:
     from app.cursor_auth import assert_cursor_ready, key_is_live
 
@@ -885,6 +886,7 @@ def _prompt_sdk(
                 images=images,
                 resume_id=resume,
                 followup=followup,
+                workspace_tools=workspace_tools,
             )
 
         try:
@@ -971,6 +973,7 @@ def _prompt_sdk_once(
     images: list[dict[str, Any]] | None = None,
     resume_id: str = "",
     followup: str = "",
+    workspace_tools: bool = True,
 ) -> tuple[str, str]:
     from app.cursor_auth import live_api_key
 
@@ -978,12 +981,22 @@ def _prompt_sdk_once(
     prepare_sdk_turn(job_id)
     from cursor_sdk import Agent, AgentOptions, LocalAgentOptions, SendOptions
 
-    mcp = mcp_servers_for_sdk()
-    tools = custom_tools_for_sdk(mode)
-    local_kw: dict[str, Any] = {
-        "cwd": str(settings.home),
-        "setting_sources": ["project", "plugins"],
-    }
+    if workspace_tools:
+        mcp = mcp_servers_for_sdk()
+        tools = custom_tools_for_sdk(mode)
+        local_kw: dict[str, Any] = {
+            "cwd": str(settings.home),
+            "setting_sources": ["project", "plugins"],
+        }
+    else:
+        mcp = {}
+        tools = {}
+        scratch = settings.home / ".look-scratch"
+        scratch.mkdir(parents=True, exist_ok=True)
+        local_kw = {
+            "cwd": str(scratch),
+            "setting_sources": [],
+        }
     if tools:
         local_kw["custom_tools"] = tools
     local_opts: Any = _local_options(LocalAgentOptions, local_kw)

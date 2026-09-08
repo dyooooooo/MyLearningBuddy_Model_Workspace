@@ -43,11 +43,18 @@ def refine_page(book_id: str, page_no: int, root: str = "") -> dict[str, object]
         raise FileNotFoundError(str(path))
     original = path.read_text(encoding="utf-8")
     cleaned = _polish(original)
-    changed = cleaned != original
-    if changed:
-        tmp = path.with_suffix(".md.tmp")
-        tmp.write_text(cleaned, encoding="utf-8")
-        tmp.replace(path)
+    try:
+        from source_text import write_source_atomic
+    except ImportError:
+        write_source_atomic = None
+    if write_source_atomic is not None:
+        changed = write_source_atomic(path, cleaned)
+    else:
+        changed = cleaned != original
+        if changed:
+            tmp = path.with_suffix(".md.tmp")
+            tmp.write_text(cleaned, encoding="utf-8")
+            tmp.replace(path)
     return {
         "book_id": sid,
         "page_no": n,
@@ -62,6 +69,12 @@ def _polish(text: str) -> str:
     out = _JSON_FENCE.sub("", out)
     out = _BAKED_DIV.sub("", out)
     out = strip_sub_sup_tags(out)
+    try:
+        from source_text import sanitize_source
+    except ImportError:
+        sanitize_source = None
+    if sanitize_source is not None:
+        out = sanitize_source(out)
     out = "\n".join(line.rstrip() for line in out.split("\n"))
     out = _MULTI_NL.sub("\n\n", out)
     return out.strip() + ("\n" if out.strip() else "")

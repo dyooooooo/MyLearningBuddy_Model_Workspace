@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app import sdk_runner
 from app.sdk_runner import WRITE_TOOL_IDS, _sdk_mode, tool_allowed
 from app.config import settings
 from app.workspace import ensure_workspace
@@ -23,6 +24,7 @@ def test_ask_and_plan_drop_write_tools() -> None:
         assert tool_allowed("agent", tool_id)
         assert not tool_allowed("ask", tool_id)
         assert not tool_allowed("plan", tool_id)
+    assert "workspace_tools" in sdk_runner._prompt_sdk.__code__.co_varnames
 
 
 def test_run_chat_plan_attaches_result(tmp_path, monkeypatch) -> None:

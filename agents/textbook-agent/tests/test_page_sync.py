@@ -75,8 +75,11 @@ def test_import_dual_write_keeps_center_fence(tmp_path, monkeypatch) -> None:
     out = page_sync.sync_page(book_id, 1)
     assert out["action"] == "stamp"
     assert library.get_page_mid(book_id, 1) == mid
+    stamp = page_sync.stamp_path(book_id, 1)
+    before = stamp.stat().st_mtime_ns
     again = page_sync.sync_page(book_id, 1)
-    assert again["action"] == "stamp"
+    assert again["action"] == "ok"
+    assert stamp.stat().st_mtime_ns == before
     assert library.get_page_mid(book_id, 1) == mid
     assert library.get_page_markdown(book_id, 1) == source
 
@@ -152,6 +155,77 @@ def test_watch_debounce_coalesces(tmp_path, monkeypatch) -> None:
     page_watch.schedule(book_id, 2)
     time.sleep(0.2)
     assert calls == [(book_id, 2)]
+
+
+def test_paste_fences_keeps_empty_kb_dash(tmp_path, monkeypatch) -> None:
+    _book_id, _library, page_sync, _watch = _home(tmp_path, monkeypatch)
+    old = (
+        "::: kb-section-icon\n![x](a.jpg)\n\n## 想一想\n:::\n\n"
+        "条目甲\n\n::: kb-dash\n\n:::\n\n"
+        "::: kb-section-icon\n![y](b.jpg)\n\n## 想一想\n:::\n\n"
+        "条目乙\n\n::: kb-dash\n\n:::\n\n"
+        "## 学习聚焦\n\n√ 一条\n\n::: kb-dash\n\n:::\n\n"
+        "## 知识回放\n\n● 回一条\n\n::: kb-dash\n\n:::\n\n"
+        "## 资料库\n\n资料\n\n::: kb-dash\n\n:::\n"
+    )
+    source = (
+        "![x](a.jpg)\n\n## 想一想\n\n条目甲\n\n"
+        "![y](b.jpg)\n\n## 想一想\n\n条目乙\n\n"
+        "## 学习聚焦\n\n√ 一条\n\n"
+        "## 知识回放\n\n● 回一条\n\n"
+        "## 资料库\n\n资料\n"
+    )
+    out = page_sync.paste_fences(old, source)
+    assert out.count("::: kb-dash") == 5
+    assert out.count("::: kb-section-icon") == 2
+    assert "条目甲" in out
+    assert "条目乙" in out
+
+
+def test_apply_chemistry_shapes_same_body(tmp_path, monkeypatch) -> None:
+    _book_id, _library, page_sync, _watch = _home(tmp_path, monkeypatch)
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[1] / "workspace" / "tools" / "tag_chemistry.py"
+    spec = importlib.util.spec_from_file_location("tag_chemistry_seed", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    source = "## 学习聚焦\n\n了解氧化还原反应的概念。\n"
+    new_src, new_mid = module.apply_chemistry_shapes(source, source)
+    assert "::: kb-dash" in new_mid
+    assert page_sync.same_body(new_mid, new_src)
+
+
+def test_refine_book_reports_empty_pages(tmp_path, monkeypatch) -> None:
+    book_id, library, _page_sync, _watch = _home(tmp_path, monkeypatch)
+    library.write_page(book_id, 1, "hello\n", sync=False)
+    empty = library.page_path(book_id, 5)
+    empty.parent.mkdir(parents=True, exist_ok=True)
+    empty.write_bytes(b"")
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[1] / "workspace" / "tools" / "refine_book.py"
+    spec = importlib.util.spec_from_file_location("refine_book_seed", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    out = module.refine_book(book_id, root=str(library.textbooks_root()))
+    assert out.get("ok") is True
+    assert out.get("pages") >= 2
+    assert 5 in (out.get("empty_pages") or [])
+    assert out.get("has_book_pdf") is True
+
+
+def test_audit_mid_syntax_root_is_textbooks(tmp_path, monkeypatch) -> None:
+    book_id, library, _page_sync, _watch = _home(tmp_path, monkeypatch)
+    library.write_page(book_id, 1, "hello\n", sync=False)
+    from app.workspace_module import load
+
+    audit = load("audit_mid_syntax")
+    out = audit.audit_mid_syntax(book_id=book_id, apply="scan", root=str(library.textbooks_root()))
+    assert out.get("ok") is True
+    assert out.get("error") != "没有找到教材"
 
 
 def test_parse_textbook_md(tmp_path) -> None:

@@ -14,19 +14,202 @@ tasks:
       科目只能是 math / chinese / physics / chemistry / biology / english，学段只能是 ms（初中）/ hs（高中）/ ps（小学）。
       类型只能是 textbook（教材）/ knowledge（知识点）/ syllabus（考纲）/ material（资料）/ homework（作业）。课程标准、命题要求、考试说明归 syllabus。
       然后只调用一次 propose_import_meta(book_id, label, textbook_hint, subject, grade_band, category)。
-      不要开始识别，不要 refine_page / toc_extract / improve_render / build_toc。
-      填完后用一两句话说明依据，等用户在导入页核对。用户点「开始识别」后才会导入和清洗。
+      这个工具会写回导入表并立刻入队全书识别，不要等用户点按钮，不要再调 mineru_convert。
+      不要 refine_page / toc_extract / improve_render / build_toc。
+      填完后用一两句话说明依据，并说明已经开始全书识别。
 
       ----- MinerU 前三页 -----
       {{preview}}
     message: |
       教材已导入完成。书号：{{book_id}}。
-      请先读工作区 .cursor/skills/page-refine/SKILL.md 和 .cursor/skills/improve-render/SKILL.md，再按下面顺序调用清洗工具，对这本书做逐步清洗。没有书就说没有；禁止用通识改教材定义或题干。
+      只调用一次 refine_book(book_id={{book_id}})。不要先读 SKILL，不要 glob，不要对每一页 refine_page。
+      看返回的 pages / empty_pages / has_book_pdf / changed。空页点名即可，不要假装页数，不要补 OCR。
+      禁止用通识改教材定义或题干。不要把整页正文贴进对话。到此结束。
 
-      1. checkpoint：note 写清书号与「导入后清洗前」。
-      2. 逐页确定性清洗：列出 textbooks/{{book_id}}/pages/ 下所有 NNNN.md，对每一页调用 refine_page(book_id={{book_id}}, page_no=页码)，去残留 JSON/HTML、收空白。
-      3. 整书渲染扫描：improve_render(book_id={{book_id}})，只扫不改；看返回的 by_kind 与 next_steps。
-      4. 按 next_steps 分层修，不要混。
-      5. 抽子目录：toc_extract(book_id={{book_id}})。它先看原文 PDF 目录页，再读 toc.json，然后一次写入 toc_agent.json；不要每个区间另开对话，也不要手写旁路。
-      6. 重抽目录：build_toc(book_id={{book_id}})。
-      7. 再扫一次 improve_render(book_id={{book_id}})。不要把整页正文贴进对话。到此结束。
+      抽子目录不在这里做，它排在后面那个「导入后建目录」任务里，跟在建骨架之后。
+
+  - id: import-book-toc
+    title: 导入后建目录
+    enabled: true
+    mode: trigger
+    trigger: task.import-page-refine.completed
+    action: printed_toc
+    message: |
+      书号：{{book_id}}。
+      请先读工作区 .cursor/skills/build-toc/SKILL.md，再按顺序各调用一次，不要颠倒：
+
+      1. resolve_printed_toc(book_id={{book_id}}) —— 看原图判定印刷目录页并抽出骨架，
+         与 MinerU 对照后写入 toc_printed.json。
+      2. build_toc(book_id={{book_id}}) —— 用上一步的骨架写 toc.json，只合并印张页、
+         PDF 页和正文回补。不要再词法重读目录页。
+      3. toc_extract(book_id={{book_id}}) —— 只抽子层，写入 toc_agent.json；不要每个
+         区间另开对话，也不要手写旁路。
+
+      三步必须都完成再结束：写目录页的任务挂在本任务完成上，它读的是 toc_extract 之后的
+      toc.json。少跑后面两步，目录页就会用中间态骨架落盘。
+
+      不要 refine_page，不要手写目录，不要对目录页 unwrap。到此结束。
+
+  - id: chinese-textbook-layout
+    title: 语文教材版式
+    enabled: true
+    mode: trigger
+    trigger: task.import-page-refine.completed
+    action: chat
+    when:
+      subject: chinese
+      category: textbook
+    message: |
+      逐页清洗已完成。书号：{{book_id}}。
+      这是语文教材的版式任务，只改中间文件（mid/），不要改 pages/ 源文件。
+
+      只调用一次 tag_chinese_layout(book_id={{book_id}})。不要手写围栏，不要改数学/英语规则。
+
+      工具会先按目录和篇名把课文切成篇，一篇只用一种正文格式，跨页不改种。小说对话不要标诗。
+      中间文件标识：
+      - 目录篇名 ::: kb-title、副标题 ::: kb-subtitle、作者 ::: kb-author（组前组后留白，不与图的 kb-center 混用）
+      - 文中分标题：原书左齐用 ::: kb-section，原书居中用 ::: kb-section-center；栏目/任务N/（1）不要打成 kb-title
+      - 诗正文整首一个围栏：块居中且行左齐用 ::: kb-verse；每一行各自居中（如《致云雀》）用 ::: kb-verse-center
+      - 图和公式继续用 kb-center；写作年月用 ::: kb-date（贴诗块右缘，不贴页边）
+      - 注释、单元导语、学习提示、小说/通讯正文不要按诗来标
+
+      调用后用一两句话汇报 skipped / pages / changed。到此结束。
+
+  - id: chemistry-textbook-layout
+    title: 化学教材版式
+    enabled: true
+    mode: trigger
+    trigger: task.write-toc-pages.completed
+    action: chat
+    when:
+      subject: chemistry
+      category: textbook
+    message: |
+      目录页已写好。书号：{{book_id}}。
+      只调用一次 tag_chemistry(book_id={{book_id}}, apply=fix)。不要先读技能，不要先读 meta.json。
+      调用后用一两句话汇报 skipped / pages / changed。到此结束。
+
+  - id: fill-unit-toc
+    title: 按单元课号补目录
+    enabled: true
+    mode: trigger
+    trigger: tool.build_toc
+    action: chat
+    when:
+      subject: chinese
+      category: textbook
+    message: |
+      书号：{{book_id}}。请先读工作区 .cursor/skills/fill-unit-toc/SKILL.md，再只调用一次 fill_unit_toc(book_id={{book_id}})。
+
+      书页里没有「第N单元」就说一句结束。有则让工具按课序号与篇名分层写回 toc.json，不要手写旁路。
+
+      不要 mark_toc_pages，不要对目录页 unwrap，补完后不要再调 build_toc。不要贴整页正文。到此结束。
+
+  - id: write-toc-pages
+    title: 非语文教材写目录页
+    enabled: true
+    mode: trigger
+    # 挂任务完成、不挂 tool.toc_extract：后者会和「导入后建目录」并发，写目录页拿到的是
+    # build_toc 刚落盘的中间态 toc.json（还没有子目录、节页码还没修）。
+    trigger: task.import-book-toc.completed
+    action: chat
+    when:
+      subject: [math, physics, chemistry, biology, english]
+      category: [textbook, knowledge, material]
+    message: |
+      书号：{{book_id}}。请先读工作区 .cursor/skills/write-toc-pages/SKILL.md，再只调用一次 write_toc_pages(book_id={{book_id}}, apply=fix)。
+
+      目录页禁止 unwrap。页码查不到不要重算，照原样落盘。不要贴整页正文。到此结束。
+
+  - id: write-toc-pages-syllabus
+    title: 课标写目录页
+    enabled: true
+    mode: trigger
+    trigger: task.import-book-toc.completed
+    action: chat
+    when:
+      category: [syllabus, 考纲]
+    message: |
+      书号：{{book_id}}。请先读工作区 .cursor/skills/write-toc-pages/SKILL.md，再只调用一次 write_toc_pages(book_id={{book_id}}, apply=fix)。
+
+      目录页禁止 unwrap。页码查不到不要重算，照原样落盘。不要贴整页正文。到此结束。
+
+  - id: write-toc-pages-after-unit
+    title: 单元目录后写目录页
+    enabled: true
+    mode: trigger
+    trigger: tool.fill_unit_toc
+    action: chat
+    when:
+      subject: chinese
+      category: textbook
+    message: |
+      书号：{{book_id}}。请先读工作区 .cursor/skills/write-toc-pages/SKILL.md，再只调用一次 write_toc_pages(book_id={{book_id}}, apply=fix)。
+
+      即使 fill_unit_toc 跳过也要写页。目录页禁止 unwrap。不要贴整页正文。到此结束。
+
+  - id: restore-footnotes
+    title: 回补圈号页注
+    enabled: true
+    mode: trigger
+    trigger: task.chinese-textbook-layout.completed
+    action: chat
+    when:
+      subject: chinese
+      category: textbook
+    message: |
+      书号：{{book_id}}。请先读工作区 .cursor/skills/restore-footnotes/SKILL.md，再只调用一次 restore_footnotes(book_id={{book_id}}, apply=fix)。
+
+      书页或 mineru 里没有「①〔」「① 选自」「① 节选」就说一句结束。有则让工具从 mineru 拼回页注、把正文圈号改成 $^{n}$、在注释块上方加横杠。行首活动题的 ① 不要收进页脚。封面和目录页不要改。
+
+      不要改 build_toc，不要对目录页 unwrap，不要贴整页正文。到此结束。
+
+  - id: continue-fn-series
+    title: 页注回补后顺延并段编号
+    enabled: true
+    mode: trigger
+    trigger: tool.restore_footnotes
+    action: chat
+    when:
+      subject: chinese
+      category: textbook
+    message: |
+      书号：{{book_id}}。请先读工作区 .cursor/skills/continue-fn-series/SKILL.md，再只调用一次 continue_fn_series(book_id={{book_id}}, apply=fix)。
+
+      正文上标没有「顺增后又出现第二个①」就说一句结束。有则让工具把后页并段里从①起号的注释接到本页第一段最大号之后，正文上标一起改。不要拆回两页，不要另编注释，不要用圈号全书合并。目录页和活动题不要改。
+
+      不要改 restore_footnotes / build_toc，不要对目录页 unwrap，不要贴整页正文。到此结束。
+
+  - id: tag-section-icons
+    title: 语文教材栏目图标
+    enabled: true
+    mode: trigger
+    trigger: task.chinese-textbook-layout.completed
+    action: chat
+    when:
+      subject: chinese
+      category: textbook
+    message: |
+      逐页清洗与语文版式已完成。书号：{{book_id}}。
+      请先读工作区 .cursor/skills/tag-section-icons/SKILL.md，再只调用一次 tag_section_icons(book_id={{book_id}}, apply=fix)。
+
+      让工具把栏目标题（学习提示、单元学习任务、阅读指导等）紧前面的图标收成 ::: kb-section-icon。只改中间文件，不要改 pages/。封面、单元扉页、课文插图不要收。已是该围栏的不改。
+
+      不要改 tag_chinese_layout / build_toc / improve_render，不要对目录页 unwrap，不要贴整页正文。调用后用一两句话汇报 skipped / pages / changed。到此结束。
+
+  - id: tag-drama
+    title: 语文教材戏剧对白
+    enabled: true
+    mode: trigger
+    trigger: task.chinese-textbook-layout.completed
+    action: chat
+    when:
+      subject: chinese
+      category: textbook
+    message: |
+      逐页清洗与语文版式已完成。书号：{{book_id}}。
+      请先读工作区 .cursor/skills/tag-drama/SKILL.md，再只调用一次 tag_drama(book_id={{book_id}}, apply=fix)。
+
+      让工具把戏剧对白收成 ::: kb-drama，开场说明收成 ::: kb-stage；两列「角色/台词」HTML 表拆回围栏。只改中间文件，不要改 pages/。封面、目录、页注、学习提示、单元学习任务不要收。古文和诗行不要收。已是该围栏的不改。
+
+      不要改 tag_chinese_layout / build_toc / improve_render，不要对目录页 unwrap，不要贴整页正文。调用后用一两句话汇报 skipped / pages / changed。到此结束。

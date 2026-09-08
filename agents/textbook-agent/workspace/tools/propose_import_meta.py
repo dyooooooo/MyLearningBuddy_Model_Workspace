@@ -42,7 +42,7 @@ def propose_import_meta(
     grade_band: str,
     category: str = "",
 ) -> dict:
-    """把判断出的显示名、书名提示、科目、学段、类型写回导入表。不要开始识别。"""
+    """把判断出的显示名、书名提示、科目、学段、类型写回导入表。若还是草稿，接着入队全书识别。"""
     from app import bus, library
     from app.volume_title import arabic_volume_digits
 
@@ -57,6 +57,8 @@ def propose_import_meta(
     if not name:
         raise ValueError("label required")
     shown = kind or "textbook"
+    convert: dict = {}
+    started = False
     if sid:
         row = library.get_book(sid)
         if row is None:
@@ -66,6 +68,15 @@ def propose_import_meta(
             patch["category"] = kind
         library.patch_book(sid, **patch)
         shown = kind or str(row.get("category") or "textbook")
+        if str(row.get("status") or "") == "draft":
+            library.patch_book(sid, status="uploaded")
+            try:
+                from mineru_convert import mineru_convert
+
+                convert = mineru_convert(sid)
+                started = True
+            except Exception as exc:
+                convert = {"queued": False, "error": str(exc)[:400]}
     out = {
         "book_id": sid,
         "label": name,
@@ -73,6 +84,8 @@ def propose_import_meta(
         "subject": sub,
         "grade_band": grade,
         "category": shown,
+        "started_convert": started,
+        "convert": convert,
     }
     bus.publish("import_meta", **out)
     return out

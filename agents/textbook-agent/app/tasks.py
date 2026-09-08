@@ -21,9 +21,12 @@ logger = logging.getLogger(__name__)
 
 EVENT_IMPORT = "kb.import.completed"
 EVENT_IMPORT_DROPPED = "kb.import.dropped"
+EVENT_IMPORT_CONVERTING = "kb.import.converting"
 MODES = frozenset({"schedule", "trigger"})
 LEGACY_MODES = frozenset({"manual"})
-ACTIONS = frozenset({"page_refine", "toc_extract", "chat"})
+ACTIONS = frozenset({"page_refine", "toc_extract", "printed_toc", "chat"})
+_CONVERT_POLL_S = 2.0
+_CONVERT_HEARTBEAT_S = 15.0
 TASK_CRUD_TOOLS = frozenset({"create_task", "list_tasks", "update_task", "cancel_task"})
 TRIGGER_PREFIXES = ("kb.", "task.", "tool.")
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
@@ -40,9 +43,9 @@ IDENTIFY_MESSAGE = (
     "类型只能是 textbook（教材）/ knowledge（知识点）/ syllabus（考纲）/ "
     "material（资料）/ homework（作业）。课程标准、命题要求、考试说明归 syllabus。\n"
     "然后只调用一次 propose_import_meta(book_id, label, textbook_hint, subject, grade_band, category)。\n"
-    "不要开始识别，不要 refine_page / toc_extract / improve_render / build_toc。\n"
-    "填完后用一两句话说明依据，等用户在导入页核对。"
-    "用户点「开始识别」后才会导入和清洗。\n\n"
+    "这个工具会写回导入表并立刻入队全书识别，不要等用户点按钮，不要再调 mineru_convert。\n"
+    "不要 refine_page / toc_extract / improve_render / build_toc。\n"
+    "填完后用一两句话说明依据，并说明已经开始全书识别。\n\n"
     "----- MinerU 前三页 -----\n"
     "{{preview}}"
 )
@@ -63,6 +66,7 @@ _OVERLAY_KEYS = (
     "prompt",
     "message",
     "condition",
+    "when",
     "next_run",
     "last_run_at",
     "last_job_id",
@@ -160,6 +164,8 @@ def _normalize(row: dict[str, Any]) -> dict[str, Any]:
         )
     if not message and action == "toc_extract":
         message = "书号：{{book_id}}。请抽子目录：toc_extract(book_id={{book_id}})。"
+    if not message and action == "printed_toc":
+        message = "书号：{{book_id}}。请核对印刷目录：resolve_printed_toc(book_id={{book_id}})。"
     return {
         "id": tid,
         "title": title,
@@ -172,6 +178,7 @@ def _normalize(row: dict[str, Any]) -> dict[str, Any]:
         "prompt": str(row.get("prompt") or "prompts/tasks.md").strip(),
         "message": message,
         "condition": str(row.get("condition") or "").strip() if mode == "trigger" else "",
+        "when": _parse_when(row.get("when")) if mode == "trigger" else {},
         "identify_message": str(row.get("identify_message") or "").strip()
         or (IDENTIFY_MESSAGE if tid == "import-page-refine" else ""),
         "builtin": bool(row.get("builtin")),
@@ -250,6 +257,7 @@ def list_events() -> list[dict[str, str]]:
     out: list[dict[str, str]] = [
         {"id": EVENT_IMPORT, "label": "导入教材完成后", "group": "系统"},
         {"id": EVENT_IMPORT_DROPPED, "label": "拖入 PDF 后认前三页", "group": "系统"},
+        {"id": EVENT_IMPORT_CONVERTING, "label": "开始全书识别后", "group": "系统"},
     ]
     for row in list_tasks():
         tid = str(row.get("id") or "").strip()
@@ -407,6 +415,73 @@ def _render_message(task: dict[str, Any], extra: dict[str, Any] | None = None) -
     return _wrap_condition(condition, text)
 
 
+def _parse_when(raw: Any) -> dict[str, Any]:
+    if isinstance(raw, dict):
+        return {str(k): v for k, v in raw.items() if str(k).strip()}
+    text = str(raw or "").strip()
+    if not text:
+        return {}
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        data = None
+    if isinstance(data, dict):
+        return {str(k): v for k, v in data.items() if str(k).strip()}
+    out: dict[str, Any] = {}
+    for part in text.split(","):
+        if ":" not in part:
+            continue
+        key, value = part.split(":", 1)
+        key = key.strip()
+        if key:
+            out[key] = value.strip()
+    return out
+
+
+def _read_book_meta(book_id: str) -> dict[str, Any]:
+    sid = (book_id or "").strip()
+    if not sid:
+        return {}
+    path = settings.textbooks_dir / sid / "meta.json"
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _when_value(key: str, meta: dict[str, Any], extra: dict[str, Any]) -> str:
+    if key == "status":
+        return str(extra.get("status") or "").strip()
+    return str(meta.get(key) if meta.get(key) not in (None, "") else extra.get(key) or "").strip()
+
+
+def _when_match(expected: Any, actual: str) -> bool:
+    if isinstance(expected, (list, tuple, set)):
+        return actual in {str(item).strip() for item in expected}
+    return actual == str(expected).strip()
+
+
+def when_matches(when: dict[str, Any] | None, extra: dict[str, Any] | None = None) -> tuple[bool, dict[str, Any]]:
+    extra = dict(extra or {})
+    clause = when if isinstance(when, dict) else _parse_when(when)
+    if not clause:
+        return True, {"when": {}, "matched": True}
+    book_id = str(extra.get("book_id") or "").strip()
+    meta = _read_book_meta(book_id)
+    evidence = {"book_id": book_id, "when": clause, "actual": {}, "matched": True}
+    for key, expected in clause.items():
+        actual = _when_value(str(key), meta, extra)
+        evidence["actual"][str(key)] = actual
+        if not _when_match(expected, actual):
+            evidence["matched"] = False
+            evidence["failed"] = str(key)
+            return False, evidence
+    return True, evidence
+
+
 def create_task(
     title: str,
     mode: str = "trigger",
@@ -418,6 +493,7 @@ def create_task(
     next_run: str = "",
     message: str = "",
     condition: str = "",
+    when: Any = None,
 ) -> dict[str, Any]:
     mode = (mode or "trigger").strip().lower()
     if mode in LEGACY_MODES:
@@ -445,6 +521,7 @@ def create_task(
             "prompt": prompt or "prompts/tasks.md",
             "message": (message or "").strip() or DEFAULT_MESSAGE.replace("{{title}}", (title or "").strip() or "任务"),
             "condition": (condition or "").strip() if mode == "trigger" else "",
+            "when": _parse_when(when) if mode == "trigger" else {},
             "builtin": False,
         }
     )
@@ -464,7 +541,7 @@ def update_task(task_id: str, **fields: Any) -> dict[str, Any] | None:
             break
     if found is None:
         return None
-    for key in ("title", "enabled", "mode", "trigger", "cron", "action", "prompt", "message", "condition", "next_run"):
+    for key in ("title", "enabled", "mode", "trigger", "cron", "action", "prompt", "message", "condition", "when", "next_run"):
         if key in fields and fields[key] is not None:
             found[key] = fields[key]
     if fields.get("mode") in LEGACY_MODES:
@@ -520,6 +597,16 @@ def emit(event: str, payload: dict[str, Any] | None = None) -> list[dict[str, An
         _emitting.add(name)
     try:
         started: list[dict[str, Any]] = []
+        if name == EVENT_IMPORT_CONVERTING:
+            book_id = str(extra.get("book_id") or "").strip()
+            if book_id:
+                watch = start_convert_progress(
+                    book_id,
+                    conversation_id=str(extra.get("conversation_id") or ""),
+                    trigger=name,
+                )
+                if watch:
+                    started.append(watch)
         for row in _merged():
             if not row.get("enabled") or row.get("mode") != "trigger":
                 continue
@@ -591,7 +678,37 @@ def start_task(task: dict[str, Any], extra: dict[str, Any] | None = None) -> dic
     tid = str(task.get("id") or "")
     extra.setdefault("title", str(task.get("title") or "任务"))
     extra.setdefault("trigger", str(task.get("trigger") or ""))
-    job = start_chat_task(task, extra)
+    matched, evidence = when_matches(task.get("when"), extra)
+    try:
+        from app.logsetup import event
+
+        event(
+            "task.gate",
+            task_id=tid,
+            trigger=str(extra.get("trigger") or ""),
+            matched=matched,
+            when=evidence.get("when"),
+            actual=evidence.get("actual"),
+            failed=evidence.get("failed"),
+            book_id=str(extra.get("book_id") or ""),
+        )
+    except Exception:
+        logger.warning("task.gate log failed task=%s", tid, exc_info=True)
+    if not matched:
+        return None
+    action = str(task.get("action") or "chat").strip().lower()
+    if action == "printed_toc":
+        book_id = str(extra.get("book_id") or "").strip()
+        if not book_id:
+            return None
+        job = start_printed_toc(
+            book_id,
+            task_id=tid,
+            trigger=str(extra.get("trigger") or task.get("trigger") or ""),
+            conversation_id=str(extra.get("conversation_id") or ""),
+        )
+    else:
+        job = start_chat_task(task, extra)
     if job:
         rows = _merged()
         for row in rows:
@@ -712,6 +829,220 @@ def start_toc_extract(book_id: str, task_id: str = "", prompt: str = "") -> dict
     return row
 
 
+def _find_printed_toc(
+    book_id: str = "",
+    statuses: tuple[str, ...] = ("queued", "running"),
+    exclude: str = "",
+) -> dict[str, Any] | None:
+    want = (book_id or "").strip()
+    skip = (exclude or "").strip()
+    for job in jobs.list_jobs(200):
+        if skip and str(job.get("job_id") or "") == skip:
+            continue
+        if job.get("kind") != "printed_toc":
+            continue
+        if job.get("status") not in statuses:
+            continue
+        payload = job.get("payload") if isinstance(job.get("payload"), dict) else {}
+        if want and str((payload or {}).get("book_id") or "") != want:
+            continue
+        return job
+    return None
+
+
+def _import_conversation_id(book_id: str, extra_cid: str = "") -> str:
+    from app import library
+
+    cid = (extra_cid or "").strip()
+    if cid and cid not in ("none", "local"):
+        return cid
+    meta = library.get_book(book_id) or {}
+    cid = str(meta.get("conversation_id") or "").strip()
+    if cid in ("none", "local"):
+        return ""
+    return cid
+
+
+def _remember_conversation(book_id: str, conversation_id: str) -> None:
+    from app import library
+
+    cid = (conversation_id or "").strip()
+    sid = (book_id or "").strip()
+    if not sid or not cid:
+        return
+    meta = library.get_book(sid) or {}
+    if str(meta.get("conversation_id") or "").strip() == cid:
+        return
+    library.patch_book(sid, conversation_id=cid)
+
+
+def _count_page_files(book_id: str) -> int:
+    from app import library
+
+    folder = library.book_dir(book_id) / "pages"
+    if not folder.is_dir():
+        return 0
+    return len(list(folder.glob("*.md")))
+
+
+def _find_convert(
+    book_id: str = "",
+    statuses: tuple[str, ...] = ("queued", "running"),
+    exclude: str = "",
+) -> dict[str, Any] | None:
+    want = (book_id or "").strip()
+    skip = (exclude or "").strip()
+    for job in jobs.list_jobs(200):
+        if skip and str(job.get("job_id") or "") == skip:
+            continue
+        if job.get("kind") != "convert":
+            continue
+        if job.get("status") not in statuses:
+            continue
+        payload = job.get("payload") if isinstance(job.get("payload"), dict) else {}
+        if want and str((payload or {}).get("book_id") or "") != want:
+            continue
+        return job
+    return None
+
+
+def start_convert_progress(
+    book_id: str,
+    conversation_id: str = "",
+    trigger: str = "",
+) -> dict[str, Any] | None:
+    import time
+
+    from app import conversations, library
+
+    sid = (book_id or "").strip()
+    if not sid:
+        return None
+    existing = _find_convert(sid)
+    if existing:
+        return existing
+    cid = _import_conversation_id(sid, conversation_id)
+    if not cid:
+        return None
+    message = f"开始识别全书。书号：{sid}。"
+    conv = conversations.ensure(cid, message, focus={"book_id": sid})
+    cid = str(conv.get("id") or cid)
+    _remember_conversation(sid, cid)
+    payload = {
+        "book_id": sid,
+        "trigger": trigger or EVENT_IMPORT_CONVERTING,
+        "conversation_id": cid,
+        "message": message,
+    }
+    row = jobs.create_job("convert", payload)
+    job_id = str(row.get("job_id") or "")
+    conversations.attach_job(cid, job_id)
+
+    def _run() -> dict:
+        jobs.append_trace(
+            job_id,
+            "tool",
+            "全书识别",
+            "MinerU 正在识别全书。页面写出来之前会一直在这里汇报。",
+        )
+        last = 0
+        last_beat = time.monotonic()
+        while True:
+            if jobs.is_cancelled(job_id):
+                raise jobs.JobCancelled()
+            meta = library.get_book(sid)
+            if meta is None:
+                raise RuntimeError(f"book not found: {sid}")
+            status = str(meta.get("status") or "")
+            n = _count_page_files(sid)
+            now = time.monotonic()
+            if n > last:
+                jobs.append_trace(job_id, "tool", "已出页", f"已写出 {n} 页")
+                last = n
+                last_beat = now
+            elif now - last_beat >= _CONVERT_HEARTBEAT_S:
+                detail = (
+                    "还在识别全书，页面还没写出来。"
+                    if n == 0
+                    else f"继续写页，目前 {n} 页。"
+                )
+                jobs.append_trace(job_id, "tool", "全书识别", detail)
+                last_beat = now
+            if status == "ready":
+                if n > last:
+                    jobs.append_trace(job_id, "tool", "已出页", f"已写出 {n} 页")
+                jobs.append_trace(job_id, "tool", "全书识别", f"全书识别完成，共 {n} 页。")
+                return {
+                    "conversation_id": cid,
+                    "reply": f"全书识别完成，共 {n} 页。",
+                    "page_count": n,
+                }
+            if status == "failed":
+                raise RuntimeError(str(meta.get("error") or "全书识别失败"))
+            if status in ("draft",):
+                raise RuntimeError("book is still a draft")
+            time.sleep(_CONVERT_POLL_S)
+
+    jobs.start_background(job_id, _run)
+    return row
+
+
+def start_printed_toc(
+    book_id: str,
+    task_id: str = "",
+    trigger: str = "",
+    conversation_id: str = "",
+) -> dict[str, Any]:
+    from app import conversations, library
+
+    sid = (book_id or "").strip()
+    if not sid:
+        raise ValueError("book_id required")
+    existing = _find_printed_toc(sid)
+    if existing:
+        return existing
+    meta = library.get_book(sid) or {}
+    label = str(meta.get("label") or sid)[:40]
+    message = f"正在看印刷目录并建骨架。书号：{sid}。"
+    cid = _import_conversation_id(sid, conversation_id)
+    conv = conversations.ensure(cid, message, title=label if not cid else "", focus={"book_id": sid})
+    cid = str(conv.get("id") or cid)
+    _remember_conversation(sid, cid)
+    payload = {
+        "book_id": sid,
+        "task_id": task_id,
+        "trigger": trigger,
+        "conversation_id": cid,
+        "message": message,
+    }
+    row = jobs.create_job("printed_toc", payload)
+    job_id = str(row.get("job_id") or "")
+    if cid:
+        conversations.attach_job(cid, job_id)
+
+    def _run() -> dict:
+        from app import resolve_printed_toc, toc_extract
+        from app.config import settings
+        from app.workspace_module import ensure_on_path
+
+        resolved = resolve_printed_toc.run_book(sid, job_id)
+        ensure_on_path()
+        from build_toc import build_toc
+
+        built = build_toc(str(settings.home), sid)
+        extracted = toc_extract.run_book(sid, job_id)
+        out = dict(resolved) if isinstance(resolved, dict) else {}
+        n = int(out.get("entry_count") or len(out.get("entries") or []) or 0)
+        out["build_toc"] = built
+        out["toc_extract"] = extracted
+        out["conversation_id"] = cid
+        out["reply"] = str(out.get("brief") or f"印刷目录已抽出 {n} 条")
+        return out
+
+    jobs.start_background(job_id, _run)
+    return row
+
+
 def kick_queued_refine(exclude: str = "") -> None:
     queued = _find_refine(statuses=("queued",), exclude=exclude)
     if queued is None:
@@ -724,9 +1055,11 @@ def start_chat_task(task: dict[str, Any], extra: dict[str, Any]) -> dict[str, An
     from app.config import task_model, task_model_params
 
     message = _render_message(task, extra)
-    cid = str(extra.get("conversation_id") or "").strip()
-    conv = conversations.ensure(cid, message)
+    book_id = str(extra.get("book_id") or "").strip()
+    cid = _import_conversation_id(book_id, str(extra.get("conversation_id") or ""))
+    conv = conversations.ensure(cid, message, focus={"book_id": book_id} if book_id else None)
     cid = str(conv["id"])
+    _remember_conversation(book_id, cid)
     model = task_model()
     params = task_model_params()
     stored = {

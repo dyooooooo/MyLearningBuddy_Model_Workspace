@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 from app.config import settings
 
-SDK_KINDS = frozenset({"chat", "grade", "page_refine", "toc_extract", "task"})
+SDK_KINDS = frozenset({"chat", "grade", "page_refine", "toc_extract", "printed_toc", "task"})
 
 _lock = threading.Lock()
 _jobs: dict[str, dict[str, Any]] = {}
@@ -152,11 +152,21 @@ def _ingest_jsonl(latest: dict[str, dict[str, Any]]) -> None:
 def create_job(kind: str, payload: dict[str, Any]) -> dict[str, Any]:
     _load()
     job_id = str(uuid.uuid4())
+    stored = dict(payload or {})
+    try:
+        from app.logsetup import current_book, current_origin, current_trace, new_trace
+
+        stored.setdefault("trace_id", current_trace() or new_trace())
+        if current_book() and not stored.get("book_id"):
+            stored["book_id"] = current_book()
+        stored.setdefault("origin", current_origin() or "task")
+    except Exception:
+        pass
     row = {
         "job_id": job_id,
         "kind": kind,
         "status": "queued",
-        "payload": payload,
+        "payload": stored,
         "result": None,
         "error": "",
         "trace": [],
@@ -483,7 +493,7 @@ def _flush_working(job_id: str) -> None:
 
 def _emit_task_completed(job_id: str) -> None:
     row = get_job(job_id)
-    if not row or row.get("kind") != "chat":
+    if not row or row.get("kind") not in {"chat", "printed_toc"}:
         return
     payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
     task_id = str((payload or {}).get("task_id") or "").strip()
@@ -525,7 +535,19 @@ def _keep_live_result_fields(job_id: str, result: dict[str, Any]) -> dict[str, A
 
 
 def start_background(job_id: str, fn: Callable[[], dict[str, Any]]) -> None:
+    row = get_job(job_id) or {}
+    payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+    trace = str((payload or {}).get("trace_id") or "")
+    book = str((payload or {}).get("book_id") or "")
+    origin = str((payload or {}).get("origin") or "task")
+
     def _run() -> None:
+        from app.logsetup import bind
+
+        with bind(trace_id=trace, book_id=book, origin=origin or "task"):
+            _run_job()
+
+    def _run_job() -> None:
         if is_cancelled(job_id):
             return
         _set(job_id, persist=True, status="running")

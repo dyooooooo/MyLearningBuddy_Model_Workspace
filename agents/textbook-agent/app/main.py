@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import secrets
 import threading
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,7 @@ from app.cursor_auth import ensure_cursor_credentials
 from app.sdk_client import close_owned_client, ensure_client
 from app.paths import PathJailError
 from app.sdk_patches import apply_cursor_sdk_patches
+from app.logsetup import bind, current_trace, event, maybe_cleanup, new_trace, setup_logging
 from app.workspace import ensure_workspace, list_textbook_files
 
 logger = logging.getLogger(__name__)
@@ -43,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    setup_logging()
     apply_cursor_sdk_patches()
     try:
         n = sweep_orphan_bridges()
@@ -74,6 +77,10 @@ async def lifespan(_app: FastAPI):
                 tasks.tick()
             except Exception:
                 logger.warning("task tick failed", exc_info=True)
+            try:
+                maybe_cleanup()
+            except Exception:
+                logger.warning("log cleanup failed", exc_info=True)
             if stop_tick.wait(30):
                 break
 
@@ -113,6 +120,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def _trace_middleware(request, call_next):
+    header = str(request.headers.get("x-trace-id") or "").strip()
+    tid = header or new_trace()
+    book = str(request.path_params.get("book_id") or request.query_params.get("book_id") or "")
+    origin = "http"
+    with bind(trace_id=tid, book_id=book, origin=origin):
+        response = await call_next(request)
+        response.headers["X-Trace-Id"] = current_trace() or tid
+        return response
 
 
 def _bearer(authorization: str = Header(default="")) -> None:
@@ -233,6 +252,11 @@ class SurfacePrepareIn(BaseModel):
     markdown: str = ""
     printToPdf: dict[str, int] = Field(default_factory=dict)
     bookId: str = ""
+    tocEntries: list[dict[str, Any]] | None = None
+    # {图片文件名: 宽度百分比} — omit to preview a page without original sizes.
+    figWidths: dict[str, float] = Field(default_factory=dict)
+    # Same-row groups: [["left.jpg", "mid.jpg", "right.jpg"], ...]
+    figRows: list[list[str]] = Field(default_factory=list)
 
 
 class SurfacePaintIn(BaseModel):
@@ -272,6 +296,7 @@ class TaskIn(BaseModel):
     next_run: str = ""
     message: str = ""
     condition: str = ""
+    when: dict[str, Any] | None = None
     action: str = "chat"
     prompt: str = ""
     enabled: bool = True
@@ -285,6 +310,7 @@ class TaskPatchIn(BaseModel):
     next_run: str | None = None
     message: str | None = None
     condition: str | None = None
+    when: dict[str, Any] | None = None
     action: str | None = None
     prompt: str | None = None
     enabled: bool | None = None
@@ -423,6 +449,7 @@ def create_task_row(body: TaskIn) -> dict[str, Any]:
             next_run=body.next_run,
             message=body.message,
             condition=body.condition,
+            when=body.when,
             action=body.action,
             prompt=body.prompt,
             enabled=body.enabled,
@@ -664,25 +691,48 @@ def library_reimport(book_id: str) -> dict[str, Any]:
 
 @app.get("/v1/library/{book_id}/pages/{page_no}/markdown", dependencies=[Depends(_bearer)])
 def library_page_md(book_id: str, page_no: int) -> dict[str, Any]:
+    started = time.monotonic()
     row = library.get_book(book_id)
     if row is None:
         raise HTTPException(status_code=404, detail="book not found")
     md = library.get_page_markdown(book_id, page_no)
     if md is None:
         raise HTTPException(status_code=404, detail="page not found")
-    from app.mid_text import looks_like_skin, strip_skin
+    from app.mid_text import looks_like_skin, peel_mid_remnants, strip_skin
     from app.page_sync import sync_page
 
     if looks_like_skin(md):
         md = strip_skin(md)
         library.write_page(book_id, page_no, md, sync=False)
+    mid_raw = library.get_page_mid(book_id, page_no)
+    if mid_raw:
+        mid_clean = peel_mid_remnants(mid_raw)
+        if mid_clean != mid_raw:
+            library.write_mid(book_id, page_no, mid_clean, sync=False)
     surfaces.get_slot("page-body")
     sync_page(book_id, page_no)
     md = library.get_page_markdown(book_id, page_no) or md
     toc = library.read_toc(book_id)
     print_to_pdf = toc.get("print_to_pdf") if isinstance(toc.get("print_to_pdf"), dict) else {}
+    entries = toc.get("entries") if isinstance(toc.get("entries"), list) else []
     mid = library.get_page_mid(book_id, page_no) or md
-    prepared = surfaces.prepare_page(mid, print_to_pdf=print_to_pdf, book_id=book_id)
+    from app.fig_size import page_fig_rows, page_fig_widths
+
+    prepared = surfaces.prepare_page(
+        mid,
+        print_to_pdf=print_to_pdf,
+        book_id=book_id,
+        toc_entries=entries,
+        fig_widths=page_fig_widths(book_id, page_no),
+        fig_rows=page_fig_rows(book_id, page_no),
+    )
+    event(
+        "page.read",
+        book_id=book_id,
+        page_no=page_no,
+        entries=len(entries),
+        ms=int((time.monotonic() - started) * 1000),
+    )
     return {
         "book_id": book_id,
         "page_no": page_no,
@@ -713,6 +763,16 @@ def start_book_toc_extract(book_id: str) -> dict[str, Any]:
 @app.post("/v1/library/{book_id}/toc-extract", dependencies=[Depends(_bearer)])
 def library_toc_extract(book_id: str) -> dict[str, Any]:
     return start_book_toc_extract(book_id)
+
+
+@app.post("/v1/books/{book_id}/printed-toc", dependencies=[Depends(_bearer)])
+def start_book_printed_toc(book_id: str) -> dict[str, Any]:
+    if library.get_book(book_id) is None:
+        raise HTTPException(status_code=404, detail="book not found")
+    try:
+        return tasks.start_printed_toc(book_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/v1/books", dependencies=[Depends(_bearer)])
@@ -985,6 +1045,9 @@ def prepare_surface(slot: str, body: SurfacePrepareIn) -> dict[str, str]:
             body.markdown,
             print_to_pdf=body.printToPdf,
             book_id=body.bookId,
+            toc_entries=body.tocEntries,
+                fig_widths=body.figWidths,
+                fig_rows=body.figRows,
         )
     }
 

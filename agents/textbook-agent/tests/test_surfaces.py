@@ -144,6 +144,19 @@ def test_existing_mid_is_not_retagged(tmp_path, monkeypatch) -> None:
     assert "CHANGED" not in again
 
 
+def test_prepare_wraps_table_when_other_fences_exist(tmp_path, monkeypatch) -> None:
+    _settings, surfaces = _home(tmp_path, monkeypatch)
+    surfaces.reload_all()
+    md = (
+        "::: kb-title\n## 集合\n:::\n\n"
+        "<table><tr><td>数集</td><td>符号</td></tr>"
+        "<tr><td>自然数集</td><td>N</td></tr></table>\n"
+    )
+    out = surfaces.prepare_page(md, book_id="demo")
+    assert out.count("kb-table-wrap") == 1
+    assert "<table" in out
+
+
 def test_prepare_table_is_single_wrap(tmp_path, monkeypatch) -> None:
     _settings, surfaces = _home(tmp_path, monkeypatch)
     surfaces.reload_all()

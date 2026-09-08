@@ -212,6 +212,28 @@ def test_write_page_fence_denied() -> None:
     assert decide(raw) == DENY_LAYERS
 
 
+def test_write_page_glued_name_denied() -> None:
+    raw = _payload(
+        {
+            "path": "/data/agent/textbooks/demo/pages/0032.md",
+            "contents": "![分液](/x.jpg) kb-center\n*分液*\n",
+        },
+        tool_name="Write",
+    )
+    assert decide(raw) == DENY_LAYERS
+
+
+def test_write_page_remnant_denied() -> None:
+    raw = _payload(
+        {
+            "path": "/data/agent/textbooks/demo/pages/0057.md",
+            "contents": "（2）$n = 2$\n\n kb-center\n$V = 22.4$\n:::\n",
+        },
+        tool_name="Write",
+    )
+    assert decide(raw) == DENY_LAYERS
+
+
 def test_write_mid_fence_allowed() -> None:
     raw = _payload(
         {
