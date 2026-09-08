@@ -372,6 +372,15 @@ def ensure_surfaces() -> Path:
 **结论：种子保留，但漂移问题从根上消失了。**两份副本仍在，同步却不再需要人工——
 方向是单向的（镜像 → 现场），依据是哈希台账，且永不吞掉人工修改。
 
+**已上线（`docker compose build/up -d textbook-agent`）**：镜像重建 0.8 秒完成，
+297 MB 的 apt 层与 235 MB 的 pip 层全部命中缓存，只重算三个 `COPY` 层。上线后实测：
+
+- 台账 86 → 162 条，新增的 **76 条 surfaces 条目与演练预测完全一致**；
+- 现场 93 个文件**一个没被改写**（`git status` 为空）；
+- 三个槽位全部 `loaded=True source=workspace`，golden **21/21 · 4/4 · 2/2**；
+- 带 `fig_widths` 抽查渲染，产出 `<img … style="width:42%" data-fig-width="42">`，
+  证明 `fig-size.mjs` 在新容器里正常工作。
+
 遗留：`_mirror_surface_seed()`（`surfaces.py:572`）这个反方向回写仍是死代码，
 在只读容器里必然失败，只影响 `write_surface` 返回体里的 `seed` 字段。台账到位后它已无存在理由。
 
@@ -647,10 +656,13 @@ flowchart TD
 ### 建议的处理顺序
 
 1. ~~**A 类先清场**~~——**已完成**（2026-09-07）。A1、A2、A3 清理；A4 见该节，最终以"接台账"收尾而非删副本。
-2. **未跟踪代码补库**——`fig-size.mjs` 那一类。surfaces 已做完；
-   **`agents/textbook-agent/app/` 下还有 5 个被大量 import 却从未进 git 的模块**
-   （`workspace_module.py` 被 25 处引用、`logsetup.py` 16 处），干净 clone 连服务都起不来。
-   这是目前最急的一条。
+2. ~~**未跟踪代码补库**~~——**已完成**（2026-09-07/08）。共补进 116 个文件：
+   surfaces 的 `fig-size.mjs` 与 golden、`app/` 下 5 个模块（`workspace_module.py` 被 25 处引用）、
+   25 个 agent 工具脚本、`workspace/.cursor/` 的 20 个技能与红线钩子（被无锚定的 `.cursor/`
+   规则误伤）、以及 `learning-buddy-api/app/kb/` 的 4 个模块。
+   验证：`git archive HEAD | tar -x` 到临时目录，**412 测试全通过**。
+   防复发：`tests/test_repo_hygiene.py` 断言 Dockerfile `COPY` 路径下不得有未跟踪文件
+   （造一个探针文件即报错，已实测）；`.dockerignore` 顺带把 258 MB 的 `.venv` 挡在构建上下文外。
 3. **D1 定源头**——把"派生层反向覆盖源头"堵死，这是唯一会**损坏数据**的一条。
 4. **C1 修正则**——已经在出错，改一行。
 5. **访问层合并**——19 个函数收敛成一份，这是治本。
