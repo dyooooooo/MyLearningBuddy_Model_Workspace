@@ -1,4 +1,5 @@
 import { wrapBareMath } from "./bare-math.mjs";
+import { stripBlockIds } from "./block-ids.mjs";
 import { liftPageToc } from "./page-toc.mjs";
 
 export const FENCE_NAMES = new Set([
@@ -199,7 +200,9 @@ export function paintFences(md, ctx = {}) {
   const profile = ctx.profile && typeof ctx.profile === "object" ? ctx.profile : {};
   const printToPdf = ctx.printToPdf && typeof ctx.printToPdf === "object" ? ctx.printToPdf : {};
   return (md || "").replace(FENCE, (_m, name, inner) => {
-    const body = peelInnerFenceTokens(String(inner || "").replace(/^\n/, "").replace(/\n$/, ""));
+    const body = stripBlockIds(
+      peelInnerFenceTokens(String(inner || "").replace(/^\n/, "").replace(/\n$/, "")),
+    );
     const tocEntries = Array.isArray(ctx.tocEntries) ? ctx.tocEntries : [];
     if (name === "kb-page-toc") return liftPageToc(body, printToPdf, profile, tocEntries, ctx.lexicon);
     if (name === "kb-list-item") return itemHtml(body, "kb-list-item", profile);

@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
+from app.block_ids import extract_ids, find_id_span
 from app.mid_text import has_kb_fences, strip_skin
 
 logger = logging.getLogger(__name__)
@@ -222,6 +223,10 @@ def _empty_insert_pos(
                     return pos + len(cand)
             break
         if kind == "fence" and (payload or "").strip():
+            ids = extract_ids(payload)
+            span = find_id_span(source, ids) if ids else None
+            if span is not None:
+                return span[1]
             needle = page_bytes(payload).rstrip("\n")
             pos = _search(needle, after)
             if pos >= 0:
@@ -241,6 +246,10 @@ def _empty_insert_pos(
                     return pos
             break
         if kind == "fence" and (payload or "").strip():
+            ids = extract_ids(payload)
+            span = find_id_span(source, ids) if ids else None
+            if span is not None:
+                return span[0]
             needle = page_bytes(payload).rstrip("\n")
             pos = _search(needle, after)
             if pos >= 0:
@@ -268,7 +277,20 @@ def paste_fences(
         needle = page_bytes(inner).rstrip("\n")
         if not needle:
             continue
-        pos = _find_block(source, needle)
+        pos = -1
+        end = -1
+        via = ""
+        ids = extract_ids(inner)
+        if ids:
+            span = find_id_span(source, ids)
+            if span is not None:
+                pos, end = span
+                via = "id"
+        if pos < 0:
+            pos = _find_block(source, needle)
+            if pos >= 0:
+                end = pos + len(needle)
+                via = "text"
         if pos < 0:
             try:
                 from app.logsetup import event
@@ -282,9 +304,15 @@ def paste_fences(
             except Exception:
                 pass
             continue
-        end = pos + len(needle)
         if _overlaps(pos, end):
             continue
+        if via == "id":
+            try:
+                from app.logsetup import event
+
+                event("sync.fence_id", fence=name, ids=ids, chars=end - pos)
+            except Exception:
+                pass
         used.append((pos, end, name, source[pos:end]))
 
     empties: list[tuple[int, int, str]] = []

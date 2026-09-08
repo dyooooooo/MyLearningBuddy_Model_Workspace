@@ -31,6 +31,15 @@ TORN = (
 )
 
 
+def test_sanitize_source_keeps_block_ids(tmp_path, monkeypatch) -> None:
+    st = _mod(tmp_path, monkeypatch)
+    raw = "选择性必修 ^kb-abcdef\n\n见注释[^1] 与 $n^{2}$\n"
+    out = st.sanitize_source(raw)
+    assert "^kb-abcdef" in out
+    assert "[^1]" in out
+    assert "$n^{2}$" in out
+
+
 def test_sanitize_source_drops_all_fence_tokens(tmp_path, monkeypatch) -> None:
     st = _mod(tmp_path, monkeypatch)
     out = st.sanitize_source(TORN)
