@@ -40,16 +40,98 @@ def test_fence_only_does_not_rewrite_source(tmp_path, monkeypatch) -> None:
     assert library.get_page_mid(book_id, 1) == mid
 
 
-def test_mid_new_sentence_writes_source(tmp_path, monkeypatch) -> None:
+def test_mid_new_sentence_never_touches_source(tmp_path, monkeypatch) -> None:
+    """派生层新增正文文字 → 记冲突并留档，官方正文一个字节都不动。
+
+    这条从前叫 `test_mid_new_sentence_writes_source`，断言的正是 D1 那个数据丢失
+    行为：中间层多出来的句子会被提拔成官方正文。
+    """
     book_id, library, page_sync, _watch = _home(tmp_path, monkeypatch)
     library.write_page(book_id, 1, "hello\n", sync=False)
     library.write_mid(book_id, 1, "::: kb-center\nhello\n:::\n", sync=False)
     page_sync.sync_page(book_id, 1)
+    before = library.page_path(book_id, 1).read_bytes()
+
     library.write_mid(book_id, 1, "::: kb-center\nhello\n:::\n\nnew sentence\n", sync=False)
     out = page_sync.sync_page(book_id, 1)
-    assert out["action"] == "write_source"
-    assert "new sentence" in (library.get_page_markdown(book_id, 1) or "")
+
+    assert out["action"] == "conflict"
+    assert library.page_path(book_id, 1).read_bytes() == before
+    assert "new sentence" not in (library.get_page_markdown(book_id, 1) or "")
+    conflict = page_sync.conflict_path(book_id, 1)
+    assert conflict.is_file()
+    assert "new sentence" in conflict.read_text(encoding="utf-8")
+
+
+def test_layout_blank_lines_are_not_a_conflict(tmp_path, monkeypatch) -> None:
+    """打标工具插排版空行不算分家：一个字没改，不能报成冲突。"""
+    book_id, library, page_sync, _watch = _home(tmp_path, monkeypatch)
+    library.write_page(book_id, 1, "第一段\n第二段\n", sync=False)
+    library.write_mid(book_id, 1, "第一段\n第二段\n", sync=False)
+    page_sync.sync_page(book_id, 1)
+    before = library.page_path(book_id, 1).read_bytes()
+
+    library.write_mid(book_id, 1, "::: kb-center\n第一段\n\n第二段\n:::\n", sync=False)
+    out = page_sync.sync_page(book_id, 1)
+
+    assert out["action"] == "stamp_layout"
+    assert library.page_path(book_id, 1).read_bytes() == before
+    assert not page_sync.conflict_path(book_id, 1).exists()
     assert "::: kb-center" in (library.get_page_mid(book_id, 1) or "")
+
+
+def test_same_mtime_no_longer_lets_mid_win(tmp_path, monkeypatch) -> None:
+    """两边同一秒都被改 → 正文赢。
+
+    从前是 `_mtime(mid) >= _mtime(source)`，平局判中间层赢，脚本批处理时人工订正
+    会被自动标注吃掉。现在没有 mtime 仲裁这回事了。
+    """
+    import os
+
+    book_id, library, page_sync, _watch = _home(tmp_path, monkeypatch)
+    library.write_page(book_id, 1, "原句\n", sync=False)
+    library.write_mid(book_id, 1, "原句\n", sync=False)
+    page_sync.sync_page(book_id, 1)
+
+    library.write_page(book_id, 1, "人工订正后的句子\n", sync=False)
+    library.write_mid(book_id, 1, "::: kb-center\n自动标注塞进来的句子\n:::\n", sync=False)
+    # 把两边时间戳抹成完全相同，正是旧代码判中间层赢的那个平局条件
+    stamp_ts = 1_700_000_000
+    for path in (library.page_path(book_id, 1), library.mid_path(book_id, 1)):
+        os.utime(path, (stamp_ts, stamp_ts))
+
+    out = page_sync.sync_page(book_id, 1)
+
+    assert out["action"] == "paste_mid"
+    source = library.get_page_markdown(book_id, 1) or ""
+    assert source == "人工订正后的句子\n"
+    assert "自动标注塞进来的句子" not in source
+    conflict = page_sync.conflict_path(book_id, 1)
+    assert conflict.is_file()
+    assert "自动标注塞进来的句子" in conflict.read_text(encoding="utf-8")
+
+
+def test_sync_page_can_never_write_source(tmp_path, monkeypatch) -> None:
+    """兜底闸：sync_page 的任何分支都不准调用 library.write_page。"""
+    book_id, library, page_sync, _watch = _home(tmp_path, monkeypatch)
+    assert not hasattr(page_sync, "_write_source"), "反向写回函数不得被重新引入"
+
+    calls: list[tuple] = []
+    real = library.write_page
+    monkeypatch.setattr(
+        library, "write_page", lambda *a, **k: (calls.append(a), real(*a, **k))[1]
+    )
+
+    library.write_page(book_id, 1, "正文\n", sync=False)
+    calls.clear()
+    for mid in (
+        "::: kb-center\n正文\n:::\n",            # 只加围栏
+        "::: kb-center\n正文\n\n多的一句\n:::\n",  # 改了正文文字
+        "完全不同的内容\n",                        # 整段替换
+    ):
+        library.write_mid(book_id, 1, mid, sync=False)
+        page_sync.sync_page(book_id, 1)
+    assert calls == [], f"sync_page 写了正文：{calls}"
 
 
 def test_source_edit_pastes_old_fences(tmp_path, monkeypatch) -> None:

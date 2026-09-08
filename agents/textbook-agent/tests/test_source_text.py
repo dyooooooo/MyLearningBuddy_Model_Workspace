@@ -163,12 +163,15 @@ def test_write_source_does_not_copy_torn_fences(tmp_path, monkeypatch) -> None:
         sync=False,
     )
     out = page_sync.sync_page(book["id"], 1)
-    assert out["action"] == "write_source"
+    # 从前这里断言 write_source：中间层的残破围栏和多出来的句子会被写进正文。
+    # 现在正文只能由人和导入流水线写，派生层的分歧一律留档。
+    assert out["action"] == "conflict"
     source = library.get_page_markdown(book["id"], 1) or ""
     mid = library.get_page_mid(book["id"], 1) or ""
-    assert "new sentence" in source
-    assert "hello" in source
+    assert source == "hello\n"
+    assert "new sentence" not in source
     assert "::: " not in source
     assert "\n kb-center\n" not in ("\n" + source)
     assert "\n kb-center\n" not in ("\n" + mid)
     assert "::: kb-center\nhello\n:::" in mid
+    assert "new sentence" in page_sync.conflict_path(book["id"], 1).read_text(encoding="utf-8")

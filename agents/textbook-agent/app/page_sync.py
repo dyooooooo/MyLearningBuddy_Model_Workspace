@@ -46,6 +46,25 @@ def same_body(mid: str | None, source: str) -> bool:
     return page_bytes(strip_skin(mid)) == page_bytes(source)
 
 
+def plain_body(text: str) -> str:
+    """折叠空行后的正文口径，与 `tag_chinese_layout._plain_body` 一致。"""
+    return re.sub(r"\n{2,}", "\n", (text or "").strip())
+
+
+def same_prose(mid: str | None, source: str) -> bool:
+    """正文文字是否一致——忽略空行增删。
+
+    `same_body` 连空行都要逐行对齐，而打标工具为了排版会往中间层插空行。分家的
+    处置是记冲突，用 `same_body` 当判据会把「一个字没改、只多了个空行」也报成
+    冲突。这一档比 `same_body` 松，只在"要不要报冲突"上用，不参与是否写盘。
+
+    口径与 `tag_chinese_layout._plain_body` 一致，那里早就用它当写入守卫。
+    """
+    if mid is None:
+        return False
+    return plain_body(strip_skin(mid)) == plain_body(source)
+
+
 def _page_lock(book_id: str, page_no: int) -> threading.Lock:
     key = (book_id, int(page_no))
     with _lock_guard:
@@ -329,19 +348,47 @@ def try_tag(text: str, book_id: str = "") -> str:
         return raw
 
 
-def _mtime(path: Path) -> float:
-    try:
-        return path.stat().st_mtime
-    except OSError:
-        return 0.0
-
-
-def _write_source(book_id: str, page_no: int, text: str) -> None:
+def conflict_path(book_id: str, page_no: int) -> Path:
     from app import library
 
-    path = library.page_path(book_id, page_no)
-    with suppressing(path):
-        library.write_page(book_id, page_no, page_bytes(text), sync=False)
+    return library.mid_path(book_id, page_no).with_suffix(".md.conflict")
+
+
+def _record_conflict(book_id: str, page_no: int, mid: str, source: str, *, reason: str) -> Path:
+    """中间层的正文和官方正文对不上时，把中间层那份留档。
+
+    从前这里是 `_write_source()`：拿中间层去覆盖正文。Agent 按 `page-layers` 规则
+    是可以直接写 `mid/NNNN.md` 的，一旦它在中间层动了正文文字（哪怕是把 HTML
+    表格拍平这种"顺手规整"），旧代码就会把结果提拔成官方正文，且不可追回。
+
+    正文是源头，派生层不能改它。分歧留在这里，由人来判。
+    """
+    path = conflict_path(book_id, page_no)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(mid or "", encoding="utf-8")
+    try:
+        from app.logsetup import event
+
+        event(
+            "sync.conflict",
+            book_id=book_id,
+            page_no=page_no,
+            reason=reason,
+            kept="source",
+            saved_to=path.name,
+            source_sha=content_sha(source)[:16],
+            mid_sha=content_sha(mid)[:16],
+        )
+    except Exception:
+        pass
+    logger.warning(
+        "page_sync 冲突 book=%s page=%s reason=%s：正文保持不动，中间层留档 %s",
+        book_id,
+        page_no,
+        reason,
+        path.name,
+    )
+    return path
 
 
 def _write_mid(book_id: str, page_no: int, text: str) -> None:
@@ -498,16 +545,20 @@ def sync_page(book_id: str, page_no: int) -> dict[str, Any]:
             write_stamp(sid, n, source, new_mid)
             return _done("paste_mid")
 
+        # 中间层单边变更：正文这一轮没动过，正文就是对的那一份。
         if mid_dirty and not src_dirty:
-            _write_source(sid, n, strip_skin(mid))
-            write_stamp(sid, n, strip_skin(mid), mid)
-            return _done("write_source")
+            if same_prose(mid, source):
+                # 只差排版空行，打标工具的常规产物，一个字没改，不算分家。
+                write_stamp(sid, n, source, mid)
+                return _done("stamp_layout")
+            _record_conflict(sid, n, mid, source, reason="mid_only")
+            write_stamp(sid, n, source, mid)
+            return _done("conflict")
 
-        mid_newer = _mtime(mid_file) >= _mtime(source_path)
-        if mid_newer:
-            _write_source(sid, n, strip_skin(mid))
-            write_stamp(sid, n, strip_skin(mid), mid)
-            return _done("write_source")
+        # 两边都变了。从前这里比 `_mtime` 谁新谁赢，且平局判中间层赢（`>=`），
+        # 同一秒内的人工订正会被自动标注吃掉。现在一律以正文为准重建中间层。
+        if not same_prose(mid, source):
+            _record_conflict(sid, n, mid, source, reason="both_changed")
 
         if same_body(mid_file.read_text(encoding="utf-8"), source):
             current = mid_file.read_text(encoding="utf-8")

@@ -701,9 +701,11 @@ def library_page_md(book_id: str, page_no: int) -> dict[str, Any]:
     from app.mid_text import looks_like_skin, peel_mid_remnants, strip_skin
     from app.page_sync import sync_page
 
+    # 只读请求不写正文。从前这里把剥了皮的正文落盘，等于「打开页面」也是一次源头
+    # 写入，排障时无法把 GET 当只读来推理。剥皮只作用于本次响应，文件留给人来修。
     if looks_like_skin(md):
         md = strip_skin(md)
-        library.write_page(book_id, page_no, md, sync=False)
+        event("page.source_has_skin", book_id=book_id, page_no=page_no)
     mid_raw = library.get_page_mid(book_id, page_no)
     if mid_raw:
         mid_clean = peel_mid_remnants(mid_raw)
@@ -711,7 +713,10 @@ def library_page_md(book_id: str, page_no: int) -> dict[str, Any]:
             library.write_mid(book_id, page_no, mid_clean, sync=False)
     surfaces.get_slot("page-body")
     sync_page(book_id, page_no)
-    md = library.get_page_markdown(book_id, page_no) or md
+    fresh = library.get_page_markdown(book_id, page_no)
+    if fresh is not None:
+        # 正文不再被本请求改写，所以重读回来的仍可能带皮，得再剥一次。
+        md = strip_skin(fresh) if looks_like_skin(fresh) else fresh
     toc = library.read_toc(book_id)
     print_to_pdf = toc.get("print_to_pdf") if isinstance(toc.get("print_to_pdf"), dict) else {}
     entries = toc.get("entries") if isinstance(toc.get("entries"), list) else []
