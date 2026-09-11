@@ -14,6 +14,7 @@ import re
 import shutil
 import subprocess
 import time
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -58,7 +59,10 @@ class SlotState:
 
 
 _state: dict[str, SlotState] = {}
-_prepare_cache: dict[tuple[Any, ...], str] = {}
+# 渲染结果缓存。键里嵌了整页文本，命中不了也不释放（topology D3 记的内存
+# 泄漏）：每个版本的每一页永久驻留。LRU + 上限收口。
+_PREPARE_CACHE_MAX = 512
+_prepare_cache: "OrderedDict[tuple[Any, ...], str]" = OrderedDict()
 
 
 def reset_for_tests() -> None:
@@ -500,6 +504,7 @@ def prepare_page(
     cached = _prepare_cache.get(key)
     started = time.monotonic()
     if cached is not None:
+        _prepare_cache.move_to_end(key)
         try:
             from app.logsetup import event
 
@@ -532,6 +537,8 @@ def prepare_page(
     except Exception:
         text = raw
     _prepare_cache[key] = text
+    while len(_prepare_cache) > _PREPARE_CACHE_MAX:
+        _prepare_cache.popitem(last=False)
     try:
         from app.logsetup import event
 
