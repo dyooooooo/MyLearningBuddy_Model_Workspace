@@ -638,14 +638,17 @@ def _block_md(blk: dict[str, Any]) -> str:
     return text
 
 
-def render_page_md(page: dict[str, Any]) -> str:
+def render_page_md(page: dict[str, Any], notes: list | None = None) -> str:
     """Canonical IR 一页 → Markdown（新库正文预览/对拍用）。
 
     - 行内公式/小图已在线结构里拼好（text 字段即成品）；
     - 截图型行间公式输出 ![](images/…)，有 latex 输出 $$…$$；
     - 并排图行组连续输出（surface 按 row 字段排成行）；
     - 页注收在页尾分隔线后（chrome 区块）。
+    - 传 notes 时先叠加注解（应用失败的部分不进正文，由调用方看报告）。
     """
+    if notes:
+        page, _rejected = apply_notes(page, notes)
     parts: list[str] = []
     fig_rows: dict[int, list[dict[str, Any]]] = {}
     for blk in page.get("blocks", []):
@@ -674,3 +677,67 @@ def render_page_md(page: dict[str, Any]) -> str:
     if footnotes:
         parts.append("---\n\n" + "\n\n".join(footnotes))
     return "\n\n".join(p for p in parts if p) + "\n"
+
+
+def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """把注解叠到一页 IR 上（纯函数，不改输入）。返回 (新页, 拒绝报告)。
+
+    支持的 op：
+    - replace: new 替换块文本里第一个 old（old 必须存在，否则拒绝）；
+    - delete:  整块移除；
+    - retitle: 改 title 块的 text（old 为原标题全文，精确匹配）。
+    按 notes 顺序应用；前面成功的 replace 会影响后面的 old 匹配。
+    """
+    import copy
+
+    out = copy.deepcopy(page)
+    by_id = {b["id"]: b for b in out.get("blocks", [])}
+    rejected: list[dict[str, Any]] = []
+
+    def _reject(note: dict[str, Any], reason: str) -> None:
+        rejected.append({"note": note.get("id", "?"), "block": note.get("block", "?"), "reason": reason})
+
+    for note in notes or []:
+        if not isinstance(note, dict):
+            continue
+        bid = str(note.get("block") or "")
+        blk = by_id.get(bid)
+        if blk is None:
+            _reject(note, "block not found")
+            continue
+        op = str(note.get("op") or "replace")
+        if op == "delete":
+            out["blocks"] = [b for b in out["blocks"] if b["id"] != bid]
+            by_id.pop(bid, None)
+            continue
+        old = str(note.get("old") or "")
+        new = str(note.get("new") or "")
+        text = str(blk.get("text") or "")
+        if op == "replace":
+            if not old or old not in text:
+                _reject(note, "old not found")
+                continue
+            blk["text"] = text.replace(old, new, 1)
+            for row in blk.get("lines", []):
+                for span in row:
+                    if span.get("t") in ("text", "eq") and old in str(span.get("c", "")):
+                        span["c"] = str(span["c"]).replace(old, new, 1)
+                        break
+                else:
+                    continue
+                break
+        elif op == "retitle":
+            if blk.get("type") != "title":
+                _reject(note, "not a title block")
+                continue
+            if old and old != text:
+                _reject(note, "old not found")
+                continue
+            blk["text"] = new
+            for row in blk.get("lines", []):
+                for span in row:
+                    if span.get("t") == "text":
+                        span["c"] = new
+        else:
+            _reject(note, f"unknown op {op}")
+    return out, rejected

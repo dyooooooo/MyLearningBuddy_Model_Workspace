@@ -375,3 +375,81 @@ def test_ir_toc_tool_scan_and_fix(tmp_path: Path) -> None:
     assert fix["entries"] == 4
     data = json.loads((tmp_path / "irbook" / "ir" / "toc.json").read_text(encoding="utf-8"))
     assert data["entries"][0]["title"] == "绪言"
+
+
+def _notes_book(tmp_path: Path) -> Path:
+    return _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [
+                _block("text", 0, [[_span("text", "原文有错别字的段落")]], bbox=[60, 100, 540, 140]),
+                _block("title", 1, [[_span("text", "原标题")]], bbox=[60, 150, 300, 170], level=2),
+                _block("text", 2, [[_span("text", "要删掉的噪声块")]], bbox=[60, 200, 540, 240]),
+            ],
+            "discarded_blocks": [],
+        }],
+    )
+
+
+def test_apply_notes_replace_retitle_delete(tmp_path: Path) -> None:
+    book = _notes_book(tmp_path)
+    page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    by_text = {b["text"]: b for b in page["blocks"]}
+    notes = [
+        {"id": "n1", "block": by_text["原文有错别字的段落"]["id"], "op": "replace",
+         "old": "错别字", "new": "正确"},
+        {"id": "n2", "block": by_text["原标题"]["id"], "op": "retitle",
+         "old": "原标题", "new": "新标题"},
+        {"id": "n3", "block": by_text["要删掉的噪声块"]["id"], "op": "delete"},
+    ]
+    out, rejected = ir_lib.apply_notes(page, notes)
+    assert rejected == []
+    texts = [b["text"] for b in out["blocks"]]
+    assert "原文有正确的段落" in texts
+    assert "新标题" in texts
+    assert "要删掉的噪声块" not in texts
+    # 输入页不被改动
+    assert any(b["text"] == "原文有错别字的段落" for b in page["blocks"])
+
+
+def test_apply_notes_rejects_unmatched_old(tmp_path: Path) -> None:
+    book = _notes_book(tmp_path)
+    page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    notes = [{"id": "bad", "block": page["blocks"][0]["id"], "op": "replace",
+              "old": "不存在的文字", "new": "x"}]
+    out, rejected = ir_lib.apply_notes(page, notes)
+    assert len(rejected) == 1 and rejected[0]["reason"] == "old not found"
+    assert out["blocks"][0]["text"] == page["blocks"][0]["text"]
+
+
+def test_render_applies_notes(tmp_path: Path) -> None:
+    book = _notes_book(tmp_path)
+    page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    notes = [{"id": "n1", "block": page["blocks"][0]["id"], "op": "replace",
+              "old": "错别字", "new": "正确"}]
+    md = ir_lib.render_page_md(page, notes=notes)
+    assert "原文有正确的段落" in md
+
+
+def test_ir_note_tool_reads_yaml(tmp_path: Path) -> None:
+    _notes_book(tmp_path)
+    notes_dir = tmp_path / "irbook" / "ir" / "notes"
+    notes_dir.mkdir(parents=True)
+    page = ir_lib.ingest_page  # noqa: F841  (工具内部自取)
+    (notes_dir / "0001.yaml").write_text(
+        "- id: n1\n  block: PLACEHOLDER\n  op: replace\n  old: 错别字\n  new: 正确\n",
+        encoding="utf-8",
+    )
+    from ir_notes import ir_note
+
+    book = tmp_path / "irbook"
+    blk_id = ir_lib.ingest_page(book, 1, box_prefixes=[])["blocks"][0]["id"]
+    (notes_dir / "0001.yaml").write_text(
+        f"- id: n1\n  block: {blk_id}\n  op: replace\n  old: 错别字\n  new: 正确\n",
+        encoding="utf-8",
+    )
+    out = ir_note("irbook", 1, root=str(tmp_path), apply="fix")
+    assert out["ok"] and out["notes"] == 1 and out["rejected"] == []
+    assert "原文有正确的段落" in out["markdown"]
