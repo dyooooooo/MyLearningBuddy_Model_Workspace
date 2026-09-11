@@ -1,7 +1,7 @@
 # 知识库正文层：从「双写文件」走向「单一源 + 派生缓存」
 
-> 状态：**第一步、第二步已落地**（2026-09-08）；第三步待定
-> 日期：2026-09-08
+> 状态：**三步都已落地**（第三步 2026-09-09）
+> 日期：2026-09-09
 > 关联：`doc/kb-platform-topology.md`（D1 条目）、`doc/mineru-fullbook-import-flow.md`
 
 ---
@@ -22,30 +22,28 @@
 
 | 文件 | 角色 | 谁在写 |
 |---|---|---|
-| `pages/NNNN.md` | 官方正文，AI 抽取的输入 | 导入流水线、人工编辑、**`page_sync` 回写** |
-| `mid/NNNN.md` | 正文 + `::: kb-*` 呈现围栏 | `page_sync` 自动贴、Agent 改、人工改 |
-| `mid/.stamps/NNNN.json` | 两边的校验和，同步时的判据 | `page_sync.write_stamp()` |
+| `pages/NNNN.md` | 官方正文，AI 抽取的输入 | 导入流水线、人工编辑（`page_sync` **不再写**） |
+| `mid/NNNN.md` | 正文 + `::: kb-*` 呈现围栏 | `page_sync` 按正文重贴、Agent 改、人工改 |
+| `mid/.stamps/NNNN.json` | 缓存键（正文 sha + 中间层 sha） | `page_sync.write_stamp()` |
 
 设计本意（你说的那个）是对的：**显示归显示、抽取归抽取**。问题不在这个意图，在于把"显示层"实现成了**第二份可写的全文副本**。
 
-### 1.2 三条会损坏数据的路径
+### 1.2 三条会损坏数据的路径（第一步已拆掉写回）
 
-前两条上次已经确认过，第三条是这次查 `paste_fences` 时新发现的，也最能说明结构问题。
+`_write_source()` 已删除。当前：中间层单边改字 → `conflict` + `mid/NNNN.md.conflict`；只差空行 → `stamp_layout`；两边都变 → 正文赢、重贴中间层。下面是改之前的路径，留着对照。
 
-**路径一 · 中间层单边变更 → 直接覆盖正文**
-`agents/textbook-agent/app/page_sync.py:501-504`
+**路径一 · 中间层单边变更 → 直接覆盖正文（已删）**
 
 ```python
 if mid_dirty and not src_dirty:
-    _write_source(sid, n, strip_skin(mid))    # 派生层写回源头
+    _write_source(sid, n, strip_skin(mid))    # 已不存在
     return _done("write_source")
 ```
 
-**路径二 · 两边都变 → 比文件修改时间，平局判中间层赢**
-`page_sync.py:506-510`
+**路径二 · 两边都变 → 比文件修改时间，平局判中间层赢（已删）**
 
 ```python
-mid_newer = _mtime(mid_file) >= _mtime(source_path)   # 注意是 >=
+mid_newer = _mtime(mid_file) >= _mtime(source_path)
 if mid_newer:
     _write_source(sid, n, strip_skin(mid))
 ```
@@ -190,7 +188,16 @@ Obsidian 自己就是这个架构的活证据：**它没有中间文件**。一�
 
 回退副本：`/tmp/kb-block-id-backup-20260908`（59 MB，pages + mid + stamps）。
 
-### 第三步 · 换掉手写解析器
+### 第三步 · 换掉手写解析器 · **已完成**（2026-09-09）
+
+实际落地：
+
+- **只解析、不整页 `remark-rehype`**。`unified` + `remark-parse` + `remark-directive` + `mdian` 的 `remarkOfm` 算出围栏 / 双链 / 高亮 / 注释 / callout 的原文偏移，再用现有 `paintOne` 上色。整页转 HTML 会拆掉 golden 里的 `##`、`![img](url)`。
+- **方言适配**：中间层写 `::: kb-title`（冒号后有空格）；micromark 要 `:::kb-title`。`adaptDialect` 去掉那一个空格，并把 `tag()` 粘在正文上的围栏拆到单独一行。偏移映射回原文，不改磁盘上的中间层。
+- **嵌套**：外层更多冒号（`:::: kb-stage` 包 `::: kb-center`）。Python `source_text.iter_top_level_fences` 用同一套冒号计数，给 `page_sync` / `sanitize_mid` 用。
+- **打包**：构建期 esbuild 打成 `workspace/surfaces/page-body/lib/md-parse.bundle.mjs`（约 321 KB）。容器只读、运行时无 `node_modules`。源在 `agents/textbook-agent/parser/`，不进镜像。
+- **回退**：`profile.yaml` 里 `parser: legacy` 走旧正则。
+- **`wrapBareMath`**：按 `<div class="kb-*">` 配对保护，并保护双链 / 高亮 / callout 标签，避免把 `</div>`、`</a>` 当成公式。
 
 **先做选型衡量**（按 `prefer-mature-oss` 规则，重且脆的领域不自研）：
 
@@ -263,15 +270,26 @@ Obsidian 自己就是这个架构的活证据：**它没有中间文件**。一�
 | 4 | 线上 GET 第 1 页 | markdown 含 `^kb-`，`prepared` 不含；标题「选择性必修」仍在 |
 | 5 | 幂等 | 再跑 `apply=scan`：`stamped=0` |
 
+### 4.3c 验收 · 第三步实测结果
+
+| # | 验收项 | 结果 |
+|---|---|---|
+| 1 | 全量测试套件 | **431 通过**（原 429，净增嵌套围栏 / OFM golden） |
+| 2 | 既有 page-body golden | 与改前逐字节一致（含行内粘连的 `::: kb-center`） |
+| 3 | 新增 `nested-fences` / `ofm-wiki` golden | 嵌套舞台 + 双链 / 高亮 / 注释 / callout |
+| 4 | `parser: legacy` | `profile.yaml` 可切回旧正则 |
+| 5 | Python 冒号计数 | `::::` 包 `:::` 保留内层；同级残破围栏仍剥开 |
+
 ### 4.4 未做的事（留给后续）
 
 - 356 个历史脱锚围栏（正文里已经找不到那段字）没有补 ID，维持原样。
 - 改错别字后仍有约 1.5% 围栏会丢（公式 `$$` 块、个别目录块）。
 - 中间层与正文文字级分歧仍只留档、不自动重建。
-- 第三步：换掉手写围栏正则，接入 `remark-directive` / Obsidian 语法库。
+- 围栏内的双链 / 高亮（`kb-list-item` / `kb-lead` / `kb-drama` / `kb-solution-tail`）仍走 `escapeText`，不二次上色，避免 HTML 被转义。
+- `kb-solution` 仍固定画「解」，内层不渲染。
 
 ---
 
-## 5. 待你决定
+## 5. 现状
 
-第一、二步已完成。第三步（换解析器，为双链/callout 等 Obsidian 特性铺路）尚未开始。
+三步都已落地。正文是唯一源；中间层是派生；围栏按块 ID 重锚；渲染用 remark 解析、现有上色函数画。

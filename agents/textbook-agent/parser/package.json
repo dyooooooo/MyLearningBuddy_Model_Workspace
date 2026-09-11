@@ -1,0 +1,19 @@
+{
+  "name": "textbook-surface-parser",
+  "private": true,
+  "type": "module",
+  "description": "Build-time unified/remark bundle for page-body fence and OFM parsing.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "mdian": "^0.3.7",
+    "remark-directive": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
+  }
+}
