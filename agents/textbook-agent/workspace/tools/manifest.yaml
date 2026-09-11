@@ -112,3 +112,6 @@ tools:
 - id: ingest_layout
   path: ingest_layout.py
   description: 六源摄取（layout 主源 + model 补 latex/score + v1 表格/题注）：写 textbooks/<书>/ir/pages/NNNN.json 与 remap.json。不写 pages/、mid/、v2md/。apply=scan 只统计。
+- id: ir_toc
+  path: ir_toc.py
+  description: 新线 TOC 处理器：从 layout 识别目录页、解析「标题 …… 页码」条目、用页码块映射印刷页→pdf页，写 ir/toc.json。与人工 toc.json 对拍只报差异。

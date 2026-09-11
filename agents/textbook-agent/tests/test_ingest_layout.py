@@ -325,3 +325,53 @@ def test_render_page_md(tmp_path: Path) -> None:
     assert "![插图](images/b.jpg)" in out  # 同行图连续输出
     assert "$$\nE=mc^2\n$$" in out
     assert out.rstrip().endswith("① 页注")
+
+
+def _toc_book(tmp_path: Path) -> Path:
+    toc_text = "绪言 …… 1\n\n第1章 化学研究的天地 …… 5\n1.1 物质的分类 …… 7\n1.1.1 交叉分类法 …… 8"
+    pages = [
+        {"page_idx": 0, "page_size": [600, 800],
+         "para_blocks": [_block("text", 0, [[_span("text", "封面")]])],
+         "discarded_blocks": []},
+        {"page_idx": 1, "page_size": [600, 800],
+         "para_blocks": [_block("title", 0, [[_span("text", "目 录")]], level=1),
+                         _block("text", 1, [[_span("text", toc_text)]])],
+         "discarded_blocks": [_block("page_number", 9, [[_span("text", "iii")]])]},
+        {"page_idx": 2, "page_size": [600, 800],
+         "para_blocks": [_block("text", 0, [[_span("text", "绪言正文")]])],
+         "discarded_blocks": [_block("page_number", 9, [[_span("text", "1")]])]},
+        {"page_idx": 3, "page_size": [600, 800],
+         "para_blocks": [_block("title", 0, [[_span("text", "第1章 化学研究的天地")]], level=1),
+                         _block("text", 1, [[_span("text", "正文")]])],
+         "discarded_blocks": [_block("page_number", 9, [[_span("text", "5")]])]},
+    ]
+    return _book(tmp_path, pages)
+
+
+def test_ir_toc_parse_and_page_map(tmp_path: Path) -> None:
+    book = _toc_book(tmp_path)
+    from ir_toc import build_toc
+
+    toc = build_toc(book)
+    assert toc["toc_pages"] == [2]
+    titles = [(e["level"], e["title"], e["print_page"], e["pdf_page"]) for e in toc["entries"]]
+    assert titles == [
+        (0, "绪言", "1", 3),
+        (0, "第1章 化学研究的天地", "5", 4),
+        (1, "1.1 物质的分类", "7", None),
+        (2, "1.1.1 交叉分类法", "8", None),
+    ]
+
+
+def test_ir_toc_tool_scan_and_fix(tmp_path: Path) -> None:
+    _toc_book(tmp_path)
+    from ir_toc import ir_toc
+
+    scan = ir_toc("irbook", root=str(tmp_path), apply="scan")
+    assert scan["ok"] and scan["entries"] == 4 and scan["reference"] == "missing"
+    assert not (tmp_path / "irbook" / "ir" / "toc.json").exists()
+
+    fix = ir_toc("irbook", root=str(tmp_path), apply="fix")
+    assert fix["entries"] == 4
+    data = json.loads((tmp_path / "irbook" / "ir" / "toc.json").read_text(encoding="utf-8"))
+    assert data["entries"][0]["title"] == "绪言"
