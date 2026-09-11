@@ -772,10 +772,19 @@ def ir_page_markdown(book_id: str, page_no: int) -> dict[str, Any]:
     markdown = str(out.get("markdown") or "")
     if rewrite is not None:
         markdown = rewrite(markdown, book_id)
+    prepared = ""
+    try:
+        from app import surfaces
+
+        surfaces.get_slot("page-body")
+        prepared = surfaces.prepare_page(markdown, book_id=book_id, slot="page-body")
+    except Exception:
+        prepared = markdown
     return {
         "book_id": book_id,
         "page_no": page_no,
         "markdown": markdown,
+        "prepared": prepared,
         "notes": out.get("notes", 0),
         "rejected": out.get("rejected", []),
         "page_count": row["page_count"],

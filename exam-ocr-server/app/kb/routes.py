@@ -324,6 +324,9 @@ async def proxy_agent(path: str, request: Request) -> Response:
 
 @router.api_route("/proxy/{path:path}", methods=["GET", "PUT", "POST", "DELETE", "PATCH"])
 async def proxy_kb(path: str, request: Request) -> Response:
+    if path == "ir" or path.startswith("ir/") or path.startswith("ir?"):
+        # IR 新线：agent 的 /v1/ir/* 原样转发（toc / pages markdown / blocks）
+        return await proxy_agent(path, request)
     if path == "books" or path.startswith("books/") or path.startswith("books?"):
         rest = path[5:].lstrip("/")
         agent_path = f"library/{rest}" if rest else "library"

@@ -442,6 +442,17 @@ select.kb-agent-input option, .kb-settings select option, .kb-import select opti
   background: rgba(22, 28, 42, 0.55);
 }
 .kb-preview-hint { font-size: 12px; }
+.kb-compare-mode {
+  min-height: 1.8rem;
+  max-width: 9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  padding: 0.15rem 0.4rem;
+}
 .kb-compare-legend { display: none; }
 .kb-preview-wrap.is-compare .kb-compare-legend { display: grid; grid-template-columns: 1fr 1fr; }
 .kb-compare-row { display: grid; grid-template-columns: 1fr 1fr; }
@@ -1076,3 +1087,21 @@ body.kb-resizing .kb-sash::after { background: var(--accent); }
 @keyframes kb-dock-pulse {
   50% { opacity: 0.35; }
 }
+
+/* 双库切换 + 结构化库（IR 线） */
+.kb-lib-switch { display: flex; gap: 4px; padding: 6px 10px 2px; }
+.kb-lib-btn {
+  flex: 1; border: 1px solid var(--kb-stroke, #d8d8d8); background: transparent;
+  border-radius: 6px; padding: 4px 0; font-size: 12px; cursor: pointer; color: inherit;
+}
+.kb-lib-btn.is-active { background: var(--kb-accent, #3b6ea5); color: #fff; border-color: transparent; }
+.kb-ir-toc { list-style: none; margin: 0; padding-left: 0; }
+.kb-ir-toc .kb-ir-toc { padding-left: 14px; }
+.kb-ir-toc-item { margin: 1px 0; }
+.kb-ir-toc-link {
+  border: 0; background: transparent; text-align: left; width: 100%;
+  padding: 2px 6px; font-size: 12.5px; cursor: pointer; color: inherit; border-radius: 4px;
+}
+.kb-ir-toc-link:hover:not(:disabled) { background: rgba(127, 127, 127, 0.15); }
+.kb-ir-toc-link:disabled { opacity: 0.45; cursor: default; }
+.kb-node-chip { font-size: 10px; padding: 0 4px; border-radius: 4px; margin-left: 6px; opacity: 0.7; border: 1px solid currentColor; }

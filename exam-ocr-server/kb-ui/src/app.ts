@@ -3,6 +3,7 @@ import { mountAgentDock } from "./agentDock";
 import { kb, type KbBook, type KbToc } from "./api";
 import { mountKbCompare } from "./compare";
 import { mountKbImport } from "./import";
+import { mountIrLibrary } from "./irLibrary";
 import { mountKbRail, type KbTabId } from "./rail";
 import { mountKbTasks } from "./tasks";
 import { bindSash } from "./sash";
@@ -169,10 +170,25 @@ export function mountApp(root: HTMLElement): void {
   const tree = el("ul", "kb-tree");
   sidebar.append(tree);
 
+  // 双库切换：教材库（老线）/ 结构化库（IR 新线）
+  const libSwitch = el("div", "kb-lib-switch");
+  const libBtnOld = el("button", "kb-lib-btn is-active", "教材库") as HTMLButtonElement;
+  const libBtnIr = el("button", "kb-lib-btn", "结构化库") as HTMLButtonElement;
+  libBtnOld.type = "button";
+  libBtnIr.type = "button";
+  libSwitch.append(libBtnOld, libBtnIr);
+  sidebar.append(libSwitch);
+  const irTree = el("ul", "kb-tree kb-ir-tree hidden");
+  sidebar.append(irTree);
+
   const previewWrap = el("div", "kb-preview-wrap");
   const placeholder = el("p", "muted kb-preview-placeholder", "从左侧打开一本书");
   const previewPages = el("div", "kb-preview-pages");
   previewWrap.append(placeholder, previewPages);
+
+  const irPreviewWrap = el("div", "kb-preview-wrap hidden");
+  const irPreviewPages = el("div", "kb-preview-pages");
+  irPreviewWrap.append(el("p", "muted kb-preview-placeholder", "从左侧打开一本书（结构化库）"), irPreviewPages);
 
   const importPane = el("div");
   mountKbImport(importPane, {
@@ -186,7 +202,7 @@ export function mountApp(root: HTMLElement): void {
   const tasksPane = el("div");
   mountKbTasks(tasksPane);
   let agentCtl: { destroy: () => void; setView: (v: "live" | "config") => void } | null = null;
-  center.append(previewWrap, importPane, agentPane, tasksPane);
+  center.append(previewWrap, irPreviewWrap, importPane, agentPane, tasksPane);
 
   function showTab(id: KbTabId): void {
     const importing = id === "import";
@@ -210,6 +226,25 @@ export function mountApp(root: HTMLElement): void {
 
   let books: KbBook[] = [];
   let activeId = "";
+  let libMode: "old" | "ir" = "old";
+  const irLib = mountIrLibrary({ treeHost: irTree, previewHost: irPreviewPages });
+  irLib.reset();
+
+  function setLibMode(mode: "old" | "ir"): void {
+    if (libMode === mode) return;
+    libMode = mode;
+    libBtnOld.classList.toggle("is-active", mode === "old");
+    libBtnIr.classList.toggle("is-active", mode === "ir");
+    tree.classList.toggle("hidden", mode !== "old");
+    irTree.classList.toggle("hidden", mode !== "ir");
+    previewWrap.classList.toggle("hidden", mode !== "old");
+    irPreviewWrap.classList.toggle("hidden", mode !== "ir");
+    root.classList.toggle("is-irlib", mode === "ir");
+    if (mode === "ir") irLib.setBooks(books);
+    else markActiveNode(activeId);
+  }
+  libBtnOld.onclick = () => setLibMode("old");
+  libBtnIr.onclick = () => setLibMode("ir");
   let pollTimer: number | null = null;
   let viewport: KbViewport | null = null;
   let lastToc: KbToc | null = null;
@@ -669,6 +704,13 @@ export function mountApp(root: HTMLElement): void {
     renderStageFolders(tree, "kb", books);
   }
 
+  function markActiveNode(id: string): void {
+    for (const node of tree.querySelectorAll<HTMLElement>(".kb-node.is-active")) {
+      node.classList.remove("is-active");
+    }
+    tree.querySelector<HTMLElement>(`.kb-node[data-book-id="${CSS.escape(id)}"]`)?.classList.add("is-active");
+  }
+
   function resetPreview(): void {
     activeId = "";
     lastToc = null;
@@ -688,10 +730,39 @@ export function mountApp(root: HTMLElement): void {
 
   async function refreshList(): Promise<void> {
     books = await kb.list();
+    irLib.setBooks(books);
     renderTree();
     await restoreExpandedTocs();
     if (books.some((b) => b.status === "uploaded" || b.status === "converting")) {
       startPoll();
+    }
+  }
+
+  async function fillMarkdownPane(
+    host: HTMLElement,
+    src: "old" | "v2md" | "official",
+  ): Promise<void> {
+    if (!activeId) return;
+    const pageNo = Number(host.closest("[data-page-no]")?.getAttribute("data-page-no") || host.dataset.pageNo || 0);
+    setShadowText(host, "加载中…");
+    try {
+      const out = await kb.pageMarkdown(activeId, pageNo, src === "old" ? undefined : src);
+      if (out.ok === false) {
+        setShadowText(host, out.reason || "官方稿本页切不开");
+        host.classList.remove("is-unloaded");
+        host.classList.add("is-error");
+        return;
+      }
+      const html = renderMarkdown(out.prepared || out.markdown || "（本页无文本）");
+      const slot = src === "old" ? "page-body" : src === "official" ? "page-official" : "page-v2";
+      await fillShadow(host, slot, html);
+      const inner = host.shadowRoot?.querySelector(".kb-surface-inner");
+      if (inner) stampBlocks(inner);
+      host.classList.remove("is-unloaded", "is-error");
+    } catch (e) {
+      const fallback = src === "v2md" ? "新稿未生成" : src === "official" ? "官方稿本页切不开" : "加载失败";
+      setShadowText(host, `${fallback}：${(e as Error).message}`);
+      host.classList.add("is-unloaded", "is-error");
     }
   }
 
@@ -703,18 +774,13 @@ export function mountApp(root: HTMLElement): void {
     if (!force && !body.classList.contains("is-unloaded") && !body.classList.contains("is-error")) {
       return;
     }
-    setShadowText(body, "加载中…");
-    try {
-      const out = await kb.pageMarkdown(activeId, pageNo);
-      const html = renderMarkdown(out.prepared || out.markdown || "（本页无文本）");
-      await fillShadow(body, "page-body", html);
-      const inner = body.shadowRoot?.querySelector(".kb-surface-inner");
-      if (inner) stampBlocks(inner);
-      body.classList.remove("is-unloaded", "is-error");
-      compare.wrapIfNeeded(pageNo);
-    } catch (e) {
-      setShadowText(body, `加载失败：${(e as Error).message}`);
-      body.classList.add("is-unloaded", "is-error");
+    const mode = compare.isEnabled() ? compare.getMode() : { left: "old" as const, right: "image" as const };
+    const leftSrc = mode.left === "image" ? "old" : mode.left;
+    await fillMarkdownPane(body, leftSrc);
+    compare.wrapIfNeeded(pageNo);
+    if (compare.isEnabled() && mode.right !== "image") {
+      const right = compare.rightHost(pageNo);
+      if (right) await fillMarkdownPane(right, mode.right);
     }
   }
 
@@ -734,10 +800,10 @@ export function mountApp(root: HTMLElement): void {
 
   async function openBook(id: string): Promise<void> {
     activeId = id;
-    expandedBooks.add(id);
     persistTreeState();
-    renderTree();
-    await restoreExpandedTocs();
+    markActiveNode(id);
+    const tocJob =
+      expandedBooks.has(id) && tocMounts.has(id) ? Promise.resolve() : toggleBook(id, true);
     compare.bindBook(id);
     viewport?.destroy();
     viewport = null;
@@ -747,15 +813,19 @@ export function mountApp(root: HTMLElement): void {
     if (book.status === "failed") {
       placeholder.textContent = `识别失败：${book.error || "未知错误"}`;
       setPlaceholder(true);
+      void tocJob;
       return;
     }
     if (book.status !== "ready") {
       placeholder.textContent = "MinerU 识别中，完成后自动打开…";
       setPlaceholder(true);
+      void tocJob;
       return;
     }
     placeholder.textContent = "从左侧打开一本书";
-    lastToc = await ensureToc(id);
+    const tocReady = ensureToc(id).then((toc) => {
+      lastToc = toc;
+    });
     for (let p = 1; p <= book.page_count; p++) ensureShell(p);
     unbindPageToc?.();
     viewport = mountKbViewport({
@@ -771,6 +841,7 @@ export function mountApp(root: HTMLElement): void {
       getPrintToPdf: () => lastToc?.print_to_pdf || tocCache.get(id)?.print_to_pdf || {},
     };
     unbindPageToc = bindKbPageToc(previewPages, tocBind);
+    void Promise.all([tocJob, tocReady]);
   }
 
   function startPoll(): void {

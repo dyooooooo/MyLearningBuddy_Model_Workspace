@@ -26,6 +26,13 @@ export type KbTocEntry = {
   level: number;
 };
 
+export type IrTocEntry = {
+  level: number;
+  title: string;
+  print_page: string;
+  pdf_page?: number | null;
+};
+
 export type KbToc = {
   book_id: string;
   entries: KbTocEntry[];
@@ -168,8 +175,32 @@ export const kb = {
   pageMarkdown(
     id: string,
     pageNo: number,
-  ): Promise<{ markdown: string; prepared?: string; page_count: number }> {
-    return json(`/api/v1/kb/proxy/books/${id}/pages/${pageNo}/markdown`);
+    src?: "old" | "v2md" | "official",
+  ): Promise<{
+    markdown: string;
+    prepared?: string;
+    page_count: number;
+    src?: string;
+    ok?: boolean;
+    reason?: string;
+  }> {
+    const q = src && src !== "old" ? `?src=${encodeURIComponent(src)}` : "";
+    return json(`/api/v1/kb/proxy/books/${id}/pages/${pageNo}/markdown${q}`);
+  },
+  irToc(id: string): Promise<{ entries: IrTocEntry[]; toc_pages?: number[]; source?: string }> {
+    return json(`/api/v1/kb/proxy/ir/${encodeURIComponent(id)}/toc`);
+  },
+  irPage(
+    id: string,
+    pageNo: number,
+  ): Promise<{
+    markdown: string;
+    prepared?: string;
+    page_count: number;
+    notes?: number;
+    rejected?: unknown[];
+  }> {
+    return json(`/api/v1/kb/proxy/ir/${encodeURIComponent(id)}/pages/${pageNo}/markdown`);
   },
   surfacePaint(slot: string, payload: Record<string, unknown>): Promise<{ html: string }> {
     return json(`/api/v1/kb/agent/surfaces/${encodeURIComponent(slot)}/paint`, {
