@@ -14,13 +14,17 @@
 
 ## 0. 三线并存（先读这节）
 
+> **2026-09-11 起**：老线**冻结保留**（pages/mid/page_sync 一行不动，作审查与验证参照）；
+> 新线（v2md）与官方线**将合并为一支 IR 线**（layout.json 六源摄取 → canonical JSON → 注解层 → 按需渲染，执行中）。
+> IR 线落地前，三线仍各自独立。
+
 知识库平台内部有**三条并存的读页线**。本文正文（§3 起）描述的是**老线**；另外两条只在需要时提一句。
 
 | 线 | `?src=` | 正文从哪来 | 渲染插槽 | 生成工具 | 状态 |
 |---|---|---|---|---|---|
-| **老线** | `old`（默认） | `pages/NNNN.md` + `mid/NNNN.md`，`page_sync` 对齐（§3.2、§4.2） | `page-body` | 导入流水线 `prose.py` 等 | **生产线**：唯一可人工编辑、唯一喂 AI 抽取 |
-| **新线** | `v2md` | `v2md/pages/NNNN.md`（预生成，带 frontmatter / `[[双链]]` / `> [!header]` callout / `^kb-title-2` 语义块 ID） | `page-v2` | `v2md_generate.py`（读 MinerU V2 JSON） | 评估线，不可编辑（重新生成即覆盖） |
-| **官方线** | `official` | 请求时从 `mineru/full.md` 按 v1 `page_idx` 现切，**不落盘** | `page-official`（近裸文本） | `official_slice.py` | 对照原图校对的参照线 |
+| **老线** | `old`（默认） | `pages/NNNN.md` + `mid/NNNN.md`，`page_sync` 对齐（§3.2、§4.2） | `page-body` | 导入流水线 `prose.py` 等 | **已冻结**，曾唯一可人工编辑、唯一喂 AI 抽取 |
+| **新线** | `v2md` | `v2md/pages/NNNN.md`（预生成，带 frontmatter / `[[双链]]` / `> [!header]` callout / `^kb-title-2` 语义块 ID） | `page-v2` | `v2md_generate.py`（读 MinerU V2 JSON） | 计划并入 IR 线 |
+| **官方线** | `official` | 请求时从 `mineru/layout.json` 该页 `para_blocks` 直读（缺 layout.json 退回 v1 清单），**不落盘** | `page-official`（近裸文本） | `official_slice.py` | 计划并入 IR 线（作摄取底座） |
 
 三条线互相独立、不许借对方的文件或定位词：改哪条线只动哪条线的目录、工具、surface。
 kb-ui 对照模式（`compare.ts`）可任意两线并排。实测覆盖：老线 51 本/4913 页、新线 54 本/5307 页、官方线 51 本。
