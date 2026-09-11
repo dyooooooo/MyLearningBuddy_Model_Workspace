@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -111,6 +112,55 @@ def find_layout_path(book: Path) -> Path | None:
     return path if path.is_file() else None
 
 
+# 每请求全量 json.load 一本 16MB 的 layout.json 太贵（topology D3 同因）。
+# 按 (书目录, mtime) 缓存解析结果，LRU 上限 8 本；文件被重新拉取（mtime 变）自动失效。
+_LAYOUT_CACHE_MAX = 8
+_layout_cache: "OrderedDict[str, tuple[float, dict[str, Any]]]" = OrderedDict()
+
+
+def _load_layout(book: Path) -> dict[str, Any] | None:
+    path = find_layout_path(book)
+    if path is None:
+        return None
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return None
+    key = str(book)
+    hit = _layout_cache.get(key)
+    if hit is not None and hit[0] == mtime:
+        _layout_cache.move_to_end(key)
+        return hit[1]
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    _layout_cache[key] = (mtime, data)
+    while len(_layout_cache) > _LAYOUT_CACHE_MAX:
+        _layout_cache.popitem(last=False)
+    return data
+
+
+def _pdf_pages(book: Path) -> dict[int, dict[str, Any]]:
+    """page_idx(0 起) → 该页 dict。带缓存，O(1) 取页。"""
+    data = _load_layout(book)
+    info = data.get("pdf_info") if isinstance(data, dict) else None
+    if not isinstance(info, list):
+        return {}
+    out: dict[int, dict[str, Any]] = {}
+    for page in info:
+        if not isinstance(page, dict):
+            continue
+        try:
+            idx = int(page.get("page_idx"))
+        except (TypeError, ValueError):
+            continue
+        out[idx] = page
+    return out
+
+
 def load_v1_pages(book: Path) -> dict[int, list[dict[str, Any]]]:
     path = find_v1_path(book)
     if path is None:
@@ -133,24 +183,9 @@ def load_v1_pages(book: Path) -> dict[int, list[dict[str, Any]]]:
 
 
 def load_pdf_page(book: Path, page_no: int) -> dict[str, Any] | None:
-    path = find_layout_path(book)
-    if path is None or page_no < 1:
+    if page_no < 1:
         return None
-    data = json.loads(path.read_text(encoding="utf-8"))
-    info = data.get("pdf_info") if isinstance(data, dict) else None
-    if not isinstance(info, list):
-        return None
-    want = page_no - 1
-    for page in info:
-        if not isinstance(page, dict):
-            continue
-        try:
-            idx = int(page.get("page_idx"))
-        except (TypeError, ValueError):
-            continue
-        if idx == want:
-            return page
-    return None
+    return _pdf_pages(book).get(page_no - 1)
 
 
 def _plain_field(value: object) -> str:
@@ -241,9 +276,10 @@ def _para_text(block: dict[str, Any]) -> str:
             parts.append(text)
             last = i == len(rendered) - 1
             if cjk:
-                if not last:
-                    parts.append(" ")
-            elif not last or line_i < len(lines) - 1:
+                # 中文 span 之间不加空格：加空格会把「处于$2p$轨道上」撕成
+                # 「处于 $2p$ 轨道上」，公式与汉字间同样不加（与旧线一致）。
+                continue
+            if not last or line_i < len(lines) - 1:
                 parts.append(" ")
     return "".join(parts).strip()
 
