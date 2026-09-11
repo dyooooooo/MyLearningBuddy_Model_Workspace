@@ -729,6 +729,79 @@ def _library_page_md_alt(book_id: str, page_no: int, src: str) -> dict[str, Any]
     }
 
 
+def _ir_load(name: str) -> Any:
+    from app.workspace_module import load
+
+    return load(name)
+
+
+@app.get("/v1/ir/{book_id}/toc", dependencies=[Depends(_bearer)])
+def ir_toc_route(book_id: str) -> dict[str, Any]:
+    """IR 线目录：优先读已生成的 ir/toc.json，否则现算（不写盘）。"""
+    row = library.get_book(book_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="book not found")
+    cached = library.book_dir(book_id) / "ir" / "toc.json"
+    if cached.is_file():
+        try:
+            import json
+
+            data = json.loads(cached.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and isinstance(data.get("entries"), list):
+                return data
+        except (OSError, ValueError):
+            pass
+    build = getattr(_ir_load("ir_toc"), "build_toc", None)
+    if build is None:
+        raise HTTPException(status_code=404, detail="ir_toc unavailable")
+    toc = build(library.book_dir(book_id))
+    return {"book_id": book_id, **toc}
+
+
+@app.get("/v1/ir/{book_id}/pages/{page_no}/markdown", dependencies=[Depends(_bearer)])
+def ir_page_markdown(book_id: str, page_no: int) -> dict[str, Any]:
+    """IR 线正文：摄取 + 注解叠加 + 渲染；图片改写成资产 URL。"""
+    row = library.get_book(book_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="book not found")
+    tool = _ir_load("ir_notes")
+    out = tool.ir_note(book_id, page_no, root=str(settings.textbooks_dir), apply="fix")
+    if not out.get("ok") and out.get("reason"):
+        raise HTTPException(status_code=404, detail=out["reason"])
+    rewrite = getattr(_ir_load("official_lib"), "rewrite_image_urls", None)
+    markdown = str(out.get("markdown") or "")
+    if rewrite is not None:
+        markdown = rewrite(markdown, book_id)
+    return {
+        "book_id": book_id,
+        "page_no": page_no,
+        "markdown": markdown,
+        "notes": out.get("notes", 0),
+        "rejected": out.get("rejected", []),
+        "page_count": row["page_count"],
+    }
+
+
+@app.get("/v1/ir/{book_id}/pages/{page_no}/blocks", dependencies=[Depends(_bearer)])
+def ir_page_blocks(book_id: str, page_no: int) -> dict[str, Any]:
+    """IR 线结构化块（AI 目录导航消费）：原块 + 注解叠加报告。"""
+    row = library.get_book(book_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="book not found")
+    lib = _ir_load("ir_lib")
+    book = library.book_dir(book_id)
+    page = lib.ingest_page(book, page_no, lib.default_box_prefixes())
+    notes = _ir_load("ir_notes").load_notes(book, page_no)
+    page, rejected = lib.apply_notes(page, notes)
+    return {
+        "book_id": book_id,
+        "page_no": page_no,
+        "page": page,
+        "rejected": rejected,
+        "page_count": row["page_count"],
+    }
+
+
 @app.get("/v1/library/{book_id}/pages/{page_no}/markdown", dependencies=[Depends(_bearer)])
 def library_page_md(book_id: str, page_no: int, src: str = "old") -> dict[str, Any]:
     kind = (src or "old").strip().lower() or "old"
