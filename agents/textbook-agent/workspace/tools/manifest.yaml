@@ -109,3 +109,6 @@ tools:
 - id: official_slice
   path: official_slice.py
   description: 只读 mineru/layout.json 的按页 para_blocks（缺版式时退回 v1 内容清单），出第 N 页官方稿。不写盘，不读 V2，不切 full.md。
+- id: ingest_layout
+  path: ingest_layout.py
+  description: 六源摄取（layout 主源 + model 补 latex/score + v1 表格/题注）：写 textbooks/<书>/ir/pages/NNNN.json 与 remap.json。不写 pages/、mid/、v2md/。apply=scan 只统计。
