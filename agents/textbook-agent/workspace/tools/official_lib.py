@@ -1,8 +1,10 @@
 """Official MinerU markdown line.
 
 Library only — not in manifest.yaml. No ``app.*`` imports, no ``v2md_*``.
-Reads ``mineru/full.md`` plus the official v1 content list (``page_idx``).
+Reads MinerU ``mineru/layout.json`` (middle.json ``pdf_info``) and, if that
+file is missing, the official v1 content list (``page_idx``).
 Does not write ``pages/``, ``mid/``, ``v2md/``, or ``mineru/full.md``.
+Does not search-slice ``full.md``.
 """
 from __future__ import annotations
 
@@ -13,18 +15,13 @@ from typing import Any
 from urllib.parse import quote
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9_-]+$")
-_LOOSE_SKIP = frozenset("$^{}#*`\\ \t\n\r")
-_TAG = re.compile(
-    r"</?(?:table|thead|tbody|tr|td|th|sup|sub|br|img|b|i|em|strong|"
-    r"div|span|p|ul|ol|li|a)\b[^>]*/?>",
-    re.I,
-)
 _MD_IMG = re.compile(r"(!\[[^\]]*\]\()(images/[^)]+)(\))")
 _HTML_IMG = re.compile(r"""(\bsrc=["'])images/([^"']+)(["'])""", re.I)
+_HTML_SRC = re.compile(r"""(\bsrc=["'])([^"']+)(["'])""", re.I)
 _CHROME = frozenset(
     {"header", "footer", "page_header", "page_footer", "page_number", "page-number", "page_footnote"}
 )
-_BODY = frozenset(
+_V1_BODY = frozenset(
     {
         "text",
         "title",
@@ -38,13 +35,20 @@ _BODY = frozenset(
         "code",
     }
 )
-_MIN_NEEDLE = 8
-_MIN_UNIQUE = 4
-_MIN_CELL = 6
-_TINY_SPAN = 8
-_MIN_HOLD = 24
-_MAX_HOLD = 4000
-_IMPRINT_TAIL = ("出版社",)
+_TEXT_TYPES = frozenset({"text", "list", "index", "abstract", "ref_text", "aside_text"})
+_VISUAL_TYPES = frozenset({"image", "chart", "table", "code"})
+_CAPTION_TYPES = frozenset(
+    {
+        "image_caption",
+        "image_footnote",
+        "table_caption",
+        "table_footnote",
+        "chart_caption",
+        "chart_footnote",
+        "code_caption",
+        "code_footnote",
+    }
+)
 
 
 def safe_book_id(book_id: str) -> str:
@@ -102,6 +106,11 @@ def find_v1_path(book: Path) -> Path | None:
     return hits[0] if hits else None
 
 
+def find_layout_path(book: Path) -> Path | None:
+    path = book / "mineru" / "layout.json"
+    return path if path.is_file() else None
+
+
 def load_v1_pages(book: Path) -> dict[int, list[dict[str, Any]]]:
     path = find_v1_path(book)
     if path is None:
@@ -123,8 +132,25 @@ def load_v1_pages(book: Path) -> dict[int, list[dict[str, Any]]]:
     return dict(sorted(grouped.items()))
 
 
-def loose_text(text: str) -> str:
-    return "".join(ch for ch in (text or "") if ch not in _LOOSE_SKIP)
+def load_pdf_page(book: Path, page_no: int) -> dict[str, Any] | None:
+    path = find_layout_path(book)
+    if path is None or page_no < 1:
+        return None
+    data = json.loads(path.read_text(encoding="utf-8"))
+    info = data.get("pdf_info") if isinstance(data, dict) else None
+    if not isinstance(info, list):
+        return None
+    want = page_no - 1
+    for page in info:
+        if not isinstance(page, dict):
+            continue
+        try:
+            idx = int(page.get("page_idx"))
+        except (TypeError, ValueError):
+            continue
+        if idx == want:
+            return page
+    return None
 
 
 def _plain_field(value: object) -> str:
@@ -141,254 +167,229 @@ def _plain_field(value: object) -> str:
     return ""
 
 
-def _is_hash_needle(plain: str) -> bool:
-    text = plain.lower()
-    if "." in text:
-        text = text.rsplit(".", 1)[0]
-    return len(text) >= 24 and all(ch in "0123456789abcdef" for ch in text[:24])
+def _img_name(path: object) -> str:
+    raw = str(path or "").replace("\\", "/").strip()
+    if not raw or raw.startswith("data:"):
+        return ""
+    return raw.rsplit("/", 1)[-1]
 
 
-def _is_imprint(plain: str) -> bool:
-    return any(plain.endswith(tail) for tail in _IMPRINT_TAIL)
+def _is_cjk(text: str) -> bool:
+    return any("\u4e00" <= ch <= "\u9fff" for ch in text)
 
 
-def _table_cells(html: object) -> list[str]:
-    raw = str(html or "")
-    if not raw:
-        return []
-    text = _TAG.sub("\n", raw)
-    cells: list[str] = []
-    for part in text.splitlines():
-        part = part.strip()
-        if len(loose_text(part)) >= _MIN_CELL:
-            cells.append(part)
-    return cells
+def _index_order(blocks: list[Any]) -> list[dict[str, Any]]:
+    numbered = [(i, block) for i, block in enumerate(blocks or []) if isinstance(block, dict)]
+    numbered.sort(key=lambda item: (item[1].get("index", float("inf")), item[0]))
+    return [block for _, block in numbered]
 
 
-def _has_long_body(blocks: list[dict[str, Any]]) -> bool:
-    for needle in body_needles(blocks):
-        plain = loose_text(needle)
-        if len(plain) >= _MIN_NEEDLE and not _is_hash_needle(plain) and not _is_imprint(plain):
-            return True
-    return False
+def _prefix_html_imgs(html: str) -> str:
+    def _one(match: re.Match[str]) -> str:
+        src = match.group(2)
+        if src.startswith(("data:", "images/", "http://", "https://", "/")):
+            return match.group(0)
+        name = _img_name(src)
+        return match.group(0) if not name else f"{match.group(1)}images/{name}{match.group(3)}"
+
+    return _HTML_SRC.sub(_one, html)
 
 
-def body_needles(blocks: list[dict[str, Any]]) -> list[str]:
+def _render_span(span: dict[str, Any]) -> tuple[str, str] | None:
+    kind = str(span.get("type") or "")
+    content = str(span.get("content") or "").strip()
+    if kind in {"inline_equation", "equation"}:
+        return ("eq", f"${content}$") if content else None
+    if kind == "interline_equation":
+        if content:
+            return ("ieq", f"\n$$\n{content}\n$$\n")
+        name = _img_name(span.get("image_path"))
+        return ("img", f"![](images/{name})") if name else None
+    if kind == "text":
+        return ("text", content) if content else None
+    return None
+
+
+def _para_text(block: dict[str, Any]) -> str:
+    nested = block.get("blocks")
+    if nested and not block.get("lines"):
+        parts = [_para_text(child) for child in _index_order(nested)]
+        return "\n\n".join(part for part in parts if part.strip())
+    lines = block.get("lines") or []
+    blob = "".join(
+        str(span.get("content") or "")
+        for line in lines
+        for span in (line.get("spans") or [])
+        if isinstance(span, dict)
+    )
+    cjk = _is_cjk(blob)
+    parts: list[str] = []
+    for line_i, line in enumerate(lines):
+        if not isinstance(line, dict):
+            continue
+        rendered = [
+            item
+            for span in (line.get("spans") or [])
+            if isinstance(span, dict)
+            for item in (_render_span(span),)
+            if item
+        ]
+        for i, (kind, text) in enumerate(rendered):
+            if kind == "ieq":
+                parts.append(text)
+                continue
+            parts.append(text)
+            last = i == len(rendered) - 1
+            if cjk:
+                if not last:
+                    parts.append(" ")
+            elif not last or line_i < len(lines) - 1:
+                parts.append(" ")
+    return "".join(parts).strip()
+
+
+def _visual_segments(block: dict[str, Any]) -> list[tuple[str, str]]:
+    kind = str(block.get("type") or "")
+    if kind in _CAPTION_TYPES:
+        text = _para_text(block)
+        return [(text, "md")] if text else []
+    if kind in {"image_body", "chart_body"}:
+        out: list[tuple[str, str]] = []
+        for line in block.get("lines") or []:
+            if not isinstance(line, dict):
+                continue
+            for span in line.get("spans") or []:
+                if not isinstance(span, dict):
+                    continue
+                name = _img_name(span.get("image_path"))
+                if name:
+                    out.append((f"![](images/{name})", "md"))
+        return out
+    if kind == "table_body":
+        out = []
+        for line in block.get("lines") or []:
+            if not isinstance(line, dict):
+                continue
+            for span in line.get("spans") or []:
+                if not isinstance(span, dict):
+                    continue
+                html = str(span.get("html") or "").strip()
+                if html:
+                    out.append((_prefix_html_imgs(html), "html"))
+                    continue
+                name = _img_name(span.get("image_path"))
+                if name:
+                    out.append((f"![](images/{name})", "md"))
+        return out
+    if kind == "code_body":
+        text = _para_text(block)
+        if not text:
+            return []
+        lang = str(block.get("guess_lang") or "txt") or "txt"
+        return [(f"```{lang}\n{text}\n```", "md")]
+    return []
+
+
+def _visual_md(para: dict[str, Any]) -> str:
+    chunks: list[str] = []
+    prev = ""
+    for child in _index_order(para.get("blocks") or []):
+        for text, kind in _visual_segments(child):
+            if chunks:
+                if prev == "html":
+                    chunks.append("\n\n")
+                elif kind == "html":
+                    chunks.append("\n")
+                else:
+                    chunks.append(" \n")
+            chunks.append(text)
+            prev = kind
+    return "".join(chunks)
+
+
+def make_from_para_blocks(blocks: list[Any]) -> str:
+    """MinerU official page markdown from one ``pdf_info`` page's ``para_blocks``."""
     out: list[str] = []
-    short_raw: list[str] = []
-    for block in blocks:
+    for block in blocks or []:
+        if not isinstance(block, dict):
+            continue
+        typ = str(block.get("type") or "")
+        if typ in _TEXT_TYPES:
+            text = _para_text(block)
+        elif typ == "title":
+            try:
+                level = int(block.get("level") or 1)
+            except (TypeError, ValueError):
+                level = 1
+            if level < 1:
+                level = 0
+            text = f"{'#' * level} {_para_text(block)}"
+        elif typ == "interline_equation":
+            text = _para_text(block)
+        elif typ in _VISUAL_TYPES:
+            text = _visual_md(block)
+        else:
+            text = _para_text(block)
+        if text.strip():
+            out.append(text.strip())
+    return ("\n\n".join(out) + "\n") if out else ""
+
+
+def make_from_v1_blocks(blocks: list[Any]) -> str:
+    """Fallback: page-scoped v1 content list, chrome skipped. Not used when layout.json exists."""
+    out: list[str] = []
+    for block in blocks or []:
+        if not isinstance(block, dict):
+            continue
         kind = str(block.get("type") or "").lower()
-        if kind in _CHROME or kind not in _BODY:
+        if kind in _CHROME or kind not in _V1_BODY:
             continue
         if kind in {"image", "chart"}:
+            parts = []
+            name = _img_name(block.get("img_path"))
+            if name:
+                parts.append(f"![](images/{name})")
             cap = _plain_field(block.get("image_caption") or block.get("chart_caption"))
             if cap:
-                out.append(cap)
-            path = str(block.get("img_path") or "").replace("\\", "/").rsplit("/", 1)[-1]
-            if path:
-                out.append(path)
-            continue
-        if kind == "table":
+                parts.append(cap)
+            text = "\n".join(parts)
+        elif kind == "table":
+            parts = []
             cap = _plain_field(block.get("table_caption"))
             if cap:
-                out.append(cap)
-            out.extend(_table_cells(block.get("table_body")))
-            path = str(block.get("img_path") or "").replace("\\", "/").rsplit("/", 1)[-1]
-            if path:
-                out.append(path)
-            continue
-        if kind == "code":
-            body = _plain_field(block.get("code_body") or block.get("text"))
-            if body:
-                out.append(body)
-            continue
-        text = _plain_field(block.get("text"))
-        if text:
-            out.append(text)
-            if kind in {"text", "title", "aside_text", "ref_text"}:
-                short_raw.append(text)
-    if short_raw and all(len(loose_text(part)) < _MIN_NEEDLE for part in short_raw):
-        joined = "".join(short_raw)
-        if len(loose_text(joined)) >= _MIN_NEEDLE:
-            out.append(joined)
-    return out
-
-
-def _loose_index(full: str) -> tuple[str, list[int]]:
-    loose: list[str] = []
-    idx: list[int] = []
-    for i, ch in enumerate(full):
-        if ch in _LOOSE_SKIP:
-            continue
-        loose.append(ch)
-        idx.append(i)
-    return "".join(loose), idx
-
-
-def _line_start(full: str, pos: int) -> int:
-    if pos <= 0:
-        return 0
-    if pos >= len(full):
-        return len(full)
-    nl = full.rfind("\n", 0, pos)
-    return 0 if nl < 0 else nl + 1
-
-
-def _earliest(blob: str, cursor: int, plains: list[str], min_len: int) -> int | None:
-    best: int | None = None
-    for plain in plains:
-        if len(plain) < min_len:
-            continue
-        pos = blob.find(plain, cursor)
-        if pos < 0 and len(plain) > 16:
-            pref = plain[:16]
-            if blob[cursor:].count(pref) == 1:
-                pos = blob.find(pref, cursor)
-        if pos >= cursor and (best is None or pos < best):
-            best = pos
-    return best
-
-
-def _loose_at(idx: list[int], full_pos: int) -> int:
-    for i, pos in enumerate(idx):
-        if pos >= full_pos:
-            return i
-    return len(idx)
-
-
-def _last_match_end(blob: str, start: int, limit: int, plains: list[str]) -> int:
-    last = start
-    for plain in plains:
-        if len(plain) < 4:
-            continue
-        pos = start
-        while True:
-            hit = blob.find(plain, pos)
-            if hit < 0 or hit >= limit:
-                break
-            last = max(last, hit + len(plain))
-            pos = hit + 1
-    return last
-
-
-def _drop_tiny_same_line(full: str, starts: dict[int, int]) -> dict[int, int]:
-    nums = sorted(starts)
-    drop: set[int] = set()
-    for a, b in zip(nums, nums[1:]):
-        if starts[b] - starts[a] < _TINY_SPAN and _line_start(full, starts[a]) == _line_start(
-            full, starts[b]
-        ):
-            drop.add(a)
-    for n in drop:
-        del starts[n]
-    return starts
-
-
-def _hold_cursor(blob: str, start: int, plains: list[str]) -> int:
-    held = start + 1
-    for plain in plains:
-        if len(plain) < _MIN_HOLD or _is_hash_needle(plain) or _is_imprint(plain):
-            continue
-        hit = blob.find(plain, start)
-        matched = len(plain)
-        if hit < 0 and len(plain) > 16:
-            hit = blob.find(plain[:16], start)
-            matched = 16
-        if hit >= start and hit - start <= _MAX_HOLD:
-            held = max(held, hit + matched)
-    return held
-
-
-def _unique_short(blob: str, cursor: int, plains: list[str]) -> int | None:
-    rest = blob[cursor:]
-    best: int | None = None
-    for plain in plains:
-        if not (_MIN_UNIQUE <= len(plain) < _MIN_NEEDLE):
-            continue
-        if _is_imprint(plain):
-            continue
-        if rest.count(plain) != 1:
-            continue
-        pos = blob.find(plain, cursor)
-        if pos >= cursor and (best is None or pos < best):
-            best = pos
-    return best
-
-
-def page_starts(full: str, pages: dict[int, list[dict[str, Any]]]) -> dict[int, int]:
-    """Map 1-based page numbers to offsets in official full.md.
-
-    Pages are walked in order. Each page is searched only at or after the
-    previous hit (no look-back). Among that page's needles, the earliest
-    remaining hit wins, so a late image hash cannot jump past an earlier
-    heading on the same page.
-    """
-    blob, idx = _loose_index(full)
-    if not blob or not idx:
-        return {}
-    cursor = 0
-    starts: dict[int, int] = {}
-    for n in sorted(pages):
-        plains = [loose_text(needle) for needle in body_needles(pages[n])]
-        plains = [p for p in plains if p and not _is_imprint(p)]
-        found = _earliest(blob, cursor, plains, _MIN_NEEDLE)
-        if found is None:
-            found = _unique_short(blob, cursor, plains)
-        if found is None:
-            continue
-        starts[n] = idx[found]
-        cursor = _hold_cursor(blob, found, plains)
-    return _drop_tiny_same_line(full, starts)
-
-
-def find_official_span(
-    full: str,
-    pages: dict[int, list[dict[str, Any]]],
-    page_no: int,
-    starts: dict[int, int] | None = None,
-) -> tuple[int, int] | None:
-    if not full or page_no < 1:
-        return None
-    found = starts if starts is not None else page_starts(full, pages)
-    if page_no not in found:
-        return None
-    raw_left = found[page_no]
-    later = [found[n] for n in found if n > page_no and found[n] > raw_left]
-    raw_right = min(later) if later else len(full)
-    left = _line_start(full, raw_left)
-    prevs = [found[n] for n in found if n < page_no]
-    if prevs:
-        prev_raw = max(prevs)
-        if prev_raw < raw_left and _line_start(full, prev_raw) == left:
-            left = raw_left
-    if later:
-        right = _line_start(full, raw_right)
-        if right <= left:
-            right = raw_right
-    else:
-        right = len(full)
-    next_anchored = min((n for n in found if n > page_no and found[n] > raw_left), default=None)
-    hole = [
-        n
-        for n in pages
-        if n > page_no and (next_anchored is None or n < next_anchored)
-    ]
-    if hole and any(_has_long_body(pages[n]) for n in hole):
-        blob, idx = _loose_index(full)
-        plains = [loose_text(needle) for needle in body_needles(pages[page_no])]
-        plains = [p for p in plains if p]
-        start_l = _loose_at(idx, raw_left)
-        limit_l = _loose_at(idx, raw_right) if later else len(blob)
-        last_l = _last_match_end(blob, start_l, limit_l, plains)
-        if last_l > start_l:
-            end = idx[last_l - 1] + 1 if last_l <= len(idx) else len(full)
-            nl = full.find("\n", end)
-            if 0 <= nl < raw_right:
-                end = nl + 1
+                parts.append(cap)
+            html = str(block.get("table_body") or "").strip()
+            if html:
+                parts.append(_prefix_html_imgs(html))
             else:
-                end = min(end, raw_right)
-            if left < end < right:
-                right = end
-    if right <= left:
-        return None
-    return left, right
+                name = _img_name(block.get("img_path"))
+                if name:
+                    parts.append(f"![](images/{name})")
+            text = "\n\n".join(parts)
+        elif kind == "code":
+            text = _plain_field(block.get("code_body") or block.get("text"))
+        elif kind == "title":
+            body = _plain_field(block.get("text"))
+            text = f"# {body}" if body else ""
+        elif kind in {"equation", "interline_equation"}:
+            body = _plain_field(block.get("text"))
+            text = f"$$\n{body}\n$$" if body and "$$" not in body else body
+        else:
+            text = _plain_field(block.get("text"))
+        if text.strip():
+            out.append(text.strip())
+    return ("\n\n".join(out) + "\n") if out else ""
+
+
+def render_official_page(book: Path, page_no: int) -> tuple[str, str]:
+    """Return ``(markdown, via)`` for one 1-based printed page. ``via`` is layout or v1."""
+    if find_layout_path(book) is not None:
+        page = load_pdf_page(book, page_no)
+        if page is None:
+            return "", "layout"
+        return make_from_para_blocks(page.get("para_blocks") or []), "layout"
+    try:
+        pages = load_v1_pages(book)
+    except (OSError, ValueError, FileNotFoundError):
+        return "", "v1"
+    return make_from_v1_blocks(pages.get(page_no) or []), "v1"

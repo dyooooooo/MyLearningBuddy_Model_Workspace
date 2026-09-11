@@ -1,6 +1,6 @@
 ---
 name: kb-three-lines
-description: 知识库三线并存总图：老线 pages/mid、新线 v2md、官方线 full.md 切片。动任何一条线之前先对这张表，确认改的是哪条线的目录、工具和 surface，别串线。
+description: 知识库三线并存总图：老线 pages/mid、新线 v2md、官方线 layout.json 按页出稿。动任何一条线之前先对这张表，确认改的是哪条线的目录、工具和 surface，别串线。
 ---
 
 # 知识库三线并存总图
@@ -13,8 +13,8 @@ description: 知识库三线并存总图：老线 pages/mid、新线 v2md、官�
 | | 老线（旧稿） | 新线（新稿） | 官方线（官方稿本） |
 |---|---|---|---|
 | `src` 参数 | `old`（**默认**，生产走这条） | `v2md` | `official` |
-| 正文来源 | `textbooks/<id>/pages/NNNN.md`（人工可编辑）+ `mid/NNNN.md`（`::: kb-*` 围栏派生层） | `textbooks/<id>/v2md/pages/NNNN.md`，附 `index.md` / `book.md` | 请求时从 `mineru/full.md` 按 v1 `page_idx` 现切，**不落盘** |
-| 生产者 | 导入流水线（MinerU v1 → `prose.py` 清洗 → 写 pages + mid），之后人工编辑 pages | `v2md_generate.py` 读 MinerU V2 `*_content_list_v2.json` 整本生成 | `official_slice.py` 只读切片 |
+| 正文来源 | `textbooks/<id>/pages/NNNN.md`（人工可编辑）+ `mid/NNNN.md`（`::: kb-*` 围栏派生层） | `textbooks/<id>/v2md/pages/NNNN.md`，附 `index.md` / `book.md` | 请求时从 `mineru/layout.json` 该页 `para_blocks` 出稿（缺版式才用 v1 清单），**不落盘** |
+| 生产者 | 导入流水线（MinerU v1 → `prose.py` 清洗 → 写 pages + mid），之后人工编辑 pages | `v2md_generate.py` 读 MinerU V2 `*_content_list_v2.json` 整本生成 | `official_slice.py` 只读出稿 |
 | 一致性机制 | `page_sync` + `mid/.stamps/` 校验和 + conflict 留档 | 无（一次性派生，重新生成即覆盖） | 无（纯函数） |
 | GET 写盘 | 写 mid / stamp，**不写正文** | 零写盘 | 零写盘 |
 | 渲染插槽 | `surfaces/page-body/`（手写正则 + remark bundle，`profile.yaml` 可切 `legacy`） | `surfaces/page-v2/`（callout 转换、双链） | `surfaces/page-official/`（只压空行，近裸文本） |

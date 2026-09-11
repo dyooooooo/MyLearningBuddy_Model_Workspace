@@ -23,7 +23,7 @@ import yaml
 from app.config import settings
 from app.paths import PathJailError, resolve_in_home
 
-SLOTS = ("page-body", "toc-tree", "compare")
+SLOTS = ("page-body", "toc-tree", "compare", "page-v2", "page-official")
 PROPOSALS = "proposals"
 LAST_GOOD = ".last-good"
 SEED = Path(__file__).resolve().parent.parent / "workspace" / "surfaces"
@@ -58,7 +58,7 @@ class SlotState:
 
 
 _state: dict[str, SlotState] = {}
-_prepare_cache: dict[tuple[str, str, str], str] = {}
+_prepare_cache: dict[tuple[Any, ...], str] = {}
 
 
 def reset_for_tests() -> None:
@@ -469,8 +469,10 @@ def prepare_page(
     toc_entries: list[dict[str, Any]] | None = None,
     fig_widths: dict[str, float] | None = None,
     fig_rows: list[list[str]] | None = None,
+    slot: str = "page-body",
 ) -> str:
-    state = _ensure_slot("page-body")
+    sid = _safe_slot(slot or "page-body")
+    state = _ensure_slot(sid)
     raw = markdown or ""
     if not state.loaded:
         return raw
@@ -478,6 +480,7 @@ def prepare_page(
     widths = fig_widths if isinstance(fig_widths, dict) else {}
     rows = [list(row) for row in fig_rows] if isinstance(fig_rows, list) else []
     key = (
+        sid,
         state.source,
         raw,
         json.dumps(
@@ -512,7 +515,7 @@ def prepare_page(
         return cached
     try:
         result = _run_js(
-            slot_dir("page-body"),
+            slot_dir(sid),
             "prepare",
             markdown=raw,
             ctx={

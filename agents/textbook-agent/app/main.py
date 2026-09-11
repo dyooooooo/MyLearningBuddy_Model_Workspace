@@ -689,8 +689,53 @@ def library_reimport(book_id: str) -> dict[str, Any]:
     return row
 
 
+def _library_page_md_alt(book_id: str, page_no: int, src: str) -> dict[str, Any]:
+    row = library.get_book(book_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="book not found")
+    markdown = ""
+    reason = ""
+    ok = True
+    slot = "page-v2"
+    if src == "v2md":
+        path = library.book_dir(book_id) / "v2md" / "pages" / f"{int(page_no):04d}.md"
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="v2md page not found")
+        markdown = path.read_text(encoding="utf-8")
+    else:
+        from app.workspace_module import load
+
+        slicer = load("official_slice")
+        out = slicer.slice_official(book_id, page_no, root=str(settings.textbooks_dir))
+        slot = "page-official"
+        if not isinstance(out, dict) or not out.get("ok"):
+            ok = False
+            reason = str((out or {}).get("reason") or "官方稿本页切不开")
+        else:
+            markdown = str(out.get("markdown") or "")
+    prepared = ""
+    if ok and markdown:
+        surfaces.get_slot(slot)
+        prepared = surfaces.prepare_page(markdown, book_id=book_id, slot=slot)
+    return {
+        "book_id": book_id,
+        "page_no": page_no,
+        "markdown": markdown,
+        "prepared": prepared,
+        "page_count": row["page_count"],
+        "src": src,
+        "ok": ok,
+        "reason": reason,
+    }
+
+
 @app.get("/v1/library/{book_id}/pages/{page_no}/markdown", dependencies=[Depends(_bearer)])
-def library_page_md(book_id: str, page_no: int) -> dict[str, Any]:
+def library_page_md(book_id: str, page_no: int, src: str = "old") -> dict[str, Any]:
+    kind = (src or "old").strip().lower() or "old"
+    if kind in {"v2md", "official"}:
+        return _library_page_md_alt(book_id, page_no, kind)
+    if kind not in {"old", ""}:
+        raise HTTPException(status_code=400, detail="src must be old, v2md, or official")
     started = time.monotonic()
     row = library.get_book(book_id)
     if row is None:

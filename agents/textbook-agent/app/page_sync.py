@@ -148,18 +148,35 @@ def write_stamp(book_id: str, page_no: int, source: str, mid: str | None) -> dic
 
 
 def extract_fences(mid: str) -> list[tuple[str, str]]:
-    return [(m.group(1), m.group(2)) for m in _FENCE.finditer(mid or "")]
+    try:
+        from app.workspace_module import load
+
+        mod = load("source_text", require=("extract_directive_fences",))
+        return [(str(n), str(i)) for n, i in mod.extract_directive_fences(mid or "")]
+    except Exception:
+        return [(m.group(1), m.group(2)) for m in _FENCE.finditer(mid or "")]
 
 
 def _segments(mid: str) -> list[tuple[str, str, str]]:
     text = mid or ""
     out: list[tuple[str, str, str]] = []
     pos = 0
-    for match in _FENCE.finditer(text):
-        if match.start() > pos:
-            out.append(("prose", "", text[pos : match.start()]))
-        out.append(("fence", match.group(1), match.group(2)))
-        pos = match.end()
+    rows: list[tuple[str, str, int, int]] = []
+    try:
+        from app.workspace_module import load
+
+        mod = load("source_text", require=("iter_top_level_fences",))
+        rows = [
+            (str(n), str(i), int(s), int(e))
+            for n, i, s, e in mod.iter_top_level_fences(text)
+        ]
+    except Exception:
+        rows = [(m.group(1), m.group(2), m.start(), m.end()) for m in _FENCE.finditer(text)]
+    for name, inner, start, end in rows:
+        if start > pos:
+            out.append(("prose", "", text[pos:start]))
+        out.append(("fence", name, inner))
+        pos = end
     if pos < len(text):
         out.append(("prose", "", text[pos:]))
     return out

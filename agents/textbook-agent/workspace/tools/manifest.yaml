@@ -103,3 +103,9 @@ tools:
 - id: tag_chemistry
   path: tag_chemistry.py
   description: 化学教材版式：按小图逐栏补想一想/书写表达、聚焦回放加虚线、跨页实验探究只补框底、剥非节首误居中、资料库收窄栏、先写源再最后一次 write_mid。非化学教材跳过。
+- id: v2md_generate
+  path: v2md_generate.py
+  description: 从 MinerU 内容清单 V2 生成 v2md/ 分页 Markdown（含页眉页脚页码页脚注与 Obsidian 标签）。不写 pages/ 与 mid/，不切官方稿。
+- id: official_slice
+  path: official_slice.py
+  description: 只读 mineru/layout.json 的按页 para_blocks（缺版式时退回 v1 内容清单），出第 N 页官方稿。不写盘，不读 V2，不切 full.md。

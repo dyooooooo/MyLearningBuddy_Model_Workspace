@@ -359,3 +359,13 @@ th { background: #e8eef6; font-weight: 700; }
   display: block; margin: 0.15rem auto; object-fit: contain;
 }
 .kb-table-foot { color: #667085; font-size: 0.85rem; margin: 0.2rem 0 0.6rem; text-indent: 0; }
+.kb-wikilink { color: #1d4f91; text-decoration: underline; text-underline-offset: 2px; }
+.kb-ofm-highlight { background: #fff3bf; padding: 0 0.15em; }
+.kb-ofm-callout {
+  margin: 0.75rem 0;
+  padding: 0.55rem 0.75rem;
+  border-left: 4px solid #3b6ea5;
+  background: #f3f6fb;
+}
+.kb-ofm-callout-title { font-weight: 700; text-indent: 0; margin: 0 0 0.2rem; }
+.kb-ofm-callout-body { text-indent: 0; margin: 0; }

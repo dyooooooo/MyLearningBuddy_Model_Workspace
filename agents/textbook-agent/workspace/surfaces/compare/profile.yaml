@@ -2,3 +2,41 @@ image_side: right
 legend_left: MinerU 文本
 legend_right: 原始页图
 image_tag: 第 {page} 页 · 原图
+default_mode: old-image
+modes:
+  - id: old-image
+    label: 旧|原图
+    left: old
+    right: image
+    left_label: 旧稿
+    right_label: 原图
+  - id: v2md-image
+    label: 新|原图
+    left: v2md
+    right: image
+    left_label: 新稿
+    right_label: 原图
+  - id: official-image
+    label: 官方|原图
+    left: official
+    right: image
+    left_label: 官方稿
+    right_label: 原图
+  - id: old-v2md
+    label: 旧|新
+    left: old
+    right: v2md
+    left_label: 旧稿
+    right_label: 新稿
+  - id: old-official
+    label: 旧|官方
+    left: old
+    right: official
+    left_label: 旧稿
+    right_label: 官方稿
+  - id: v2md-official
+    label: 新|官方
+    left: v2md
+    right: official
+    left_label: 新稿
+    right_label: 官方稿

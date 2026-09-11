@@ -76,7 +76,7 @@ def test_surface_http_and_page_prepared(tmp_path, monkeypatch) -> None:
     listed = client.get("/v1/surfaces", headers=headers)
     assert listed.status_code == 200
     names = {row["slot"] for row in listed.json()["slots"]}
-    assert names == {"page-body", "toc-tree", "compare"}
+    assert names == {"page-body", "toc-tree", "compare", "page-v2", "page-official"}
     css = client.get("/v1/surfaces/page-body/theme.css", headers=headers)
     assert css.status_code == 200
     assert "kb-page-toc-heading" in css.text

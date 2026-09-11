@@ -36,12 +36,14 @@ FENCE_NAMES = frozenset(
 )
 
 _FENCE = re.compile(r"::: (kb-[\w-]+)\r?\n([\s\S]*?)\r?\n:::")
-_OPENER = re.compile(r"::: kb-[\w-]+")
+_OPENER = re.compile(r"(?<!:)::: kb-[\w-]+")
+_DIRECTIVE_LINE = re.compile(
+    r"^(?P<marks>:{3,})(?:[ \t]+(?P<named>kb-[\w-]+)|(?P<glued>kb-[\w-]+))?[ \t]*$"
+)
 _NAME = "|".join(sorted(FENCE_NAMES, key=len, reverse=True))
 _NAME_LINE = re.compile(rf"^[ \t]*(?::: )?({_NAME})[ \t]*$")
 _NAME_TOKEN = re.compile(rf"(?:^|(?<=\s))({_NAME})(?=\s|[^\w-]|$)")
-_OPEN_LINE = re.compile(rf"^[ \t]*::: ({_NAME})[ \t]*$")
-_CLOSER = re.compile(r"^[ \t]*:::[ \t]*$")
+_CLOSER = re.compile(r"^[ \t]*:{3,}[ \t]*$")
 _HOLD = re.compile(r"\x00F(\d+)\x00")
 _SKIN_HTML = re.compile(
     r'class="kb-(?!table)[^"]*"|</?nav\b[^>]*kb-page-toc|</?ol\b[^>]*kb-page-toc',
@@ -52,11 +54,49 @@ _SKIN_HTML = re.compile(
 def detach_glued_markers(text: str) -> str:
     """Put ``::: kb-*`` / ``:::`` on their own line when glued to prose."""
     out = text or ""
-    out = re.sub(r"(?<=\S)(::: kb-[A-Za-z0-9_-]+)", r"\n\1", out)
-    out = re.sub(r"(::: kb-[A-Za-z0-9_-]+)(?=[^A-Za-z0-9_\s-])", r"\1\n", out)
-    out = re.sub(r"^(:::)(?=\S)", r"\1\n", out, flags=re.M)
-    out = re.sub(r"(?<=\S)(:::)[ \t]*$", r"\n\1", out, flags=re.M)
+    out = re.sub(r"(?<=\S)(?<!:)(::: kb-[A-Za-z0-9_-]+)", r"\n\1", out)
+    out = re.sub(r"(?<!:)(::: kb-[A-Za-z0-9_-]+)(?=[^A-Za-z0-9_\s-])", r"\1\n", out)
+    out = re.sub(r"^(:::)(?!:)(?=\S)", r"\1\n", out, flags=re.M)
+    out = re.sub(r"(?<=\S)(?<!:)(:::)[ \t]*$", r"\n\1", out, flags=re.M)
     return out
+
+
+def iter_top_level_fences(text: str) -> list[tuple[str, str, int, int]]:
+    """Colon-count walker matching remark-directive: more colons wrap fewer.
+
+    Yields ``(name, inner, start, end)`` for top-level ``::: kb-*`` / ``:::kb-*``
+    fences. Nested fences stay inside ``inner``.
+    """
+    raw = text or ""
+    stack: list[dict[str, object]] = []
+    found: list[tuple[str, str, int, int]] = []
+    pos = 0
+    for line in raw.splitlines(keepends=True):
+        match = _DIRECTIVE_LINE.match(line.rstrip("\r\n"))
+        if match:
+            marks = str(match.group("marks") or "")
+            name = match.group("named") or match.group("glued")
+            if name:
+                stack.append(
+                    {
+                        "marks": marks,
+                        "name": name,
+                        "start": pos,
+                        "inner_start": pos + len(line),
+                    }
+                )
+            elif stack and len(marks) >= len(str(stack[-1]["marks"])):
+                top = stack.pop()
+                end = pos + len(line.rstrip("\r\n"))
+                if not stack:
+                    inner_start = int(top["inner_start"])
+                    found.append((str(top["name"]), raw[inner_start:pos], int(top["start"]), end))
+        pos += len(line)
+    return found
+
+
+def extract_directive_fences(text: str) -> list[tuple[str, str]]:
+    return [(name, inner) for name, inner, _start, _end in iter_top_level_fences(text)]
 
 
 def strip_well_formed_fences(text: str) -> str:
@@ -64,7 +104,18 @@ def strip_well_formed_fences(text: str) -> str:
     prev = None
     while prev != out:
         prev = out
-        out = _FENCE.sub(lambda m: (m.group(2) or "").strip(), out)
+        fences = iter_top_level_fences(out)
+        if not fences:
+            out = _FENCE.sub(lambda m: (m.group(2) or "").strip(), out)
+            continue
+        parts: list[str] = []
+        cursor = 0
+        for _name, inner, start, end in fences:
+            parts.append(out[cursor:start])
+            parts.append((inner or "").strip())
+            cursor = end
+        parts.append(out[cursor:])
+        out = "".join(parts)
     return out
 
 
@@ -108,21 +159,51 @@ def _fence_body_dirty(body: str) -> bool:
     return any(_CLOSER.match(line) or _NAME_LINE.match(line) for line in raw.splitlines())
 
 
+def _opener_marks(raw: str) -> str:
+    first = (raw.splitlines() or [""])[0].rstrip("\r")
+    match = _DIRECTIVE_LINE.match(first)
+    if not match:
+        return ":::"
+    name = match.group("named") or match.group("glued")
+    if not name:
+        return ":::"
+    return str(match.group("marks") or ":::")
+
+
+def _rewrite_fence(name: str, body: str, raw: str) -> str:
+    marks = _opener_marks(raw)
+    return f"{marks} {name}\n{(body or '').rstrip()}\n{marks}"
+
+
 def sanitize_mid(text: str) -> str:
     """Keep well-formed fences; peel remnants and unwrap nested/torn inners."""
     held: list[str] = []
 
-    def _keep(match: re.Match[str]) -> str:
-        name = match.group(1)
-        body = match.group(2) or ""
-        if _fence_body_dirty(body):
-            inner = sanitize_source(body)
-            held.append(f"::: {name}\n{inner.rstrip()}\n:::")
+    def _stash(name: str, body: str, raw: str) -> str:
+        if iter_top_level_fences(body):
+            held.append(_rewrite_fence(name, sanitize_mid(body), raw))
+        elif _fence_body_dirty(body):
+            held.append(_rewrite_fence(name, sanitize_source(body), raw))
         else:
-            held.append(match.group(0))
+            held.append(raw)
         return f"\x00F{len(held) - 1}\x00"
 
-    masked = _FENCE.sub(_keep, detach_glued_markers(text or ""))
+    detached = detach_glued_markers(text or "")
+    fences = iter_top_level_fences(detached)
+    if fences:
+        parts: list[str] = []
+        cursor = 0
+        for name, body, start, end in fences:
+            parts.append(detached[cursor:start])
+            parts.append(_stash(name, body, detached[start:end]))
+            cursor = end
+        parts.append(detached[cursor:])
+        masked = "".join(parts)
+    else:
+        def _keep(match: re.Match[str]) -> str:
+            return _stash(match.group(1), match.group(2) or "", match.group(0))
+
+        masked = _FENCE.sub(_keep, detached)
     cleaned = strip_fence_tokens(masked)
 
     def _restore(match: re.Match[str]) -> str:
@@ -161,20 +242,22 @@ def audit_mid(text: str) -> list[dict[str, object]]:
     raw = text or ""
     if _SKIN_HTML.search(raw):
         issues.append({"kind": "skin_html", "line": 0, "excerpt": 'class="kb-'})
-    stack: list[tuple[str, int]] = []
+    stack: list[tuple[str, int, str]] = []
     for i, line in enumerate(raw.splitlines(), 1):
         excerpt = line.strip()[:100]
-        opened = _OPEN_LINE.match(line)
-        if opened:
-            if stack:
-                issues.append({"kind": "nested", "line": i, "excerpt": excerpt})
-            stack.append((opened.group(1), i))
-            continue
-        if _CLOSER.match(line):
-            if stack:
+        directive = _DIRECTIVE_LINE.match(line.rstrip("\r"))
+        if directive:
+            marks = str(directive.group("marks") or "")
+            name = directive.group("named") or directive.group("glued")
+            if name:
+                if stack and len(marks) >= len(stack[-1][2]):
+                    issues.append({"kind": "nested", "line": i, "excerpt": excerpt})
+                stack.append((name, i, marks))
+                continue
+            if stack and len(marks) >= len(stack[-1][2]):
                 stack.pop()
-            else:
-                issues.append({"kind": "orphan_closer", "line": i, "excerpt": excerpt})
+                continue
+            issues.append({"kind": "orphan_closer", "line": i, "excerpt": excerpt})
             continue
         if _OPENER.search(line):
             issues.append({"kind": "glued_opener", "line": i, "excerpt": excerpt})
@@ -182,7 +265,7 @@ def audit_mid(text: str) -> list[dict[str, object]]:
             issues.append({"kind": "remnant_name", "line": i, "excerpt": excerpt})
         elif _NAME_TOKEN.search(line):
             issues.append({"kind": "glued_name", "line": i, "excerpt": excerpt})
-    for name, i in stack:
+    for name, i, _marks in stack:
         issues.append({"kind": "unclosed", "line": i, "excerpt": f"::: {name}"})
     return issues
 

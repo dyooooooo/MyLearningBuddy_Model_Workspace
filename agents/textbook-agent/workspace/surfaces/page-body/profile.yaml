@@ -1,3 +1,5 @@
+# remark = unified + remark-directive + mdian（默认）。legacy = 旧手写正则。
+parser: remark
 toc_titles:
   - 目录
   - 目 录

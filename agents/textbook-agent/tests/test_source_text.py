@@ -62,6 +62,36 @@ def test_sanitize_mid_keeps_well_formed_fences(tmp_path, monkeypatch) -> None:
     assert out.count(":::") == 4
 
 
+NESTED = (
+    ":::: kb-stage\n"
+    "解法一：\n"
+    "::: kb-center\n"
+    "$$x$$\n"
+    ":::\n"
+    "因此得证。\n"
+    "::::\n"
+)
+
+
+def test_colon_count_walker_keeps_nested_inner(tmp_path, monkeypatch) -> None:
+    st = _mod(tmp_path, monkeypatch)
+    rows = st.iter_top_level_fences(NESTED)
+    assert len(rows) == 1
+    name, inner, _start, _end = rows[0]
+    assert name == "kb-stage"
+    assert "::: kb-center\n$$x$$\n:::" in inner
+    assert "因此得证。" in inner
+    assert st.extract_directive_fences(NESTED) == [(name, inner)]
+
+
+def test_sanitize_mid_keeps_colon_nested_fences(tmp_path, monkeypatch) -> None:
+    st = _mod(tmp_path, monkeypatch)
+    assert st.sanitize_mid(NESTED) == NESTED
+    kinds = {item["kind"] for item in st.audit_mid(NESTED)}
+    assert "nested" not in kinds
+    assert "unclosed" not in kinds
+
+
 def test_sanitize_mid_unwraps_nested_fences(tmp_path, monkeypatch) -> None:
     st = _mod(tmp_path, monkeypatch)
     raw = (

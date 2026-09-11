@@ -1,5 +1,5 @@
 ---
-description: 知识库三线并存：老线 pages/mid、新线 v2md、官方线 full.md 切片。改哪条线只动哪条线的目录、工具、surface，别串线。
+description: 知识库三线并存：老线 pages/mid、新线 v2md、官方线 layout.json 按页出稿。改哪条线只动哪条线的目录、工具、surface，别串线。
 alwaysApply: true
 ---
 
@@ -11,7 +11,7 @@ alwaysApply: true
 |----|-----|-----------|----------|------|------|
 | 老线 | `old`（默认） | `pages/NNNN.md` + `mid/NNNN.md`，`page_sync` 对齐 | `page-body` | `source_text` `tag_chinese_layout` 等 | `page-layers` |
 | 新线 | `v2md` | `v2md/pages/NNNN.md`（预生成，带 frontmatter / 双链 / callout） | `page-v2` | `v2md_generate` `v2md_lib` | `v2md-pipeline` |
-| 官方线 | `official` | 请求时从 `mineru/full.md` 现切，不落盘 | `page-official` | `official_slice` `official_lib` | `official-pipeline` |
+| 官方线 | `official` | 请求时从 `mineru/layout.json` 该页出稿，不落盘 | `page-official` | `official_slice` `official_lib` | `official-pipeline` |
 
 ## 别串线
 
