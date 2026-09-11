@@ -1,9 +1,13 @@
 ---
 name: page-layers
-description: 教材页三层落盘：源 pages 只写官方 Markdown，中间 mid 只写 ::: kb-* 围栏，HTML/CSS 只在读页时生成。改正文目录、居中、列表或书页内容时必读。
+description: 老线（默认 src=old）教材页三层落盘：源 pages 只写官方 Markdown，中间 mid 只写 ::: kb-* 围栏，HTML/CSS 只在读页时生成。改正文目录、居中、列表或书页内容时必读。
 ---
 
 # 书页三层
+
+> **线界**：本技能只管**老线**（`pages/` + `mid/` + `page-body`，`?src=old`，生产默认）。
+> 新线 `v2md/`、官方线 `mineru/full.md` 切片是另外两条独立的线，总图见 `kb-three-lines`，
+> 边界见 `v2md-pipeline` / `official-pipeline`——做老线工作时不要动那两线的文件。
 
 每页两份文件，屏幕上的 HTML 不落盘。
 

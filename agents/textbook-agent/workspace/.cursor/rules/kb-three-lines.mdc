@@ -1,0 +1,22 @@
+---
+description: 知识库三线并存：老线 pages/mid、新线 v2md、官方线 full.md 切片。改哪条线只动哪条线的目录、工具、surface，别串线。
+alwaysApply: true
+---
+
+# 知识库三线并存
+
+同一批教材有三条并存的读页线，入口都是 `GET /v1/library/{书}/pages/{页}/markdown?src=`：
+
+| 线 | src | 正文从哪来 | 渲染插槽 | 工具 | 技能 |
+|----|-----|-----------|----------|------|------|
+| 老线 | `old`（默认） | `pages/NNNN.md` + `mid/NNNN.md`，`page_sync` 对齐 | `page-body` | `source_text` `tag_chinese_layout` 等 | `page-layers` |
+| 新线 | `v2md` | `v2md/pages/NNNN.md`（预生成，带 frontmatter / 双链 / callout） | `page-v2` | `v2md_generate` `v2md_lib` | `v2md-pipeline` |
+| 官方线 | `official` | 请求时从 `mineru/full.md` 现切，不落盘 | `page-official` | `official_slice` `official_lib` | `official-pipeline` |
+
+## 别串线
+
+- 改哪条线的内容，只动哪条线的目录、生成工具、surface；禁止借另一条线的文件或定位词。
+- 老线是**唯一可人工编辑、唯一喂 AI 抽取**的线；新线、官方线都是 MinerU 派生物，改了会被重新生成覆盖（official 根本不落盘）。
+- 老线的人工订正**不会**流进新线/官方线，两边的内容差异只会随编辑拉大——对账时以为是 bug 的文本差异，先确认是不是两条线的天然差。
+- 修渲染：老线改 `page-body/`，新线改 `page-v2/`，官方线改 `page-official/`，各自的 golden 各自补。
+- 详情见 `.cursor/skills/kb-three-lines/SKILL.md`。
