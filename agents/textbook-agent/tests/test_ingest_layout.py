@@ -296,3 +296,32 @@ def test_span_level_latex_join(tmp_path: Path) -> None:
     spans = [s for row in out["blocks"][0]["lines"] for s in row]
     eq = [s for s in spans if s.get("t") == "eq"][0]
     assert eq["latex"] == "2\\mathrm{p}"
+
+
+def test_render_page_md(tmp_path: Path) -> None:
+    page = {
+        "page_idx": 0,
+        "page_size": [600, 800],
+        "para_blocks": [
+            _block("text", 0, [[_span("text", "处于"), _span("inline_equation", "2p"),
+                                _span("text", "轨道上")]], bbox=[60, 100, 540, 140]),
+            _block("title", 1, [[_span("text", "拓展延伸")]], bbox=[60, 150, 130, 170], level=2),
+            _block("text", 2, [[_span("text", "栏目正文")]], bbox=[60, 180, 540, 220]),
+            _block("image", 3, [[_span("text", "", image="a.jpg")]], bbox=[60, 300, 180, 420],
+                   children=[_block("image_caption", 0, [[_span("text", "图A")]])]),
+            _block("image", 4, [[_span("text", "", image="b.jpg")]], bbox=[200, 300, 320, 420]),
+            _block("interline_equation", 5, [[_span("interline_equation", content="E=mc^2")]],
+                   bbox=[100, 500, 500, 540]),
+        ],
+        "discarded_blocks": [
+            _block("page_footnote", 9, [[_span("text", "① 页注")]]),
+        ],
+    }
+    book = _book(tmp_path, [page])
+    out = ir_lib.render_page_md(ir_lib.ingest_page(book, 1, box_prefixes=["拓展延伸"]))
+    assert "处于$2p$轨道上" in out
+    assert "**【拓展延伸】**" in out
+    assert "![图A](images/a.jpg)" in out and "*图A*" in out
+    assert "![插图](images/b.jpg)" in out  # 同行图连续输出
+    assert "$$\nE=mc^2\n$$" in out
+    assert out.rstrip().endswith("① 页注")

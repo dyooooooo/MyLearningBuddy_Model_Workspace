@@ -592,3 +592,85 @@ def compute_remap(old_pages: dict[int, list[dict[str, Any]]],
             if cand is not None and cand["id"] != old.get("id"):
                 remap[str(old.get("id"))] = cand["id"]
     return remap
+
+
+def _figure_md(blk: dict[str, Any]) -> str:
+    asset = blk.get("asset") or ""
+    caption = (blk.get("caption") or "").strip()
+    alt = caption or "插图"
+    if not asset:
+        return caption
+    if caption:
+        return f"![{alt}](images/{asset})\n\n*{caption}*"
+    return f"![{alt}](images/{asset})"
+
+
+def _block_md(blk: dict[str, Any]) -> str:
+    btype = blk.get("type")
+    text = (blk.get("text") or "").strip()
+    caption = (blk.get("caption") or "").strip()
+    if btype == "title":
+        if blk.get("kind") == "box":
+            kind = blk.get("box_kind") or ""
+            body = text if text != kind else ""
+            return f"**【{kind}】** {body}".rstrip()
+        level = max(1, min(6, int(blk.get("level") or 2)))
+        return f"{'#' * level} {text}".rstrip()
+    if btype in _FIGURE_TYPES:
+        return _figure_md(blk)
+    if btype == "table":
+        chunk = []
+        if caption:
+            chunk.append(f"*{caption}*")
+        html = (blk.get("table_html") or "").strip()
+        if html:
+            chunk.append(html)
+        elif blk.get("asset"):
+            chunk.append(f"![{caption or '表格'}](images/{blk['asset']})")
+        return "\n\n".join(chunk)
+    if btype == "interline_equation":
+        latex = (blk.get("latex") or "").strip()
+        if latex:
+            return f"$$\n{latex}\n$$"
+        if blk.get("asset"):
+            return f"![公式](images/{blk['asset']})"
+        return text
+    return text
+
+
+def render_page_md(page: dict[str, Any]) -> str:
+    """Canonical IR 一页 → Markdown（新库正文预览/对拍用）。
+
+    - 行内公式/小图已在线结构里拼好（text 字段即成品）；
+    - 截图型行间公式输出 ![](images/…)，有 latex 输出 $$…$$；
+    - 并排图行组连续输出（surface 按 row 字段排成行）；
+    - 页注收在页尾分隔线后（chrome 区块）。
+    """
+    parts: list[str] = []
+    fig_rows: dict[int, list[dict[str, Any]]] = {}
+    for blk in page.get("blocks", []):
+        row = blk.get("row")
+        if row is not None:
+            fig_rows.setdefault(int(row), []).append(blk)
+    emitted: set[int] = set()
+
+    for blk in page.get("blocks", []):
+        row = blk.get("row")
+        if row is not None:
+            rid = int(row)
+            if rid in emitted:
+                continue
+            emitted.add(rid)
+            cells = "\n\n".join(c for c in (_figure_md(c) for c in fig_rows[rid]) if c)
+            if cells:
+                parts.append(cells)
+            continue
+        md = _block_md(blk)
+        if md:
+            parts.append(md)
+
+    chrome = page.get("chrome") or {}
+    footnotes = [f.get("text", "") for f in chrome.get("footnotes", []) if f.get("text")]
+    if footnotes:
+        parts.append("---\n\n" + "\n\n".join(footnotes))
+    return "\n\n".join(p for p in parts if p) + "\n"
