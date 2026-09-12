@@ -48,7 +48,12 @@ def ingest_layout(book_id: str, page_no: int = 0, root: str = "",
     box_prefixes = default_box_prefixes()
     model = load_model(book)
     v1 = load_v1(book)
-    total = _page_count(book)
+    raw_total = _page_count(book)
+    # meta.json 可能撒谎（与 layout 实际页数不符）：钳到 pdf_info 长度，
+    # 否则多算 pages 报幻错误、少算漏页
+    info = layout.get("pdf_info")
+    lay_total = len(info) if isinstance(info, list) else 0
+    total = min(raw_total, lay_total) if lay_total else raw_total
     wanted = [int(page_no)] if int(page_no or 0) > 0 else list(range(1, total + 1))
 
     ir_dir = book / "ir"

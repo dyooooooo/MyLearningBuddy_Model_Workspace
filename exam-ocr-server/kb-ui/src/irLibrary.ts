@@ -31,7 +31,7 @@ export function mountIrLibrary(opts: {
       const caret = el("button", "kb-caret-btn") as HTMLButtonElement;
       caret.type = "button";
       caret.setAttribute("aria-label", expanded.has(b.id) ? "收起目录" : "展开目录");
-      caret.append("▸");
+      caret.append(expanded.has(b.id) ? "▾" : "▸");
       caret.onclick = (ev) => {
         ev.stopPropagation();
         if (expanded.has(b.id)) {
@@ -115,12 +115,26 @@ export function mountIrLibrary(opts: {
     else showPlaceholder(id, "这本书的目录还没有定位到页码");
   }
 
+  function markActive(id: string): void {
+    for (const node of opts.treeHost.querySelectorAll<HTMLElement>(".kb-node.is-active")) {
+      node.classList.remove("is-active");
+    }
+    opts.treeHost
+      .querySelector<HTMLElement>(`.kb-node[data-book-id="${CSS.escape(id)}"]`)
+      ?.classList.add("is-active");
+  }
+
+  let openSeq = 0;
+
   async function openPage(id: string, pageNo: number): Promise<void> {
     activeId = id;
-    renderTree();
+    const seq = ++openSeq;
+    // 只更新高亮：整树 renderTree 会把 attachToc 填充的目录抹成空 div
+    markActive(id);
     showPlaceholder(id, `加载第 ${pageNo} 页…`);
     try {
       const out = await kb.irPage(id, pageNo);
+      if (seq !== openSeq) return; // 已被更新的请求取代，丢弃旧响应
       const block = el("div", "kb-page-block");
       block.dataset.pageNo = String(pageNo);
       const host = el("div", "kb-page-body");
@@ -129,7 +143,7 @@ export function mountIrLibrary(opts: {
       const { fillShadow } = await import("./surfaces");
       await fillShadow(host, "page-body", out.prepared || out.markdown || "（本页无文本）");
     } catch {
-      showPlaceholder(id, `第 ${pageNo} 页加载失败`);
+      if (seq === openSeq) showPlaceholder(id, `第 ${pageNo} 页加载失败`);
     }
   }
 

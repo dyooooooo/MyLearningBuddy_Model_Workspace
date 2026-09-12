@@ -1,0 +1,101 @@
+"""Touchstone diff for the IR line: IR(+notes) render vs frozen old pages.
+
+``ir_diff`` renders each requested page through the canonical IR (with its
+notes overlay) and compares against the old line's ``pages/NNNN.md`` under
+whitespace/image/block-id normalization. Read-only: pages/ is the frozen
+reference and is never written.
+"""
+from __future__ import annotations
+
+import difflib
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+from ir_lib import (apply_notes, book_dir, default_box_prefixes, ingest_page,
+                    load_layout, load_model, load_v1, render_page_md, safe_book_id)
+from ir_notes import _normalize, load_notes
+
+_IMG_URL = re.compile(r"!\[[^\]]*\]\([^)]+\)")
+
+
+def ir_diff_pages(book: Path, wanted: list[int], model: Any, v1: Any,
+                  layout: dict[str, Any], box: list[str]) -> list[dict[str, Any]]:
+    report = []
+    for n in wanted:
+        old_path = book / "pages" / f"{n:04d}.md"
+        if not old_path.is_file():
+            report.append({"page": n, "old": "missing"})
+            continue
+        old_md = old_path.read_text(encoding="utf-8", errors="replace")
+        try:
+            page = ingest_page(book, n, box, model=model, v1=v1, layout=layout)
+        except (FileNotFoundError, ValueError) as exc:
+            report.append({"page": n, "error": str(exc)})
+            continue
+        page, _rej = apply_notes(page, load_notes(book, n))
+        new_lines = _normalize(render_page_md(page))
+        old_lines = _normalize(old_md)
+        ratio = difflib.SequenceMatcher(None, old_lines, new_lines).ratio()
+        diff = list(difflib.unified_diff(old_lines, new_lines, lineterm=""))
+        only_new = [l for l in diff if l.startswith("+") and not l.startswith("+++")][:5]
+        only_old = [l for l in diff if l.startswith("-") and not l.startswith("---")][:5]
+        report.append({
+            "page": n,
+            "similarity": round(ratio, 4),
+            "ir_plus": only_new,
+            "old_plus": only_old,
+        })
+    return report
+
+
+def ir_diff(book_id: str, page_no: int = 0, root: str = "", limit: int = 20) -> dict[str, Any]:
+    """试金石：IR(+notes) 渲染 vs 老线 pages/NNNN.md（只读）。report 逐页相似度。"""
+    sid = safe_book_id(book_id)
+    book = book_dir(sid, root)
+    layout = load_layout(book)
+    if not layout:
+        return {"ok": False, "book_id": sid, "reason": "missing layout.json"}
+    info = layout.get("pdf_info") or []
+    wanted = [int(page_no)] if int(page_no or 0) > 0 else [
+        int(p.get("page_idx") or 0) + 1 for p in info if isinstance(p, dict)
+    ][: int(limit or 20)]
+    model = load_model(book)
+    v1 = load_v1(book)
+    box = default_box_prefixes()
+    report = []
+    for n in wanted:
+        old_path = book / "pages" / f"{n:04d}.md"
+        if not old_path.is_file():
+            report.append({"page": n, "old": "missing"})
+            continue
+        old_md = old_path.read_text(encoding="utf-8", errors="replace")
+        try:
+            page = ingest_page(book, n, box, model=model, v1=v1, layout=layout)
+        except (FileNotFoundError, ValueError) as exc:
+            report.append({"page": n, "error": str(exc)})
+            continue
+        page, _rej = apply_notes(page, load_notes(book, n))
+        new_lines = _normalize(render_page_md(page))
+        old_lines = _normalize(old_md)
+        ratio = difflib.SequenceMatcher(None, old_lines, new_lines).ratio()
+        only_new = [l for l in difflib.unified_diff(old_lines, new_lines, lineterm="")
+                    if l.startswith("+") and not l.startswith("+++")][:5]
+        only_old = [l for l in difflib.unified_diff(old_lines, new_lines, lineterm="")
+                    if l.startswith("-") and not l.startswith("---")][:5]
+        report.append({
+            "page": n,
+            "similarity": round(ratio, 4),
+            "ir_plus": only_new,
+            "old_plus": only_old,
+        })
+    sims = [r["similarity"] for r in report if "similarity" in r]
+    return {
+        "ok": True,
+        "book_id": sid,
+        "pages": len(report),
+        "mean_similarity": round(sum(sims) / len(sims), 4) if sims else None,
+        "min_similarity": min(sims) if sims else None,
+        "report": report,
+    }

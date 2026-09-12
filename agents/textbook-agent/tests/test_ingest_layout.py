@@ -8,6 +8,7 @@ _TOOLS = Path(__file__).resolve().parents[1] / "workspace" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 import ir_lib  # noqa: E402
+from app.workspace import ensure_workspace  # noqa: E402
 from ingest_layout import ingest_layout  # noqa: E402
 
 ROOT_FILES = ("mineru/layout.json", "mineru/demo_model.json", "mineru/demo_content_list.json")
@@ -453,3 +454,126 @@ def test_ir_note_tool_reads_yaml(tmp_path: Path) -> None:
     out = ir_note("irbook", 1, root=str(tmp_path), apply="fix")
     assert out["ok"] and out["notes"] == 1 and out["rejected"] == []
     assert "原文有正确的段落" in out["markdown"]
+
+
+def test_eq_span_latex_not_shifted_by_image_only_equation(tmp_path: Path) -> None:
+    """图片型行内公式不占 eq 槽位，后续 latex 不错位（审查 #2）。"""
+    book = _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [
+                _block("text", 0, [[
+                    {"type": "text", "content": "能量", "bbox": [60, 100, 100, 120]},
+                    {"type": "inline_equation", "content": "", "bbox": [100, 100, 140, 130]},
+                    {"type": "inline_equation", "content": "x^2", "bbox": [140, 100, 200, 125]},
+                ]], bbox=[60, 100, 540, 140]),
+            ],
+            "discarded_blocks": [],
+        }],
+    )
+    model = [[
+        {"type": "inline_formula", "bbox": [0.23, 0.125, 0.33, 0.156], "latex": "x^{2}"},
+    ]]
+    (book / "mineru" / "demo_model.json").write_text(
+        json.dumps(model, ensure_ascii=False), encoding="utf-8"
+    )
+    out = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    spans = [s for row in out["blocks"][0]["lines"] for s in row]
+    eq = [s for s in spans if s.get("t") == "eq"]
+    assert len(eq) == 1
+    assert eq[0]["latex"] == "x^{2}"
+
+
+def test_compute_remap_rejects_ambiguous_cross_page_text(tmp_path: Path) -> None:
+    """重复例题跨页同文：不产生跨页错配（审查 #6）。"""
+    page = {
+        "page_idx": 0,
+        "page_size": [600, 800],
+        "para_blocks": [_block("text", 0, [[_span("text", "同一道例题")]], bbox=[60, 100, 540, 140])],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page, json.loads(json.dumps(page)) | {"page_idx": 1}])
+    a = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    b = ir_lib.ingest_page(book, 2, box_prefixes=[])
+    old_pages = {
+        1: [{"id": a["blocks"][0]["id"], "type": "text", "text": a["blocks"][0]["text"], "order": 0}],
+    }
+    moved = json.loads(json.dumps(page))
+    moved["para_blocks"][0]["bbox"] = [70, 110, 550, 150]  # 超出 10px 网格 → 新 id
+    book2 = tmp_path / "irbook2"
+    (book2 / "mineru").mkdir(parents=True)
+    (book2 / "mineru" / "layout.json").write_text(
+        json.dumps({"pdf_info": [moved, json.loads(json.dumps(moved)) | {"page_idx": 1}]},
+                   ensure_ascii=False),
+        encoding="utf-8",
+    )
+    new_pages = {1: ir_lib.ingest_page(book2, 1, box_prefixes=[]),
+                 2: ir_lib.ingest_page(book2, 2, box_prefixes=[])}
+    remap = ir_lib.compute_remap(old_pages, new_pages)
+    # 同文在第 1 页就有新块 → 页内精确配；绝不指到第 2 页
+    assert remap.get(old_pages[1][0]["id"]) == new_pages[1]["blocks"][0]["id"]
+
+
+def test_apply_notes_replace_span_first_rejects_dollar_boundary(tmp_path: Path) -> None:
+    """old 跨 $ 边界时拒绝，不让 text 与 lines 分叉（审查 #5）。"""
+    book = _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [
+                _block("text", 0, [[_span("text", "处于"), _span("inline_equation", "2p"),
+                                    _span("text", "轨道上")]], bbox=[60, 100, 540, 140]),
+            ],
+            "discarded_blocks": [],
+        }],
+    )
+    page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    blk = page["blocks"][0]
+    notes = [{"id": "n", "block": blk["id"], "op": "replace", "old": "处于$2p$轨道", "new": "X"}]
+    out, rejected = ir_lib.apply_notes(page, notes)
+    assert len(rejected) == 1 and rejected[0]["reason"] == "old not found"
+    assert out["blocks"][0]["text"] == page["blocks"][0]["text"]
+
+
+def test_ir_diff_tool_imports_from_own_file(tmp_path: Path) -> None:
+    from ir_diff import ir_diff
+
+    _notes_book(tmp_path)
+    out = ir_diff("irbook", page_no=1, root=str(tmp_path))
+    assert out["ok"] and out["pages"] == 1
+    assert "similarity" in out["report"][0] or out["report"][0].get("old") == "missing"
+
+
+def test_ir_routes_out_of_range_page_is_404(tmp_path, monkeypatch) -> None:
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    monkeypatch.setenv("AGENT_HOME", str(tmp_path / "home"))
+    from app.config import settings
+    from app import surfaces
+
+    settings.agent_home = str(tmp_path / "home")
+    settings.textbook_agent_token = "test-token"
+    surfaces.reset_for_tests()
+    ensure_workspace()
+    book = tmp_path / "home" / "textbooks" / "irb"
+    (book / "mineru").mkdir(parents=True)
+    (book / "mineru" / "layout.json").write_text(
+        json.dumps({"pdf_info": [{"page_idx": 0, "page_size": [600, 800],
+                                  "para_blocks": [_block("text", 0, [[_span("text", "唯一一页")]])],
+                                  "discarded_blocks": []}]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (book / "mineru" / "demo_model.json").write_text("[]", encoding="utf-8")
+    (book / "mineru" / "demo_content_list.json").write_text("[]", encoding="utf-8")
+    (book / "meta.json").write_text(
+        json.dumps({"id": "irb", "status": "ready", "page_count": 1}), encoding="utf-8"
+    )
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer test-token"}
+    assert client.get("/v1/ir/irb/pages/1/markdown", headers=headers).status_code == 200
+    assert client.get("/v1/ir/irb/pages/99/markdown", headers=headers).status_code == 404
+    assert client.get("/v1/ir/irb/pages/99/blocks", headers=headers).status_code == 404

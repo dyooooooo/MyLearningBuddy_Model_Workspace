@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
@@ -27,13 +28,13 @@ _CHROME_TYPES = {
     "page_footnote": "footnotes",
 }
 _FIGURE_TYPES = {"image", "chart"}
-_ROW_Y_TOL = 15.0
 _INLINE_IMG_HFRAC = 0.08
 _ASIDE_X0 = 0.62
 _ASIDE_MAX_W = 0.38
 _BOX_MAX_W = 0.35
 
-_CACHE: "dict[str, tuple[float, Any]]" = {}
+_CACHE_MAX = 12
+_CACHE: "OrderedDict[str, tuple[float, Any]]" = OrderedDict()
 
 
 def safe_book_id(book_id: str) -> str:
@@ -67,12 +68,15 @@ def _load_json_cached(path: Path) -> Any:
     key = str(path)
     hit = _CACHE.get(key)
     if hit is not None and hit[0] == mtime:
+        _CACHE.move_to_end(key)
         return hit[1]
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     _CACHE[key] = (mtime, data)
+    while len(_CACHE) > _CACHE_MAX:
+        _CACHE.popitem(last=False)
     return data
 
 
@@ -284,7 +288,11 @@ def _best_det(model_page: list[dict[str, Any]], bb: list[float] | None,
 
 def _eq_span_latex(model_page: list[dict[str, Any]], raw_lines: Any,
                    page_size: list[float]) -> list[str | None]:
-    """按出现顺序给行内公式 span 配 model.json 的 latex（page+bbox 邻近）。"""
+    """按出现顺序给行内公式 span 配 model.json 的 latex（page+bbox 邻近）。
+
+    只产有 content 的 span 的槽位：图片型/空公式 span 在 render_lines 里
+    生成 img 行而非 eq 行，多产槽位会让后续 latex 全体错位。
+    """
     out: list[str | None] = []
     for line in raw_lines or []:
         if not isinstance(line, dict):
@@ -293,6 +301,8 @@ def _eq_span_latex(model_page: list[dict[str, Any]], raw_lines: Any,
             if not isinstance(span, dict):
                 continue
             if str(span.get("type") or "") not in {"inline_equation", "equation"}:
+                continue
+            if not str(span.get("content") or "").strip():
                 continue
             bb = _block_bbox(span)
             best, _ = _best_det(model_page, bb, page_size, {"inline_formula"}, min_overlap=0.2)
@@ -478,18 +488,14 @@ def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
             if neighbor_text:
                 blk["kind"] = "inline_image"
 
-    # 并排图行组（y 重叠聚类，仅 figure 参与；raw 按阅读序 index 对应，
-    # 不能 zip——inline_image 已从 figure 里剔除，zip 会错位）
+    # 并排图行组（y 重叠聚类，仅 figure 参与）。blocks 与 body 按构造
+    # 一一对应，用 id→raw 映射取 bbox——不依赖 index 字段（无 index 的
+    # 块不会塌缩到 key 0），也不 zip（inline_image 已剔除会错位）。
     fig_rows = [blk for blk in blocks if blk["kind"] == "figure"]
-    raw_by_index = {}
-    for raw in body:
-        try:
-            raw_by_index[int(raw.get("index") or 0)] = raw
-        except (TypeError, ValueError):
-            continue
+    raw_by_id = {blk["id"]: raw for blk, raw in zip(blocks, body)}
     fig_bboxes = {}
     for blk in fig_rows:
-        raw = raw_by_index.get(blk["order"])
+        raw = raw_by_id.get(blk["id"])
         if raw is not None:
             fig_bboxes[blk["id"]] = _block_bbox(raw)
     row_of: dict[str, int] = {}
@@ -523,7 +529,7 @@ def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
         for blk in blocks:
             if blk["type"] != "interline_equation":
                 continue
-            raw = raw_by_index.get(blk["order"])
+            raw = raw_by_id.get(blk["id"])
             latex = _join_latex(model_page, _block_bbox(raw) if raw else None, page_size, {"equation"})
             if latex:
                 blk["latex"] = latex
@@ -571,17 +577,32 @@ def compute_remap(old_pages: dict[int, list[dict[str, Any]]],
 
     def _candidates(old: dict[str, Any], page_no: int) -> dict[str, Any] | None:
         key = re.sub(r"\s+", "", str(old.get("text") or ""))
-        for cand in new_by_text.get(key, []):
-            if cand["id"] not in used and cand.get("type") == old.get("type"):
-                used.add(cand["id"])
-                return cand
+
+        def _claim(cand: dict[str, Any]) -> dict[str, Any]:
+            used.add(cand["id"])
+            return cand
+
+        # 1) 页内同文精确配（最安全）
         page = new_pages.get(page_no)
         if page:
-            same = [b for b in page.get("blocks", []) if b.get("type") == old.get("type") and b["id"] not in used]
+            for cand in new_by_text.get(key, []):
+                if cand["id"] in used or cand.get("type") != old.get("type"):
+                    continue
+                if any(b["id"] == cand["id"] for b in page.get("blocks", [])):
+                    return _claim(cand)
+        # 2) 全局同文配，仅当全文唯一（教材重复例题常见，
+        #    不唯一的跨页同文无法判归属，宁缺勿错）
+        pool = [c for c in new_by_text.get(key, [])
+                if c["id"] not in used and c.get("type") == old.get("type")]
+        if len(pool) == 1 and len(new_by_text.get(key, [])) == 1:
+            return _claim(pool[0])
+        # 3) 页内同 type 最近 order
+        if page:
+            same = [b for b in page.get("blocks", [])
+                    if b.get("type") == old.get("type") and b["id"] not in used]
             if same:
                 target = min(same, key=lambda b: abs(int(b.get("order", 0)) - int(old.get("order", 0))))
-                used.add(target["id"])
-                return target
+                return _claim(target)
         return None
 
     for page_no, old_blocks in old_pages.items():
@@ -714,18 +735,21 @@ def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict
         new = str(note.get("new") or "")
         text = str(blk.get("text") or "")
         if op == "replace":
-            if not old or old not in text:
-                _reject(note, "old not found")
-                continue
-            blk["text"] = text.replace(old, new, 1)
+            # span 层是唯一匹配真相源：blk["text"] 是渲染形态（eq 带 $），
+            # 直接对它匹配会命中 $ 边界/跨 span，替换后 text 与 lines 分叉。
+            target = None
             for row in blk.get("lines", []):
                 for span in row:
-                    if span.get("t") in ("text", "eq") and old in str(span.get("c", "")):
-                        span["c"] = str(span["c"]).replace(old, new, 1)
+                    if span.get("t") in ("text", "eq") and old and old in str(span.get("c", "")):
+                        target = span
                         break
-                else:
-                    continue
-                break
+                if target is not None:
+                    break
+            if target is None:
+                _reject(note, "old not found")
+                continue
+            target["c"] = str(target["c"]).replace(old, new, 1)
+            blk["text"] = text.replace(old, new, 1)
         elif op == "retitle":
             if blk.get("type") != "title":
                 _reject(note, "not a title block")

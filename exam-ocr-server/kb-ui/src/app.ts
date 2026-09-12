@@ -213,7 +213,7 @@ export function mountApp(root: HTMLElement): void {
     root.classList.toggle("is-tasks", tasking);
     sidebar.classList.toggle("hidden", importing || agenting || tasking);
     sideSash.classList.toggle("hidden", importing || agenting || tasking);
-    previewWrap.classList.toggle("hidden", importing || agenting || tasking);
+    syncLibraryPanes(!(importing || agenting || tasking));
     importPane.classList.toggle("hidden", !importing);
     agentPane.classList.toggle("hidden", !agenting);
     tasksPane.classList.toggle("hidden", !tasking);
@@ -230,16 +230,22 @@ export function mountApp(root: HTMLElement): void {
   const irLib = mountIrLibrary({ treeHost: irTree, previewHost: irPreviewPages });
   irLib.reset();
 
+  // 两个库的左树/右预览可见性只在这里算，showTab 和 setLibMode 都走它，
+  // 否则切 rail 页签会把另一个库的预览强制拉回来（双面板同屏）。
+  function syncLibraryPanes(booksView: boolean): void {
+    tree.classList.toggle("hidden", !booksView || libMode !== "old");
+    irTree.classList.toggle("hidden", !booksView || libMode !== "ir");
+    previewWrap.classList.toggle("hidden", !booksView || libMode !== "old");
+    irPreviewWrap.classList.toggle("hidden", !booksView || libMode !== "ir");
+  }
+
   function setLibMode(mode: "old" | "ir"): void {
     if (libMode === mode) return;
     libMode = mode;
     libBtnOld.classList.toggle("is-active", mode === "old");
     libBtnIr.classList.toggle("is-active", mode === "ir");
-    tree.classList.toggle("hidden", mode !== "old");
-    irTree.classList.toggle("hidden", mode !== "ir");
-    previewWrap.classList.toggle("hidden", mode !== "old");
-    irPreviewWrap.classList.toggle("hidden", mode !== "ir");
     root.classList.toggle("is-irlib", mode === "ir");
+    syncLibraryPanes(true);
     if (mode === "ir") irLib.setBooks(books);
     else markActiveNode(activeId);
   }

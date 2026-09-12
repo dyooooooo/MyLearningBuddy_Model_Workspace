@@ -119,5 +119,5 @@ tools:
   path: ir_notes.py
   description: 注解叠加：读 ir/notes/NNNN.yaml（replace/retitle/delete，old 不匹配拒绝），渲染页 IR+注解。不写源。
 - id: ir_diff
-  path: ir_notes.py
+  path: ir_diff.py
   description: 试金石：IR(+注解) 渲染 vs 老线 pages（只读参照），逐页相似度与差异分类报告。

@@ -754,7 +754,10 @@ def ir_toc_route(book_id: str) -> dict[str, Any]:
     build = getattr(_ir_load("ir_toc"), "build_toc", None)
     if build is None:
         raise HTTPException(status_code=404, detail="ir_toc unavailable")
-    toc = build(library.book_dir(book_id))
+    try:
+        toc = build(library.book_dir(book_id))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return {"book_id": book_id, **toc}
 
 
@@ -799,7 +802,10 @@ def ir_page_blocks(book_id: str, page_no: int) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="book not found")
     lib = _ir_load("ir_lib")
     book = library.book_dir(book_id)
-    page = lib.ingest_page(book, page_no, lib.default_box_prefixes())
+    try:
+        page = lib.ingest_page(book, page_no, lib.default_box_prefixes())
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     notes = _ir_load("ir_notes").load_notes(book, page_no)
     page, rejected = lib.apply_notes(page, notes)
     return {
