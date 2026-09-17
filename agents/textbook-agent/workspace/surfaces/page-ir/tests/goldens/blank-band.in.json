@@ -1,0 +1,31 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page_size": [595, 841],
+    "layout": {
+      "folio": "verso",
+      "tree": {
+        "id": "page",
+        "kind": "rows",
+        "children": [
+          { "id": "r0c0", "kind": "flow", "empty": true, "members": [], "slots": ["main"], "x0": 52, "x1": 543 },
+          { "id": "r1c0", "kind": "flow", "members": [0], "slots": ["main"], "x0": 52, "x1": 543 },
+          {
+            "id": "r2",
+            "kind": "cols",
+            "x0": 52,
+            "x1": 543,
+            "children": [
+              { "id": "r2c0", "kind": "flow", "members": [1], "slots": ["main"], "x0": 52, "x1": 400 },
+              { "id": "r2c1", "kind": "flow", "empty": true, "members": [], "slots": ["aside"], "x0": 400, "x1": 543 }
+            ]
+          }
+        ]
+      }
+    },
+    "blocks": [
+      { "id": "body", "type": "text", "kind": "body", "text": "整带空着的是页面留白，不画占位。" },
+      { "id": "body2", "type": "text", "kind": "body", "text": "栏区里空着的那栏仍要画占位。" }
+    ]
+  }
+}

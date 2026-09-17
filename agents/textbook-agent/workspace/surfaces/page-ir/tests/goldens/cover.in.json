@@ -1,0 +1,23 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "blocks": [
+      {
+        "id": "t",
+        "type": "title",
+        "kind": "body",
+        "text": "生物技术与工程",
+        "level": 1,
+        "col": 0
+      },
+      {
+        "id": "cover",
+        "type": "image",
+        "kind": "figure",
+        "asset": "cover.jpg",
+        "width_frac": 1,
+        "col": 0
+      }
+    ]
+  }
+}

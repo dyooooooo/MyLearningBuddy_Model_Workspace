@@ -1,0 +1,42 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page_size": [595, 841],
+    "layout": {
+      "tree": {
+        "id": "page",
+        "kind": "rows",
+        "children": [
+          {
+            "id": "r0",
+            "kind": "cols",
+            "x0": 58,
+            "x1": 533,
+            "children": [
+              { "id": "c0", "kind": "flow", "members": [0], "slots": ["main"], "x0": 58, "x1": 363 },
+              { "id": "c1", "kind": "flow", "members": [1], "slots": ["fig_0"], "x0": 395, "x1": 533 }
+            ]
+          }
+        ]
+      }
+    },
+    "blocks": [
+      {
+        "id": "body",
+        "type": "text",
+        "kind": "body",
+        "text": "人类早在学会用火起就开始了化学实践活动。",
+        "bbox": [58.0, 220.0, 363.0, 498.0]
+      },
+      {
+        "id": "fig",
+        "type": "image",
+        "kind": "figure",
+        "asset": "table.jpg",
+        "caption": "图1 徐寿创译的元素汉译名",
+        "width_frac": 0.232,
+        "bbox": [395.0, 222.0, 533.0, 419.0]
+      }
+    ]
+  }
+}

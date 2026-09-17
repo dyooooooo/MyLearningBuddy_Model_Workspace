@@ -35,6 +35,8 @@ def load_tool_specs() -> list[dict[str, Any]]:
         rel = str(item.get("path") or "").strip()
         if not tool_id or not rel:
             continue
+        if item.get("retired"):
+            continue
         path = (settings.tools_dir / rel).resolve()
         if not path.is_file() or settings.tools_dir.resolve() not in path.parents:
             continue

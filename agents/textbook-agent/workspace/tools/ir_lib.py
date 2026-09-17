@@ -1,4 +1,4 @@
-"""Canonical IR library: six-source ingestion for the IR line.
+"""Canonical IR library: five-source ingestion for the IR line.
 
 Library only — not in manifest.yaml. Self-contained: no ``app.*`` imports,
 no ``official_*``/``v2md_*`` imports. Reads MinerU artifacts under
@@ -15,8 +15,11 @@ import re
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 _SAFE_ID = re.compile(r"^[A-Za-z0-9_-]+$")
+_MD_IMG = re.compile(r"(!\[[^\]]*\]\()(images/[^)]+)(\))")
+_HTML_IMG = re.compile(r"""(\bsrc=["'])images/([^"']+)(["'])""", re.I)
 _CAPTION_TYPES = {
     "image_caption", "image_footnote", "table_caption", "table_footnote",
     "chart_caption", "chart_footnote", "code_caption", "code_footnote",
@@ -29,9 +32,9 @@ _CHROME_TYPES = {
 }
 _FIGURE_TYPES = {"image", "chart"}
 _INLINE_IMG_HFRAC = 0.08
-_ASIDE_X0 = 0.62
-_ASIDE_MAX_W = 0.38
+_INLINE_IMG_WFRAC = 0.12
 _BOX_MAX_W = 0.35
+IR_SCHEMA = 6
 
 _CACHE_MAX = 12
 _CACHE: "OrderedDict[str, tuple[float, Any]]" = OrderedDict()
@@ -93,14 +96,152 @@ def load_model(book: Path) -> list[list[dict[str, Any]]]:
     return []
 
 
-def load_v1(book: Path) -> list[dict[str, Any]]:
-    for path in sorted((book / "mineru").glob("*_content_list.json")):
+def _v1_path(book: Path) -> Path | None:
+    folder = book / "mineru"
+    if not folder.is_dir():
+        return None
+    for path in sorted(folder.glob("*_content_list.json")):
         if path.name.endswith("_content_list_v2.json"):
             continue
-        data = _load_json_cached(path)
-        if isinstance(data, list):
-            return [b for b in data if isinstance(b, dict)]
-    return []
+        return path
+    return None
+
+
+def _model_path(book: Path) -> Path | None:
+    folder = book / "mineru"
+    if not folder.is_dir():
+        return None
+    hits = sorted(folder.glob("*_model.json"))
+    return hits[0] if hits else None
+
+
+def _v2_path(book: Path) -> Path | None:
+    folder = book / "mineru"
+    if not folder.is_dir():
+        return None
+    hits = sorted(folder.glob("*_content_list_v2.json"))
+    return hits[0] if hits else None
+
+
+def load_v1(book: Path) -> list[dict[str, Any]]:
+    path = _v1_path(book)
+    if path is None:
+        return []
+    data = _load_json_cached(path)
+    return [b for b in data if isinstance(b, dict)] if isinstance(data, list) else []
+
+
+def load_v2(book: Path) -> list[list[dict[str, Any]]]:
+    """V2 内容清单：按页的块列表，只给标题 level 互证，不当骨架。"""
+    path = _v2_path(book)
+    if path is None:
+        return []
+    data = _load_json_cached(path)
+    if not isinstance(data, list) or not data:
+        return []
+    if isinstance(data[0], list):
+        return [[b for b in page if isinstance(b, dict)] for page in data]
+    pages: dict[int, list[dict[str, Any]]] = {}
+    for block in data:
+        if not isinstance(block, dict):
+            continue
+        pages.setdefault(int(block.get("page_idx") or 0), []).append(block)
+    if not pages:
+        return []
+    last = max(pages)
+    return [pages.get(i, []) for i in range(last + 1)]
+
+
+def page_json_path(book: Path, page_no: int) -> Path:
+    return book / "ir" / "pages" / f"{int(page_no):04d}.json"
+
+
+def load_page_json(book: Path, page_no: int) -> dict[str, Any] | None:
+    path = page_json_path(book, page_no)
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def save_page_json(book: Path, page: dict[str, Any]) -> Path:
+    n = int(page.get("page") or 0)
+    path = page_json_path(book, n)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(
+        json.dumps(page, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    tmp.replace(path)
+    return path
+
+
+def layout_sha(book: Path) -> str:
+    path = book / "mineru" / "layout.json"
+    if not path.is_file():
+        return ""
+    return sha16(path.read_bytes())
+
+
+def load_or_ingest_page(
+    book: Path,
+    page_no: int,
+    box_prefixes: list[str] | None = None,
+    *,
+    write: bool = True,
+) -> tuple[dict[str, Any], bool]:
+    """读 ir/pages；缺页、layout 哈希变了或 schema 过期再摄取。返回 (页, 是否新写)。"""
+    want = layout_sha(book)
+    cached = load_page_json(book, page_no)
+    cached_schema = 0
+    if cached is not None:
+        try:
+            cached_schema = int((cached.get("source") or {}).get("schema") or 0)
+        except (TypeError, ValueError):
+            cached_schema = 0
+    if (
+        cached is not None
+        and want
+        and cached.get("source", {}).get("layout") == want
+        and cached_schema == IR_SCHEMA
+    ):
+        return cached, False
+    page = ingest_page(book, page_no, box_prefixes)
+    if write:
+        save_page_json(book, page)
+    return page, True
+
+
+def asset_url(book_id: str, path: str) -> str:
+    raw = (path or "").replace("\\", "/").strip()
+    if not raw:
+        return ""
+    if raw.startswith("/api/") or raw.startswith("http://") or raw.startswith("https://"):
+        return raw
+    name = raw.rsplit("/", 1)[-1]
+    if not name:
+        return ""
+    key = f"kb/pdfs/{safe_book_id(book_id)}/assets/mineru/{name}"
+    return f"/api/v1/kb/proxy/asset?key={quote(key, safe='')}"
+
+
+def rewrite_image_urls(markdown: str, book_id: str) -> str:
+    if not markdown:
+        return markdown
+
+    def _md(match: re.Match[str]) -> str:
+        url = asset_url(book_id, match.group(2))
+        return match.group(0) if not url else f"{match.group(1)}{url}{match.group(3)}"
+
+    def _html(match: re.Match[str]) -> str:
+        url = asset_url(book_id, match.group(2))
+        return match.group(0) if not url else f"{match.group(1)}{url}{match.group(3)}"
+
+    return _HTML_IMG.sub(_html, _MD_IMG.sub(_md, markdown))
 
 
 def default_box_prefixes() -> list[str]:
@@ -142,6 +283,26 @@ def _is_cjk(text: str) -> bool:
     return any("一" <= ch <= "鿿" for ch in text)
 
 
+_SUB_SUP = re.compile(r"<(sub|sup)>(.*?)</\1>", re.I | re.S)
+
+
+def _split_sub_sup(content: str) -> list[dict[str, str]]:
+    """扫描稿里的 <sub>/<sup> 切成独立 span。没有标记就空列表，调用方按原文走。"""
+    text = str(content or "")
+    if "<sub" not in text.lower() and "<sup" not in text.lower():
+        return []
+    out: list[dict[str, str]] = []
+    pos = 0
+    for match in _SUB_SUP.finditer(text):
+        if match.start() > pos:
+            out.append({"t": "text", "c": text[pos:match.start()]})
+        out.append({"t": match.group(1).lower(), "c": match.group(2)})
+        pos = match.end()
+    if pos < len(text):
+        out.append({"t": "text", "c": text[pos:]})
+    return out
+
+
 def render_lines(lines: Any) -> tuple[list[list[dict[str, str]]], str]:
     """行结构 + 纯文本（CJK 不加空格；inline_equation 包 $…$，行间公式块包 $$…$$）。"""
     structured: list[list[dict[str, str]]] = []
@@ -175,7 +336,11 @@ def render_lines(lines: Any) -> tuple[list[list[dict[str, str]]], str]:
                 row.append({"t": "img", "c": img})
                 parts.append(f"![](images/{img})")
             elif content:
-                row.append({"t": "text", "c": content})
+                marks = _split_sub_sup(content)
+                if marks:
+                    row.extend(marks)
+                else:
+                    row.append({"t": "text", "c": content})
                 parts.append(content)
                 if not cjk:
                     parts.append(" ")
@@ -239,15 +404,82 @@ def _min_score(lines: Any) -> float | None:
     return round(min(scores), 4) if scores else None
 
 
-def _page_v1_captions(v1: list[dict[str, Any]], page_idx: int) -> list[str]:
+def _bbox_center(bb: list[float]) -> tuple[float, float]:
+    return ((bb[0] + bb[2]) / 2.0, (bb[1] + bb[3]) / 2.0)
+
+
+def _bbox_area(bb: list[float] | None) -> float:
+    if not (isinstance(bb, list) and len(bb) >= 4):
+        return 0.0
+    return max(0.0, float(bb[2]) - float(bb[0])) * max(0.0, float(bb[3]) - float(bb[1]))
+
+
+def _strip_box_punct(text: str) -> str:
+    return str(text or "").strip().rstrip("：:﹕")
+
+
+def _pair_by_center(
+    dests: list[dict[str, Any]],
+    cands: list[dict[str, Any]],
+) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """按 bbox 中心距一对一配对；无框的候选不参与，宁缺不 zip。"""
+    used: set[int] = set()
+    pairs: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for dest in dests:
+        dbb = dest.get("_bb")
+        if not dbb:
+            continue
+        dc = _bbox_center(dbb)
+        best_i, best_d = -1, None
+        for i, cand in enumerate(cands):
+            if i in used:
+                continue
+            sbb = cand.get("bbox")
+            if not (isinstance(sbb, list) and len(sbb) >= 4):
+                continue
+            try:
+                sc = _bbox_center([float(x) for x in sbb[:4]])
+            except (TypeError, ValueError):
+                continue
+            dist = (dc[0] - sc[0]) ** 2 + (dc[1] - sc[1]) ** 2
+            if best_d is None or dist < best_d:
+                best_i, best_d = i, dist
+        if best_i >= 0:
+            used.add(best_i)
+            pairs.append((dest, cands[best_i]))
+    return pairs
+
+
+def _page_v1_captions(v1: list[dict[str, Any]], page_idx: int) -> list[dict[str, Any]]:
     caps = []
     for block in v1:
         if int(block.get("page_idx") or 0) != page_idx:
             continue
-        if str(block.get("type") or "") in _FIGURE_TYPES:
-            cap = block.get("image_caption") or block.get("chart_caption") or []
-            caps.append("".join(str(x) for x in cap).strip() if isinstance(cap, list) else str(cap).strip())
+        if str(block.get("type") or "") not in _FIGURE_TYPES:
+            continue
+        raw = block.get("image_caption") or block.get("chart_caption") or []
+        text = "".join(str(x) for x in raw).strip() if isinstance(raw, list) else str(raw).strip()
+        if not text:
+            continue
+        caps.append({"text": text, "bbox": block.get("bbox")})
     return caps
+
+
+def _v2_titles(v2_page: list[dict[str, Any]]) -> list[tuple[str, int]]:
+    out: list[tuple[str, int]] = []
+    for block in v2_page:
+        if str(block.get("type") or "") != "title":
+            continue
+        content = block.get("content") if isinstance(block.get("content"), dict) else {}
+        bits = []
+        for span in content.get("title_content") or []:
+            if isinstance(span, dict):
+                bits.append(str(span.get("content") or ""))
+        text = re.sub(r"\s+", "", "".join(bits))
+        level = content.get("level")
+        if text and isinstance(level, (int, float)):
+            out.append((text, int(level)))
+    return out
 
 
 def _join_latex(model_page: list[dict[str, Any]], bb: list[float] | None,
@@ -311,21 +543,6 @@ def _eq_span_latex(model_page: list[dict[str, Any]], raw_lines: Any,
     return out
 
 
-def _detect_columns(body: list[dict[str, Any]], page_w: float) -> bool:
-    """正文 text 块 x0 是否呈明显双栏分布。"""
-    xs = []
-    for b in body:
-        if b["type"] == "text":
-            bb = b.get("_bb")
-            if bb:
-                xs.append(bb[0] / page_w)
-    if len(xs) < 6:
-        return False
-    left = sum(1 for x in xs if x < 0.5)
-    right = len(xs) - left
-    return right >= max(3, 0.3 * len(xs)) and left >= max(3, 0.3 * len(xs))
-
-
 def _match_box_kind(text: str, prefixes: list[str]) -> str:
     head = text[:12]
     hit = ""
@@ -338,6 +555,7 @@ def _match_box_kind(text: str, prefixes: list[str]) -> str:
 def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
                 model: list[list[dict[str, Any]]] | None = None,
                 v1: list[dict[str, Any]] | None = None,
+                v2: list[list[dict[str, Any]]] | None = None,
                 layout: dict[str, Any] | None = None) -> dict[str, Any]:
     box_prefixes = box_prefixes if box_prefixes is not None else default_box_prefixes()
     layout = layout if layout is not None else load_layout(book)
@@ -345,6 +563,7 @@ def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
         raise FileNotFoundError(f"missing layout.json under {book / 'mineru'}")
     model = model if model is not None else load_model(book)
     v1 = v1 if v1 is not None else load_v1(book)
+    v2 = v2 if v2 is not None else load_v2(book)
     page = None
     for cand in layout["pdf_info"]:
         if isinstance(cand, dict) and int(cand.get("page_idx", -1)) == page_no - 1:
@@ -429,33 +648,98 @@ def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
             row["width_frac"] = round((bb[2] - bb[0]) / pw, 3)
         blocks.append(row)
 
-    # 表格 HTML 从 v1 补（layout span html 缺时）
+    # 表格 HTML：layout span 缺时按 bbox 中心距配 v1 table_body
     v1_tables = [
-        (int(b.get("page_idx") or 0), str(b.get("table_body") or ""))
+        {"html": str(b.get("table_body") or "").strip(), "bbox": b.get("bbox")}
         for b in v1
-        if str(b.get("type") or "") == "table" and str(b.get("table_body") or "").strip()
+        if int(b.get("page_idx") or 0) == page_no - 1
+        and str(b.get("type") or "") == "table"
+        and str(b.get("table_body") or "").strip()
     ]
-    tables_here = [t for t in v1_tables if t[0] == page_no - 1]
-    need = [blk for blk in blocks if blk["type"] == "table" and not blk.get("table_html")]
-    if need and len(tables_here) == len([b for b in blocks if b["type"] == "table"]):
-        for blk, (_, html) in zip([b for b in blocks if b["type"] == "table"], tables_here):
-            if not blk.get("table_html"):
-                blk["table_html"] = html
+    need_tables = [blk for blk in blocks if blk["type"] == "table" and not blk.get("table_html")]
+    for blk, src in _pair_by_center(need_tables, v1_tables):
+        if src.get("html"):
+            blk["table_html"] = src["html"]
 
-    # figure 题注 v1 兜底（整页数量相等才按序配对，防错配）
-    figs = [blk for blk in blocks if blk["type"] in _FIGURE_TYPES]
-    caps_here = _page_v1_captions(v1, page_no - 1)
-    if caps_here and len(caps_here) == len(figs):
-        for blk, cap in zip(figs, caps_here):
-            if cap and not blk.get("caption"):
-                blk["caption"] = cap
+    # figure 题注：子块已优先；缺则按面积大的先配，同一句不复用
+    taken_caps = {
+        str(blk.get("caption") or "").strip()
+        for blk in blocks
+        if str(blk.get("caption") or "").strip()
+    }
+    need_caps = [
+        blk for blk in blocks
+        if blk["type"] in _FIGURE_TYPES and not blk.get("caption")
+    ]
+    need_caps.sort(key=lambda b: _bbox_area(b.get("_bb")), reverse=True)
+    for blk, src in _pair_by_center(need_caps, _page_v1_captions(v1, page_no - 1)):
+        text = str(src.get("text") or "").strip()
+        if not text or text in taken_caps:
+            continue
+        blk["caption"] = text
+        taken_caps.add(text)
 
-    # kind / zone 判定
-    two_col = _detect_columns(blocks, pw)
-    for blk, raw in zip(blocks, body):
-        bb = blk.pop("_bb")
+    # v2 标题 level 互证（骨架仍用 layout；不一致只打标）
+    v2_page = v2[page_no - 1] if 0 < page_no <= len(v2) else []
+    v2_by_text: dict[str, list[int]] = {}
+    for text, level in _v2_titles(v2_page):
+        v2_by_text.setdefault(text, []).append(level)
+    for blk in blocks:
+        if blk["type"] != "title" or blk.get("level") is None:
+            continue
+        hits = v2_by_text.get(re.sub(r"\s+", "", str(blk.get("text") or ""))) or []
+        if len(hits) == 1 and hits[0] != blk["level"]:
+            blk["level_conflict"] = hits[0]
+
+    # 废弃块里的栏目条（想一想 / 学习提示）钉回版面，不当页眉
+    promoted: list[dict[str, Any]] = []
+    for raw in chrome_blocks:
+        typ = str(raw.get("type") or "")
+        if typ not in {"header", "page_header"}:
+            continue
+        text = _join_text(raw.get("lines"))
+        hit = _match_box_kind(text, box_prefixes)
+        if not hit:
+            continue
+        bb = _block_bbox(raw)
+        if not bb:
+            continue
+        overlap = False
+        for blk in blocks:
+            ob = blk.get("_bb")
+            if not ob:
+                continue
+            ix0, iy0 = max(bb[0], ob[0]), max(bb[1], ob[1])
+            ix1, iy1 = min(bb[2], ob[2]), min(bb[3], ob[3])
+            if ix1 > ix0 and iy1 > iy0:
+                overlap = True
+                break
+        if overlap:
+            continue
+        promoted.append(raw)
+        blocks.append(
+            {
+                "_bb": bb,
+                "id": block_id(raw, text, ""),
+                "type": "title",
+                "order": int(raw.get("index") if isinstance(raw.get("index"), int) else len(blocks)),
+                "lines": [[{"t": "text", "c": text}]],
+                "text": text,
+                "kind": "box",
+                "box_kind": hit,
+                "width_frac": round((bb[2] - bb[0]) / pw, 3),
+            }
+        )
+
+    page_h = float(page_size[1])
+
+    # kind：MinerU 类型 + 栏目词表。分区归 ir_bands 的树，不再写 zone/col/place。
+    for blk in blocks:
+        bb = blk.pop("_bb", None)
         if bb:
-            blk["col"] = 1 if bb[0] / pw > 0.5 else 0
+            blk["bbox"] = [round(float(x), 2) for x in bb]
+        if blk.get("kind"):
+            continue
         wf = blk.get("width_frac") or 0.0
         kind = "body"
         btype = blk["type"]
@@ -468,19 +752,16 @@ def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
             if hit:
                 kind = "box"
                 blk["box_kind"] = hit
-        elif (btype == "text" and not two_col and bb and bb[0] / pw > _ASIDE_X0
-              and 0 < wf < _ASIDE_MAX_W):
-            kind = "ref"
         blk["kind"] = kind
 
-    # 行内小图：图块高度 < 8% 页高且与文本块阅读序相邻
-    page_h = float(page_size[1])
+    # 行内小图：高 < 8% 页高、宽 < 12% 页宽，且与文本块阅读序相邻
     for i, (blk, raw) in enumerate(zip(blocks, body)):
         if blk["type"] not in _FIGURE_TYPES:
             continue
         bb = _block_bbox(raw)
         hfrac = ((bb[3] - bb[1]) / page_h) if bb else 1.0
-        if hfrac < _INLINE_IMG_HFRAC:
+        wf = float(blk.get("width_frac") or 0.0)
+        if hfrac < _INLINE_IMG_HFRAC and wf < _INLINE_IMG_WFRAC:
             neighbor_text = any(
                 0 <= j < len(blocks) and blocks[j]["type"] == "text"
                 for j in (i - 1, i + 1)
@@ -506,13 +787,16 @@ def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
             continue
         placed = False
         for cluster in clusters:
-            cbb = fig_bboxes.get(cluster[0]["id"])
-            if not cbb:
-                continue
-            overlap = min(bb[3], cbb[3]) - max(bb[1], cbb[1])
-            if overlap > 0.5 * min(bb[3] - bb[1], cbb[3] - cbb[1]):
-                cluster.append(blk)
-                placed = True
+            for member in cluster:
+                cbb = fig_bboxes.get(member["id"])
+                if not cbb:
+                    continue
+                overlap = min(bb[3], cbb[3]) - max(bb[1], cbb[1])
+                if overlap > 0.5 * min(bb[3] - bb[1], cbb[3] - cbb[1]):
+                    cluster.append(blk)
+                    placed = True
+                    break
+            if placed:
                 break
         if not placed:
             clusters.append([blk])
@@ -534,31 +818,67 @@ def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
             if latex:
                 blk["latex"] = latex
 
-    # chrome：discarded 按 order 插回阅读序
+    # chrome：discarded 按 order 插回阅读序；框留下给页码左右
     chrome: dict[str, Any] = {"headers": [], "page_numbers": [], "footers": [], "footnotes": []}
     for b in sorted(chrome_blocks, key=lambda x: int(x.get("index") or 0)):
         bucket = _CHROME_TYPES.get(str(b.get("type") or ""))
         if not bucket:
             continue
         text = _join_text(b.get("lines"))
+        bb = _block_bbox(b)
+        boxed = [round(float(x), 2) for x in bb] if bb else None
         if bucket == "footnotes":
-            chrome["footnotes"].append({"order": int(b.get("index") or 0), "text": text})
+            row: dict[str, Any] = {"order": int(b.get("index") or 0), "text": text}
+            if boxed:
+                row["bbox"] = boxed
+            chrome["footnotes"].append(row)
         elif text:
-            chrome[bucket].append(text)
+            if bucket == "headers" and _match_box_kind(text, box_prefixes):
+                continue
+            chrome[bucket].append({"text": text, "bbox": boxed} if boxed else text)
 
-    source = {"schema": 1}
+    source = {"schema": IR_SCHEMA}
     lay_path = book / "mineru" / "layout.json"
     if lay_path.is_file():
         source["layout"] = sha16(lay_path.read_bytes())
+    model_path = _model_path(book)
+    if model_path is not None:
+        source["model"] = sha16(model_path.read_bytes())
+    v1_path = _v1_path(book)
+    if v1_path is not None:
+        source["v1"] = sha16(v1_path.read_bytes())
+    v2_path = _v2_path(book)
+    if v2_path is not None:
+        source["v2"] = sha16(v2_path.read_bytes())
     ver = layout.get("_version_name")
     if ver:
         source["mineru"] = str(ver)
+
+    from ir_bands import assemble_page, build_layout, folio_side
+
+    assembled = assemble_page(
+        page,
+        book.name,
+        page_no,
+        extra_blocks=promoted,
+        ir_blocks=blocks,
+    )
+    laid = build_layout(
+        assembled,
+        blocks,
+        folio=folio_side(
+            [_block_bbox(b) for b in chrome_blocks],
+            [str(b.get("type") or "") for b in chrome_blocks],
+            pw,
+        ),
+    )
 
     return {
         "page": page_no,
         "book": book.name,
         "page_size": page_size,
         "source": source,
+        "layout": laid,
         "blocks": blocks,
         "chrome": chrome,
     }
@@ -566,16 +886,23 @@ def ingest_page(book: Path, page_no: int, box_prefixes: list[str] | None = None,
 
 def compute_remap(old_pages: dict[int, list[dict[str, Any]]],
                   new_pages: dict[int, dict[str, Any]]) -> dict[str, str]:
-    """旧 IR 的块 ID → 新 IR 的块 ID。先按规范化文本精确配，再按同 type 最近 order 配。"""
+    """旧 IR 的块 ID → 新 IR 的块 ID。先按规范化文本精确配，再按同 type 最近 order 配。
+
+    收口块（kb-close-*）是派生物，ID 按位置生成、每次摄取重算，不进 remap。
+    """
     remap: dict[str, str] = {}
     used: set[str] = set()
     new_by_text: dict[str, list[dict[str, Any]]] = {}
     for page_no, page in new_pages.items():
         for blk in page.get("blocks", []):
+            if is_close_block(blk):
+                continue
             key = re.sub(r"\s+", "", str(blk.get("text") or ""))
             new_by_text.setdefault(key, []).append(blk)
 
     def _candidates(old: dict[str, Any], page_no: int) -> dict[str, Any] | None:
+        if is_close_block(old):
+            return None
         key = re.sub(r"\s+", "", str(old.get("text") or ""))
 
         def _claim(cand: dict[str, Any]) -> dict[str, Any]:
@@ -599,7 +926,8 @@ def compute_remap(old_pages: dict[int, list[dict[str, Any]]],
         # 3) 页内同 type 最近 order
         if page:
             same = [b for b in page.get("blocks", [])
-                    if b.get("type") == old.get("type") and b["id"] not in used]
+                    if b.get("type") == old.get("type") and b["id"] not in used
+                    and not is_close_block(b)]
             if same:
                 target = min(same, key=lambda b: abs(int(b.get("order", 0)) - int(old.get("order", 0))))
                 return _claim(target)
@@ -607,23 +935,63 @@ def compute_remap(old_pages: dict[int, list[dict[str, Any]]],
 
     for page_no, old_blocks in old_pages.items():
         for old in old_blocks:
-            if old.get("id") in used:
-                continue
             cand = _candidates(old, page_no)
             if cand is not None and cand["id"] != old.get("id"):
                 remap[str(old.get("id"))] = cand["id"]
     return remap
 
 
+def _esc_html(text: str) -> str:
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
 def _figure_md(blk: dict[str, Any]) -> str:
     asset = blk.get("asset") or ""
     caption = (blk.get("caption") or "").strip()
-    alt = caption or "插图"
     if not asset:
         return caption
-    if caption:
-        return f"![{alt}](images/{asset})\n\n*{caption}*"
+    wf = blk.get("width_frac")
+    style = ""
+    if isinstance(wf, (int, float)) and wf > 0:
+        style = f' style="width:{round(float(wf) * 100, 1)}%"'
+    alt = _esc_html(caption or "插图")
+    img = f'<img src="images/{_esc_html(asset)}" alt="{alt}">'
+    cap = f"<figcaption>{_esc_html(caption)}</figcaption>" if caption else ""
+    return f'<figure class="kb-ir-fig"{style}>{img}{cap}</figure>'
+
+
+def _inline_img_md(blk: dict[str, Any]) -> str:
+    asset = blk.get("asset") or ""
+    alt = (blk.get("caption") or "图").strip() or "图"
+    if not asset:
+        return ""
     return f"![{alt}](images/{asset})"
+
+
+def _row_html(cells: list[dict[str, Any]]) -> str:
+    parts = ['<div class="kb-ir-figrow">']
+    for cell in cells:
+        asset = cell.get("asset") or ""
+        caption = (cell.get("caption") or "").strip()
+        wf = cell.get("width_frac")
+        style = ""
+        if isinstance(wf, (int, float)) and wf > 0:
+            style = f' style="width:{round(float(wf) * 100, 1)}%"'
+        fig = [f'<figure class="kb-ir-figcell"{style}>']
+        if asset:
+            alt = _esc_html(caption or "插图")
+            fig.append(f'<img src="images/{_esc_html(asset)}" alt="{alt}">')
+        if caption:
+            fig.append(f"<figcaption>{_esc_html(caption)}</figcaption>")
+        fig.append("</figure>")
+        parts.append("".join(fig))
+    parts.append("</div>")
+    return "".join(parts)
 
 
 def _block_md(blk: dict[str, Any]) -> str:
@@ -633,7 +1001,7 @@ def _block_md(blk: dict[str, Any]) -> str:
     if btype == "title":
         if blk.get("kind") == "box":
             kind = blk.get("box_kind") or ""
-            body = text if text != kind else ""
+            body = "" if _strip_box_punct(text) == kind else text
             return f"**【{kind}】** {body}".rstrip()
         level = max(1, min(6, int(blk.get("level") or 2)))
         return f"{'#' * level} {text}".rstrip()
@@ -652,44 +1020,76 @@ def _block_md(blk: dict[str, Any]) -> str:
     if btype == "interline_equation":
         latex = (blk.get("latex") or "").strip()
         if latex:
-            return f"$$\n{latex}\n$$"
-        if blk.get("asset"):
-            return f"![公式](images/{blk['asset']})"
-        return text
+            inner = f"$$\n{latex}\n$$"
+        elif blk.get("asset"):
+            inner = f"![公式](images/{blk['asset']})"
+        else:
+            inner = text
+        if not inner:
+            return ""
+        if "kb-ir-eq" in inner:
+            return inner
+        return f'<div class="kb-ir-eq">\n{inner}\n</div>'
     return text
 
 
 def render_page_md(page: dict[str, Any], notes: list | None = None) -> str:
     """Canonical IR 一页 → Markdown（新库正文预览/对拍用）。
 
-    - 行内公式/小图已在线结构里拼好（text 字段即成品）；
-    - 截图型行间公式输出 ![](images/…)，有 latex 输出 $$…$$；
-    - 并排图行组连续输出（surface 按 row 字段排成行）；
+    - 行内小图并入邻行文本；
+    - 并排图输出带 width_frac 的 HTML 行组；
+    - 行间公式包 kb-ir-eq，居中交给 page-ir 插槽 CSS；
     - 页注收在页尾分隔线后（chrome 区块）。
     - 传 notes 时先叠加注解（应用失败的部分不进正文，由调用方看报告）。
     """
     if notes:
         page, _rejected = apply_notes(page, notes)
+    # 收口块是 HTML 版式用的合并行，正文 Markdown 仍按源块出，否则同一段出两遍
+    blocks = [b for b in (page.get("blocks") or []) if not is_close_block(b)]
+    extras: dict[int, list[tuple[str, str]]] = {}
+    skip: set[int] = set()
+    for i, blk in enumerate(blocks):
+        if blk.get("kind") != "inline_image":
+            continue
+        img = _inline_img_md(blk)
+        if not img:
+            continue
+        prev_ok = i > 0 and blocks[i - 1].get("type") == "text" and (i - 1) not in skip
+        next_ok = i + 1 < len(blocks) and blocks[i + 1].get("type") == "text"
+        if prev_ok:
+            extras.setdefault(i - 1, []).append(("after", img))
+            skip.add(i)
+        elif next_ok:
+            extras.setdefault(i + 1, []).append(("before", img))
+            skip.add(i)
+
     parts: list[str] = []
     fig_rows: dict[int, list[dict[str, Any]]] = {}
-    for blk in page.get("blocks", []):
+    for blk in blocks:
         row = blk.get("row")
         if row is not None:
             fig_rows.setdefault(int(row), []).append(blk)
     emitted: set[int] = set()
 
-    for blk in page.get("blocks", []):
+    for i, blk in enumerate(blocks):
+        if i in skip:
+            continue
         row = blk.get("row")
         if row is not None:
             rid = int(row)
             if rid in emitted:
                 continue
             emitted.add(rid)
-            cells = "\n\n".join(c for c in (_figure_md(c) for c in fig_rows[rid]) if c)
-            if cells:
-                parts.append(cells)
+            html = _row_html(fig_rows[rid])
+            if html:
+                parts.append(html)
             continue
         md = _block_md(blk)
+        for side, img in extras.get(i, []):
+            if side == "before":
+                md = f"{img} {md}".strip() if md else img
+            else:
+                md = f"{md} {img}".strip() if md else img
         if md:
             parts.append(md)
 
@@ -700,13 +1100,97 @@ def render_page_md(page: dict[str, Any], notes: list | None = None) -> str:
     return "\n\n".join(p for p in parts if p) + "\n"
 
 
+CLOSE_PREFIX = "kb-close-"
+
+
+def is_close_block(blk: dict[str, Any]) -> bool:
+    """收口块是摄取时从源块派生的合并行，不是第六个来源。"""
+    return str(blk.get("id") or "").startswith(CLOSE_PREFIX)
+
+
+def _sync_close_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """源块被注解改字或删掉之后，照着现状重生成收口块；源块全没了就撤掉这条收口。"""
+    from ir_bands import spans_from_block
+
+    src = {b["id"]: b for b in blocks if not is_close_block(b)}
+    out: list[dict[str, Any]] = []
+    for blk in blocks:
+        if not is_close_block(blk):
+            out.append(blk)
+            continue
+        rows: list[list[dict[str, Any]]] = []
+        texts: list[str] = []
+        alive: list[str] = []
+        for row in blk.get("lines") or []:
+            groups: list[dict[str, Any]] = []
+            for span in row or []:
+                if str(span.get("t") or "") == "tab":
+                    groups.append({"tab": True})
+                    continue
+                bid = str(span.get("b") or "")
+                last = groups[-1] if groups else None
+                if last is not None and not last.get("tab") and last.get("bid") == bid:
+                    last["spans"].append(span)
+                else:
+                    groups.append({"bid": bid, "spans": [span]})
+            new_row: list[dict[str, Any]] = []
+            bits: list[str] = []
+            pending_tab = False
+            for group in groups:
+                if group.get("tab"):
+                    pending_tab = bool(new_row)
+                    continue
+                bid = str(group.get("bid") or "")
+                if bid:
+                    origin = src.get(bid)
+                    if origin is None:  # 源块被 delete 了
+                        continue
+                    spans = [dict(s, b=bid) for s in spans_from_block(origin)]
+                    piece = str(origin.get("text") or "")
+                else:  # 没有来源的兜底 span（算法没给成员时按行文本切的），原样留着
+                    spans = [dict(s) for s in group["spans"]]
+                    piece = "".join(str(s.get("c") or "") for s in spans)
+                if not spans:
+                    continue
+                if pending_tab:
+                    new_row.append({"t": "tab", "c": "\t"})
+                    bits.append("\t")
+                    pending_tab = False
+                new_row.extend(spans)
+                bits.append(piece)
+                if bid and bid not in alive:
+                    alive.append(bid)
+            if not new_row:
+                continue
+            rows.append(new_row)
+            texts.append("".join(bits))
+        if not rows:
+            continue
+        blk["lines"] = rows
+        blk["text"] = "\n".join(texts)
+        if blk.get("source_ids") is not None:
+            blk["source_ids"] = alive
+        out.append(blk)
+    return out
+
+
+def _remap_tree(node: dict[str, Any], mapping: dict[int, int]) -> None:
+    mems = [mapping[i] for i in node.get("members") or [] if i in mapping]
+    node["members"] = mems
+    for kid in node.get("children") or []:
+        _remap_tree(kid, mapping)
+    if node.get("kind") == "flow":
+        node["empty"] = not mems
+
+
 def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """把注解叠到一页 IR 上（纯函数，不改输入）。返回 (新页, 拒绝报告)。
 
-    支持的 op：
+    支持的 op（都按块 ID 定位，只能点源块，不能点 kb-close-* 收口块）：
     - replace: new 替换块文本里第一个 old（old 必须存在，否则拒绝）；
     - delete:  整块移除；
     - retitle: 改 title 块的 text（old 为原标题全文，精确匹配）。
+    改完统一重生成收口块，并把 layout.tree 里的块下标挪到新位置。
     按 notes 顺序应用；前面成功的 replace 会影响后面的 old 匹配。
     """
     import copy
@@ -725,6 +1209,9 @@ def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict
         blk = by_id.get(bid)
         if blk is None:
             _reject(note, "block not found")
+            continue
+        if is_close_block(blk):
+            _reject(note, "close block is derived, note the source block")
             continue
         op = str(note.get("op") or "replace")
         if op == "delete":
@@ -764,4 +1251,13 @@ def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict
                         span["c"] = new
         else:
             _reject(note, f"unknown op {op}")
+
+    before = [str(b.get("id") or "") for b in page.get("blocks") or []]
+    out["blocks"] = _sync_close_blocks(out["blocks"])
+    after = {str(b.get("id") or ""): i for i, b in enumerate(out["blocks"])}
+    mapping = {i: after[bid] for i, bid in enumerate(before) if bid in after}
+    if len(mapping) != len(before):
+        tree = (out.get("layout") or {}).get("tree")
+        if isinstance(tree, dict):
+            _remap_tree(tree, mapping)
     return out, rejected

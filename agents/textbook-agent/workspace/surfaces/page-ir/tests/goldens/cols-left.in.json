@@ -1,0 +1,35 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page_size": [595, 841],
+    "layout": {
+      "tree": {
+        "id": "page",
+        "kind": "rows",
+        "children": [
+          {
+            "id": "r0",
+            "kind": "cols",
+            "x0": 40,
+            "x1": 540,
+            "children": [
+              { "id": "c0", "kind": "flow", "members": [0, 1], "slots": ["aside"], "x0": 40, "x1": 180 },
+              { "id": "c1", "kind": "flow", "members": [2, 3], "slots": ["main"], "x0": 200, "x1": 540 }
+            ]
+          }
+        ]
+      }
+    },
+    "chrome": {
+      "headers": [],
+      "page_numbers": ["7"],
+      "footnotes": []
+    },
+    "blocks": [
+      { "id": "goal", "type": "title", "kind": "box", "box_kind": "学习目标", "text": "学习目标", "level": 2 },
+      { "id": "g1", "type": "text", "kind": "body", "text": "归纳无菌技术的方法。" },
+      { "id": "h1", "type": "title", "kind": "body", "text": "获得纯种微生物", "level": 2 },
+      { "id": "p1", "type": "text", "kind": "body", "text": "带有酸味的醋来自谷物发酵。" }
+    ]
+  }
+}

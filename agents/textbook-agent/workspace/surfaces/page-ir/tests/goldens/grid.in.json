@@ -1,0 +1,41 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page_size": [595, 841],
+    "layout": {
+      "tree": {
+        "id": "page",
+        "kind": "rows",
+        "children": [
+          {
+            "id": "r0",
+            "kind": "flow",
+            "members": [0],
+            "slots": ["main"],
+            "x0": 60,
+            "x1": 535
+          },
+          {
+            "id": "r1",
+            "kind": "cols",
+            "x0": 60,
+            "x1": 535,
+            "children": [
+              { "id": "c0", "kind": "flow", "members": [1], "x0": 60, "x1": 170 },
+              { "id": "c1", "kind": "flow", "members": [2], "x0": 180, "x1": 290 },
+              { "id": "c2", "kind": "flow", "members": [3], "x0": 300, "x1": 410 },
+              { "id": "c3", "kind": "flow", "members": [4], "x0": 420, "x1": 535 }
+            ]
+          }
+        ]
+      }
+    },
+    "blocks": [
+      { "id": "h", "type": "title", "kind": "body", "text": "Vocabulary", "level": 2 },
+      { "id": "a", "type": "text", "kind": "body", "text": "deep" },
+      { "id": "b", "type": "text", "kind": "body", "text": "exciting" },
+      { "id": "c", "type": "text", "kind": "body", "text": "fearless" },
+      { "id": "d", "type": "text", "kind": "body", "text": "gold" }
+    ]
+  }
+}

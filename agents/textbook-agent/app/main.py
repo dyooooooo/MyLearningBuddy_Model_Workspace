@@ -689,46 +689,6 @@ def library_reimport(book_id: str) -> dict[str, Any]:
     return row
 
 
-def _library_page_md_alt(book_id: str, page_no: int, src: str) -> dict[str, Any]:
-    row = library.get_book(book_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="book not found")
-    markdown = ""
-    reason = ""
-    ok = True
-    slot = "page-v2"
-    if src == "v2md":
-        path = library.book_dir(book_id) / "v2md" / "pages" / f"{int(page_no):04d}.md"
-        if not path.is_file():
-            raise HTTPException(status_code=404, detail="v2md page not found")
-        markdown = path.read_text(encoding="utf-8")
-    else:
-        from app.workspace_module import load
-
-        slicer = load("official_slice")
-        out = slicer.slice_official(book_id, page_no, root=str(settings.textbooks_dir))
-        slot = "page-official"
-        if not isinstance(out, dict) or not out.get("ok"):
-            ok = False
-            reason = str((out or {}).get("reason") or "官方稿本页切不开")
-        else:
-            markdown = str(out.get("markdown") or "")
-    prepared = ""
-    if ok and markdown:
-        surfaces.get_slot(slot)
-        prepared = surfaces.prepare_page(markdown, book_id=book_id, slot=slot)
-    return {
-        "book_id": book_id,
-        "page_no": page_no,
-        "markdown": markdown,
-        "prepared": prepared,
-        "page_count": row["page_count"],
-        "src": src,
-        "ok": ok,
-        "reason": reason,
-    }
-
-
 def _ir_load(name: str) -> Any:
     from app.workspace_module import load
 
@@ -771,7 +731,7 @@ def ir_page_markdown(book_id: str, page_no: int) -> dict[str, Any]:
     out = tool.ir_note(book_id, page_no, root=str(settings.textbooks_dir), apply="fix")
     if not out.get("ok") and out.get("reason"):
         raise HTTPException(status_code=404, detail=out["reason"])
-    rewrite = getattr(_ir_load("official_lib"), "rewrite_image_urls", None)
+    rewrite = getattr(_ir_load("ir_lib"), "rewrite_image_urls", None)
     markdown = str(out.get("markdown") or "")
     if rewrite is not None:
         markdown = rewrite(markdown, book_id)
@@ -779,8 +739,8 @@ def ir_page_markdown(book_id: str, page_no: int) -> dict[str, Any]:
     try:
         from app import surfaces
 
-        surfaces.get_slot("page-body")
-        prepared = surfaces.prepare_page(markdown, book_id=book_id, slot="page-body")
+        surfaces.get_slot("page-ir")
+        prepared = surfaces.prepare_page(markdown, book_id=book_id, slot="page-ir")
     except Exception:
         prepared = markdown
     return {
@@ -803,7 +763,7 @@ def ir_page_blocks(book_id: str, page_no: int) -> dict[str, Any]:
     lib = _ir_load("ir_lib")
     book = library.book_dir(book_id)
     try:
-        page = lib.ingest_page(book, page_no, lib.default_box_prefixes())
+        page, _wrote = lib.load_or_ingest_page(book, page_no)
     except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     notes = _ir_load("ir_notes").load_notes(book, page_no)
@@ -821,9 +781,12 @@ def ir_page_blocks(book_id: str, page_no: int) -> dict[str, Any]:
 def library_page_md(book_id: str, page_no: int, src: str = "old") -> dict[str, Any]:
     kind = (src or "old").strip().lower() or "old"
     if kind in {"v2md", "official"}:
-        return _library_page_md_alt(book_id, page_no, kind)
+        raise HTTPException(
+            status_code=410,
+            detail="src=v2md and src=official retired; use /v1/ir/{book}/pages/{n}/markdown",
+        )
     if kind not in {"old", ""}:
-        raise HTTPException(status_code=400, detail="src must be old, v2md, or official")
+        raise HTTPException(status_code=400, detail="src must be old")
     started = time.monotonic()
     row = library.get_book(book_id)
     if row is None:

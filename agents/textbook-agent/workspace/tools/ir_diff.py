@@ -15,9 +15,22 @@ from typing import Any
 
 from ir_lib import (apply_notes, book_dir, default_box_prefixes, ingest_page,
                     load_layout, load_model, load_v1, render_page_md, safe_book_id)
-from ir_notes import _normalize, load_notes
+from ir_notes import load_notes
 
 _IMG_URL = re.compile(r"!\[[^\]]*\]\([^)]+\)")
+_BLOCK_ID = re.compile(r"\s*\^kb-[0-9a-f]{6}\b")
+_WS = re.compile(r"\s+")
+
+
+def _normalize(md: str) -> list[str]:
+    lines = []
+    for line in (md or "").splitlines():
+        line = _BLOCK_ID.sub("", line)
+        line = _IMG_URL.sub("![图](IMG)", line)
+        line = _WS.sub("", line)
+        if line:
+            lines.append(line)
+    return lines
 
 
 def ir_diff_pages(book: Path, wanted: list[int], model: Any, v1: Any,

@@ -24,7 +24,7 @@ import yaml
 from app.config import settings
 from app.paths import PathJailError, resolve_in_home
 
-SLOTS = ("page-body", "toc-tree", "compare", "page-v2", "page-official")
+SLOTS = ("page-body", "toc-tree", "compare", "page-v2", "page-official", "page-ir")
 PROPOSALS = "proposals"
 LAST_GOOD = ".last-good"
 SEED = Path(__file__).resolve().parent.parent / "workspace" / "surfaces"
@@ -288,11 +288,24 @@ def test_folder(slot: str, folder: Path) -> list[GoldenRow]:
     if not pairs:
         return [GoldenRow(name="(none)", ok=False, detail="no goldens")]
     rows: list[GoldenRow] = []
-    op = "prepare" if (folder / "prepare.mjs").is_file() else "paint"
+    has_prepare = (folder / "prepare.mjs").is_file()
+    has_paint = (folder / "paint.mjs").is_file()
     for src, dest in pairs:
         name = src.name
         expected = dest.read_text(encoding="utf-8")
         ctx = _ctx_for(src, profile)
+        is_json = name.endswith(".in.json")
+        if is_json and has_paint:
+            op = "paint"
+        elif (not is_json) and has_prepare:
+            op = "prepare"
+        elif has_prepare:
+            op = "prepare"
+        elif has_paint:
+            op = "paint"
+        else:
+            rows.append(GoldenRow(name=name, ok=False, detail="no prepare/paint"))
+            continue
         try:
             if op == "prepare":
                 actual = str(_run_js(folder, "prepare", markdown=src.read_text(encoding="utf-8"), ctx=ctx) or "")

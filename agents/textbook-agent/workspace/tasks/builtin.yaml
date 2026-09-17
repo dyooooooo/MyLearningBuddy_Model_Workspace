@@ -28,6 +28,18 @@ tasks:
 
       抽子目录不在这里做，它排在后面那个「导入后建目录」任务里，跟在建骨架之后。
 
+  - id: import-ir-ingest
+    title: 导入后摄取中间表示
+    enabled: true
+    mode: trigger
+    trigger: kb.import.completed
+    action: chat
+    message: |
+      书号：{{book_id}}。
+      只依次调用一次 ingest_layout(book_id={{book_id}}, apply=fix)
+      和一次 ir_toc(book_id={{book_id}}, apply=fix)。
+      不要写 pages/ 或 mid/。不要 refine_page。不要读 v2md 或官方稿接口。到此结束。
+
   - id: import-book-toc
     title: 导入后建目录
     enabled: true

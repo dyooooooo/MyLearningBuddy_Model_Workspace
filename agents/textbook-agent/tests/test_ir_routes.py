@@ -83,3 +83,30 @@ def test_ir_routes_end_to_end(tmp_path, monkeypatch) -> None:
 
     missing = client.get("/v1/ir/nope/toc", headers=_HEADERS)
     assert missing.status_code == 404
+
+    page_path = Path(settings.agent_home) / "textbooks" / "irroute" / "ir" / "pages" / "0001.json"
+    assert page_path.is_file()
+    raw = page_path.read_bytes()
+    md3 = client.get("/v1/ir/irroute/pages/1/markdown", headers=_HEADERS)
+    assert md3.status_code == 200
+    assert page_path.read_bytes() == raw
+    assert "official_lib" not in md3.json()["prepared"]
+    assert "page-body" not in (md3.json().get("prepared") or "")
+
+    gone = client.get("/v1/library/irroute/pages/1/markdown?src=v2md", headers=_HEADERS)
+    assert gone.status_code == 410
+    gone2 = client.get("/v1/library/irroute/pages/1/markdown?src=official", headers=_HEADERS)
+    assert gone2.status_code == 410
+
+
+def test_ir_routes_do_not_call_old_surfaces() -> None:
+    from pathlib import Path
+
+    src = Path(__file__).resolve().parents[1] / "app" / "main.py"
+    text = src.read_text(encoding="utf-8")
+    start = text.index("def ir_page_markdown")
+    end = text.index("def ir_page_blocks")
+    chunk = text[start:end]
+    assert "official_lib" not in chunk
+    assert 'slot="page-body"' not in chunk
+    assert 'slot="page-ir"' in chunk

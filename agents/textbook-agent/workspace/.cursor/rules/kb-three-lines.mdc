@@ -1,22 +1,24 @@
 ---
-description: 知识库三线并存：老线 pages/mid、新线 v2md、官方线 layout.json 按页出稿。改哪条线只动哪条线的目录、工具、surface，别串线。
+description: 知识库读页线：老线 pages/mid（已冻结）+ 中间表示（IR）。v2md/官方线已退役。改哪条线只动哪条线的目录、工具、surface，别串线。
 alwaysApply: true
 ---
 
-# 知识库三线并存
+# 知识库两线：老线冻结 + 中间表示
 
-同一批教材有三条并存的读页线，入口都是 `GET /v1/library/{书}/pages/{页}/markdown?src=`：
+> **2026-09-12 起**：新稿（v2md）与官方稿活路径已拔掉。读页只剩老线（冻结参照）和中间表示（IR, Intermediate Representation）。
+> `GET /v1/library/…/markdown?src=v2md|official` 返回 410。磁盘上的 `v2md/` 只作考古，接口不读。
 
-| 线 | src | 正文从哪来 | 渲染插槽 | 工具 | 技能 |
-|----|-----|-----------|----------|------|------|
-| 老线 | `old`（默认） | `pages/NNNN.md` + `mid/NNNN.md`，`page_sync` 对齐 | `page-body` | `source_text` `tag_chinese_layout` 等 | `page-layers` |
-| 新线 | `v2md` | `v2md/pages/NNNN.md`（预生成，带 frontmatter / 双链 / callout） | `page-v2` | `v2md_generate` `v2md_lib` | `v2md-pipeline` |
-| 官方线 | `official` | 请求时从 `mineru/layout.json` 该页出稿，不落盘 | `page-official` | `official_slice` `official_lib` | `official-pipeline` |
+| 线 | 入口 | 正文从哪来 | 渲染插槽 | 工具 | Agent 技能 |
+|----|-----|-----|----|---|---|
+| 老线 | `GET /v1/library/{书}/pages/{页}/markdown`（`src=old`，默认） | `textbooks/<id>/pages/NNNN.md` + `mid/`（page_sync 对齐） | `surfaces/page-body/` | `source_text` 等 | `page-layers` |
+| 中间表示 | `GET /v1/ir/{书}/pages/{页}/markdown` | `…/ir/pages/NNNN.json` + `ir/notes` | `surfaces/page-ir/` | `ingest_layout` · `ir_lib` · `ir_notes` | `ingest-layout` · `ir-notes` |
+
+对照只剩：旧稿 | 中间表示、中间表示 | 原图、旧稿 | 原图。
 
 ## 别串线
 
 - 改哪条线的内容，只动哪条线的目录、生成工具、surface；禁止借另一条线的文件或定位词。
-- 老线是**唯一可人工编辑、唯一喂 AI 抽取**的线；新线、官方线都是 MinerU 派生物，改了会被重新生成覆盖（official 根本不落盘）。
-- 老线的人工订正**不会**流进新线/官方线，两边的内容差异只会随编辑拉大——对账时以为是 bug 的文本差异，先确认是不是两条线的天然差。
-- 修渲染：老线改 `page-body/`，新线改 `page-v2/`，官方线改 `page-official/`，各自的 golden 各自补。
-- 详情见 `.cursor/skills/kb-three-lines/SKILL.md`。
+- 老线**冻结**：`pages/`、`mid/`、`page_sync` 一行不动，作审查与验证参照。不要把中间表示订正写回老线。
+- 中间表示是 MinerU 派生物 + 注解层；改 `ir/pages` 会被重新摄取覆盖，人工订正只写 `ir/notes`。
+- `v2md_generate` / `official_slice` 已标 retired，不要再接到 library 读页。
+- 总图：`.cursor/skills/kb-three-lines/SKILL.md`。

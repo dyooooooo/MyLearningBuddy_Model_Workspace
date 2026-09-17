@@ -81,8 +81,10 @@ def test_page_ingest_full_shape(tmp_path: Path) -> None:
     out = ir_lib.ingest_page(book, 1, box_prefixes=["聚焦"])
     assert out["page"] == 1 and out["page_size"] == [600, 800]
     assert out["source"]["mineru"] == "9.9.9-test"
+    assert out["source"]["schema"] == ir_lib.IR_SCHEMA
 
-    by_type = {b["type"]: b for b in out["blocks"]}
+    # 收口块（kb-close-*）是派生的合并行，按源块取
+    by_type = {b["type"]: b for b in out["blocks"] if not ir_lib.is_close_block(b)}
     text = by_type["text"]
     assert text["text"] == "原子中的能级按能量排列"
     assert text["score"] == 0.98
@@ -152,8 +154,10 @@ def test_v1_caption_and_table_fallback(tmp_path: Path) -> None:
         }],
     )
     v1 = [
-        {"type": "image", "page_idx": 0, "image_caption": ["图X　来自v1的题注"]},
-        {"type": "table", "page_idx": 0, "table_body": "<table><tr><td>1</td></tr></table>"},
+        {"type": "image", "page_idx": 0, "image_caption": ["图X　来自v1的题注"],
+         "bbox": [60, 100, 300, 300]},
+        {"type": "table", "page_idx": 0, "table_body": "<table><tr><td>1</td></tr></table>",
+         "bbox": [60, 400, 540, 600]},
     ]
     (book / "mineru" / "demo_content_list.json").write_text(
         json.dumps(v1, ensure_ascii=False), encoding="utf-8"
@@ -322,8 +326,11 @@ def test_render_page_md(tmp_path: Path) -> None:
     out = ir_lib.render_page_md(ir_lib.ingest_page(book, 1, box_prefixes=["拓展延伸"]))
     assert "处于$2p$轨道上" in out
     assert "**【拓展延伸】**" in out
-    assert "![图A](images/a.jpg)" in out and "*图A*" in out
-    assert "![插图](images/b.jpg)" in out  # 同行图连续输出
+    assert "kb-ir-figrow" in out
+    assert "images/a.jpg" in out and "图A" in out
+    assert "images/b.jpg" in out
+    assert "width:" in out
+    assert "kb-ir-eq" in out
     assert "$$\nE=mc^2\n$$" in out
     assert out.rstrip().endswith("① 页注")
 
@@ -364,6 +371,48 @@ def test_ir_toc_parse_and_page_map(tmp_path: Path) -> None:
     ]
 
 
+def test_ir_toc_slash_and_chapter_glue(tmp_path: Path) -> None:
+    book = _book(
+        tmp_path,
+        [
+            {"page_idx": 0, "page_size": [600, 800], "para_blocks": [_block("text", 0, [[_span("text", "封面")]])],
+             "discarded_blocks": []},
+            {"page_idx": 1, "page_size": [600, 800],
+             "para_blocks": [_block("title", 0, [[_span("text", "目录")]])],
+             "discarded_blocks": [_block("page_number", 9, [[_span("text", "iv")]])]},
+            {"page_idx": 2, "page_size": [600, 800],
+             "para_blocks": [_block("text", 0, [[_span("text", "绪言")]])],
+             "discarded_blocks": [_block("page_number", 9, [[_span("text", "1")]])]},
+        ],
+    )
+    page = {
+        "page": 2,
+        "blocks": [
+            {"type": "title", "kind": "body", "text": "目录"},
+            {"type": "title", "kind": "body", "text": "第 章 1"},
+            {"type": "title", "kind": "body", "text": "发酵工程1"},
+            {"type": "text", "kind": "body",
+             "text": "第 1 节 获得纯种微生物是发酵工程的基础 / 2\n探究·实验 1-1 酵母浸粉胨葡萄糖培养基的配制 / 6"},
+        ],
+        "chrome": {"page_numbers": ["iv"]},
+    }
+    ir_dir = book / "ir" / "pages"
+    ir_dir.mkdir(parents=True)
+    (ir_dir / "0002.json").write_text(json.dumps(page, ensure_ascii=False), encoding="utf-8")
+    from ir_toc import build_toc, ir_toc
+
+    toc = build_toc(book)
+    titles = [(e["level"], e["title"], e["print_page"], e["pdf_page"]) for e in toc["entries"]]
+    assert titles[0] == (0, "第1章 发酵工程", "1", 3)
+    assert titles[1][1] == "第 1 节 获得纯种微生物是发酵工程的基础"
+    assert titles[1][2] == "2"
+    assert all(e.get("label") == e["title"] for e in toc["entries"])
+    assert (book / "toc.json").exists() is False
+    ir_toc("irbook", root=str(tmp_path), apply="fix")
+    assert (book / "ir" / "toc.json").is_file()
+    assert not (book / "toc.json").exists()
+
+
 def test_ir_toc_tool_scan_and_fix(tmp_path: Path) -> None:
     _toc_book(tmp_path)
     from ir_toc import ir_toc
@@ -397,7 +446,7 @@ def _notes_book(tmp_path: Path) -> Path:
 def test_apply_notes_replace_retitle_delete(tmp_path: Path) -> None:
     book = _notes_book(tmp_path)
     page = ir_lib.ingest_page(book, 1, box_prefixes=[])
-    by_text = {b["text"]: b for b in page["blocks"]}
+    by_text = {b["text"]: b for b in page["blocks"] if not ir_lib.is_close_block(b)}
     notes = [
         {"id": "n1", "block": by_text["原文有错别字的段落"]["id"], "op": "replace",
          "old": "错别字", "new": "正确"},
@@ -547,6 +596,138 @@ def test_ir_diff_tool_imports_from_own_file(tmp_path: Path) -> None:
     assert "similarity" in out["report"][0] or out["report"][0].get("old") == "missing"
 
 
+def test_v2_level_conflict_keeps_layout_level(tmp_path: Path) -> None:
+    book = _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [
+                _block("title", 0, [[_span("text", "电子云")]], bbox=[60, 150, 200, 170], level=2),
+            ],
+            "discarded_blocks": [],
+        }],
+    )
+    v2 = [[{
+        "type": "title",
+        "content": {"title_content": [{"content": "电子云"}], "level": 1},
+        "bbox": [60, 150, 200, 170],
+    }]]
+    (book / "mineru" / "demo_content_list_v2.json").write_text(
+        json.dumps(v2, ensure_ascii=False), encoding="utf-8"
+    )
+    out = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    title = out["blocks"][0]
+    assert title["level"] == 2
+    assert title["level_conflict"] == 1
+
+
+def test_center_distance_pairs_crossed_boxes(tmp_path: Path) -> None:
+    book = _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [
+                _block("image", 0, [[_span("text", "", image="left.jpg")]], bbox=[60, 100, 200, 300]),
+                _block("image", 1, [[_span("text", "", image="right.jpg")]], bbox=[320, 100, 540, 300]),
+            ],
+            "discarded_blocks": [],
+        }],
+    )
+    v1 = [
+        {"type": "image", "page_idx": 0, "image_caption": ["右题注"], "bbox": [320, 100, 540, 300]},
+        {"type": "image", "page_idx": 0, "image_caption": ["左题注"], "bbox": [60, 100, 200, 300]},
+    ]
+    (book / "mineru" / "demo_content_list.json").write_text(
+        json.dumps(v1, ensure_ascii=False), encoding="utf-8"
+    )
+    out = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    by_asset = {b["asset"]: b["caption"] for b in out["blocks"]}
+    assert by_asset["left.jpg"] == "左题注"
+    assert by_asset["right.jpg"] == "右题注"
+
+
+def test_load_or_ingest_page_skips_rewrite_when_hash_matches(tmp_path: Path) -> None:
+    _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [_block("text", 0, [[_span("text", "缓存页")]], bbox=[60, 100, 540, 140])],
+            "discarded_blocks": [],
+        }],
+    )
+    book = tmp_path / "irbook"
+    first, wrote = ir_lib.load_or_ingest_page(book, 1)
+    assert wrote is True
+    path = ir_lib.page_json_path(book, 1)
+    raw = path.read_bytes()
+    mtime = path.stat().st_mtime_ns
+    second, wrote2 = ir_lib.load_or_ingest_page(book, 1)
+    assert wrote2 is False
+    assert path.read_bytes() == raw
+    assert path.stat().st_mtime_ns == mtime
+    assert second["blocks"][0]["text"] == first["blocks"][0]["text"]
+
+
+def test_inline_image_merges_into_neighbor_text(tmp_path: Path) -> None:
+    page = {
+        "page_idx": 0,
+        "page_size": [600, 800],
+        "para_blocks": [
+            _block("text", 0, [[_span("text", "正文第一句")]], bbox=[60, 100, 540, 120]),
+            _block("image", 1, [[_span("text", "", image="icon.jpg")]], bbox=[60, 130, 90, 145]),
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page])
+    md = ir_lib.render_page_md(ir_lib.ingest_page(book, 1, box_prefixes=[]))
+    assert "正文第一句 ![图](images/icon.jpg)" in md
+
+
+def test_ingest_layout_star_runs_all_layout_books(tmp_path: Path) -> None:
+    _book(tmp_path, [{
+        "page_idx": 0, "page_size": [600, 800],
+        "para_blocks": [_block("text", 0, [[_span("text", "甲书")]], bbox=[60, 100, 540, 140])],
+        "discarded_blocks": [],
+    }])
+    other = tmp_path / "other"
+    mineru = other / "mineru"
+    mineru.mkdir(parents=True)
+    (mineru / "layout.json").write_text(
+        json.dumps({
+            "pdf_info": [{
+                "page_idx": 0, "page_size": [600, 800],
+                "para_blocks": [_block("text", 0, [[_span("text", "乙书")]], bbox=[60, 100, 540, 140])],
+                "discarded_blocks": [],
+            }],
+        }, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (other / "meta.json").write_text(json.dumps({"id": "other", "page_count": 1}), encoding="utf-8")
+    out = ingest_layout("*", root=str(tmp_path), apply="scan")
+    assert out["ok"] and out["books"] == 2 and out["pages"] == 2
+
+
+def test_search_md_reports_book_page_block(tmp_path: Path) -> None:
+    from search_md import search_md
+
+    book = _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [_block("text", 0, [[_span("text", "可检索的中间表示")]], bbox=[60, 100, 540, 140])],
+            "discarded_blocks": [],
+        }],
+    )
+    ir_lib.save_page_json(book, ir_lib.ingest_page(book, 1, box_prefixes=[]))
+    hits = search_md(str(tmp_path), "中间表示")
+    assert hits
+    assert hits[0]["path"].startswith("irbook:1#")
+
+
 def test_ir_routes_out_of_range_page_is_404(tmp_path, monkeypatch) -> None:
     from fastapi.testclient import TestClient
     from app.main import app
@@ -577,3 +758,105 @@ def test_ir_routes_out_of_range_page_is_404(tmp_path, monkeypatch) -> None:
     assert client.get("/v1/ir/irb/pages/1/markdown", headers=headers).status_code == 200
     assert client.get("/v1/ir/irb/pages/99/markdown", headers=headers).status_code == 404
     assert client.get("/v1/ir/irb/pages/99/blocks", headers=headers).status_code == 404
+
+
+def test_v1_caption_not_reused_when_child_already_has_it(tmp_path: Path) -> None:
+    book = _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [595, 841],
+            "para_blocks": [
+                _block("image", 0, [[_span("text", "", image="deco.jpg")]],
+                       bbox=[402, 463, 421, 481]),
+                _block("image", 1, [[_span("text", "", image="flow.jpg")]],
+                       bbox=[85, 526, 367, 638],
+                       children=[_block("image_caption", 0,
+                                       [[_span("text", "图 1-13 酱油制作工艺流程图")]])]),
+            ],
+            "discarded_blocks": [],
+        }],
+    )
+    v1 = [{
+        "type": "image", "page_idx": 0,
+        "image_caption": ["图 1-13 酱油制作工艺流程图"],
+        "bbox": [142, 625, 616, 758],
+    }]
+    (book / "mineru" / "demo_content_list.json").write_text(
+        json.dumps(v1, ensure_ascii=False), encoding="utf-8"
+    )
+    out = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    by_asset = {b.get("asset"): b.get("caption") for b in out["blocks"]}
+    assert by_asset["flow.jpg"] == "图 1-13 酱油制作工艺流程图"
+    assert not by_asset.get("deco.jpg")
+
+
+def test_wide_short_image_stays_figure(tmp_path: Path) -> None:
+    page = {
+        "page_idx": 0,
+        "page_size": [600, 800],
+        "para_blocks": [
+            _block("text", 0, [[_span("text", "邻段")]], bbox=[60, 100, 540, 120]),
+            _block("image", 1, [[_span("text", "", image="wide.jpg")]],
+                   bbox=[60, 130, 200, 175]),  # 高 5.6%，宽 23% → 不是句中图
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page])
+    out = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    fig = [b for b in out["blocks"] if b.get("asset") == "wide.jpg"][0]
+    assert fig["kind"] == "figure"
+
+
+def test_row_clusters_against_any_member(tmp_path: Path) -> None:
+    page = {
+        "page_idx": 0,
+        "page_size": [600, 800],
+        "para_blocks": [
+            _block("image", 0, [[_span("text", "", image="a.jpg")]], bbox=[40, 100, 80, 180]),
+            _block("image", 1, [[_span("text", "", image="b.jpg")]], bbox=[100, 120, 160, 200]),
+            _block("image", 2, [[_span("text", "", image="c.jpg")]], bbox=[180, 150, 250, 230]),
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page])
+    out = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    rows = [b.get("row") for b in out["blocks"] if b["kind"] == "figure"]
+    assert rows == [0, 0, 0]
+
+
+def test_box_colon_not_duplicated_in_markdown(tmp_path: Path) -> None:
+    page = {
+        "page_idx": 0,
+        "page_size": [600, 800],
+        "para_blocks": [
+            _block("title", 0, [[_span("text", "思考与讨论：")]],
+                   bbox=[400, 100, 460, 120], level=2),
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page])
+    page_ir = ir_lib.ingest_page(book, 1, box_prefixes=["思考与讨论"])
+    assert page_ir["blocks"][0]["kind"] == "box"
+    md = ir_lib.render_page_md(page_ir)
+    assert md.count("思考与讨论") == 1
+
+
+def test_load_or_ingest_rewrites_old_schema(tmp_path: Path) -> None:
+    _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [_block("text", 0, [[_span("text", "旧版")]], bbox=[60, 100, 540, 140])],
+            "discarded_blocks": [],
+        }],
+    )
+    book = tmp_path / "irbook"
+    first, wrote = ir_lib.load_or_ingest_page(book, 1)
+    assert wrote is True
+    first["source"]["schema"] = 1
+    ir_lib.save_page_json(book, first)
+    again, wrote2 = ir_lib.load_or_ingest_page(book, 1)
+    assert wrote2 is True
+    assert again["source"]["schema"] == ir_lib.IR_SCHEMA

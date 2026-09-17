@@ -7,7 +7,7 @@ description: 新线 TOC 处理器：从 layout 识别目录页、解析「标题
 
 工具：`ir_toc(book_id, apply="scan"|"fix", root="")`（`workspace/tools/ir_toc.py`）；库函数 `build_toc(book)`。
 
-- 目录页 = 「目 录/目录/Contents」title + 点线导引 text 块（整页常并成一个 span，按 \n 切分）。
+- 目录页 = 「目 录/目录/Contents」标题，或斜杠/点线导引（`标题 / 2`、`标题 …… 2`）。优先读 `ir/pages`。章名被拆成「第 章 N」+「名称页码」时会拼回去。
 - 印刷页→pdf 页用逐页 discarded 页码块建图，**目录页自身排除**（页脚数字会抢映射）。
 - `fix` 写 `ir/toc.json`；人工 `toc.json` 是参照，永不改写。
 
