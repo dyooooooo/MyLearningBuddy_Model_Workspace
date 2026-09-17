@@ -138,11 +138,13 @@ function eqHtml(blk, bookId) {
   return text ? `<div class="kb-ir-eq"${blockAttr(blk.id)}>${escapeHtml(text)}</div>` : "";
 }
 
-function titleHtml(blk) {
+function titleHtml(blk, bookId) {
   const level = Math.max(1, Math.min(6, Number(blk.level) || 2));
-  const text = (blk.text || "").trim();
-  if (!text) return "";
-  return `<h${level}${classAttr(alignClass(blk).trim())}${blockAttr(blk.id)}>${escapeHtml(text)}</h${level}>`;
+  // 标题也要走 span：公式出 data-latex 占位、下标出真 <sub>、收口的两栏出制表位。
+  // 只读 blk.text 会把这些统统压成转义字面量（$^{①}$ 直接印在 h2 里）。
+  const inner = linesHtml(blk.lines, bookId) || escapeHtml((blk.text || "").trim());
+  if (!inner) return "";
+  return `<h${level}${classAttr(alignClass(blk).trim())}${blockAttr(blk.id)}>${inner}</h${level}>`;
 }
 
 function tableHtml(blk, bookId, opts = {}) {
@@ -172,7 +174,7 @@ function renderOne(blk, bookId, extras = "", opts = {}) {
   }
   if (blk.type === "table") return tableHtml(blk, bookId, opts);
   if (blk.type === "interline_equation") return eqHtml(blk, bookId);
-  if (blk.type === "title") return titleHtml(blk);
+  if (blk.type === "title") return titleHtml(blk, bookId);
   return paragraph(blk, bookId, extras);
 }
 

@@ -18,12 +18,14 @@ import "mathjax-full/js/input/tex/newcommand/NewcommandConfiguration.js";
 import "mathjax-full/js/input/tex/configmacros/ConfigMacrosConfiguration.js";
 import "mathjax-full/js/input/tex/boldsymbol/BoldsymbolConfiguration.js";
 import "mathjax-full/js/input/tex/cases/CasesConfiguration.js";
+import "mathjax-full/js/input/tex/mhchem/MhchemConfiguration.js";
+import "mathjax-full/js/input/tex/extpfeil/ExtpfeilConfiguration.js";
 
 const adaptor = liteAdaptor();
 RegisterHTMLHandler(adaptor);
 
 const tex = new TeX({
-  packages: ["base", "ams", "newcommand", "configmacros", "boldsymbol", "cases"],
+  packages: ["base", "ams", "newcommand", "configmacros", "boldsymbol", "cases", "mhchem", "extpfeil"],
 });
 const svg = new SVG({ fontCache: "none" });
 const doc = mathjax.document("", { InputJax: tex, OutputJax: svg });

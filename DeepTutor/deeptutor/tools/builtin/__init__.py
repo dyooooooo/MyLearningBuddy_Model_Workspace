@@ -5,22 +5,21 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import sys
 from typing import Any
 
-from deeptutor.capabilities.mastery import MASTERY_TOOL_TYPES
-from deeptutor.capabilities.obsidian import OBSIDIAN_TOOL_TYPES
-from deeptutor.capabilities.solve import SOLVE_TOOL_TYPES
-from deeptutor.capabilities.subagent import SUBAGENT_TOOL_TYPES
 from deeptutor.core.tool_protocol import BaseTool, ToolDefinition, ToolParameter, ToolResult
-from deeptutor.tools.exec_tool import ExecTool
-from deeptutor.tools.media_gen_tool import ImagegenTool, VideogenTool
-from deeptutor.tools.partner_memory import (
+from deeptutor.knowledge.manifest import KB_FILES_DEFAULT_LIMIT, KB_FILES_MAX_LIMIT
+from deeptutor.tools.builtin_specs import (
+    BUILTIN_TOOL_NAMES,
+    BUILTIN_TOOL_SPECS,
     PARTNER_BUILTIN_TOOL_NAMES,
-    PartnerMemorizeTool,
-    PartnerReadTool,
-    PartnerSearchTool,
+    TOOL_ALIASES,
+    LazyBuiltinToolTypes,
 )
 from deeptutor.tools.prompting import load_prompt_hints
+from deeptutor.tools.question_bank import ACTIONS as QB_ACTIONS
+from deeptutor.tools.question_bank import FILTERS as QB_FILTERS
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +73,23 @@ class BrainstormTool(_PromptHintsMixin, BaseTool):
         return ToolResult(content=result.get("answer", ""), metadata=result)
 
 
+def _rag_sources(result: dict[str, Any], *, query: str, kb_name: str) -> list[dict[str, Any]]:
+    """Citations for one ``rag`` call, from the retrieval's own provenance.
+
+    Every pipeline normalises what it retrieved into ``result["sources"]``
+    (``{title, content, source, page, chunk_id, score}`` — see the GraphRAG and
+    LightRAG-server pipelines). Forward those so a grounded claim is traceable
+    to the chunk / entity / report behind it; without this the tool reported
+    only an echo of its own query (issue #694). ``type``/``kb_name`` are kept on
+    every entry so consumers that key on them still work, and an engine that
+    surfaces no provenance still yields the echo rather than nothing.
+    """
+    retrieved = [item for item in (result.get("sources") or []) if isinstance(item, dict)]
+    if not retrieved:
+        return [{"type": "rag", "query": query, "kb_name": kb_name}]
+    return [{"type": "rag", "kb_name": kb_name, **item} for item in retrieved]
+
+
 class RAGTool(_PromptHintsMixin, BaseTool):
     def get_definition(self) -> ToolDefinition:
         return ToolDefinition(
@@ -118,9 +134,99 @@ class RAGTool(_PromptHintsMixin, BaseTool):
         content = result.get("answer") or result.get("content", "")
         return ToolResult(
             content=content,
-            sources=[{"type": "rag", "query": query, "kb_name": kb_name}],
+            sources=_rag_sources(result, query=query, kb_name=kb_name),
             metadata=result,
         )
+
+
+class KbFilesTool(_PromptHintsMixin, BaseTool):
+    """Enumerate what a knowledge base holds — the query ``rag`` cannot serve.
+
+    Retrieval returns passages; it cannot report how many documents a KB holds
+    or whether a named file is in it. The chat system prompt carries a truncated
+    inventory for exactly this reason; this tool serves the full list and
+    name filtering.
+    """
+
+    def get_definition(self) -> ToolDefinition:
+        return ToolDefinition(
+            name="kb_files",
+            description=(
+                "List the documents stored in one of the knowledge bases attached "
+                "to this turn, with the total count. Use this — never rag — for "
+                "questions about how many files a knowledge base holds, what its "
+                "files are called, or whether a particular file is in it."
+            ),
+            parameters=[
+                ToolParameter(
+                    name="kb_name",
+                    type="string",
+                    description="Knowledge base to inspect. Must be one of the attached knowledge bases.",
+                ),
+                ToolParameter(
+                    name="pattern",
+                    type="string",
+                    description=(
+                        "Optional name filter: a glob such as '*.pdf', or a "
+                        "case-insensitive substring. Omit to list everything."
+                    ),
+                    required=False,
+                ),
+                ToolParameter(
+                    name="limit",
+                    type="integer",
+                    description=(
+                        f"Optional maximum number of documents to list "
+                        f"(default {KB_FILES_DEFAULT_LIMIT}, max {KB_FILES_MAX_LIMIT})."
+                    ),
+                    required=False,
+                ),
+            ],
+        )
+
+    async def execute(self, **kwargs: Any) -> ToolResult:
+        from deeptutor.knowledge.manifest import render_manifest_report
+        from deeptutor.multi_user.knowledge_access import resolve_kb_manifest
+
+        kb_name = str(kwargs.get("kb_name") or "").strip()
+        if not kb_name:
+            raise ValueError("kb_files requires an explicit kb_name.")
+        pattern = str(kwargs.get("pattern") or "").strip()
+        language = str(kwargs.get("language") or "en")
+
+        manifest = await asyncio.to_thread(
+            resolve_kb_manifest,
+            kb_name,
+            limit=_kb_files_limit(kwargs.get("limit")),
+            pattern=pattern,
+        )
+        if manifest is None:
+            raise ValueError(f"Knowledge base '{kb_name}' is not accessible.")
+
+        return ToolResult(
+            content=render_manifest_report(manifest, language=language),
+            metadata={
+                "kb_name": manifest.name,
+                "total": manifest.total,
+                "matched": manifest.matched,
+                "listed": [document.name for document in manifest.documents],
+                "omitted": manifest.omitted,
+                "pattern": manifest.pattern,
+                "status": manifest.status,
+                "unavailable": manifest.unavailable,
+            },
+        )
+
+
+def _kb_files_limit(raw: Any) -> int:
+    """Clamp a model-supplied ``limit`` into range; fall back on anything unusable."""
+    try:
+        requested = int(raw)
+    except (TypeError, ValueError):
+        return KB_FILES_DEFAULT_LIMIT
+    if requested <= 0:
+        return KB_FILES_DEFAULT_LIMIT
+    return min(requested, KB_FILES_MAX_LIMIT)
 
 
 class WebSearchTool(_PromptHintsMixin, BaseTool):
@@ -191,15 +297,48 @@ class CodeExecutionTool(_PromptHintsMixin, BaseTool):
         "cc": "c",
     }
 
+    @classmethod
+    def _command_for_platform(cls, language: str, *, has_stdin: bool) -> str:
+        """Build the shell command understood by the selected host platform."""
+        if sys.platform != "win32":
+            source_name, command_template = cls._LANGUAGES[language]
+            stdin_redirect = "< stdin.txt" if has_stdin else ""
+            return command_template.format(src=source_name, stdin=stdin_redirect).strip()
+
+        commands = {
+            "python": "python main.py",
+            # Use syntax supported by Windows PowerShell 5 as well as 7;
+            # ``&&`` only exists in PowerShell 7.
+            "c": "gcc main.c -O2 -o prog.exe; if ($LASTEXITCODE -eq 0) { .\\prog.exe }",
+            "cpp": "g++ -std=c++17 -O2 main.cpp -o prog.exe; if ($LASTEXITCODE -eq 0) { .\\prog.exe }",
+        }
+        command = commands[language]
+        # PowerShell's pipeline supplies stdin without relying on POSIX `<`.
+        if not has_stdin:
+            return command
+        if language == "python":
+            return "Get-Content stdin.txt | python main.py"
+        compiler, source = ("gcc", "main.c") if language == "c" else ("g++", "main.cpp")
+        flags = "-O2" if language == "c" else "-std=c++17 -O2"
+        return (
+            "$stdinText = Get-Content -Raw stdin.txt; "
+            f"{compiler} {flags} {source} -o prog.exe; "
+            "if ($LASTEXITCODE -eq 0) { $stdinText | .\\prog.exe }"
+        )
+
     def get_definition(self) -> ToolDefinition:
         return ToolDefinition(
             name="code_execution",
             description=(
                 "Run a code snippet in an isolated sandbox and return its "
-                "stdout/stderr. Pass complete, ready-to-run source in `code` "
-                "and pick `language` (python, c, or cpp). Use for calculation, "
-                "algorithm checking, and numerical verification — print results "
-                "to stdout. Not a substitute for explaining your reasoning."
+                "stdout/stderr plus any files generated in the workspace. Pass "
+                "complete, ready-to-run source in `code` and pick `language` "
+                "(python, c, or cpp). Use it for calculation, data processing, "
+                "and code-generated deliverables instead of embedding source in "
+                "an exec command. Preserve explicit quantities and scope; after "
+                "failure or a missing artifact, diagnose the cause and change "
+                "strategy rather than retrying identical code. Print concise "
+                "results to stdout."
             ),
             parameters=[
                 ToolParameter(
@@ -254,7 +393,7 @@ class CodeExecutionTool(_PromptHintsMixin, BaseTool):
         if not code:
             raise ValueError("code_execution requires non-empty 'code'.")
         language = self._resolve_language(kwargs.get("language"))
-        source_name, command_template = self._LANGUAGES[language]
+        source_name, _ = self._LANGUAGES[language]
 
         try:
             timeout = int(kwargs.get("timeout") or 30)
@@ -282,11 +421,10 @@ class CodeExecutionTool(_PromptHintsMixin, BaseTool):
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / source_name).write_text(code, encoding="utf-8")
 
-        stdin_redirect = ""
-        if str(kwargs.get("stdin") or "") != "":
+        has_stdin = str(kwargs.get("stdin") or "") != ""
+        if has_stdin:
             (run_dir / "stdin.txt").write_text(str(kwargs["stdin"]), encoding="utf-8")
-            stdin_redirect = "< stdin.txt"
-        command = command_template.format(src=source_name, stdin=stdin_redirect).strip()
+        command = self._command_for_platform(language, has_stdin=has_stdin)
 
         limits = ResourceLimits(timeout_s=timeout)
         request = ExecRequest(
@@ -300,7 +438,7 @@ class CodeExecutionTool(_PromptHintsMixin, BaseTool):
         # The source file, compiled binary, and stdin scratch are inputs we
         # wrote ourselves — exclude them so only program-generated files
         # surface as artifacts.
-        meta_files = {source_name, "prog", "stdin.txt"}
+        meta_files = {source_name, "prog", "prog.exe", "stdin.txt"}
         artifacts = [
             artifact
             for artifact in collect_public_artifacts(str(run_dir))
@@ -570,8 +708,8 @@ class ReadSourceTool(_PromptHintsMixin, BaseTool):
     """Load the full text of an attached Space source by its manifest id.
 
     The chat pipeline auto-enables this tool whenever a turn has any non-image
-    attached source (notebook record, book reference, history session,
-    question-bank entry, or document attachment). The per-turn full-text
+    attached source (notebook record, book reference, reading unit, history
+    session, question-bank entry, or document attachment). The per-turn full-text
     payload is carried in ``context.metadata["source_index"]`` as
     ``{source_id: str}`` and injected into the tool call by
     ``_augment_tool_kwargs``. The tool itself stays stateless.
@@ -594,8 +732,8 @@ class ReadSourceTool(_PromptHintsMixin, BaseTool):
                     description=(
                         "The source identifier from the Attached Sources "
                         "manifest. Begins with one of: nb- (notebook record), "
-                        "bk- (book reference), hs- (history session), qb- "
-                        "(question-bank entry), at- (document attachment)."
+                        "bk- (book reference), rd- (reading unit), hs- (history "
+                        "session), qb- (question-bank entry), at- (document attachment)."
                     ),
                 ),
             ],
@@ -746,10 +884,22 @@ class WriteMemoryTool(_PromptHintsMixin, BaseTool):
                 success=False,
                 metadata={"op": op},
             )
-        entry_id = report.results[0].entry_id if report.results else None
+        result0 = report.results[0] if report.results else None
+        entry_id = result0.entry_id if result0 else None
+        deduplicated = bool(result0 and result0.detail == "duplicate")
+        if deduplicated:
+            # Give the model an explicit "already saved" signal so it stops
+            # re-issuing the same write_memory in later turns (issue #647).
+            content = f"preference already saved (entry={entry_id}); skipped duplicate."
+        else:
+            content = f"preference {op}ed (entry={entry_id or target_id})."
         return ToolResult(
-            content=f"preference {op}ed (entry={entry_id or target_id}).",
-            metadata={"op": op, "entry_id": entry_id or target_id},
+            content=content,
+            metadata={
+                "op": op,
+                "entry_id": entry_id or target_id,
+                "deduplicated": deduplicated,
+            },
         )
 
 
@@ -864,6 +1014,120 @@ class ListNotebookTool(_PromptHintsMixin, BaseTool):
         return ToolResult(
             content=outcome.text,
             metadata=outcome.summary or {},
+        )
+
+
+class QuestionBankTool(_PromptHintsMixin, BaseTool):
+    """Read and organise the learner's question bank.
+
+    The bank (Learning Space → Question Bank) holds every graded quiz
+    question the learner has answered. It is a different store from the
+    notebooks ``write_note`` writes to; without this tool the agent had
+    no writable handle on it, so "file my wrong answers into my mistakes
+    set" silently became a note. Auto-mounted iff the bank has entries.
+
+    Actions are name-addressed, never id-addressed, for the one write
+    that matters: ``organize`` takes a category *name* and creates it
+    when missing, so filing is a single call from a single listing.
+    """
+
+    def get_definition(self) -> ToolDefinition:
+        return ToolDefinition(
+            name="question_bank",
+            description=(
+                "Read and organise the learner's question bank — the graded "
+                "quiz questions saved under Learning Space → Question Bank. "
+                "This is where wrong answers and quiz history live; it is NOT "
+                "the notebook (`write_note`). Use it whenever the learner asks "
+                "to review, group, file, or tidy their questions or mistakes. "
+                "action='overview' for counts + existing categories; "
+                "action='list' to see entries (each prefixed with its id); "
+                "action='organize' to file entry_ids into a category by name "
+                "(the category is created if it does not exist); "
+                "action='unfile' to remove them; "
+                "action='bookmark' to star or unstar them."
+            ),
+            parameters=[
+                ToolParameter(
+                    name="action",
+                    type="string",
+                    description=(
+                        "'overview' (counts + categories, needs nothing else), "
+                        "'list', 'organize', 'unfile', or 'bookmark'."
+                    ),
+                    enum=list(QB_ACTIONS),
+                ),
+                ToolParameter(
+                    name="filter",
+                    type="string",
+                    description=(
+                        "For action='list'. 'wrong' = answered incorrectly, "
+                        "'uncategorized' = not filed anywhere yet (the triage "
+                        "inbox), 'bookmarked', or 'all'. Default 'all'."
+                    ),
+                    enum=list(QB_FILTERS),
+                    required=False,
+                ),
+                ToolParameter(
+                    name="category",
+                    type="string",
+                    description=(
+                        "Category name. Required for 'organize' / 'unfile'; "
+                        "optional on 'list' to look inside one category. "
+                        "'organize' creates the category when it is new."
+                    ),
+                    required=False,
+                ),
+                ToolParameter(
+                    name="search",
+                    type="string",
+                    description="For action='list'. Free-text match over question and answers.",
+                    required=False,
+                ),
+                ToolParameter(
+                    name="entry_ids",
+                    type="array",
+                    description=(
+                        "Entry ids to act on, from a `list` call (the number in "
+                        "[brackets]). Required for 'organize' / 'unfile' / 'bookmark'."
+                    ),
+                    items={"type": "integer"},
+                    required=False,
+                ),
+                ToolParameter(
+                    name="bookmarked",
+                    type="boolean",
+                    description="For action='bookmark'. true to star, false to unstar. Default true.",
+                    required=False,
+                ),
+                ToolParameter(
+                    name="limit",
+                    type="integer",
+                    description="For action='list'. Max entries to return (default 20, max 100).",
+                    required=False,
+                ),
+            ],
+        )
+
+    async def execute(self, **kwargs: Any) -> ToolResult:
+        from deeptutor.tools.question_bank import run_question_bank
+
+        outcome = await run_question_bank(
+            action=str(kwargs.get("action") or "overview"),
+            # ``filter`` is the schema name the model sees; the pure
+            # function avoids shadowing the builtin.
+            filter_mode=str(kwargs.get("filter") or "all"),
+            category=str(kwargs.get("category") or ""),
+            search=str(kwargs.get("search") or ""),
+            entry_ids=kwargs.get("entry_ids"),
+            bookmarked=bool(kwargs.get("bookmarked", True)),
+            limit=int(kwargs.get("limit") or 20),
+        )
+        if not outcome.ok:
+            return ToolResult(content=outcome.error, success=False)
+        return ToolResult(
+            content=outcome.text,
+            metadata={"question_bank": outcome.summary or {}},
         )
 
 
@@ -1439,60 +1703,17 @@ class CronTool(_PromptHintsMixin, BaseTool):
         return ToolResult(content=outcome.text, success=outcome.ok, metadata=outcome.meta)
 
 
-BUILTIN_TOOL_TYPES: tuple[type[BaseTool], ...] = (
-    BrainstormTool,
-    RAGTool,
-    WebSearchTool,
-    CodeExecutionTool,
-    ReasonTool,
-    PaperSearchToolWrapper,
-    ReadSourceTool,
-    ReadMemoryTool,
-    WriteMemoryTool,
-    ReadSkillTool,
-    LoadToolsTool,
-    ExecTool,
-    WebFetchTool,
-    ListNotebookTool,
-    WriteNoteTool,
-    GithubTool,
-    AskUserTool,
-    CronTool,
-    # Image → GeoGebra figure reconstruction. User-toggleable in chat; the
-    # solve loop capability force-mounts it for diagram problems.
-    GeoGebraAnalysisTool,
-    # Text-to-image / text-to-video generation. User-toggleable + per-user
-    # grant-gated; the chat pipeline only mounts them when a model is configured.
-    ImagegenTool,
-    VideogenTool,
-    # Mastery Path + Solve + Obsidian tools — globally registered so schemas/API
-    # stay stable; the chat loop capabilities decide when to auto-mount them for
-    # a turn. Obsidian is a knowledge capability: when its vault is selected it
-    # runs the turn exclusively on these tools.
-    *MASTERY_TOOL_TYPES,
-    *SOLVE_TOOL_TYPES,
-    *OBSIDIAN_TOOL_TYPES,
-    # Subagent consult tool — globally registered; the subagent knowledge
-    # capability runs the turn exclusively on it when a connected agent is the
-    # selected KB.
-    *SUBAGENT_TOOL_TYPES,
-    # Partner-only memory + history tools. Globally registered so schemas/API
-    # stay stable, but never mounted in product chat: the partner runtime
-    # force-mounts them (and suppresses chat's read_memory/write_memory) on
-    # every partner turn. Deliberately absent from CONFIGURABLE_BUILTIN_TOOL_NAMES
-    # — they are mandatory, not owner-configurable.
-    PartnerReadTool,
-    PartnerMemorizeTool,
-    PartnerSearchTool,
-)
+# Compatibility surface for callers that enumerate implementation classes
+# (notably the Settings API).  The sequence itself is import-cheap; classes are
+# resolved one at a time while it is iterated.  Runtime registration uses the
+# descriptors directly and therefore does not iterate this sequence at boot.
+BUILTIN_TOOL_TYPES = LazyBuiltinToolTypes(BUILTIN_TOOL_SPECS)
 
 # No tools are parked right now. When a tool's implementation is being
 # redesigned, list its type here: it stays OUT of the runtime registry (the
 # chat agent cannot invoke it) while the settings page still surfaces it with
 # a "Coming soon" badge. Re-add to ``BUILTIN_TOOL_TYPES`` when ready to ship.
 COMING_SOON_TOOL_TYPES: tuple[type[BaseTool], ...] = ()
-
-BUILTIN_TOOL_NAMES: tuple[str, ...] = tuple(tool_type().name for tool_type in BUILTIN_TOOL_TYPES)
 
 COMING_SOON_TOOL_NAMES: tuple[str, ...] = tuple(
     tool_type().name for tool_type in COMING_SOON_TOOL_TYPES
@@ -1520,11 +1741,16 @@ USER_TOGGLEABLE_TOOL_NAMES: tuple[str, ...] = (
 # allowed) so an IM-facing partner can be denied e.g. memory access.
 # ``tool_composition.AUTO_MOUNTED_TOOLS`` is derived from this tuple, so the
 # two stay in lockstep; this ordering is the canonical display order for the
-# partner config UI. Capability-owned tools (mastery/solve/obsidian/subagent)
-# are intentionally absent — they are gated by capability activation, never by
-# this surface.
+# partner config UI. Capability-owned tools (the mastery *tutoring* tools,
+# solve/obsidian/subagent) are intentionally absent — they are gated by
+# capability activation, never by this surface. The four ``mastery_*``
+# navigation tools listed here are the exception that proves the rule: they
+# only read the atlas and propose a hand-off card, so they are ordinary
+# context-gated built-ins (gate: the learner has a topic) rather than part of
+# any capability.
 CONFIGURABLE_BUILTIN_TOOL_NAMES: tuple[str, ...] = (
     "rag",
+    "kb_files",
     "code_execution",
     "read_source",
     "read_memory",
@@ -1532,21 +1758,41 @@ CONFIGURABLE_BUILTIN_TOOL_NAMES: tuple[str, ...] = (
     "read_skill",
     "list_notebook",
     "write_note",
+    "question_bank",
     "web_fetch",
     "github",
     "exec",
     "load_tools",
     "cron",
     "ask_user",
+    "mastery_topics",
+    "mastery_sessions",
+    "mastery_open_session",
+    "mastery_new_session",
 )
 
-TOOL_ALIASES: dict[str, tuple[str, dict[str, Any]]] = {
-    "rag_hybrid": ("rag", {"mode": "hybrid"}),
-    "rag_naive": ("rag", {"mode": "naive"}),
-    "rag_search": ("rag", {}),
-    "code_execute": ("code_execution", {}),
-    "run_code": ("code_execution", {}),
+_LAZY_CLASS_EXPORTS = {
+    "ExecTool": "deeptutor.tools.exec_tool:ExecTool",
+    "ImagegenTool": "deeptutor.tools.media_gen_tool:ImagegenTool",
+    "VideogenTool": "deeptutor.tools.media_gen_tool:VideogenTool",
+    "PartnerReadTool": "deeptutor.tools.partner_memory:PartnerReadTool",
+    "PartnerMemorizeTool": "deeptutor.tools.partner_memory:PartnerMemorizeTool",
+    "PartnerSearchTool": "deeptutor.tools.partner_memory:PartnerSearchTool",
+    "SubmitVisualizationTool": "deeptutor.visualizers.tool:SubmitVisualizationTool",
 }
+
+
+def __getattr__(name: str):
+    class_path = _LAZY_CLASS_EXPORTS.get(name)
+    if class_path is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    import importlib
+
+    module_path, class_name = class_path.rsplit(":", 1)
+    value = getattr(importlib.import_module(module_path), class_name)
+    globals()[name] = value
+    return value
+
 
 __all__ = [
     "BUILTIN_TOOL_NAMES",
@@ -1563,10 +1809,12 @@ __all__ = [
     "ExecTool",
     "GeoGebraAnalysisTool",
     "GithubTool",
+    "KbFilesTool",
     "ImagegenTool",
     "VideogenTool",
     "ListNotebookTool",
     "PaperSearchToolWrapper",
+    "QuestionBankTool",
     "PartnerMemorizeTool",
     "PartnerReadTool",
     "PartnerSearchTool",

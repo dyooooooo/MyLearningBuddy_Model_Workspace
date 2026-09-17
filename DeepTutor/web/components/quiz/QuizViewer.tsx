@@ -15,13 +15,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  FolderPlus,
   ImagePlus,
   Loader2,
   MessageSquarePlus,
-  Plus,
   RotateCcw,
   Sparkles,
+  Square,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -43,6 +42,7 @@ import {
   type QuizJudgeHandle,
 } from "@/lib/quiz-judge";
 import { type QuizQuestion } from "@/lib/quiz-types";
+import CategoryMenu from "@/components/space/question-bank/CategoryMenu";
 import {
   addEntryToCategory,
   createCategory,
@@ -69,9 +69,11 @@ interface QuizViewerProps {
   /**
    * The ``turn_id`` of the assistant turn that produced this quiz. Scopes
    * notebook lookups/upserts so two quizzes generated in the same chat
-   * session don't share answer state (see issue #487). When absent, the
-   * component falls back to legacy session-wide scoping for backward
-   * compatibility with already-persisted entries.
+   * session don't share answer state — positional question ids
+   * (``q_1``..``q_N``) repeat across quizzes (issues #487 / #677). When
+   * absent (only legacy turns persisted before turn ids existed), the card
+   * is local-only: answers grade client-side but the notebook is never
+   * read or written, so state can't leak across quizzes.
    */
   turnId?: string | null;
   language?: string;
@@ -210,11 +212,6 @@ export default function QuizViewer({
     Record<string, string>
   >({});
   const [categories, setCategories] = useState<NotebookCategory[]>([]);
-  const [categoryDropdownKey, setCategoryDropdownKey] = useState<string | null>(
-    null,
-  );
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [categoryBusy, setCategoryBusy] = useState(false);
 
   const [judgments, setJudgments] = useState<Record<number, JudgmentState>>({});
   const [answerViews, setAnswerViews] = useState<Record<number, AnswerView>>(
@@ -260,6 +257,10 @@ export default function QuizViewer({
 
   const refreshEntryId = useCallback(
     async (qKey: string, sId: string, questionIndex?: number) => {
+      // No turn identity → no notebook reads. A turn-less lookup can only
+      // resolve against another turn's rows (question ids are positional),
+      // which is exactly the cross-quiz answer inheritance of #677.
+      if (!turnId) return;
       try {
         const entry = await lookupNotebookEntry(sId, qKey, turnId);
         if (entry) {
@@ -358,62 +359,63 @@ export default function QuizViewer({
     }
   }, []);
 
-  const handleOpenCategoryDropdown = useCallback(() => {
-    if (!q) return;
-    const key = getQuestionKey(q, idx);
-    if (categoryDropdownKey === key) {
-      setCategoryDropdownKey(null);
-      return;
-    }
-    setCategoryDropdownKey(key);
-    void loadCategories();
-  }, [categoryDropdownKey, idx, loadCategories, q]);
+  // Load the category list once, so the file-into menu opens already
+  // populated. Guarded against a late response landing after unmount.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const next = await listCategories();
+        if (!cancelled) setCategories(next);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleAddToCategory = useCallback(
     async (catId: number) => {
       if (!q) return;
-      const key = getQuestionKey(q, idx);
-      const eId = entryIds[key];
+      const eId = entryIds[getQuestionKey(q, idx)];
       if (!eId) return;
-      setCategoryBusy(true);
-      try {
-        await addEntryToCategory(eId, catId);
-        setCategoryDropdownKey(null);
-      } catch {
-        /* ignore */
-      }
-      setCategoryBusy(false);
+      await addEntryToCategory(eId, catId);
+      await loadCategories();
     },
-    [entryIds, idx, q],
+    [entryIds, idx, loadCategories, q],
   );
 
-  const handleCreateAndAdd = useCallback(async () => {
-    if (!q || !newCategoryName.trim()) return;
-    const key = getQuestionKey(q, idx);
-    const eId = entryIds[key];
-    if (!eId) return;
-    setCategoryBusy(true);
-    try {
-      const cat = await createCategory(newCategoryName.trim());
+  const handleCreateAndAdd = useCallback(
+    async (name: string) => {
+      if (!q) return;
+      const eId = entryIds[getQuestionKey(q, idx)];
+      if (!eId) return;
+      const cat = await createCategory(name);
       await addEntryToCategory(eId, cat.id);
-      setNewCategoryName("");
-      setCategoryDropdownKey(null);
-    } catch {
-      /* ignore */
-    }
-    setCategoryBusy(false);
-  }, [entryIds, idx, newCategoryName, q]);
+      await loadCategories();
+    },
+    [entryIds, idx, loadCategories, q],
+  );
 
   const isChoice = q ? isMultipleChoice(q) : false;
   const isConcept = q ? isConceptQuizQuestion(q.question_type) : false;
   const isFillBlank = q ? isFillInBlankQuizQuestion(q.question_type) : false;
   const isGradable = q ? isAutoGradable(q) : false;
+  // Fill-in-the-blank questions normally use exact text grading, but formulas
+  // can be much easier to submit as a photo. Keep the existing image path for
+  // open-ended questions and extend it to fill-in-the-blank questions only.
+  const canAttachImage = isFillBlank || !isGradable;
   const currentUserAnswer = q ? getUserAnswer(q, ans) : "";
+  const canShowCorrectness = isGradable && currentUserAnswer.length > 0;
 
   const isCorrect = useMemo(() => {
-    if (!q || !ans.submitted) return null;
+    // An image-only fill-in-the-blank answer needs the multimodal AI judge;
+    // exact string matching would otherwise label it incorrectly as wrong.
+    if (!q || !ans.submitted || !canShowCorrectness) return null;
     return isAnswerCorrect(q, ans);
-  }, [ans, q]);
+  }, [ans, canShowCorrectness, q]);
 
   const submittedResults = useMemo(
     () =>
@@ -438,7 +440,11 @@ export default function QuizViewer({
   );
 
   useEffect(() => {
-    if (!sessionId || total === 0 || completedCount !== total) return;
+    // Reporting requires a turn identity: an empty ``turn_id`` write lands
+    // in the shared legacy namespace, where the next quiz's identically
+    // numbered questions would pick it up as their own answers (#677).
+    if (!sessionId || !turnId || total === 0 || completedCount !== total)
+      return;
     const signature = JSON.stringify(submittedResults);
     if (!signature || signature === lastReportedSignatureRef.current) return;
     lastReportedSignatureRef.current = signature;
@@ -470,7 +476,7 @@ export default function QuizViewer({
       answer: AnswerState,
       questionIndex: number,
     ) => {
-      if (!sessionId) return;
+      if (!sessionId || !turnId) return;
       const key = getQuestionKey(question, questionIndex);
       try {
         const imagePayload = answer.images.map((image) => ({
@@ -482,7 +488,7 @@ export default function QuizViewer({
         }));
         const entry = await upsertNotebookEntry({
           session_id: sessionId,
-          turn_id: turnId || "",
+          turn_id: turnId,
           question_id: question.question_id,
           question: question.question,
           question_type: question.question_type,
@@ -662,14 +668,16 @@ export default function QuizViewer({
             };
           });
         },
-        onDone: () => {
-          let finalText = "";
+        onDone: (finalText) => {
           setJudgments((prev) => {
             const current = prev[idx] ?? EMPTY_JUDGMENT;
-            finalText = current.text;
             return {
               ...prev,
-              [idx]: { ...current, isStreaming: false },
+              [idx]: {
+                ...current,
+                text: finalText || current.text,
+                isStreaming: false,
+              },
             };
           });
           judgeHandlesRef.current.delete(idx);
@@ -698,6 +706,11 @@ export default function QuizViewer({
     );
     judgeHandlesRef.current.set(idx, handle);
   }, [answers, entryIds, idx, language, q]);
+
+  const handleStopAiJudge = useCallback(() => {
+    judgeHandlesRef.current.get(idx)?.cancel();
+    judgeHandlesRef.current.delete(idx);
+  }, [idx]);
 
   const handleToggleAnswerView = useCallback(
     (view: AnswerView) => {
@@ -758,10 +771,12 @@ export default function QuizViewer({
 
   const currentEntryId = entryIds[questionKey];
   const currentBookmarked = bookmarked[questionKey] ?? false;
-  const showCategoryDropdown = categoryDropdownKey === questionKey;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
+    <div
+      data-chat-grow="quiz"
+      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]"
+    >
       <div className="flex items-center gap-2 border-b border-[var(--border)] px-3 py-2">
         <button
           type="button"
@@ -797,8 +812,10 @@ export default function QuizViewer({
             // answer red just because it doesn't match the reference
             // string verbatim.
             const autoGradable = isAutoGradable(question);
+            const hasAutoGradableAnswer =
+              !!answer && getUserAnswer(question, answer).length > 0;
             const correctness: "correct" | "incorrect" | null =
-              done && answer && autoGradable
+              done && answer && autoGradable && hasAutoGradableAnswer
                 ? isAnswerCorrect(question, answer)
                   ? "correct"
                   : "incorrect"
@@ -907,14 +924,12 @@ export default function QuizViewer({
                   fill={currentBookmarked ? "currentColor" : "none"}
                 />
               </button>
-              <button
-                onClick={handleOpenCategoryDropdown}
+              <CategoryMenu
+                categories={categories}
                 disabled={!currentEntryId}
-                title={t("Add to Category")}
-                className="rounded-lg p-1.5 text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)] disabled:opacity-30"
-              >
-                <FolderPlus size={16} />
-              </button>
+                onPick={handleAddToCategory}
+                onCreate={handleCreateAndAdd}
+              />
               <button
                 onClick={handleOpenFollowup}
                 title={t("Follow-up Chat")}
@@ -934,49 +949,6 @@ export default function QuizViewer({
                   ) : null;
                 })()}
               </button>
-
-              {showCategoryDropdown && (
-                <div className="absolute right-0 top-8 z-20 w-48 rounded-lg border border-[var(--border)] bg-[var(--card)] py-1 shadow-lg">
-                  {categories.length > 0 && (
-                    <div className="max-h-[160px] overflow-y-auto">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          disabled={categoryBusy}
-                          onClick={() => void handleAddToCategory(cat.id)}
-                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] disabled:opacity-40"
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="border-t border-[var(--border)] px-2 py-1.5">
-                    <div className="flex items-center gap-1">
-                      <input
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && void handleCreateAndAdd()
-                        }
-                        placeholder={t("New category...")}
-                        className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-[11px] text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
-                      />
-                      <button
-                        disabled={!newCategoryName.trim() || categoryBusy}
-                        onClick={() => void handleCreateAndAdd()}
-                        className="rounded p-1 text-[var(--primary)] disabled:opacity-30"
-                      >
-                        {categoryBusy ? (
-                          <Loader2 size={12} className="animate-spin" />
-                        ) : (
-                          <Plus size={12} />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -986,6 +958,7 @@ export default function QuizViewer({
             content={q.question}
             variant="prose"
             className="text-[var(--foreground)]"
+            enableMath
           />
         </div>
 
@@ -1140,11 +1113,10 @@ export default function QuizViewer({
           </div>
         )}
 
-        {/* Image-as-answer attachment — only offered for question types
-            without an auto-gradable answer (short_answer / written /
-            coding). These are also the types that benefit most from a
-            multimodal AI judgment over handwritten work. */}
-        {!isGradable && (
+        {/* Image-as-answer attachment — offered for open-ended questions and
+            fill-in-the-blank questions, where formulas may be cumbersome to
+            type. Choice and concept questions keep their direct controls. */}
+        {canAttachImage && (
           <div className="mt-2 space-y-2">
             <input
               ref={fileInputRef}
@@ -1215,10 +1187,10 @@ export default function QuizViewer({
               onClick={handleSubmit}
               disabled={(() => {
                 if (isChoice || isConcept) return !ans.selected;
-                // For free-text / fill-blank, require a typed answer; for
-                // non-auto-gradable types, an image attachment also counts.
+                // For free-text / fill-blank, accept either a typed answer or
+                // an image when this question type supports image answers.
                 if (ans.typed.trim()) return false;
-                if (!isGradable && ans.images.length > 0) return false;
+                if (canAttachImage && ans.images.length > 0) return false;
                 return true;
               })()}
               className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 py-1.5 text-[12px] font-medium text-white transition-opacity disabled:opacity-30"
@@ -1251,17 +1223,16 @@ export default function QuizViewer({
                 const hasJudgment = j.text.length > 0 || j.error !== null;
                 return (
                   <button
-                    onClick={handleAiJudge}
-                    disabled={j.isStreaming}
+                    onClick={j.isStreaming ? handleStopAiJudge : handleAiJudge}
                     className="inline-flex items-center gap-1 rounded-lg border border-[var(--primary)]/60 bg-[var(--primary)]/10 px-2.5 py-1.5 text-[12px] font-medium text-[var(--primary)] transition-colors hover:bg-[var(--primary)]/15 disabled:opacity-50"
                   >
                     {j.isStreaming ? (
-                      <Loader2 size={11} className="animate-spin" />
+                      <Square size={10} fill="currentColor" />
                     ) : (
                       <Sparkles size={11} />
                     )}
                     {j.isStreaming
-                      ? t("Judging...")
+                      ? t("Stop judging")
                       : hasJudgment
                         ? t("Re-judge")
                         : t("AI Judge")}
@@ -1334,9 +1305,7 @@ export default function QuizViewer({
                     >
                       <ChevronDown
                         size={13}
-                        className={`transition-transform ${
-                          collapsed ? "-rotate-90" : ""
-                        }`}
+                        className={`transition-transform ${collapsed ? "-rotate-90" : ""}`}
                       />
                     </button>
                   </div>
@@ -1379,6 +1348,7 @@ export default function QuizViewer({
                         <MarkdownRenderer
                           content={judgment.text}
                           variant="prose"
+                          enableMath
                         />
                       </div>
                     ) : (
@@ -1403,6 +1373,7 @@ export default function QuizViewer({
                                 : q.correct_answer
                             }
                             variant="prose"
+                            enableMath
                           />
                         </div>
                       </div>
@@ -1416,6 +1387,7 @@ export default function QuizViewer({
                           <MarkdownRenderer
                             content={q.explanation}
                             variant="prose"
+                            enableMath
                           />
                         </div>
                       </div>

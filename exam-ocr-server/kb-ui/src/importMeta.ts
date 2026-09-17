@@ -97,8 +97,9 @@ MinerU 已经识别了前三页，文本在下面。不要再 open_pdf_page，�
 科目只能是 math / chinese / physics / chemistry / biology / english，学段只能是 ms（初中）/ hs（高中）/ ps（小学）。
 类型只能是 textbook（教材）/ knowledge（知识点）/ syllabus（考纲）/ material（资料）/ homework（作业）。课程标准、命题要求、考试说明归 syllabus。
 然后只调用一次 propose_import_meta(book_id, label, textbook_hint, subject, grade_band, category)。
-不要开始识别，不要 refine_page / toc_extract / improve_render / build_toc。
-填完后用一两句话说明依据，等用户在导入页核对。用户点「开始识别」后才会导入和清洗。
+这个工具会写回导入表并立刻入队全书识别，不要等用户点按钮，不要再调 mineru_convert。
+不要 refine_page / toc_extract / improve_render / build_toc。
+填完后用一两句话说明依据，并说明已经开始全书识别。
 
 ----- MinerU 前三页 -----
 {{preview}}`;

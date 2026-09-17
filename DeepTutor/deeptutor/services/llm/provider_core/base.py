@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
+import inspect
 import json
 from typing import Any
 
@@ -51,6 +52,7 @@ class LLMResponse:
     usage: dict[str, int] = field(default_factory=dict)
     reasoning_content: str | None = None
     thinking_blocks: list[dict[str, Any]] | None = None
+    provider_specific_fields: dict[str, Any] = field(default_factory=dict)
 
     @property
     def has_tool_calls(self) -> bool:
@@ -117,6 +119,23 @@ class LLMProvider(ABC):
         self.api_key = api_key
         self.api_base = api_base
         self.generation: GenerationSettings = GenerationSettings()
+
+    async def aclose(self) -> None:
+        """Release an SDK/HTTP client owned by this provider.
+
+        Provider implementations intentionally expose a common lifecycle even
+        though the underlying SDKs use either ``close`` or ``aclose``.  Most
+        providers own no client and therefore make this a cheap no-op.
+        """
+        client = getattr(self, "_client", None)
+        if client is None:
+            return
+        close = getattr(client, "aclose", None) or getattr(client, "close", None)
+        if not callable(close):
+            return
+        result = close()
+        if inspect.isawaitable(result):
+            await result
 
     @staticmethod
     def _sanitize_empty_content(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -88,11 +88,10 @@ export function useChatAutoScroll({
     composerHeight,
   ]);
 
-  // Companion pin: a frame-aligned rAF loop that runs ONLY while the
-  // turn is streaming. ``useLayoutEffect`` above already pins on every
-  // page-level state change (new delta, new event, new message), but
-  // there is a class of height growth that doesn't bubble up to the
-  // page:
+  // Companion pin: content-change-driven, active ONLY while the turn is
+  // streaming. ``useLayoutEffect`` above already pins on every page-level
+  // state change (new delta, new event, new message), but there is a class
+  // of height growth that doesn't bubble up to the page:
   //
   //   1. ``useSmoothStreamText`` advances the visible markdown inside
   //      a child component between WebSocket deltas. Those frames
@@ -101,26 +100,69 @@ export function useChatAutoScroll({
   //   2. KaTeX, code blocks, Mermaid, and the late-mount viewer
   //      ``next/dynamic`` chunks all change the height of the message
   //      area asynchronously when they finish hydrating mid-stream.
+  //   3. Images/iframes finishing their network load grow the content
+  //      without mutating the DOM tree at all.
   //
-  // We can't use ``ResizeObserver`` on the scroll container itself
-  // because it observes border-box, not scrollHeight; overflow growth
-  // doesn't fire it. A short rAF loop scoped strictly to the
-  // streaming window costs ~60 cheap pins per second (each pin is a
-  // single attribute write, no React work) and is the simplest way
-  // to stay glued to the bottom edge regardless of WHY the inner
-  // content height changed.
+  // We can't use ``ResizeObserver`` on the scroll container itself because
+  // it observes border-box, not scrollHeight; overflow growth doesn't fire
+  // it. This used to be a per-frame rAF loop instead — 60 unconditional
+  // ``scrollHeight`` reads per second, each a forced synchronous layout of
+  // the whole transcript, which grew with conversation length and kept the
+  // main thread busy even in the idle window between the last token and the
+  // turn's ``done`` event. A MutationObserver (cases 1–2) plus a capture-
+  // phase ``load`` listener (case 3), coalesced to at most one pin per
+  // frame, covers the same growth for a cost proportional to actual change.
   useEffect(() => {
     if (!isStreaming || !hasMessages) return;
+    const container = containerRef.current;
+    if (!container) return;
     let rafId = 0;
-    const tick = () => {
-      if (shouldAutoScrollRef.current) {
-        const container = containerRef.current;
-        if (container) container.scrollTop = container.scrollHeight;
+    // ``scrollTop`` this effect last pinned. A position below it means the
+    // user moved up by some means the gesture listeners below don't cover —
+    // dragging the scrollbar thumb, PageUp/Home, arrow keys — so we release
+    // the pin instead of yanking them back to the bottom (issue #649).
+    // Comparing against our own last write (rather than raw ``scrollTop``)
+    // is what makes this immune to the pin-vs-user fight: content growth
+    // never lowers ``scrollTop`` (the container opts into
+    // ``overflow-anchor: none``), so a decrease is always user intent.
+    let lastPinned: number | null = null;
+
+    const pin = () => {
+      rafId = 0;
+      if (!shouldAutoScrollRef.current) return;
+      if (lastPinned !== null && container.scrollTop < lastPinned - 4) {
+        shouldAutoScrollRef.current = false;
+        return;
       }
-      rafId = requestAnimationFrame(tick);
+      container.scrollTop = container.scrollHeight;
+      lastPinned = container.scrollTop;
     };
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
+    const schedule = () => {
+      if (!rafId) rafId = requestAnimationFrame(pin);
+    };
+    // The user's own scrolls fire this too; our pins write
+    // ``scrollTop === lastPinned`` so they never trip the release check.
+    const onScroll = () => {
+      if (lastPinned !== null && container.scrollTop < lastPinned - 4) {
+        shouldAutoScrollRef.current = false;
+      }
+    };
+
+    const mo = new MutationObserver(schedule);
+    mo.observe(container, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+    container.addEventListener("load", schedule, true);
+    container.addEventListener("scroll", onScroll, { passive: true });
+    schedule();
+    return () => {
+      mo.disconnect();
+      container.removeEventListener("load", schedule, true);
+      container.removeEventListener("scroll", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, [isStreaming, hasMessages]);
 
   // After streaming ends, capability viewers loaded via ``next/dynamic``
@@ -128,11 +170,18 @@ export function useChatAutoScroll({
   // Mermaid …) finish hydrating and grow the content height. The user
   // expects to land at the bottom so they see the full result.
   //
-  // The observer is intentionally short-lived (4s after stream stop):
-  // a longer window would mis-classify post-turn user interactions
-  // (expanding a trace ``<details>``, clicking a citation) as
-  // "streaming-style growth" and rip them back to the bottom.
+  // The window is intentionally short (4s after stream stop): a longer one
+  // would mis-classify post-turn user interactions (expanding a trace
+  // ``<details>``, clicking a citation) as "streaming-style growth" and rip
+  // the user back to the bottom.
+  //
+  // Viewers that tag themselves ``[data-chat-grow]`` are the one exception.
+  // Their first JS chunk can land after the short window (issue #955),
+  // leaving the card below the fold until the user scrolls. A *newly
+  // appearing* tagged node is an unambiguous "this growth is not the user"
+  // signal, so it — and nothing else — extends the window.
   const POST_STREAM_AUTOSCROLL_WINDOW_MS = 4000;
+  const LATE_VIEWER_AUTOSCROLL_WINDOW_MS = 12_000;
   useEffect(() => {
     if (isStreaming) return;
     if (!hasMessages) return;
@@ -142,12 +191,42 @@ export function useChatAutoScroll({
 
     let prevHeight = container.scrollHeight;
     let rafId = 0;
-    const deadline = performance.now() + POST_STREAM_AUTOSCROLL_WINDOW_MS;
+    let stopTimer = 0;
+    const startedAt = performance.now();
+    let deadline = startedAt + POST_STREAM_AUTOSCROLL_WINDOW_MS;
+    let growTargets = container.querySelectorAll("[data-chat-grow]").length;
+
+    const stop = () => {
+      mo.disconnect();
+      container.removeEventListener("load", check, true);
+      if (rafId) cancelAnimationFrame(rafId);
+      if (stopTimer) window.clearTimeout(stopTimer);
+      stopTimer = 0;
+    };
+
+    // Keep the teardown pinned to whatever the current deadline is, so the
+    // common case (no late viewer) still stops observing after 4s.
+    const armStop = () => {
+      if (stopTimer) window.clearTimeout(stopTimer);
+      stopTimer = window.setTimeout(
+        stop,
+        Math.max(0, deadline - performance.now()),
+      );
+    };
 
     const check = () => {
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = 0;
+        const tagged = container.querySelectorAll("[data-chat-grow]").length;
+        if (tagged > growTargets) {
+          growTargets = tagged;
+          const extended = startedAt + LATE_VIEWER_AUTOSCROLL_WINDOW_MS;
+          if (extended > deadline) {
+            deadline = extended;
+            armStop();
+          }
+        }
         if (performance.now() > deadline) return;
         const curHeight = container.scrollHeight;
         if (curHeight > prevHeight && shouldAutoScrollRef.current) {
@@ -159,16 +238,17 @@ export function useChatAutoScroll({
 
     const mo = new MutationObserver(check);
     mo.observe(container, { childList: true, subtree: true });
-    const stopTimer = window.setTimeout(() => {
-      mo.disconnect();
-      if (rafId) cancelAnimationFrame(rafId);
-    }, POST_STREAM_AUTOSCROLL_WINDOW_MS);
+    // An image or iframe finishing its network load grows the content
+    // without mutating the DOM, so the MutationObserver above never sees
+    // it — a turn that ends with a generated image would settle just
+    // above the bottom. The streaming branch already listens for this;
+    // mirror it here for the window right after the stream stops.
+    // (Opening a history session is not this path: that effect does not
+    // re-run on a session switch, so the page re-pins there itself.)
+    container.addEventListener("load", check, true);
+    armStop();
 
-    return () => {
-      window.clearTimeout(stopTimer);
-      mo.disconnect();
-      if (rafId) cancelAnimationFrame(rafId);
-    };
+    return stop;
   }, [hasMessages, isStreaming, pinToBottom]);
 
   const handleScroll = useCallback(() => {
@@ -179,16 +259,16 @@ export function useChatAutoScroll({
     shouldAutoScrollRef.current = distanceFromBottom < 80;
   }, []);
 
-  // Intent-based release. The streaming rAF above re-pins to
-  // ``scrollHeight`` every frame, so the position-only ``handleScroll``
-  // check can NEVER observe the user trying to scroll up mid-stream: the
-  // pin snaps them back to the bottom before the ``scroll`` event is even
-  // handled, so ``distanceFromBottom`` always reads ~0 and the pin never
-  // releases — the viewport feels frozen. We therefore release the pin the
-  // instant we see an UPWARD scroll *gesture* (wheel up, or a touch drag
-  // that pulls earlier content into view), which is unambiguous user intent
-  // and independent of where the pin has parked the scroll position. Once
-  // released the rAF stops fighting, the user is free to browse, and
+  // Intent-based release. During dense streaming the pin above re-snaps to
+  // ``scrollHeight`` on every content change, so the position-only
+  // ``handleScroll`` check can rarely observe the user trying to scroll up
+  // mid-stream: the pin snaps them back to the bottom before the ``scroll``
+  // event is even handled, so ``distanceFromBottom`` always reads ~0 and the
+  // pin never releases — the viewport feels frozen. We therefore release the
+  // pin the instant we see an UPWARD scroll *gesture* (wheel up, or a touch
+  // drag that pulls earlier content into view), which is unambiguous user
+  // intent and independent of where the pin has parked the scroll position.
+  // Once released the pin stops fighting, the user is free to browse, and
   // ``handleScroll`` re-arms the pin when they return near the bottom.
   useEffect(() => {
     const container = containerRef.current;

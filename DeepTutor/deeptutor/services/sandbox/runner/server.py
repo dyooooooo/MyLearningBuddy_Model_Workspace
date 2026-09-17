@@ -20,7 +20,8 @@ Wire contract (must match ``RunnerSidecarBackend``):
                       :mod:`deeptutor.services.sandbox.spec`. Request::
 
       {
-        "command": "str",
+        "command": "str",                 # shell string; used when argv is absent
+        "argv": ["str", ...],             # optional; when present, run WITHOUT a shell
         "workdir": "str | null",          # path inside the container
         "env": {"K": "V"},
         "mounts": [{"host_path": "...",     # informational only (see below)
@@ -38,6 +39,14 @@ Wire contract (must match ``RunnerSidecarBackend``):
   ``error`` is non-empty *only* when the runner itself failed (bad JSON,
   spawn error, ...), never merely because the command exited non-zero.
 
+Argv note:
+  The app sends ``command`` and ``argv`` together and they describe the same
+  execution (``command == shlex.join(argv)``). ``argv`` wins here, so a caller
+  that assembles arguments from model output runs with no shell in the path and
+  shell metacharacters cannot matter. A runner image predating this field simply
+  ignores it and runs the shell string, which is why both are sent — during a
+  rolling deploy either image may be the one serving the request.
+
 Mounts note:
   This server does **not** perform any mounting. The runner container shares
   the task-workspace subtrees with the main app at the *same* paths
@@ -54,11 +63,15 @@ from __future__ import annotations
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
-import resource
 import subprocess
 import sys
 import traceback
 from typing import Any
+
+try:
+    import resource
+except ImportError:  # pragma: no cover - non-POSIX platforms (e.g. Windows)
+    resource = None  # type: ignore[assignment]
 
 # Port to listen on inside the container; overridable for local testing.
 DEFAULT_PORT = 8900
@@ -119,23 +132,24 @@ def _build_preexec_fn(memory_mb: int, cpu_seconds: int):
 
     def _apply() -> None:
         # Address space (bytes). Cap virtual memory as a secondary guard.
-        if memory_mb > 0:
+        if memory_mb > 0 and resource is not None:
             mem_bytes = memory_mb * 1024 * 1024
             try:
-                resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
+                resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))  # type: ignore[attr-defined]
             except (ValueError, OSError):
                 pass
         # CPU time (seconds). SIGXCPU/SIGKILL the child if it burns this much CPU.
-        if cpu_seconds > 0:
+        if cpu_seconds > 0 and resource is not None:
             try:
-                resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
+                resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))  # type: ignore[attr-defined]
             except (ValueError, OSError):
                 pass
         # Open file descriptors.
-        try:
-            resource.setrlimit(resource.RLIMIT_NOFILE, (_RLIMIT_NOFILE, _RLIMIT_NOFILE))
-        except (ValueError, OSError):
-            pass
+        if resource is not None:
+            try:
+                resource.setrlimit(resource.RLIMIT_NOFILE, (_RLIMIT_NOFILE, _RLIMIT_NOFILE))  # type: ignore[attr-defined]
+            except (ValueError, OSError):
+                pass
 
     return _apply
 
@@ -176,6 +190,13 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(command, str) or not command:
         return _error_result("missing or empty 'command'")
 
+    raw_argv = payload.get("argv") or []
+    if not isinstance(raw_argv, list):
+        return _error_result("'argv' must be a list of strings")
+    if any(not isinstance(item, str) for item in raw_argv):
+        return _error_result("'argv' must be a list of strings")
+    argv: list[str] = list(raw_argv)
+
     workdir = payload.get("workdir") or None
     if workdir is not None and not isinstance(workdir, str):
         return _error_result("'workdir' must be a string or null")
@@ -213,8 +234,10 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
 
     try:
         completed = subprocess.run(  # noqa: S602 - shell=True is the contract
-            command,
-            shell=True,  # nosec B602 — the runner exists to execute shell commands in-sandbox
+            argv or command,
+            # An argv request is exec'd directly; only the shell-string form gets
+            # a shell. See the "Argv note" in the module docstring.
+            shell=not argv,  # nosec B602 — the runner exists to execute shell commands in-sandbox
             cwd=workdir,
             env=env,
             timeout=timeout_s,

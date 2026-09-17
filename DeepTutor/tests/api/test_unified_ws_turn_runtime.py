@@ -177,6 +177,7 @@ async def test_turn_runtime_replays_events_and_materializes_messages(
             "persona": "socratic",
             "memory_references": ["summary"],
             "book_references": [{"book_id": "book-1", "page_ids": ["page-1"]}],
+            "mastery_path_id": "path-1",
             "config": {},
         }
     )
@@ -200,11 +201,17 @@ async def test_turn_runtime_replays_events_and_materializes_messages(
     detail = await store.get_session_with_messages(session["id"])
     assert detail is not None
     assert [message["role"] for message in detail["messages"]] == ["user", "assistant"]
+    # DONE carries the persisted row ids so the frontend can reconcile its
+    # optimistic negative ids in place instead of refetching the session.
+    user_row, assistant_row = detail["messages"]
+    assert done_event["metadata"]["user_message_id"] == user_row["id"]
+    assert done_event["metadata"]["assistant_message_id"] == assistant_row["id"]
     assert detail["messages"][0]["metadata"]["request_snapshot"]["persona"] == "socratic"
     assert detail["messages"][0]["metadata"]["request_snapshot"]["memoryReferences"] == ["summary"]
     assert detail["messages"][0]["metadata"]["request_snapshot"]["bookReferences"] == [
         {"book_id": "book-1", "page_ids": ["page-1"]}
     ]
+    assert detail["messages"][0]["metadata"]["request_snapshot"]["masteryPathId"] == "path-1"
     # Chat capability now routes attached sources through the manifest +
     # ``read_source`` tool instead of inlining ``[Book Context]`` into the
     # user message. The raw user message stays raw; the book payload
@@ -222,6 +229,7 @@ async def test_turn_runtime_replays_events_and_materializes_messages(
     assert captured["metadata"] and captured["metadata"]["book_references"] == [
         {"book_id": "book-1", "page_ids": ["page-1"]}
     ]
+    assert captured["metadata"]["mastery_path_id"] == "path-1"
     assert detail["messages"][1]["content"] == "Hello Frank"
     assert detail["preferences"] == {
         "capability": "chat",
@@ -231,11 +239,109 @@ async def test_turn_runtime_replays_events_and_materializes_messages(
         # Explicit persona in the payload is persisted as a session-level
         # preference (survives reloads; later turns fall back to it).
         "persona": "socratic",
+        "mastery_path_id": "path-1",
     }
 
     persisted_turn = await store.get_turn(turn["id"])
     assert persisted_turn is not None
     assert persisted_turn["status"] == "completed"
+    persisted_events = await store.get_turn_events(turn["id"])
+    persisted_done = next(event for event in persisted_events if event["type"] == "done")
+    assert persisted_done["seq"] > 0
+    assert persisted_done["metadata"]["assistant_message_id"] == assistant_row["id"]
+
+    # A fresh runtime (the reconnect/restart shape) replays the committed DONE
+    # instead of synthesizing a metadata-poor terminal event.
+    replay_runtime = TurnRuntimeManager(store)
+    replayed = [event async for event in replay_runtime.subscribe_turn(turn["id"])]
+    replayed_done = next(event for event in replayed if event["type"] == "done")
+    assert replayed_done["seq"] == persisted_done["seq"]
+    assert replayed_done["metadata"]["assistant_message_id"] == assistant_row["id"]
+
+
+@pytest.mark.asyncio
+async def test_turn_runtime_persists_private_provider_response_state(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    store = SQLiteSessionStore(tmp_path / "chat_history.db")
+    runtime = TurnRuntimeManager(store)
+    captured: dict[str, object] = {}
+    state = {"reasoning_content": "private reasoning"}
+
+    class FakeContextBuilder:
+        def __init__(self, *_args, **_kwargs) -> None:
+            pass
+
+        async def build(self, **_kwargs):
+            return SimpleNamespace(
+                conversation_history=[],
+                conversation_summary="",
+                context_text="",
+                token_count=0,
+                budget=0,
+            )
+
+    class FakeOrchestrator:
+        async def handle(self, context):
+            captured["metadata"] = context.metadata
+            context.runtime.provider_response_state = state
+            yield StreamEvent(
+                type=StreamEventType.CONTENT,
+                source="chat",
+                stage="responding",
+                content="A direct answer",
+                metadata={"call_kind": "llm_final_response"},
+            )
+            yield StreamEvent(type=StreamEventType.DONE, source="chat")
+
+    async def title_after_done(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr("deeptutor.services.llm.config.get_llm_config", lambda: SimpleNamespace())
+    monkeypatch.setattr(
+        "deeptutor.services.session.context_builder.ContextBuilder", FakeContextBuilder
+    )
+    monkeypatch.setattr("deeptutor.runtime.orchestrator.ChatOrchestrator", FakeOrchestrator)
+    monkeypatch.setattr(runtime, "_maybe_generate_session_title", title_after_done)
+    monkeypatch.setattr(
+        "deeptutor.services.memory.get_memory_store",
+        lambda: SimpleNamespace(read_l3_concat=lambda: "", emit=_noop_async),
+    )
+    monkeypatch.setattr(
+        "deeptutor.services.skill.get_skill_service",
+        _fake_skill_service,
+    )
+    monkeypatch.setattr(
+        "deeptutor.services.persona.get_persona_service",
+        _fake_persona_service,
+    )
+
+    session, turn = await runtime.start_turn(
+        {
+            "type": "start_turn",
+            "content": "hello",
+            "session_id": None,
+            "capability": None,
+            "tools": [],
+            "knowledge_bases": [],
+            "attachments": [],
+            "language": "en",
+            "config": {},
+        }
+    )
+    async for _event in runtime.subscribe_turn(turn["id"], after_seq=0):
+        pass
+
+    context_messages = await store.get_messages_for_context(session["id"])
+    assistant = context_messages[-1]
+    assert assistant["metadata"]["provider_response_state"] == state
+    detail = await store.get_session_with_messages(session["id"])
+    assert detail is not None
+    assert "provider_response_state" not in detail["messages"][-1]["metadata"]
+    metadata = captured["metadata"]
+    assert isinstance(metadata, dict)
+    assert "_provider_response_state" not in metadata
 
 
 @pytest.mark.asyncio

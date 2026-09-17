@@ -9,6 +9,12 @@ from typing import Any
 from fastapi import HTTPException
 
 from deeptutor.knowledge.manager import KnowledgeBaseManager
+from deeptutor.knowledge.manifest import (
+    MANIFEST_NOTE_LIMIT,
+    KbManifest,
+    build_manifest,
+    document_root,
+)
 
 from .context import get_current_user
 from .grants import load_grant
@@ -245,3 +251,73 @@ def resolve_kb_metadata(kb_ref: str | None) -> dict[str, Any] | None:
         return None
     manager = _manager_for(str(resource.base_dir.resolve()))
     return manager.get_metadata(resource.name)
+
+
+def resolve_kb_manifest(
+    kb_ref: str | None,
+    *,
+    limit: int = MANIFEST_NOTE_LIMIT,
+    pattern: str = "",
+) -> KbManifest | None:
+    """Access-checked document inventory for ``kb_ref`` (``None`` if inaccessible).
+
+    The one seam through which the chat manifest and the ``kb_files`` tool read
+    a KB's document set, so neither can bypass the per-user visibility rules
+    :func:`resolve_kb` enforces. A pure read with no usage audit, mirroring
+    :func:`resolve_kb_metadata`; it touches the filesystem, so async callers
+    should hand it to a worker thread.
+    """
+    if not kb_ref:
+        return None
+    try:
+        resource = resolve_kb(str(kb_ref), require_write=False)
+    except HTTPException:
+        return None
+    manager = _manager_for(str(resource.base_dir.resolve()))
+    entry = manager.get_kb_entry(resource.name)
+    if entry is None:
+        return None
+    return build_manifest(
+        name=resource.name,
+        kb_dir=resource.base_dir / resource.name,
+        entry=entry,
+        limit=limit,
+        pattern=pattern,
+    )
+
+
+def resolve_kb_document_path(kb_ref: str | None, rel_path: str) -> Path | None:
+    """Access-checked path to one document inside ``kb_ref``.
+
+    The seam a caller uses to *read a single file* the learner picked out of a
+    knowledge base, rather than retrieving passages from the whole thing. Same
+    visibility rules as :func:`resolve_kb_manifest`, and ``rel_path`` is
+    resolved against the KB's own document root and then re-checked to be
+    inside it — the value arrives from a client (and, for a generated outline,
+    has passed through a model), so ``..`` and absolute paths must not be able
+    to reach a file the KB does not own.
+
+    ``None`` when the KB is inaccessible, has no local documents (a connected
+    external resource), or the path is not a file inside it.
+    """
+    if not kb_ref or not str(rel_path or "").strip():
+        return None
+    try:
+        resource = resolve_kb(str(kb_ref), require_write=False)
+    except HTTPException:
+        return None
+    manager = _manager_for(str(resource.base_dir.resolve()))
+    entry = manager.get_kb_entry(resource.name)
+    if entry is None:
+        return None
+    root = document_root(resource.base_dir / resource.name, entry)
+    if root is None or not root.is_dir():
+        return None
+    try:
+        resolved_root = root.resolve()
+        candidate = (root / str(rel_path).strip()).resolve()
+    except OSError:
+        return None
+    if not candidate.is_relative_to(resolved_root) or not candidate.is_file():
+        return None
+    return candidate

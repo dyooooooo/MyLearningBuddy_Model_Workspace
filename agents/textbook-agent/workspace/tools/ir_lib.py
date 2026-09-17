@@ -1108,9 +1108,21 @@ def is_close_block(blk: dict[str, Any]) -> bool:
     return str(blk.get("id") or "").startswith(CLOSE_PREFIX)
 
 
-def _sync_close_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """源块被注解改字或删掉之后，照着现状重生成收口块；源块全没了就撤掉这条收口。"""
-    from ir_bands import spans_from_block
+def _sync_close_blocks(
+    blocks: list[dict[str, Any]], touched: set[str] | None = None
+) -> list[dict[str, Any]]:
+    """源块被注解改字或删掉之后，照着现状重生成收口块；源块全没了就撤掉这条收口。
+
+    `touched` 是本次注解真正动过的源块 ID。只重生成受影响的那几条收口，原因有两条：
+
+    1. 摄取时收口行的 text 来自版式器的 piece 文本，它比收口块自己的 span 更全
+       （五源合块的整块文本）。照 span 重拼必然拼不回来，无条件重生成就会让接口
+       吐出的字跟磁盘上的字不一样——没有任何注解也不一样。
+    2. 绝大多数读页请求一条注解都没有，白跑一遍重生成纯属浪费。
+
+    传 None 表示「不知道动了谁」，退回全量重生成（老行为）。
+    """
+    from ir_bands import plain_text, spans_from_block
 
     src = {b["id"]: b for b in blocks if not is_close_block(b)}
     out: list[dict[str, Any]] = []
@@ -1118,6 +1130,14 @@ def _sync_close_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not is_close_block(blk):
             out.append(blk)
             continue
+        if touched is not None:
+            deps = {str(x) for x in blk.get("source_ids") or []}
+            deps |= {
+                str(s.get("b")) for row in blk.get("lines") or [] for s in row or [] if s.get("b")
+            }
+            if not (deps & touched):
+                out.append(blk)
+                continue
         rows: list[list[dict[str, Any]]] = []
         texts: list[str] = []
         alive: list[str] = []
@@ -1129,6 +1149,15 @@ def _sync_close_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     continue
                 bid = str(span.get("b") or "")
                 last = groups[-1] if groups else None
+                # 制表位落在同一个源块内部时（扫描稿自带的制表符），它不是收口两栏的
+                # 分栏点。不归回上一组的话，同一个源块会被当成两段，而下面每段都按
+                # spans_from_block 整块重取，于是这段话被复制两遍。
+                if last is not None and last.get("tab") and len(groups) >= 2:
+                    prev = groups[-2]
+                    if not prev.get("tab") and prev.get("bid") == bid:
+                        groups.pop()
+                        prev["spans"].append(span)
+                        continue
                 if last is not None and not last.get("tab") and last.get("bid") == bid:
                     last["spans"].append(span)
                 else:
@@ -1138,7 +1167,9 @@ def _sync_close_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
             pending_tab = False
             for group in groups:
                 if group.get("tab"):
-                    pending_tab = bool(new_row)
+                    # 前一段可能因为源块被 delete 而落空，这时制表位要继续挂着，
+                    # 等下一段真落地再补；直接 bool(new_row) 会把它吞掉。
+                    pending_tab = pending_tab or bool(new_row)
                     continue
                 bid = str(group.get("bid") or "")
                 if bid:
@@ -1146,10 +1177,10 @@ def _sync_close_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     if origin is None:  # 源块被 delete 了
                         continue
                     spans = [dict(s, b=bid) for s in spans_from_block(origin)]
-                    piece = str(origin.get("text") or "")
+                    piece = plain_text(str(origin.get("text") or ""))
                 else:  # 没有来源的兜底 span（算法没给成员时按行文本切的），原样留着
                     spans = [dict(s) for s in group["spans"]]
-                    piece = "".join(str(s.get("c") or "") for s in spans)
+                    piece = plain_text("".join(str(s.get("c") or "") for s in spans))
                 if not spans:
                     continue
                 if pending_tab:
@@ -1198,6 +1229,7 @@ def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict
     out = copy.deepcopy(page)
     by_id = {b["id"]: b for b in out.get("blocks", [])}
     rejected: list[dict[str, Any]] = []
+    touched: set[str] = set()  # 真被改动/删除的源块，只有它们的收口块需要重生成
 
     def _reject(note: dict[str, Any], reason: str) -> None:
         rejected.append({"note": note.get("id", "?"), "block": note.get("block", "?"), "reason": reason})
@@ -1217,6 +1249,7 @@ def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict
         if op == "delete":
             out["blocks"] = [b for b in out["blocks"] if b["id"] != bid]
             by_id.pop(bid, None)
+            touched.add(bid)
             continue
         old = str(note.get("old") or "")
         new = str(note.get("new") or "")
@@ -1237,6 +1270,7 @@ def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict
                 continue
             target["c"] = str(target["c"]).replace(old, new, 1)
             blk["text"] = text.replace(old, new, 1)
+            touched.add(bid)
         elif op == "retitle":
             if blk.get("type") != "title":
                 _reject(note, "not a title block")
@@ -1245,15 +1279,18 @@ def apply_notes(page: dict[str, Any], notes: list[dict[str, Any]]) -> tuple[dict
                 _reject(note, "old not found")
                 continue
             blk["text"] = new
-            for row in blk.get("lines", []):
-                for span in row:
-                    if span.get("t") == "text":
-                        span["c"] = new
+            # 标题可能被切成好几段 span（带下标、跨行、脚注标记）。逐段赋值会把
+            # 新标题写进每一段，出来就是「第1章 种群和群落第1章 种群和群落」。
+            # 按新文本重切一次，切法跟摄取时同源，顺带支持新标题里带下标。
+            from ir_bands import split_marks
+
+            blk["lines"] = [split_marks(new) or [{"t": "text", "c": new}]]
+            touched.add(bid)
         else:
             _reject(note, f"unknown op {op}")
 
     before = [str(b.get("id") or "") for b in page.get("blocks") or []]
-    out["blocks"] = _sync_close_blocks(out["blocks"])
+    out["blocks"] = _sync_close_blocks(out["blocks"], touched)
     after = {str(b.get("id") or ""): i for i, b in enumerate(out["blocks"])}
     mapping = {i: after[bid] for i, bid in enumerate(before) if bid in after}
     if len(mapping) != len(before):

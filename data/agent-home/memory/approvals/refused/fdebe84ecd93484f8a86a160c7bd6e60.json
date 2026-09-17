@@ -1,0 +1,16 @@
+{
+  "req_id": "fdebe84ecd93484f8a86a160c7bd6e60",
+  "status": "refused",
+  "path": "surfaces/page-ir/lib/render-page.mjs",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "b85f4afe-aa99-4dc3-ac54-ad30ca30774a",
+  "conversation_id": "13a631f4-9c3f-417b-a73e-2312c63d6b76",
+  "requested_at": "2026-09-13T11:04:56.513066+00:00",
+  "situation": "本册第 6 页是章导读：ir_columns 写出 layout.tree.kind=opener（下挂一个 flow 子节），同时 flatten 出 bands.kind=opener。page-ir 只要看到 tree 就走 renderRegion，把 opener/绕排/居中等结构件统统画成 kb-ir-region CSS 栅；湾地段落到普通 p（段首缩 2em、左齐），章题也用不上 kb-ir-band--opener 的居中与大字号。金样 opener 没有 tree，线上真页却都有 tree，两套画法对不上。章号被装饰字吃掉的「第章」已用 ir/notes 回补，不在渲染器里写书名。",
+  "why": "结构件的种类是全书共性：导读 opener、绕排 wrap、居中 center、等栏 equal、图行 figure_row 都是 ingest 已写进 tree 的 kind。现在算法把「树」和「带」当两套皮肤：bands 走 renderOneBand（有 opener 样式和印张轨缝），tree 走通用栅。真页永远只走后者，结构件样式与金样脱节。应该一套派发：tree 负责层次，kind 共用原来的 band 画手，不为某一册加规则。",
+  "changes": "只改 surfaces/page-ir，不动 tools/ir_columns。在 lib/render-page.mjs 的 renderRegion：rows 仍逐子向下走；opener/center/table/single 按 node.members 走 renderStream，外套 kb-ir-band--opener 等与 renderOneBand 相同的 class；wrap/equal/unequal/figure_row/grid/main_aside 用节点的 kind/slots/fracs 组合成一条 band，交给现有 renderOneBand/印张轨缝；leaf flow 仍画一栏流。补金样 opener-tree（对应真书的 opener+单 flow 子节）；equal/wrap 若 HTML 类名变了就同步金样出参。不在渲染器里猜章号。",
+  "impact": "全书有 tree 的章导读页（含本册第 6 页湾地段）会走 opener 皮肤：标题居中加大、导语不再段首缩进。绕排与多栏也与金样 bands 路径一致，印张边距会画成 gap。没有 tree 的旧金样仍走 bands，行为不变。改完须 test_surface(空 slot 或 page-ir)全绿再 reload_surfaces；红了不上线。不改 pages/、mid/，不改 /app。",
+  "note": "",
+  "refused_at": "2026-09-14T03:24:27.724129+00:00"
+}

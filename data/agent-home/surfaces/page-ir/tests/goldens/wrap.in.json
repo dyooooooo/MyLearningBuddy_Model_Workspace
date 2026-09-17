@@ -1,0 +1,52 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page_size": [595, 841],
+    "layout": {
+      "folio": "recto",
+      "tree": {
+        "id": "page",
+        "kind": "rows",
+        "children": [
+          {
+            "id": "r0",
+            "kind": "flow",
+            "members": [0],
+            "slots": ["main"],
+            "x0": 60,
+            "x1": 535
+          },
+          {
+            "id": "r1",
+            "kind": "cols",
+            "x0": 60,
+            "x1": 535,
+            "children": [
+              {
+                "id": "r1c0",
+                "kind": "flow",
+                "members": [1],
+                "slots": ["main"],
+                "x0": 60,
+                "x1": 340
+              },
+              {
+                "id": "r1c1",
+                "kind": "flow",
+                "members": [2],
+                "slots": ["fig_0"],
+                "x0": 360,
+                "x1": 535
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "blocks": [
+      { "id": "lead", "type": "text", "kind": "body", "text": "提出问题" },
+      { "id": "body", "type": "text", "kind": "body", "text": "实验装置包含摆锤。" },
+      { "id": "fig", "type": "image", "kind": "figure", "asset": "fig.jpg", "caption": "图5-13" }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "req_id": "b7f283680b3949aeae06d38e6e1fc9b5",
+  "status": "granted",
+  "path": "surfaces/page-body/lib/fig-size.mjs",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "ec5b89ef-dd6b-44d3-bc68-07ada4ab6e30",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T03:38:06.060123+00:00",
+  "situation": "小节帽标写在 ## 标题行里，读页仍按 MinerU 框算出的百分比定宽，图比标题字大。用户要求高度跟字体一致。",
+  "why": "fig-size 给每张图盖印张比例。帽标在标题行里是装饰，不是插图。再按栏宽百分比就会撑高整行。标题行的图不要盖百分比，留给 CSS 按字号收。",
+  "changes": "图片落在 ATX 标题行时不要写 width 百分比，只标成行内小图。正文插图和并排图仍按原书比例。金样若没有标题行小图则不变。",
+  "impact": "标题行帽标不再按印张比例放大。正文图、并排图、单独小图的定宽规则不改。",
+  "granted_at": "2026-09-04T03:38:15.423183+00:00",
+  "expires_at": "2026-09-04T03:53:15.423183+00:00",
+  "one_shot": true
+}

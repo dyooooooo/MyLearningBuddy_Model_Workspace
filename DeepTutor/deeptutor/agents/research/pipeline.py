@@ -54,7 +54,14 @@ from deeptutor.agents.research.data_structures import (
     TopicStatus,
 )
 from deeptutor.agents.research.utils.citation_manager import CitationManager
-from deeptutor.core.agentic import (
+from deeptutor.core.context import Attachment, UnifiedContext
+from deeptutor.core.trace import (
+    build_trace_metadata,
+    derive_trace_metadata,
+    merge_trace_metadata,
+    new_call_id,
+)
+from deeptutor.runtime.agentic import (
     DispatchOutcome,
     LabeledStepResult,
     LabelProtocol,
@@ -68,18 +75,11 @@ from deeptutor.core.agentic import (
     run_agentic_loop,
     run_labeled_step,
 )
-from deeptutor.core.agentic.tool_dispatch import (
+from deeptutor.runtime.agentic.tool_dispatch import (
     MAX_PARALLEL_TOOL_CALLS,
 )
-from deeptutor.core.context import Attachment, UnifiedContext
-from deeptutor.core.stream_bus import StreamBus
-from deeptutor.core.trace import (
-    build_trace_metadata,
-    derive_trace_metadata,
-    merge_trace_metadata,
-    new_call_id,
-)
 from deeptutor.runtime.registry.tool_registry import get_tool_registry
+from deeptutor.runtime.stream_bus import StreamBus
 from deeptutor.services.config import parse_language
 from deeptutor.services.llm import get_llm_config, prepare_multimodal_messages
 from deeptutor.services.path_service import get_path_service
@@ -97,8 +97,18 @@ SOURCE = "deep_research"
 # (``compose_enabled_tools``), then narrows the result to tools that can
 # produce evidence for a block-level research summary.
 RESEARCH_OPTIONAL_TOOLS: list[str] = default_optional_tools()
+
+# Read-only Obsidian tools a research block may use when the selected KB is a
+# connected Obsidian vault. Write tools stay out of research blocks — the
+# block loop only retrieves evidence, never mutates the vault. The vault root
+# is injected server-side as ``_vault_path`` (see ``_augment_tool_kwargs``).
+RESEARCH_OBSIDIAN_READ_TOOLS: tuple[str, ...] = (
+    "obsidian_search",
+    "obsidian_read",
+    "obsidian_list",
+)
 RESEARCH_BLOCK_TOOL_ALLOWLIST: frozenset[str] = frozenset(
-    {"rag", "web_search", "paper_search", "code_execution"}
+    {"rag", "web_search", "paper_search", "code_execution", *RESEARCH_OBSIDIAN_READ_TOOLS}
 )
 
 # ---------------------------------------------------------------------------
@@ -195,7 +205,20 @@ _PROTOCOL_NOTE = LabelProtocol(
 # Tools whose results get summarised + recorded in the citation manager.
 # Any tool whose results carry source documents / external evidence
 # should be added here.
-CITABLE_TOOLS: frozenset[str] = frozenset({"rag", "web_search", "paper_search", "code_execution"})
+CITABLE_TOOLS: frozenset[str] = frozenset(
+    {
+        "rag",
+        "web_search",
+        "paper_search",
+        "code_execution",
+        *RESEARCH_OBSIDIAN_READ_TOOLS,
+    }
+)
+
+
+def _is_citable_tool(name: str) -> bool:
+    return name in CITABLE_TOOLS or name.startswith(("pageindex_cloud_", "pageindex_oss_"))
+
 
 # Token budget for the note summarization sidecar.
 DEFAULT_NOTE_MAX_TOKENS = 1500
@@ -217,6 +240,7 @@ DEFAULT_REPORT_OUTLINE_MAX_TOKENS = 2000
 DEFAULT_REPORT_INTRO_MAX_TOKENS = 3000
 DEFAULT_REPORT_SECTION_MAX_TOKENS = 6000
 DEFAULT_REPORT_CONCLUSION_MAX_TOKENS = 3000
+DEFAULT_REPORT_STEP_MAX_ATTEMPTS = 3
 DEFAULT_INITIAL_SUBTOPICS = 5
 DEFAULT_MAX_PARALLEL_TOPICS = 3
 DEFAULT_QUEUE_MAX_LENGTH = 8
@@ -268,7 +292,7 @@ class ResearchPipeline:
     """One-shot orchestrator: instantiate per turn, call :meth:`run` once.
 
     The pipeline owns control flow and per-phase prompt assembly; every
-    LLM call goes through :mod:`deeptutor.core.agentic` primitives. The
+    LLM call goes through :mod:`deeptutor.runtime.agentic` primitives. The
     legacy ``DynamicTopicQueue`` + :class:`CitationManager` are reused
     verbatim as the in-flight scratchpad and citation registry.
     """
@@ -285,6 +309,29 @@ class ResearchPipeline:
         self.kb_name = (kb_name or "").strip() or None
         self.enabled_tools = list(enabled_tools or [])
         self.runtime_config: dict[str, Any] = dict(runtime_config or {})
+
+        # Resolve whether the attached KB is a connected Obsidian vault. The
+        # metadata comes from the access-controlled resolver (never the model),
+        # and the resolution is a pure read with no RAG usage audit. Unresolvable
+        # references / ordinary KBs behave exactly as before (``rag``-style KB).
+        self._is_obsidian_kb = False
+        self._vault_path: str | None = None
+        if self.kb_name:
+            try:
+                from deeptutor.knowledge.kb_types import OBSIDIAN_KB_TYPE
+                from deeptutor.multi_user.knowledge_access import resolve_kb_metadata
+
+                meta = resolve_kb_metadata(self.kb_name)
+                if meta and meta.get("type") == OBSIDIAN_KB_TYPE:
+                    self._is_obsidian_kb = True
+                    vault_path = str(meta.get("vault_path") or "").strip()
+                    if vault_path:
+                        self._vault_path = vault_path
+            except Exception:
+                logger.warning(
+                    "Failed to resolve KB metadata for %r; treating as non-Obsidian.",
+                    self.kb_name,
+                )
 
         # Read structured policy sub-dicts produced by
         # :func:`build_research_runtime_config`. All keys are best-effort —
@@ -374,6 +421,8 @@ class ResearchPipeline:
             api_version=self.api_version,
             extra_headers=self.extra_headers or None,
             reasoning_effort=self.reasoning_effort,
+            wire_api=getattr(self.llm_config, "wire_api", None) or "auto",
+            api_format=getattr(self.llm_config, "api_format", None) or "auto",
         )
 
         self.registry = get_tool_registry()
@@ -422,6 +471,7 @@ class ResearchPipeline:
         client = self._build_client()
 
         try:
+            await self._prepare_pageindex_tools()
             return await self._run_inner(
                 context=context,
                 topic=topic,
@@ -525,6 +575,36 @@ class ResearchPipeline:
                 client=client,
             )
 
+        # A planned block that didn't reach COMPLETED (raised, or exhausted its
+        # iteration budget without a FINISH) is backfilled with empty knowledge
+        # so the surviving blocks can still produce a useful report. But the run
+        # must not then look like a clean success — surface the shortfall both
+        # visibly (a warning notice) and in the result envelope so callers can
+        # tell the report is partial (issue #595).
+        incomplete = [rb for rb in researched if rb.block.status != TopicStatus.COMPLETED]
+        failed_block_titles = [rb.block.sub_topic for rb in incomplete]
+        if incomplete:
+            logger.warning(
+                "Deep Research partial: %d/%d blocks did not complete: %s",
+                len(incomplete),
+                len(researched),
+                failed_block_titles,
+            )
+            await stream.progress(
+                self._t(
+                    "notices.partial_results",
+                    default=(
+                        "{failed} of {total} research subtopics could not be completed; "
+                        "the report is based on the remaining evidence."
+                    ),
+                    failed=len(incomplete),
+                    total=len(researched),
+                ),
+                source=SOURCE,
+                stage="researching",
+                metadata={"trace_kind": "warning"},
+            )
+
         # ----- Phase 4 (iterative reporting) -----
         async with stream.stage(
             "reporting",
@@ -550,6 +630,9 @@ class ResearchPipeline:
                 "topic": refined_topic,
                 "block_count": len(researched),
                 "citation_count": len(citations.get_all_citations()),
+                "partial": bool(incomplete),
+                "failed_block_count": len(incomplete),
+                "failed_block_titles": failed_block_titles,
             },
         }
         await emit_capability_result(stream, result_payload, source=SOURCE, usage=self.usage)
@@ -919,6 +1002,33 @@ class ResearchPipeline:
     def _kb_system_note(self) -> str:
         if not self.kb_name:
             return ""
+        if self._is_obsidian_kb:
+            return self._t(
+                "system.obsidian_kb_system_note",
+                default=(
+                    f"Attached knowledge base {self.kb_name!r} is a read-only "
+                    f"Obsidian vault. Gather evidence with obsidian_search, "
+                    f"obsidian_list and obsidian_read. Do not call rag."
+                ),
+                kb_name=self.kb_name,
+            )
+        tool_context = getattr(self, "_pageindex_tool_context", None)
+        if tool_context is not None:
+            tools = ", ".join(tool.name for tool in tool_context.tools)
+            docs = (
+                "; ".join(
+                    f"{name} (doc_id: {doc_id})"
+                    for name, doc_id in sorted(tool_context.documents.items())
+                )
+                or "(no indexed documents)"
+            )
+            instructions = tool_context.instructions.strip()
+            return (
+                f"Attached PageIndex knowledge base: {self.kb_name!r}. Read it with "
+                f"these tools inside the research loop; do not call rag: {tools}. "
+                f"Documents: {docs}."
+                + (f"\nPageIndex SDK reading instructions:\n{instructions}" if instructions else "")
+            )
         return self._t(
             "system.kb_system_note",
             default=(
@@ -1098,10 +1208,14 @@ class ResearchPipeline:
             )
             section_texts.append(title_block)
 
+        # The separator must be on the wire before ``_write_intro`` emits its
+        # first heading. Emitting it afterwards produced the literal live
+        # stream ``# Report title## 1. Introduction`` even though the final
+        # assembled response was normalized correctly.
+        if section_texts:
+            await self._stream_report_separator(stream)
         intro = await self._write_intro(topic=topic, outline=outline, stream=stream, client=client)
         if intro:
-            if section_texts:
-                await self._stream_report_separator(stream)
             section_texts.append(intro)
 
         section_bodies: list[str] = []
@@ -1604,8 +1718,13 @@ class ResearchPipeline:
         max_tokens: int,
         extra_meta: dict[str, Any] | None = None,
     ) -> str:
-        """Common runner for the four report sub-phases: one labeled step
-        with body streaming live to the chat bubble + a sub-trace card."""
+        """Run and validate one report sub-phase, retrying partial streams.
+
+        Report prose is buffered until the call is known to be complete. This
+        prevents a timed-out first attempt from leaking half a section into
+        the final bubble before a retry starts. Progress / reasoning traces
+        still stream live, so long report calls remain observable.
+        """
         messages = self._build_system_user_messages(system_prompt, user_prompt)
         trace_extra = dict(extra_meta or {})
         iter_meta = self._build_simple_trace_meta(
@@ -1628,18 +1747,94 @@ class ResearchPipeline:
             trace_group="stage",
             **trace_extra,
         )
-        step = await self._run_labeled_step(
-            client=client,
-            messages=messages,
-            tool_schemas=None,
-            protocol=protocol,
-            stream=stream,
-            stage="reporting",
-            iter_meta=iter_meta,
-            max_tokens=max_tokens,
-            final_meta=final_meta,
+        expected_label = protocol.allowed[0]
+        last_reason = "empty response"
+        for attempt in range(1, DEFAULT_REPORT_STEP_MAX_ATTEMPTS + 1):
+            body = ""
+            try:
+                step = await self._run_labeled_step(
+                    client=client,
+                    messages=messages,
+                    tool_schemas=None,
+                    protocol=protocol,
+                    stream=stream,
+                    stage="reporting",
+                    iter_meta=iter_meta,
+                    max_tokens=max_tokens,
+                    # Buffer body text until validation succeeds. Passing
+                    # ``final_meta`` here would stream a failed attempt and
+                    # make a clean retry impossible without duplicated prose.
+                    final_meta=None,
+                )
+                body = (step.text or "").strip()
+                last_reason = _report_step_incomplete_reason(
+                    step,
+                    expected_label=expected_label,
+                    body=body,
+                )
+                if not last_reason:
+                    await stream.content(
+                        body,
+                        source=SOURCE,
+                        stage="reporting",
+                        metadata=merge_trace_metadata(
+                            final_meta,
+                            {"trace_kind": "llm_chunk", "report_attempt": attempt},
+                        ),
+                    )
+                    return body
+            except Exception as exc:
+                last_reason = f"provider error: {type(exc).__name__}"
+                if attempt >= DEFAULT_REPORT_STEP_MAX_ATTEMPTS:
+                    raise
+                logger.warning(
+                    "Report step %s attempt %d/%d failed: %s",
+                    call_id_root,
+                    attempt,
+                    DEFAULT_REPORT_STEP_MAX_ATTEMPTS,
+                    exc,
+                )
+
+            if attempt < DEFAULT_REPORT_STEP_MAX_ATTEMPTS:
+                await stream.progress(
+                    self._t(
+                        "labels.report_retry",
+                        default="Report section was incomplete; retrying.",
+                    ),
+                    source=SOURCE,
+                    stage="reporting",
+                    metadata={
+                        "trace_kind": "warning",
+                        "report_retry": True,
+                        "report_attempt": attempt,
+                        "report_retry_reason": last_reason,
+                        **trace_extra,
+                    },
+                )
+                messages.extend(
+                    [
+                        {
+                            "role": "assistant",
+                            "content": f"``{expected_label}``\n{body}" if body else "",
+                        },
+                        {
+                            "role": "user",
+                            "content": self._t(
+                                "report.retry_complete",
+                                default=(
+                                    "The previous report part was empty or truncated. "
+                                    "Regenerate the complete part from its ## heading, "
+                                    "follow the required label protocol, and finish every sentence."
+                                ),
+                            ),
+                        },
+                    ]
+                )
+
+        raise RuntimeError(
+            f"Research report step {call_id_root!r} remained incomplete after "
+            f"{DEFAULT_REPORT_STEP_MAX_ATTEMPTS} attempts ({last_reason})."
         )
-        return (step.text or "").strip()
 
     def _render_section_evidence(
         self,
@@ -1700,6 +1895,22 @@ class ResearchPipeline:
     # ------------------------------------------------------------------
     # Tool composition for the block loop
     # ------------------------------------------------------------------
+    async def _prepare_pageindex_tools(self) -> None:
+        from deeptutor.services.rag.pipelines.pageindex.tools import (
+            build_pageindex_tool_context,
+        )
+
+        self._pageindex_tool_context = await build_pageindex_tool_context(
+            self.kb_name,
+            base_registry=self.registry,
+        )
+        if self._pageindex_tool_context is not None:
+            self.registry = self._pageindex_tool_context.registry
+
+    def _pageindex_tool_names(self) -> list[str]:
+        tool_context = getattr(self, "_pageindex_tool_context", None)
+        return [tool.name for tool in tool_context.tools] if tool_context is not None else []
+
     def _block_tool_names(self) -> list[str]:
         """Tools available inside the per-block research loop.
 
@@ -1722,18 +1933,30 @@ class ResearchPipeline:
             requested_tools=self.enabled_tools,
             optional_whitelist=RESEARCH_OPTIONAL_TOOLS,
             mount_flags=ToolMountFlags(
-                has_kb=bool(self.kb_name),
+                has_kb=bool(
+                    self.kb_name
+                    and not self._is_obsidian_kb
+                    and not getattr(self, "_pageindex_tool_context", None)
+                ),
                 has_sources=False,
                 has_memory=user_has_memory(),
                 has_notebooks=user_has_notebooks(),
                 has_code=exec_capability_available(),
             ),
         )
-        return [
+        names = [
             name
             for name in composed
             if name in RESEARCH_BLOCK_TOOL_ALLOWLIST and self._tool_in_registry(name)
         ]
+        if self._vault_path:
+            names.extend(
+                name
+                for name in RESEARCH_OBSIDIAN_READ_TOOLS
+                if name in RESEARCH_BLOCK_TOOL_ALLOWLIST and self._tool_in_registry(name)
+            )
+        names.extend(self._pageindex_tool_names())
+        return list(dict.fromkeys(names))
 
     def _build_block_tool_schemas(
         self,
@@ -1774,6 +1997,11 @@ class ResearchPipeline:
             kwargs.setdefault("mode", "hybrid")
             if self.kb_name:
                 kwargs.setdefault("kb_name", self.kb_name)
+        elif tool_name in RESEARCH_OBSIDIAN_READ_TOOLS:
+            if self._vault_path:
+                # Server-owned: overwrite any model-supplied value so the path
+                # can't be forged to read outside the connected vault.
+                kwargs["_vault_path"] = self._vault_path
         elif tool_name == "code_execution":
             from deeptutor.services.sandbox import Mount
 
@@ -1935,6 +2163,37 @@ class ResearchPipeline:
 # ---------------------------------------------------------------------------
 
 _REPORT_TOKEN_RE = re.compile(r"[^\W_]+", re.UNICODE)
+_REPORT_SECTION_HEADING_RE = re.compile(r"\A##\s+\d+\.\s*\S")
+
+
+def _report_step_incomplete_reason(
+    step: LabeledStepResult,
+    *,
+    expected_label: str,
+    body: str,
+) -> str:
+    """Return why a generated report part is unsafe to persist, or ``""``.
+
+    Deep Research report calls are stricter than ordinary chat: an empty
+    formal channel, a token-limit finish, or the labeled-step idle escape
+    means the report is incomplete even though the provider call itself did
+    not raise. Every report part must also contain its numbered H2 heading.
+    """
+
+    if step.label != expected_label:
+        return f"expected {expected_label} label, got {step.label or 'none'}"
+    if step.stream_idle_timeout:
+        return "provider stream went idle before an explicit finish"
+    finish_reason = (step.finish_reason or "").strip().lower()
+    if finish_reason in {"length", "max_tokens", "max_output_tokens"}:
+        return f"provider stopped at its output limit ({finish_reason})"
+    if len(body) < 80:
+        return f"body is too short ({len(body)} characters)"
+    if not _REPORT_SECTION_HEADING_RE.match(body):
+        return "numbered report heading is missing"
+    return ""
+
+
 _REPORT_STOPWORDS = {
     "a",
     "an",
@@ -2296,6 +2555,11 @@ class _BlockLoopHost:
             ),
             trace_id_prefix=f"research-{self._block.block_id}-iter",
         )
+        pageindex_sources = [
+            source for source in outcome.sources if source.get("type") == "pageindex"
+        ]
+        if pageindex_sources:
+            await self._stream.sources(pageindex_sources, source=SOURCE, stage="researching")
         if tool_calls:
             self._tool_rounds_used += 1
         await self._summarise_and_record(tool_calls, outcome)
@@ -2344,13 +2608,19 @@ class _BlockLoopHost:
         for tm in outcome.tool_messages:
             tool_call_id = str(tm.get("tool_call_id") or "")
             tool_name, tool_args = call_meta_by_id.get(tool_call_id, ("", {}))
-            if tool_name not in CITABLE_TOOLS:
+            if not _is_citable_tool(tool_name):
                 continue
             raw_answer = str(tm.get("content") or "")
             if not raw_answer.strip():
                 continue
             try:
-                query = str(tool_args.get("query") or "")
+                query_key = {
+                    "obsidian_read": "note",
+                    "obsidian_list": "folder",
+                }.get(tool_name, "query")
+                query = str(tool_args.get(query_key) or "")
+                if tool_name == "obsidian_list" and not query:
+                    query = "/"
                 summary = await self._pipeline._summarise_tool_result(
                     tool_name=tool_name,
                     query=query,
@@ -2395,28 +2665,6 @@ class _BlockLoopHost:
         # dump raw per-block findings into the chat bubble before the
         # actual report begins.
         return None
-
-    def assistant_message_with_tool_calls(
-        self,
-        *,
-        content: str,
-        tool_calls: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        return {
-            "role": "assistant",
-            "content": content or None,
-            "tool_calls": [
-                {
-                    "id": tc["id"],
-                    "type": "function",
-                    "function": {
-                        "name": tc["name"],
-                        "arguments": tc.get("arguments") or "{}",
-                    },
-                }
-                for tc in tool_calls
-            ],
-        }
 
     def protocol_retry_notice(self) -> str:
         return self._pipeline._t(
@@ -2707,7 +2955,7 @@ class _RephraseLoopHost:
         )
 
         ask_user = (dispatch.pause_payload or {}).get("ask_user") or {}
-        waiter = self._context.metadata.get("wait_for_user_reply")
+        waiter = self._context.runtime.wait_for_user_reply
         if not callable(waiter):
             return False
         raw_reply = await waiter()
@@ -2740,28 +2988,6 @@ class _RephraseLoopHost:
     async def emit_final(self, text: str, final_meta: dict[str, Any]) -> None:
         # The refined topic is internal; not streamed as user content.
         return None
-
-    def assistant_message_with_tool_calls(
-        self,
-        *,
-        content: str,
-        tool_calls: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        return {
-            "role": "assistant",
-            "content": content or None,
-            "tool_calls": [
-                {
-                    "id": tc["id"],
-                    "type": "function",
-                    "function": {
-                        "name": tc["name"],
-                        "arguments": tc.get("arguments") or "{}",
-                    },
-                }
-                for tc in tool_calls
-            ],
-        }
 
     def protocol_retry_notice(self) -> str:
         return self._pipeline._t(
@@ -2802,6 +3028,8 @@ __all__ = [
     "LABEL_SECTION",
     "LABEL_THINK",
     "LABEL_TOOL",
+    "RESEARCH_BLOCK_TOOL_ALLOWLIST",
+    "RESEARCH_OBSIDIAN_READ_TOOLS",
     "ResearchPipeline",
     "ResearchedBlock",
     "ReportOutline",

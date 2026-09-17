@@ -6,10 +6,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
 import sys
+import threading
+from collections.abc import Iterator
 from pathlib import Path
 from statistics import median
 from typing import Any
@@ -130,6 +133,28 @@ def apply_band_rules(rules: dict[str, float] | None = None) -> dict[str, float]:
     return loaded
 
 
+_RULES_LOCK = threading.RLock()
+
+
+@contextlib.contextmanager
+def band_rules_applied(rules: dict[str, float] | None = None) -> Iterator[dict[str, float]]:
+    """把阈值装进模块全局，用完还原。
+
+    阈值被模块里几十处按名字直读，改成层层传参不现实，所以只能落在全局上。
+    那就把「装载 → 用 → 还原」圈进一把锁：
+    - 显式传 rules 的调优／排障调用不会漏到后面的页（以前 --explain 调一次，
+      同进程后续每一页都跟着用那个值）；
+    - FastAPI 线程池里两个请求不会互相改对方正在用的阈值。
+    """
+    g = globals()
+    with _RULES_LOCK:
+        saved = {key: g[key] for key in _RULE_KEYS if key in g}
+        try:
+            yield apply_band_rules(rules)
+        finally:
+            g.update(saved)
+
+
 def _area(b: list[float]) -> float:
     return max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1])
 
@@ -142,7 +167,9 @@ def _intersect(a: list[float], b: list[float]) -> list[float] | None:
     return [x0, y0, x1, y1]
 
 
-def _contained(inner: list[float], outer: list[float], frac: float = CONTAIN_FRAC) -> bool:
+def _contained(inner: list[float], outer: list[float], frac: float | None = None) -> bool:
+    # 阈值不能写成默认参数：默认值在 import 时就求值冻死，band_rules.yaml 改不动它
+    frac = CONTAIN_FRAC if frac is None else frac
     hit = _intersect(inner, outer)
     if hit is None:
         return False
@@ -371,8 +398,11 @@ def page_frame(boxes: list[dict]) -> list[float]:
     return [min(b[0] for b in roots), max(b[2] for b in roots)]
 
 
-def band_columns(members: list[dict], frame: list[float], gap: float = COL_GAP) -> list[list[float]]:
+def band_columns(
+    members: list[dict], frame: list[float], gap: float | None = None
+) -> list[list[float]]:
     """这条带自己的列：把成员 bbox 投到 x 轴，按空白断开聚簇。投栏轨时用。"""
+    gap = COL_GAP if gap is None else gap
     spans = sorted((m["bbox"][0], m["bbox"][2]) for m in members)
     if not spans:
         return [[float(frame[0]), float(frame[1])]]
@@ -447,8 +477,9 @@ def _descendants(root: dict, boxes: list[dict]) -> list[dict]:
     return out
 
 
-def _near_boxes(a: list[float], b: list[float], x_gap: float = FIG_NEAR_X) -> bool:
+def _near_boxes(a: list[float], b: list[float], x_gap: float | None = None) -> bool:
     """相交，或同一横条上只隔一小段空白，算同一图段。"""
+    x_gap = FIG_NEAR_X if x_gap is None else x_gap
     if _intersect(a, b) is not None:
         return True
     if _y_overlap_ratio(a, b) < SAME_ROW_Y:
@@ -615,7 +646,10 @@ def _pair_members(
     return items
 
 
-def _atomic_packs(items: list[dict], page_w: float, tight: float = TIGHT_PACK) -> list[list[dict]]:
+def _atomic_packs(
+    items: list[dict], page_w: float, tight: float | None = None
+) -> list[list[dict]]:
+    tight = TIGHT_PACK if tight is None else tight
     if not items:
         return []
     packs = [[items[0]]]
@@ -702,10 +736,11 @@ def cut_rows(
     groups: list[dict],
     frame: list[float],
     page_w: float,
-    gap: float = PAIR_GAP,
+    gap: float | None = None,
     taken: set[int] | None = None,
 ) -> list[dict]:
     """先用通栏大块切开；其余段再按列结构切开。行高贴成员框。"""
+    gap = PAIR_GAP if gap is None else gap
     taken = taken or set()
     interrupters = _collect_interrupters(roots, groups, frame, page_w, taken)
     claimed = {m["id"] for _a, _b, mem in interrupters for m in mem}
@@ -1244,13 +1279,17 @@ def _src_text(src_i: object, boxes: list[dict], src: dict | None = None) -> str:
     return _span_text(root, boxes) or root.get("text") or ""
 
 
-def _plain_text(text: str) -> str:
-    """扫描稿里的制表符不是收口两栏。抽字时换成空格。"""
+def plain_text(text: str) -> str:
+    """扫描稿里的制表符不是收口两栏。抽字时换成空格。
+
+    收口块的 text 字段只能经这里出（摄取时走 _line_from_pieces，读页重生成时走
+    ir_lib._sync_close_blocks）。两边各写一套就会出现磁盘上是空格、接口上是制表符。
+    """
     return (text or "").replace("\t", " ")
 
 
 def _members_text(members: list[object], boxes: list[dict], src: dict | None = None) -> str:
-    return _plain_text("".join(_src_text(i, boxes, src) for i in members or [] if i is not None))
+    return plain_text("".join(_src_text(i, boxes, src) for i in members or [] if i is not None))
 
 
 def _members_bbox(members: list[object], boxes: list[dict], fallback: list[float]) -> list[float]:
@@ -1366,7 +1405,7 @@ def _iter_part_pieces(
     mems = [m for m in (part.get("members") or []) if m is not None]
     text = (
         _members_text(mems, boxes, src).strip()
-        or _plain_text(str(part.get("text") or "")).strip()
+        or plain_text(str(part.get("text") or "")).strip()
     )
     if not text:
         return
@@ -1618,7 +1657,17 @@ def assemble_page(
     ir_blocks 给的是摄取环节五源合块后的块表（下标与 para_blocks 同序，升格栏目框接在后面）。
     传了就用它的文本与类型收口，比从 layout.json 的 span 反推准。
     """
-    apply_band_rules(rules)
+    with band_rules_applied(rules):
+        return _assemble_page(page, book_id, page_no, extra_blocks, ir_blocks)
+
+
+def _assemble_page(
+    page: dict,
+    book_id: str,
+    page_no: int,
+    extra_blocks: list[dict] | None,
+    ir_blocks: list[dict] | None,
+) -> dict:
     raw_size = page.get("page_size") or [595, 841]
     page_w, page_h = float(raw_size[0]), float(raw_size[1])
     boxes = drop_cross_page(collect_boxes(page, extra_blocks), page_h)
@@ -2183,8 +2232,18 @@ def build_layout(
     blocks: list[dict],
     *,
     folio: str = "",
+    rules: dict[str, float] | None = None,
 ) -> dict:
-    """收口 + 转树，返回写入 ir/pages 的 layout。"""
+    """收口 + 转树，返回写入 ir/pages 的 layout。
+
+    这一段只读 INDENT_PX，但阈值同样从全局取，所以也要圈在 band_rules_applied 里，
+    否则 assemble_page 还原之后这里就退回模块默认值，YAML 改不动缩进。
+    """
+    with band_rules_applied(rules):
+        return _build_layout(assembled, blocks, folio=folio)
+
+
+def _build_layout(assembled: dict, blocks: list[dict], *, folio: str = "") -> dict:
     n_src = len(blocks)  # 收口块从这个下标往后追加，兜底只找真源块
     refs = attach_close(assembled, blocks)
     tree = build_tree(assembled, blocks, refs, n_src=n_src)

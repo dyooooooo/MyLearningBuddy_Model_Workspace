@@ -6,17 +6,25 @@ import {
   ArrowLeft,
   Database,
   FileText,
+  Github,
+  Globe,
   Layers,
   Loader2,
   RefreshCw,
   Settings as SettingsIcon,
+  Smartphone,
   Star,
   Upload,
 } from "lucide-react";
-import type { KnowledgeUploadPolicy } from "@/lib/knowledge-api";
+import type { KnowledgeUploadPolicy } from "@/features/knowledge/model/types";
 import {
   formatKnowledgeTimestamp,
+  isMarginNoteKb,
+  kbProvider,
+  kbDetailSections,
+  providerUsesEmbeddingMetadata,
   resolveKbStatus,
+  type KbDetailSection,
   type KnowledgeBase,
 } from "@/lib/knowledge-helpers";
 import type { TaskState } from "@/hooks/useKnowledgeProgress";
@@ -26,8 +34,12 @@ import KbFilesTab from "./KbFilesTab";
 import KbDocumentsSection from "./KbDocumentsSection";
 import KbIndexVersionsSection from "./KbIndexVersionsSection";
 import KbSettingsSection from "./KbSettingsSection";
-
-type DetailSection = "files" | "add" | "versions" | "settings";
+import KbGitHubSourcesSection from "./KbGitHubSourcesSection";
+import KbWebSourcesSection from "./KbWebSourcesSection";
+import KbMarginNoteDevicesSection from "./KbMarginNoteDevicesSection";
+import KnowledgeEngineIcon, {
+  knowledgeSourceIconId,
+} from "./KnowledgeEngineIcon";
 
 interface KnowledgeBaseDetailProps {
   kb: KnowledgeBase | null;
@@ -35,7 +47,11 @@ interface KnowledgeBaseDetailProps {
   task?: TaskState;
   history: HistoryEntry[];
   onCreate: () => void;
-  onUpload: (kbName: string, files: File[]) => Promise<void>;
+  onUpload: (
+    kbName: string,
+    files: File[],
+    destSubdir?: string,
+  ) => Promise<void>;
   onReindex: (kbName: string) => Promise<void>;
   onRetry: (kbName: string) => Promise<void>;
   onSetDefault: (kbName: string) => Promise<void>;
@@ -44,19 +60,21 @@ interface KnowledgeBaseDetailProps {
   onBack?: () => void;
 }
 
-const SECTIONS: {
-  key: DetailSection;
-  label: string;
-  Icon: typeof FileText;
-}[] = [
-  { key: "files", label: "Files", Icon: FileText },
-  { key: "add", label: "Add documents", Icon: Upload },
-  { key: "versions", label: "Index versions", Icon: Layers },
-  { key: "settings", label: "Settings", Icon: SettingsIcon },
-];
+const SECTION_CHROME: Record<
+  KbDetailSection,
+  { label: string; Icon: typeof FileText }
+> = {
+  files: { label: "Files", Icon: FileText },
+  add: { label: "Add documents", Icon: Upload },
+  github: { label: "GitHub", Icon: Github },
+  web: { label: "Web", Icon: Globe },
+  versions: { label: "Index versions", Icon: Layers },
+  devices: { label: "Devices", Icon: Smartphone },
+  settings: { label: "Settings", Icon: SettingsIcon },
+};
 
 /** Sections that fill the detail body edge-to-edge (no max-w wrapper). */
-const FULL_BLEED_SECTIONS = new Set<DetailSection>(["files"]);
+const FULL_BLEED_SECTIONS = new Set<KbDetailSection>(["files"]);
 
 export default function KnowledgeBaseDetail({
   kb,
@@ -73,7 +91,7 @@ export default function KnowledgeBaseDetail({
   onBack,
 }: KnowledgeBaseDetailProps) {
   const { t } = useTranslation();
-  const [section, setSection] = useState<DetailSection>("files");
+  const [section, setSection] = useState<KbDetailSection>("files");
   const [retrySubmitting, setRetrySubmitting] = useState(false);
 
   if (!kb) {
@@ -104,7 +122,14 @@ export default function KnowledgeBaseDetail({
   }
 
   const meta = kb.metadata || {};
-  const provider = kb.statistics?.rag_provider || "llamaindex";
+  const isMarginNote = isMarginNoteKb(kb);
+  // A MarginNote library records no engine and no embedding: defaulting to
+  // "llamaindex · Default embedding" here described a pipeline it never runs.
+  const provider = isMarginNote
+    ? t("MarginNote 4")
+    : kb.statistics?.rag_provider || "llamaindex";
+  const pageIndexProvider =
+    isMarginNote || !providerUsesEmbeddingMetadata(provider);
   const embeddingLabel = meta.embedding_model
     ? typeof meta.embedding_dim === "number"
       ? `${meta.embedding_model} · ${meta.embedding_dim}${t("d")}`
@@ -118,7 +143,8 @@ export default function KnowledgeBaseDetail({
     (task?.kind === "reindex" || task?.kind === "retry") &&
     task.executing === true;
   const status = resolveKbStatus(kb);
-  const canRetry = status === "error" && !kb.read_only;
+  // Nothing to re-run: its content arrives from the add-on, not an index.
+  const canRetry = status === "error" && !kb.read_only && !isMarginNote;
 
   const handleRetry = async () => {
     if (!canRetry || retrySubmitting || isReindexingLocally) return;
@@ -130,50 +156,66 @@ export default function KnowledgeBaseDetail({
     }
   };
 
-  const fullBleed = FULL_BLEED_SECTIONS.has(section);
+  const sections = kbDetailSections(kb);
+  // Switching to a KB without the selected section (a MarginNote library has
+  // no Files tab) falls back to its first, instead of rendering nothing.
+  const activeSection = sections.includes(section) ? section : sections[0];
+  const fullBleed = FULL_BLEED_SECTIONS.has(activeSection);
 
   return (
     <main className="flex h-full flex-1 flex-col overflow-hidden bg-[var(--background)]">
       {/* Header */}
       <div className="border-b border-[var(--border)] bg-[var(--card)] px-6 py-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            {onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="mb-1.5 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                {t("Knowledge bases")}
-              </button>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate font-serif text-[18px] font-semibold tracking-tight text-[var(--foreground)]">
-                {kb.name}
-              </h1>
-              {kb.is_default && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                  <Star className="h-3 w-3" fill="currentColor" />
-                  {t("Default")}
-                </span>
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <KnowledgeEngineIcon
+              engine={knowledgeSourceIconId({
+                provider: kbProvider(kb),
+                type: kb.metadata?.type,
+              })}
+              size={36}
+              className="mt-0.5"
+            />
+            <div className="min-w-0 flex-1">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="mb-1.5 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  {t("Knowledge bases")}
+                </button>
               )}
-              {kb.assigned && (
-                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
-                  {kb.provenance_label || t("Assigned by admin")}
-                </span>
-              )}
-              <KbStatusBadge
-                kb={kb}
-                isReindexingLocally={isReindexingLocally}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate font-serif text-[18px] font-semibold tracking-tight text-[var(--foreground)]">
+                  {kb.name}
+                </h1>
+                {kb.is_default && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                    <Star className="h-3 w-3" fill="currentColor" />
+                    {t("Default")}
+                  </span>
+                )}
+                {kb.assigned && (
+                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
+                    {kb.provenance_label || t("Assigned by admin")}
+                  </span>
+                )}
+                <KbStatusBadge
+                  kb={kb}
+                  isReindexingLocally={isReindexingLocally}
+                />
+              </div>
+              <p className="mt-1 text-[12px] text-[var(--muted-foreground)]">
+                {provider}
+                {!pageIndexProvider ? ` · ${embeddingLabel}` : ""} ·{" "}
+                {t("Updated")} {updatedLabel}
+                {lastIndexedLabel
+                  ? ` · ${t("Last indexed")} ${lastIndexedLabel}`
+                  : ""}
+              </p>
             </div>
-            <p className="mt-1 text-[12px] text-[var(--muted-foreground)]">
-              {provider} · {embeddingLabel} · {t("Updated")} {updatedLabel}
-              {lastIndexedLabel
-                ? ` · ${t("Last indexed")} ${lastIndexedLabel}`
-                : ""}
-            </p>
           </div>
           {canRetry && (
             <button
@@ -199,8 +241,9 @@ export default function KnowledgeBaseDetail({
 
         {/* Section nav */}
         <nav className="-mb-3 mt-3 flex gap-1 overflow-x-auto">
-          {SECTIONS.map(({ key, label, Icon }) => {
-            const active = section === key;
+          {sections.map((key) => {
+            const { label, Icon } = SECTION_CHROME[key];
+            const active = activeSection === key;
             return (
               <button
                 key={key}
@@ -222,12 +265,12 @@ export default function KnowledgeBaseDetail({
 
       {/* Body */}
       <div className="min-h-0 flex-1 overflow-hidden">
-        {section === "files" ? (
+        {activeSection === "files" ? (
           <KbFilesTab key={kb.name} kb={kb} task={task} />
         ) : (
           <div className="h-full overflow-y-auto px-6 py-5">
             <div className={fullBleed ? "" : "mx-auto max-w-3xl"}>
-              {section === "add" && (
+              {activeSection === "add" && (
                 <KbDocumentsSection
                   kb={kb}
                   uploadPolicy={uploadPolicy}
@@ -235,12 +278,14 @@ export default function KnowledgeBaseDetail({
                   history={history}
                   onClearHistory={() => onClearHistory(kb.name)}
                   onRetry={handleRetry}
-                  onUpload={(files) =>
-                    kb.read_only ? Promise.resolve() : onUpload(kb.name, files)
+                  onUpload={(files, destSubdir) =>
+                    kb.read_only
+                      ? Promise.resolve()
+                      : onUpload(kb.name, files, destSubdir)
                   }
                 />
               )}
-              {section === "versions" && (
+              {activeSection === "versions" && (
                 <KbIndexVersionsSection
                   kb={kb}
                   task={task}
@@ -253,7 +298,16 @@ export default function KnowledgeBaseDetail({
                   }
                 />
               )}
-              {section === "settings" && (
+              {activeSection === "github" && (
+                <KbGitHubSourcesSection kbName={kb.name} />
+              )}
+              {activeSection === "web" && (
+                <KbWebSourcesSection kbName={kb.name} />
+              )}
+              {activeSection === "devices" && (
+                <KbMarginNoteDevicesSection key={kb.name} kb={kb} />
+              )}
+              {activeSection === "settings" && (
                 <KbSettingsSection
                   kb={kb}
                   onSetDefault={() =>

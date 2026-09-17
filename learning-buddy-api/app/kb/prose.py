@@ -104,7 +104,7 @@ def drop_noise_lines(md: str) -> str:
 def drop_formula_shots(md: str) -> str:
     def _shot(match: re.Match[str]) -> str:
         alt = (match.group(1) or "").strip()
-        return match.group(0) if alt.startswith("图") else ""
+        return match.group(0) if alt.startswith(("图", "公式")) else ""
 
     return re.sub(
         rf"!\[([^\]]*)\]\([^)]+\)[ \t]*\n+(?=[^\n]*{_FORMULA_NEXT})",

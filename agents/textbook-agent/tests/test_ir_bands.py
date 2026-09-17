@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import copy
 import json
 import sys
 from pathlib import Path
+
+import pytest
 
 _TOOLS = Path(__file__).resolve().parents[1] / "workspace" / "tools"
 _ROOT = Path(__file__).resolve().parents[3]
@@ -112,6 +115,161 @@ def test_four_page_goldens() -> None:
         g_types = [u.get("type") for u in gold.get("units") or []]
         assert a_types == g_types, spec["stem"]
     assert checked == len(SPECS), f"只比了 {checked}/{len(SPECS)} 页，缺书的 layout.json"
+
+
+def test_no_rule_key_is_a_frozen_default() -> None:
+    """阈值不许写成默认参数。
+
+    默认参数在 import 时求值就冻死了，apply_band_rules 改全局改不动它，
+    于是 band_rules.yaml 里的旋钮变成死旋钮——调了没反应，还得去翻 Python。
+    PAIR_GAP / FIG_NEAR_X 就是这么整条失效的，COL_GAP / TIGHT_PACK 半失效。
+    """
+    import ast
+
+    src = Path(ir_bands.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    keys = set(ir_bands._RULE_KEYS)
+    frozen = [
+        f"{fn.name}(... = {d.id})  line {fn.lineno}"
+        for fn in ast.walk(tree)
+        if isinstance(fn, ast.FunctionDef)
+        for d in list(fn.args.defaults) + [k for k in fn.args.kw_defaults if k]
+        if isinstance(d, ast.Name) and d.id in keys
+    ]
+    assert not frozen, "阈值被冻进默认参数，band_rules.yaml 改不动：\n  " + "\n  ".join(frozen)
+
+
+def test_no_rule_key_is_dead() -> None:
+    """每个阈值都得有至少一处真读它的地方。
+
+    光在 YAML 和 _RULE_KEYS 里列着不算生效。PAIR_GAP / FIG_NEAR_X 曾经全库
+    只有默认参数那一处引用，等于写了个没接线的旋钮。
+    """
+    import ast
+
+    tree = ast.parse(Path(ir_bands.__file__).read_text(encoding="utf-8"))
+    frozen_defaults = {
+        id(d)
+        for fn in ast.walk(tree)
+        if isinstance(fn, ast.FunctionDef)
+        for d in list(fn.args.defaults) + [k for k in fn.args.kw_defaults if k]
+    }
+    live: dict[str, int] = {k: 0 for k in ir_bands._RULE_KEYS}
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Name)
+            and node.id in live
+            and isinstance(node.ctx, ast.Load)
+            and id(node) not in frozen_defaults
+        ):
+            live[node.id] += 1
+    dead = sorted(k for k, n in live.items() if n == 0)
+    assert not dead, f"这些阈值没有任何生效路径，调了不会有反应：{dead}"
+
+
+def test_previously_frozen_keys_now_take_effect() -> None:
+    """五个曾被冻在默认参数里的阈值，现在必须真能改变产物。
+
+    只要有任意一页能被它改动就算接上了（阈值本身是分场景的）。
+    """
+    # FIG_NEAR_X 管「相邻两张图算不算同一图段」，四页金样里没有多图页，另补一页
+    probe_specs = SPECS + [
+        {"stem": "multifig", "book": "13036f17d454435888c0f499e9773b82", "page": 23, "page_idx": 22}
+    ]
+    pages = []
+    for spec in probe_specs:
+        if (BOOKS / spec["book"] / "mineru" / "layout.json").is_file():
+            pages.append((spec, _mineru_page(spec["book"], spec["page_idx"])))
+    assert pages, "四页原料都不在这台机器上"
+
+    def sig(page: dict, spec: dict, rules: dict | None) -> str:
+        page = copy.deepcopy(page)
+        assembled = ir_bands.assemble_page(page, spec["book"], spec["page"], rules=rules)
+        blocks = [
+            {"id": f"b{i}", "type": "text", "text": f"t{i}", "bbox": list(b.get("bbox") or [])}
+            for i, b in enumerate(page.get("para_blocks") or [])
+        ]
+        layout = ir_bands.build_layout(assembled, blocks)
+        return json.dumps([assembled, layout], sort_keys=True, ensure_ascii=False, default=str)
+
+    probes = {
+        "COL_GAP": 400.0,
+        "TIGHT_PACK": 300.0,
+        "PAIR_GAP": 0.0,
+        "FIG_NEAR_X": 9999.0,
+        "CONTAIN_FRAC": 0.05,
+    }
+    for key, val in probes.items():
+        moved = any(
+            sig(page, spec, {key: val}) != sig(page, spec, None) for spec, page in pages
+        )
+        assert moved, f"{key} 改了四页都没反应，可能又被冻住或没接线"
+
+
+def test_explicit_rules_do_not_leak_to_later_pages() -> None:
+    """显式传 rules 只能管这一次调用。
+
+    阈值落在模块全局上，以前装进去就不还原：--explain 调一次极端值，同进程后面
+    每一页都跟着用那个值，排障看到的版式跟线上不是一回事。
+    """
+    spec = SPECS[3]
+    if not (BOOKS / spec["book"] / "mineru" / "layout.json").is_file():
+        pytest.skip("原料不在这台机器上")
+    page = _mineru_page(spec["book"], spec["page_idx"])
+
+    def run(rules: dict | None) -> str:
+        out = ir_bands.assemble_page(copy.deepcopy(page), spec["book"], spec["page"], rules=rules)
+        return json.dumps(out, sort_keys=True, ensure_ascii=False, default=str)
+
+    base = run(None)
+    tuned = run({"COL_GAP": 400.0})
+    assert tuned != base, "探针值没生效，这条测不出泄漏"
+    assert run(None) == base, "上一次的 rules 漏到了后面的页"
+    assert ir_bands.COL_GAP == ir_bands.load_band_rules().get("COL_GAP", ir_bands.COL_GAP)
+
+
+def test_concurrent_pages_do_not_cross_talk() -> None:
+    """两个线程同时排版，一个用探针阈值，另一个必须拿到 YAML 的值。
+
+    阈值放在模块全局，没有锁的话一个线程排到一半会被另一个线程改掉阈值。
+    实测去锁时 300 次里有 88 次串扰（基线线程拿到探针值最多），加锁后 0 次。
+    switchinterval 压到 1e-6 是为了把这个窗口放大到稳定可复现。
+    """
+    import threading
+
+    spec = SPECS[3]
+    if not (BOOKS / spec["book"] / "mineru" / "layout.json").is_file():
+        pytest.skip("原料不在这台机器上")
+    page = _mineru_page(spec["book"], spec["page_idx"])
+
+    def run(rules: dict | None) -> str:
+        out = ir_bands.assemble_page(copy.deepcopy(page), spec["book"], spec["page"], rules=rules)
+        return json.dumps(out, sort_keys=True, ensure_ascii=False, default=str)
+
+    base = run(None)
+    assert run({"COL_GAP": 400.0}) != base, "探针值不改变版式，这条测不出串扰"
+    bad: list[str] = []
+
+    def worker(rules: dict | None, want_same: bool) -> None:
+        for _ in range(150):
+            same = run(rules) == base
+            if same is not want_same:
+                bad.append(f"rules={rules} 结果与基线相同={same}（期望{want_same}）")
+
+    old = sys.getswitchinterval()
+    sys.setswitchinterval(1e-6)
+    try:
+        threads = [
+            threading.Thread(target=worker, args=({"COL_GAP": 400.0}, False)),
+            threading.Thread(target=worker, args=(None, True)),
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=300)
+    finally:
+        sys.setswitchinterval(old)
+    assert not bad, f"并发下阈值互串 {len(bad)} 次：{bad[:3]}"
 
 
 def test_folio_side_left_and_right() -> None:

@@ -292,19 +292,24 @@ services:
       AGENT_CLI_CREDENTIAL_STORE: file
       PYTHONDONTWRITEBYTECODE: "1"
       TEXTBOOK_AGENT_TOKEN: ${TEXTBOOK_AGENT_TOKEN:-change-me-textbook-agent}
+      # 按原文尺寸插入图片（图宽取自 MinerU bbox）。逗号分隔书籍 id，`*` 开全部；
+      # 留空则全部走旧的 CSS 统一上限。默认全部教材开启。
+      TEXTBOOK_FIG_SIZE_BOOKS: "${TEXTBOOK_FIG_SIZE_BOOKS:-*}"
       BUDDY_API_URL: ${BUDDY_API_URL:-http://buddy-api:8100}
       BUDDY_ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-admin}
       CURSOR_MODEL: ${CURSOR_MODEL:-grok-4.6}
-      CURSOR_MODEL_EFFORT: ${CURSOR_MODEL_EFFORT:-xhigh}
+      CURSOR_MODEL_EFFORT: ${CURSOR_MODEL_EFFORT:-high}
       CURSOR_MODEL_FAST: ${CURSOR_MODEL_FAST:-true}
       CURSOR_TASK_MODEL: ${CURSOR_TASK_MODEL:-grok-4.6}
-      CURSOR_TASK_EFFORT: ${CURSOR_TASK_EFFORT:-xhigh}
+      CURSOR_TASK_EFFORT: ${CURSOR_TASK_EFFORT:-high}
       CURSOR_TASK_FAST: ${CURSOR_TASK_FAST:-true}
       CURSOR_EVAL_TIMEOUT_S: ${CURSOR_EVAL_TIMEOUT_S:-1800}
       CURSOR_SEND_TIMEOUT_S: ${CURSOR_SEND_TIMEOUT_S:-180}
       # Agent 运行走长连接；容器里 HTTP/2 双向流会被 NAT 静默掐断，
       # 表现为 "Connection stalled repeatedly"。默认改走 HTTP/1.1。
       CURSOR_USE_HTTP1: ${CURSOR_USE_HTTP1:-true}
+      # 一座本地桥同时只发 1 路；多开的知识库对话排队，避免互踩拆流。
+      MAX_CONCURRENT_SENDS: ${MAX_CONCURRENT_SENDS:-1}
     sysctls:
       # 同一个原因的另一半：让空闲的长连接自己发保活包，不要等 NAT 先超时。
       net.ipv4.tcp_keepalive_time: "300"
@@ -347,7 +352,10 @@ services:
       - ../learning-buddy-api/configs/checks:/app/configs/checks
       - ../learning-buddy-api/app/static:/app/app/static:ro
       - ../data/agent-home/textbooks:/data/agent/textbooks
+      # 目录词法唯一实现（tools/toc_lexicon.py）+ 词法表（configs/toc_lexicon.yaml）
+      # kb/toc.py 按路径委托它们，两个仓库共用同一份规则。见 doc/toc-code-ownership.md
       - ../data/agent-home/tools:/data/agent/tools:ro
+      - ../data/agent-home/configs:/data/agent/configs:ro
     environment:
       AGENT_TEXTBOOKS_DIR: /data/agent/textbooks
       BUDDY_DATA_DIR: /data/buddy
@@ -441,7 +449,10 @@ services:
       - ../learning-buddy-api/configs/checks:/app/configs/checks
       - ../learning-buddy-api/app/static:/app/app/static:ro
       - ../data/agent-home/textbooks:/data/agent/textbooks
+      # 目录词法唯一实现（tools/toc_lexicon.py）+ 词法表（configs/toc_lexicon.yaml）
+      # kb/toc.py 按路径委托它们，两个仓库共用同一份规则。见 doc/toc-code-ownership.md
       - ../data/agent-home/tools:/data/agent/tools:ro
+      - ../data/agent-home/configs:/data/agent/configs:ro
     environment:
       AGENT_TEXTBOOKS_DIR: /data/agent/textbooks
       BUDDY_DATA_DIR: /data/buddy

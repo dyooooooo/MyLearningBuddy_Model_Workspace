@@ -1,0 +1,17 @@
+{
+  "req_id": "f750fbb182274ab0a2a7804eb17386e2",
+  "status": "granted",
+  "path": "tools/tag_chemistry.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "5d5bb9f5-5ea5-4bc2-94b1-dcedd97ccb79",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T04:32:45.797923+00:00",
+  "situation": "化学教材同一行多张分图各有短标（珍珠、雾、涂料），整组下面还有「图1.5　分散系」。MinerU 常把总图注贴到其中一张的 alt 上。本册书页已拆开，要把同一套写进 tag_chemistry，以后导入不用再手改。",
+  "why": "这是化学教材的固定版式：分图短标留在各图下，「图N.N 题」放在整行之后居中。写进现有 tag_chemistry，不要另起工具。",
+  "changes": "新增 apply_group_captions：读 MinerU image_caption（短标与「图N.N」分开的数组），已粘成「雾图1.5　分散系」的行再拆开。连续多图时各图只留分图名，总图注插到该行最后一张之后（mid 用 kb-center）。已有同样图注不重复。栏目说明页不改。经 apply_chemistry_shapes 接入。不把 width 写进书页。",
+  "impact": "以后导入的化学教材会自动拆分图名和总图注。本册书页已改过，读页已上线。不动解析器。",
+  "granted_at": "2026-09-04T04:32:51.153625+00:00",
+  "expires_at": "2026-09-04T04:47:51.153625+00:00",
+  "one_shot": true
+}

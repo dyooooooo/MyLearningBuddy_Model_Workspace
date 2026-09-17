@@ -1,0 +1,16 @@
+{
+  "req_id": "a6ab1e0d06fb458db4d332002432870a",
+  "status": "revised",
+  "path": "tools/tag_chem_focus.py",
+  "scope": "new",
+  "tool_name": "request_code_edit",
+  "job_id": "98e251b4-436f-4d50-bab7-aff8993911d1",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-03T07:14:00.983468+00:00",
+  "situation": "化学教材节首边栏「学习聚焦」原书每条前是红色对号，「知识回放」每条是实心圆点。MinerU 常把对号裁成小图、把第一条升成 ###，导入后格式丢了。现有 tag_section_icons 只收语文栏目图标，不处理化学这两栏的条目标记。本册源页已按原书改过，但后续化学教材导入仍会再掉。",
+  "why": "沪科、上科版化学必修各册都是这一套边栏：学习聚焦用对号、知识回放用圆点。用户本轮要求做成化学教材特有工具并挂任务。不能给语文用的 tag_section_icons 打补丁，也不能把一书专名写进共用解析器。新工具只认科目 chemistry 且类型是 textbook，按栏名形状收对号和圆点。",
+  "changes": "新建 tools/tag_chem_focus.py，函数名必须是 tag_chem_focus。只改化学教材的 pages/ 与 mid/：学习聚焦条目写成 √ 行，知识回放保持 ●，剥掉对号残图，补回缺失栏名。apply 为 scan 或 fix。经 library.write_page 与 write_mid 走闸门。不改 tag_section_icons、build_toc、page-body、也不新增围栏名。栏目说明页不动。",
+  "impact": "化学教材导入清洗后可由任务自动收这两栏格式，不用对照原图手改每一条。语文、物理、英语不受影响。源页仍是官方 Markdown，不写 class 或新围栏；图标与栏名仍只留 mid 的 kb-section-icon。已改好的书再跑工具应该 0 hits。",
+  "note": "工具的名字起一个“化学”就 OK，不要特指什么东西。因为后期我这个改进了之后，我需要在这个工具里再加其他的功能，就专属于这个化学教材的功能。",
+  "revised_at": "2026-09-03T07:15:02.095178+00:00"
+}

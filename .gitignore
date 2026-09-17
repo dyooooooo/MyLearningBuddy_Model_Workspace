@@ -57,6 +57,9 @@ data/agent-home/surfaces/.last-good/
 data/backups/
 !data/agent-home/**/.gitkeep
 
+# Cursor Canvas live apps (symlink → ~/.cursor/projects/<id>/canvases)
+/canvases
+
 # Cursor project cache (lives under ~/.cursor/projects/, not here)
 .cursor/
 # 教材 agent 播种用的这份是产品代码——红线钩子、技能、规则，由 workspace.py 铺进

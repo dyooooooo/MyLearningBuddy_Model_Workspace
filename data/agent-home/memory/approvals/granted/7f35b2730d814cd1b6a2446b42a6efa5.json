@@ -1,0 +1,17 @@
+{
+  "req_id": "7f35b2730d814cd1b6a2446b42a6efa5",
+  "status": "granted",
+  "path": "surfaces/page-body/lib/fig-size.mjs",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "377c120a-21ed-42fc-94e6-9a57c7a079b2",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T04:02:47.391246+00:00",
+  "situation": "Page 16 has three same-row plates at about 34 percent each. After scaling to 100 percent the flex gap makes the row wrap into two plus one. The printed book keeps them in one row.",
+  "why": "Same-row plates already fill the column. Gap on top of a 100 percent scale overflows and wraps. Reserve space for the gaps and do not wrap, so a printed row stays one row. Do not write width into pages or mid.",
+  "changes": "In wrapRow, when there are two or more plates, scale to 100 percent minus about 2.5 percent times (count minus 1) so the gap fits. In theme.css set .kb-fig-row to flex-wrap nowrap and .kb-fig-cell to min-width 0. The 22+22+22 golden stays unchanged because that sum is under the threshold.",
+  "impact": "All books keep same-row plates on one line. Three 34 percent plates shrink slightly to stay in one row. Markdown pages do not change. Reload only after goldens are green.",
+  "granted_at": "2026-09-04T04:30:08.645553+00:00",
+  "expires_at": "2026-09-04T04:45:08.645553+00:00",
+  "one_shot": true
+}

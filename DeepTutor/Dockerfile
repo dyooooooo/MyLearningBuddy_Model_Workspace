@@ -111,6 +111,8 @@ LABEL maintainer="DeepTutor Team" \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
+    MALLOC_ARENA_MAX=2 \
+    MALLOC_TRIM_THRESHOLD_=131072 \
     NODE_ENV=production \
     DEEPTUTOR_IGNORE_PROCESS_ENV_OVERRIDES=1
 
@@ -126,10 +128,15 @@ WORKDIR /app
 
 # Install system dependencies
 # Note: libgl1 and libglib2.0-0 are required for OpenCV (used by mineru)
+# Note: git is required to install CLI apps — most of the CLI-Anything catalog
+#       installs with `pip install git+…`, which shells out to git. It is needed
+#       in *this* image and not in the runner: installing is a privileged
+#       main-app action, running is the runner's (Dockerfile.runner).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     bash \
+    git \
     supervisor \
     libgl1 \
     libglib2.0-0 \
@@ -181,27 +188,50 @@ RUN mkdir -p \
     data/user/logs \
     data/knowledge_bases
 
-# Bake a non-root user for the supervisord programs. supervisord runs as
-# root (PID 1) and drops each child to this user via the per-program
-# `user=deeptutor` directive, so the backend/frontend processes stay
-# non-root. UID 1000 matches the host user under rootless podman's
-# `userns_mode: keep-id` with a bind mount on ./data.
+# Bake a non-root user (UID 1000) for the supervisord programs. supervisord
+# itself runs as PID 1's UID — root under rootful Docker/Podman, or UID 1000
+# under rootless podman + `userns_mode: keep-id` (where PID 1 is the host
+# user). Each child (backend/frontend) is dropped to this `deeptutor` user via
+# the per-program `user=deeptutor` directive, so the app processes stay
+# non-root in either runtime. UID 1000 also matches the host user under
+# keep-id with a bind mount on ./data.
 RUN groupadd --system --gid 1000 deeptutor \
     && useradd --system --uid 1000 --gid 1000 --no-create-home --shell /usr/sbin/nologin deeptutor \
     && chown -R deeptutor:deeptutor /app/data /app/web/.next
 
-# Create supervisord configuration for running both services
-# Log output goes to stdout/stderr so docker logs can capture them
+# supervisord config is split into two files so the production and development
+# images share one daemon-level [supervisord] section instead of duplicating it:
+#   - /etc/supervisor/supervisord.conf      — daemon-level settings (shared)
+#   - /etc/supervisor/conf.d/programs.conf  — the backend/frontend programs
+# Production defines the programs here; the development stage overrides only
+# programs.conf, leaving the shared daemon section untouched.
+# Program output goes to the container's stdout/stderr so `docker logs` captures it.
 RUN mkdir -p /etc/supervisor/conf.d
 
-RUN cat > /etc/supervisor/conf.d/deeptutor.conf <<'EOF'
+# Daemon-level config. No `user=` in [supervisord]: supervisord runs as PID 1's
+# UID (root under rootful; UID 1000 under rootless podman + keep-id, which has
+# no CAP_SETUID and would make a `user=` line fail at startup with
+# "Can't drop privilege as nonroot user" — see supervisord options.py). The
+# pidfile lives in /tmp, which is world-writable, so supervisord can create it
+# whether it runs as root or UID 1000; /var/run is root-owned and not writable
+# by UID 1000 under rootless keep-id.
+RUN cat > /etc/supervisor/supervisord.conf <<'EOF'
 [supervisord]
 nodaemon=true
 logfile=/dev/null
 logfile_maxbytes=0
-pidfile=/var/run/supervisord.pid
-user=root
+pidfile=/tmp/supervisord.pid
 
+[include]
+files = /etc/supervisor/conf.d/programs.conf
+EOF
+
+RUN sed -i 's/\r$//' /etc/supervisor/supervisord.conf
+
+# Program definitions (production). Each child drops to the unprivileged
+# deeptutor user (UID 1000) via per-program `user=deeptutor`; see the note on
+# the user= design above the daemon config.
+RUN cat > /etc/supervisor/conf.d/programs.conf <<'EOF'
 [program:backend]
 command=/bin/bash /app/start-backend.sh
 directory=/app
@@ -228,7 +258,7 @@ stderr_logfile_maxbytes=0
 environment=NODE_ENV="production"
 EOF
 
-RUN sed -i 's/\r$//' /etc/supervisor/conf.d/deeptutor.conf
+RUN sed -i 's/\r$//' /etc/supervisor/conf.d/programs.conf
 
 # Create backend startup script
 RUN cat > /app/start-backend.sh <<'EOF'
@@ -237,6 +267,7 @@ set -e
 
 BACKEND_PORT=${BACKEND_PORT:-8001}
 BACKEND_HOST=${BACKEND_HOST:-0.0.0.0}
+BACKEND_WORKERS=${BACKEND_WORKERS:-1}
 
 echo "[Backend]  🚀 Starting FastAPI backend on ${BACKEND_HOST}:${BACKEND_PORT}..."
 
@@ -247,7 +278,19 @@ echo "[Backend]  🚀 Starting FastAPI backend on ${BACKEND_HOST}:${BACKEND_PORT
 # BACKEND_HOST defaults to 0.0.0.0 (LAN-reachable, matches bridge-mode
 # port publishing). Set BACKEND_HOST=127.0.0.1 when running with
 # network_mode: host to keep the backend on loopback only.
-exec python -m uvicorn deeptutor.api.main:app --host ${BACKEND_HOST} --port ${BACKEND_PORT} --no-access-log
+#
+# --ws-max-size: chat attachments travel base64 inside one WS message; derive
+# the frame cap from the configured attachment policy (system.json) so uploads
+# the policy allows are not severed by uvicorn's 16MB default.
+#
+# --timeout-keep-alive: the frontend proxy (web/proxy.ts) forwards over Node's
+# http.globalAgent, which reaps idle sockets on a 5s timer — identical to
+# uvicorn's default, so both ends raced to close the same socket and the loser's
+# request died with ECONNRESET (a 500 in the UI). Stay well above the proxy's
+# reaper so the client is the only side retiring idle connections.
+WS_MAX_SIZE=$(python -c "from deeptutor.services.config import get_ws_max_size; print(get_ws_max_size())" 2>/dev/null || echo 16777216)
+KEEP_ALIVE=$(python -c "from deeptutor.services.config import HTTP_KEEP_ALIVE_TIMEOUT; print(HTTP_KEEP_ALIVE_TIMEOUT)" 2>/dev/null || echo 300)
+exec python -m uvicorn deeptutor.api.main:app --host ${BACKEND_HOST} --port ${BACKEND_PORT} --workers ${BACKEND_WORKERS} --no-access-log --ws-max-size ${WS_MAX_SIZE} --timeout-keep-alive ${KEEP_ALIVE}
 EOF
 
 RUN sed -i 's/\r$//' /app/start-backend.sh && chmod +x /app/start-backend.sh
@@ -288,6 +331,8 @@ export DEEPTUTOR_IGNORE_PROCESS_ENV_OVERRIDES=1
 # data/user/settings/*.json below.
 for key in \
     BACKEND_PORT \
+    BACKEND_WORKERS \
+    DEEPTUTOR_BACKEND_WORKERS \
     FRONTEND_PORT \
     NEXT_PUBLIC_API_BASE_EXTERNAL \
     NEXT_PUBLIC_API_BASE \
@@ -324,6 +369,42 @@ init_user_directories(Path('/app'))
 # owns it. Cheap on no-op; the only first-start cost is one stat per file.
 chown -R deeptutor:deeptutor /app/data 2>/dev/null || true
 
+# Optional dependencies (#762). A container is disposable, so anything
+# `docker exec … pip install`ed into a running one is gone at the next
+# `compose down`. Declare them on the deployment instead and every container
+# started from it has them:
+#
+#   environment:
+#     DEEPTUTOR_EXTRAS: "math-animator,partners"
+#     DEEPTUTOR_APT_PACKAGES: "ffmpeg"
+#
+# Both steps are idempotent — a warm container only pays a check — and neither
+# is allowed to be fatal: a missing wheel leaves that one feature unavailable,
+# exactly as it was before, rather than taking the whole deployment down.
+# The pip cache lives on the data volume so a rebuild reuses the downloads it
+# already paid for instead of fetching them again.
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-/app/data/.cache/pip}"
+mkdir -p "$PIP_CACHE_DIR" 2>/dev/null || true
+
+if [ -n "${DEEPTUTOR_APT_PACKAGES:-}" ]; then
+    echo "🔧 Ensuring system packages: ${DEEPTUTOR_APT_PACKAGES}"
+    apt_missing=""
+    for pkg in $(echo "${DEEPTUTOR_APT_PACKAGES}" | tr ',' ' '); do
+        dpkg -s "$pkg" >/dev/null 2>&1 || apt_missing="$apt_missing $pkg"
+    done
+    if [ -z "$apt_missing" ]; then
+        echo "   ✅ System packages already present"
+    elif ! (apt-get update -qq && apt-get install -y --no-install-recommends $apt_missing); then
+        echo "   ⚠️ apt-get failed; these packages stay unavailable:$apt_missing"
+    fi
+fi
+
+if [ -n "${DEEPTUTOR_EXTRAS:-}" ]; then
+    echo "🔧 Ensuring Python extras: ${DEEPTUTOR_EXTRAS}"
+    python /app/scripts/install_extras.py "${DEEPTUTOR_EXTRAS}" || true
+    chown -R deeptutor:deeptutor "$PIP_CACHE_DIR" 2>/dev/null || true
+fi
+
 echo "⚙️  Loading runtime JSON settings..."
 eval "$(python - <<'PY'
 import shlex
@@ -359,19 +440,12 @@ echo "   - data/user/settings/main.yaml"
 echo "   - data/user/settings/agents.yaml"
 echo "============================================"
 
-# Run supervisord as root so it can open the container's stdout/stderr
-# (/dev/fd/1,2 — root-owned pipes under a rootful daemon like Docker Desktop)
-# and write its pidfile under /var/run. The backend and frontend programs are
-# dropped to the unprivileged deeptutor user (UID 1000) via `user=deeptutor`
-# in the supervisord config, so the app processes stay non-root.
-#
-# Dropping supervisord ITSELF to UID 1000 here (the previous
-# `exec gosu deeptutor ...`) worked under rootless podman — where UID 1000 is
-# the mapped host user that owns those FDs — but under a rootful daemon it
-# could not open /dev/fd/1,2 ("making dispatchers ... EACCES") nor the pidfile,
-# so neither service ever started. Per-program `user=` keeps the children
-# unprivileged in both runtimes without that breakage.
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/deeptutor.conf
+# Hand off to supervisord as PID 1. The daemon-level config deliberately omits
+# `user=` so supervisord inherits PID 1's UID and stays portable across rootful
+# and rootless-keep-id runtimes; children drop to the deeptutor user via
+# per-program `user=`. Full rationale lives next to the [supervisord] section
+# in the build step that writes /etc/supervisor/supervisord.conf.
+exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
 EOF
 
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
@@ -389,7 +463,7 @@ try:
 except Exception:
     pass
 
-urllib.request.urlopen(f"http://localhost:{port}/", timeout=5).close()
+urllib.request.urlopen(f"http://localhost:{port}/health/ready", timeout=5).close()
 EOF
 
 # Expose ports
@@ -408,16 +482,24 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 # ============================================
 FROM production AS development
 
-# Re-add full node_modules for development hot-reload
-# (Production uses standalone output which doesn't include full node_modules)
-COPY --from=frontend-builder /app/web/node_modules ./web/node_modules
-COPY --from=frontend-builder /app/web/package.json ./web/package.json
-COPY --from=frontend-builder /app/web/next.config.js ./web/next.config.js
+# `next dev` compiles from source, so the development image needs the whole
+# web tree. This used to cherry-pick node_modules, package.json and
+# next.config.js on top of the production stage — but that stage's ./web is
+# `.next/standalone/`, a compiled server bundle carrying no sources, no
+# tsconfig and no scripts/. So the supervisor program below launched
+# `node scripts/dev.mjs` against a path that never existed, the dev frontend
+# went FATAL, and the image looked broken (#906). Taking the builder's tree
+# wholesale also stops the list from drifting each time web/ grows a
+# top-level entry. `--chown` during the copy avoids re-layering node_modules.
+COPY --chown=deeptutor:deeptutor --from=frontend-builder /app/web ./web
 
 # `next dev` runs as the unprivileged deeptutor user (via `user=deeptutor` in
 # the supervisord config) and must create/write its build cache under
 # /app/web/.next, so give that user ownership of the web dir and the cache.
-RUN mkdir -p /app/web/.next \
+# The production build copied in above is not reusable by `next dev`, so it
+# starts from an empty cache rather than a half-valid one.
+RUN rm -rf /app/web/.next \
+    && mkdir -p /app/web/.next \
     && chown deeptutor:deeptutor /app/web /app/web/.next
 
 # Install development tools
@@ -432,18 +514,12 @@ RUN pip install --no-cache-dir \
     black \
     ruff
 
-# Override supervisord config for development (with reload)
-# Log output goes to stdout/stderr so docker logs can capture them
-RUN cat > /etc/supervisor/conf.d/deeptutor.conf <<'EOF'
-[supervisord]
-nodaemon=true
-logfile=/dev/null
-logfile_maxbytes=0
-pidfile=/var/run/supervisord.pid
-user=root
-
+# Development overrides only the program definitions (uvicorn --reload and
+# `next dev`); the shared daemon-level /etc/supervisor/supervisord.conf from
+# the production stage is reused as-is.
+RUN cat > /etc/supervisor/conf.d/programs.conf <<'EOF'
 [program:backend]
-command=python -m uvicorn deeptutor.api.main:app --host 0.0.0.0 --port %(ENV_BACKEND_PORT)s --reload --no-access-log
+command=/bin/bash -c "exec python -m uvicorn deeptutor.api.main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8001} --reload --no-access-log --ws-max-size $(python -c 'from deeptutor.services.config import get_ws_max_size; print(get_ws_max_size())' 2>/dev/null || echo 16777216) --timeout-keep-alive $(python -c 'from deeptutor.services.config import HTTP_KEEP_ALIVE_TIMEOUT; print(HTTP_KEEP_ALIVE_TIMEOUT)' 2>/dev/null || echo 300)"
 directory=/app
 user=deeptutor
 autostart=true
@@ -455,7 +531,7 @@ stderr_logfile_maxbytes=0
 environment=PYTHONPATH="/app",PYTHONUNBUFFERED="1"
 
 [program:frontend]
-command=/bin/bash -c "cd /app/web && node node_modules/next/dist/bin/next dev -H 0.0.0.0 -p ${FRONTEND_PORT:-3782}"
+command=/bin/bash -c "cd /app/web && node scripts/dev.mjs -H 0.0.0.0 -p ${FRONTEND_PORT:-3782}"
 directory=/app/web
 user=deeptutor
 autostart=true
@@ -468,7 +544,7 @@ stderr_logfile_maxbytes=0
 environment=NODE_ENV="development"
 EOF
 
-RUN sed -i 's/\r$//' /etc/supervisor/conf.d/deeptutor.conf
+RUN sed -i 's/\r$//' /etc/supervisor/conf.d/programs.conf
 
 # Development ports
 EXPOSE 8001 3782

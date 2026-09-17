@@ -134,9 +134,16 @@ def restore_ipa(book_id: str, apply: str = "scan", root: str = "") -> dict[str, 
         return result
     for path, original, restored, hits in measured:
         if hits and restored != original:
-            tmp = path.with_suffix(".md.tmp")
-            tmp.write_text(restored, encoding="utf-8")
-            tmp.replace(path)
+            try:
+                from source_text import write_source_atomic
+            except ImportError:
+                write_source_atomic = None
+            if write_source_atomic is not None:
+                write_source_atomic(path, restored)
+            else:
+                tmp = path.with_suffix(".md.tmp")
+                tmp.write_text(restored, encoding="utf-8")
+                tmp.replace(path)
             changed_pages += 1
     result["changed_pages"] = changed_pages
     return result

@@ -154,7 +154,7 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
   host.className = "kb-tasks hidden";
   host.append(
     el("h1", "kb-title", "任务"),
-    el("p", "muted", "到点或事件发生时，把下面这段对话发给 Agent。拖入 PDF 先用 MinerU 认前三页，再交给 Agent 抽科目学段；点开始识别后才全书入库并开清洗对话。"),
+    el("p", "muted", "到点或事件发生时，把下面这段对话发给 Agent。拖入 PDF 先用 MinerU 认前三页，再交给 Agent 抽科目学段并自动全书识别。认书、识别、清洗、建目录都在同一条对话里。"),
   );
 
   const list = el("ul", "kb-task-list");
@@ -529,7 +529,10 @@ export function mountKbTasks(host: HTMLElement): { destroy: () => void } {
     void refresh();
   });
   stopLive = onLive((ev: LiveEvent) => {
-    if (ev.type === "task" || (isJob(ev) && (ev.kind === "page_refine" || ev.kind === "task"))) {
+    if (
+      ev.type === "task" ||
+      (isJob(ev) && (ev.kind === "page_refine" || ev.kind === "task" || ev.kind === "printed_toc" || ev.kind === "convert"))
+    ) {
       void refresh();
     }
   });

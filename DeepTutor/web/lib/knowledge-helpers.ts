@@ -4,20 +4,56 @@ export interface KnowledgeUploadPolicy {
   extensions: string[];
   accept: string;
   max_file_size_bytes: number;
-  max_pdf_size_bytes: number;
+  allow_any_extension?: boolean;
 }
 
 export const DEFAULT_UPLOAD_POLICY: KnowledgeUploadPolicy = {
   extensions: [],
   accept: "",
-  max_file_size_bytes: 100 * 1024 * 1024,
-  max_pdf_size_bytes: 50 * 1024 * 1024,
+  max_file_size_bytes: 200 * 1024 * 1024,
+  allow_any_extension: false,
 };
+
+const PAGEINDEX_UPLOAD_EXTENSIONS: Record<string, string[]> = {
+  pageindex: [
+    ".pdf",
+    ".md",
+    ".markdown",
+    ".txt",
+    ".docx",
+    ".doc",
+    ".pptx",
+    ".ppt",
+    ".xlsx",
+    ".xls",
+    ".csv",
+  ],
+  "pageindex-oss": [".pdf"],
+};
+
+export function uploadPolicyForProvider(
+  policy: KnowledgeUploadPolicy,
+  provider?: string,
+): KnowledgeUploadPolicy {
+  const extensions = PAGEINDEX_UPLOAD_EXTENSIONS[provider || ""];
+  return extensions
+    ? {
+        ...policy,
+        extensions,
+        accept: extensions.join(","),
+        allow_any_extension: false,
+      }
+    : policy;
+}
 
 export interface ProgressInfo {
   task_id?: string;
   stage?: string;
+  /** Rendered English. Prefer `progressMessage()`, which translates. */
   message?: string;
+  /** English `{{name}}` template the backend formatted `message` from. */
+  message_key?: string;
+  message_params?: Record<string, string | number>;
   current?: number;
   total?: number;
   percent?: number;
@@ -25,6 +61,33 @@ export interface ProgressInfo {
   indexed_count?: number;
   index_changed?: boolean;
   index_action?: string;
+  error?: string;
+  error_code?: string;
+  retryable?: boolean;
+}
+
+/**
+ * The progress line to show, translated when the backend named its template.
+ *
+ * Indexing runs detached from any request, so the backend has no viewer
+ * language and sends the English template plus its values; `t()` is where the
+ * language is actually known. Falls back to the rendered English for progress
+ * emitted before a producer was converted.
+ */
+export function progressMessage(
+  progress: Pick<ProgressInfo, "message" | "message_key" | "message_params">,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string | undefined {
+  if (!progress.message_key) return progress.message;
+  return t(progress.message_key, progress.message_params ?? {});
+}
+
+export interface KnowledgeIndexFailure {
+  code?: string;
+  message?: string;
+  retryable?: boolean;
+  requiresModelChange: boolean;
+  settingsHref?: string;
 }
 
 export interface IndexVersion {
@@ -58,7 +121,9 @@ export interface KnowledgeBase {
     type?: string;
     /** Absolute path of a connected Obsidian vault (when type === "obsidian"). */
     vault_path?: string;
-    /** Backend of a connected subagent (when type === "subagent"): "claude_code" | "codex" | "partner". */
+    /** SQLite store of a connected MarginNote 4 library (when type === "marginnote4"). */
+    db_path?: string;
+    /** Backend of a connected subagent (when type === "subagent"): "claude_code" | "codex" | "antigravity" | "kimi" | "opencode" | "mimo" | "hermes" | "openclaw" | "deepseek_harness" | "partner". */
     agent_kind?: string;
     /** Bound partner id when agent_kind === "partner". */
     partner_id?: string;
@@ -84,6 +149,28 @@ export interface KnowledgeBase {
   available?: boolean;
 }
 
+export type ProviderConnectionStatus =
+  | "ready"
+  | "needs_key"
+  | "needs_setup"
+  | "unavailable";
+
+export const providerUsesEmbeddingMetadata = (provider?: string): boolean =>
+  provider !== "pageindex" && provider !== "pageindex-oss";
+
+export const providerConnectionStatus = (provider: {
+  id: string;
+  configured?: boolean;
+  requires_api_key?: boolean;
+  setup_required?: boolean;
+}): ProviderConnectionStatus => {
+  if (provider.setup_required) return "needs_setup";
+  if (provider.requires_api_key && provider.configured === false)
+    return "needs_key";
+  if (provider.configured === false) return "unavailable";
+  return "ready";
+};
+
 export interface ValidatedSelectionFile {
   id: string;
   file: File;
@@ -108,7 +195,19 @@ export const formatFileSize = (bytes: number): string => {
   return `${bytes} B`;
 };
 
-export const getFileExtension = (filename: string): string => {
+export const getFileExtension = (
+  filename: string,
+  allowedExtensions: Iterable<string> = [],
+): string => {
+  const lowerName = filename.toLowerCase();
+  const matches = Array.from(allowedExtensions, (extension) =>
+    extension.toLowerCase(),
+  ).filter((extension) => lowerName.endsWith(extension));
+  if (matches.length > 0) {
+    return matches.reduce((longest, extension) =>
+      extension.length > longest.length ? extension : longest,
+    );
+  }
   const index = filename.lastIndexOf(".");
   return index >= 0 ? filename.slice(index).toLowerCase() : "";
 };
@@ -139,9 +238,58 @@ export const formatKnowledgeTimestamp = (value?: string): string | null => {
   return parsed ? parsed.toLocaleString() : value || null;
 };
 
+export const MARGINNOTE4_KB_TYPE = "marginnote4";
+
+/**
+ * A connected subagent (partner or local CLI), reachable live via
+ * `consult_subagent`. It owns no documents and nothing to retrieve, so any
+ * picker that feeds static context into a generation step (Mastery topic
+ * sources, Book sources) must exclude it — unlike the chat composer's
+ * "attach knowledge" picker, where surfacing it is the point.
+ */
+export const SUBAGENT_KB_TYPE = "subagent";
+
+export const isSubagentKb = (kb: KnowledgeBase): boolean =>
+  kb.metadata?.type === SUBAGENT_KB_TYPE;
+
+/**
+ * A connected MarginNote 4 library.
+ *
+ * It owns no documents and no index: the Add-on pushes objects into its own
+ * store and the MarginNote tools read them, so the file, add-documents and
+ * index-version surfaces have nothing to act on.
+ */
+export const isMarginNoteKb = (kb: KnowledgeBase): boolean =>
+  kb.metadata?.type === MARGINNOTE4_KB_TYPE;
+
+export const KB_DETAIL_SECTIONS = [
+  "files",
+  "add",
+  "github",
+  "web",
+  "versions",
+  "devices",
+  "settings",
+] as const;
+
+export type KbDetailSection = (typeof KB_DETAIL_SECTIONS)[number];
+
+/**
+ * The detail sections a KB has something to show in.
+ *
+ * A MarginNote library owns no raw files and builds no index, so files /
+ * add-documents / index-versions would all render empty against it; what it
+ * does have is the devices that feed it. Every other KB has the reverse.
+ */
+export const kbDetailSections = (kb: KnowledgeBase): KbDetailSection[] =>
+  isMarginNoteKb(kb)
+    ? ["devices", "settings"]
+    : KB_DETAIL_SECTIONS.filter((section) => section !== "devices");
+
 /** The retrieval engine a KB is bound to. Connected vaults badge by source. */
 export const kbProvider = (kb: KnowledgeBase): string => {
   if (kb.metadata?.type === "obsidian") return "obsidian";
+  if (isMarginNoteKb(kb)) return MARGINNOTE4_KB_TYPE;
   return (
     (kb.statistics?.rag_provider as string | undefined) ||
     (kb.metadata?.rag_provider as string | undefined) ||
@@ -159,6 +307,58 @@ export const kbDocCount = (kb: KnowledgeBase): number | null => {
 
 export const resolveKbStatus = (kb: KnowledgeBase): string =>
   kb.status ?? kb.statistics?.status ?? "unknown";
+
+export const resolveKnowledgeIndexFailure = (
+  kb: KnowledgeBase,
+): KnowledgeIndexFailure | null => {
+  if (resolveKbStatus(kb) !== "error") return null;
+
+  const progress = kb.progress;
+  const storedProgress = kb.statistics?.progress;
+  const code =
+    progress?.error_code?.trim() ||
+    storedProgress?.error_code?.trim() ||
+    undefined;
+  const message =
+    progress?.error?.trim() ||
+    storedProgress?.error?.trim() ||
+    progress?.message?.trim() ||
+    storedProgress?.message?.trim() ||
+    undefined;
+
+  const embeddingConfigurationCodes = new Set([
+    "graphrag_embedding_authentication_failed",
+    "graphrag_embedding_dimension_mismatch",
+    "graphrag_embedding_endpoint_failed",
+    "graphrag_embedding_incompatible",
+    "graphrag_embedding_provider_unsupported",
+  ]);
+  const completionConfigurationCodes = new Set([
+    "graphrag_model_incompatible",
+    "graphrag_provider_unsupported",
+    "graphrag_model_authentication_failed",
+    "graphrag_model_endpoint_failed",
+  ]);
+  const requiresEmbeddingChange = embeddingConfigurationCodes.has(code ?? "");
+  const requiresCompletionChange = completionConfigurationCodes.has(code ?? "");
+
+  return {
+    code,
+    message,
+    retryable: progress?.retryable ?? storedProgress?.retryable,
+    requiresModelChange: requiresEmbeddingChange || requiresCompletionChange,
+    settingsHref: requiresEmbeddingChange
+      ? "/settings#embedding"
+      : requiresCompletionChange
+        ? "/settings#models"
+        : undefined,
+  };
+};
+
+export const taskFailureMessage = (payload: {
+  detail?: string;
+  details?: string;
+}): string => payload.detail?.trim() || "Task failed";
 
 export const kbNeedsReindex = (kb: KnowledgeBase): boolean =>
   Boolean(kb.statistics?.needs_reindex) ||
@@ -219,18 +419,15 @@ export function validateFiles(
   );
 
   const items = files.map((file) => {
-    const extension = getFileExtension(file.name);
+    const extension = getFileExtension(file.name, allowedExtensions);
     let error: string | null = null;
 
-    if (allowedExtensions.size > 0 && !allowedExtensions.has(extension)) {
-      error = t("Unsupported file type");
-    } else if (
-      extension === ".pdf" &&
-      file.size > uploadPolicy.max_pdf_size_bytes
+    if (
+      !uploadPolicy.allow_any_extension &&
+      allowedExtensions.size > 0 &&
+      !allowedExtensions.has(extension)
     ) {
-      error = t("PDF files must be smaller than {{size}}.", {
-        size: formatFileSize(uploadPolicy.max_pdf_size_bytes),
-      });
+      error = t("Unsupported file type");
     } else if (file.size > uploadPolicy.max_file_size_bytes) {
       error = t("This file exceeds the maximum size of {{size}}.", {
         size: formatFileSize(uploadPolicy.max_file_size_bytes),

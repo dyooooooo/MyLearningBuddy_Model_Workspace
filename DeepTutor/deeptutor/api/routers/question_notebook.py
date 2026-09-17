@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64 as _b64
 import logging
+from typing import Any, Literal
 import uuid as _uuid
 
 from fastapi import APIRouter, HTTPException, Query, Response
@@ -17,6 +18,8 @@ from deeptutor.services.storage import get_attachment_store
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+AssessmentSource = Literal["deep_question", "mastery_path", "immersive_reading", "book"]
+ScoreTrend = Literal["new", "improved", "declined", "unchanged"]
 
 
 # ── Models ────────────────────────────────────────────────────────
@@ -35,6 +38,13 @@ class AnswerImageItem(BaseModel):
     mime_type: str = ""
 
 
+class CategoryItem(BaseModel):
+    id: int
+    name: str
+    created_at: float = 0
+    entry_count: int = 0
+
+
 class NotebookEntryItem(BaseModel):
     id: int
     session_id: str
@@ -49,7 +59,14 @@ class NotebookEntryItem(BaseModel):
     difficulty: str = ""
     user_answer: str = ""
     user_answer_images: list[AnswerImageItem] = []
+    source: AssessmentSource = "deep_question"
+    material_id: str = ""
+    material_title: str = ""
+    section_id: str = ""
+    section_title: str = ""
+    score_trend: ScoreTrend = "new"
     is_correct: bool = False
+    resolved: bool = False
     bookmarked: bool = False
     followup_session_id: str = ""
     ai_judgment: str = ""
@@ -67,13 +84,7 @@ class EntryUpdateRequest(BaseModel):
     bookmarked: bool | None = None
     followup_session_id: str | None = None
     ai_judgment: str | None = None
-
-
-class CategoryItem(BaseModel):
-    id: int
-    name: str
-    created_at: float = 0
-    entry_count: int = 0
+    resolved: bool | None = None
 
 
 class CategoryCreateRequest(BaseModel):
@@ -86,6 +97,34 @@ class CategoryRenameRequest(BaseModel):
 
 class CategoryAddRequest(BaseModel):
     category_id: int
+
+
+class BulkCategoryRequest(BaseModel):
+    """File (or unfile) many entries at once.
+
+    One round-trip per bulk action keeps the list view consistent: the
+    client re-reads once instead of racing N per-entry writes.
+    """
+
+    entry_ids: list[int] = Field(..., min_length=1, max_length=500)
+    category_id: int
+    link: bool = True
+
+
+class QuestionBankStats(BaseModel):
+    total: int = 0
+    wrong: int = 0
+    unresolved: int = 0
+    bookmarked: int = 0
+    uncategorized: int = 0
+
+
+class QuestionBankMaterial(BaseModel):
+    source: str
+    material_id: str
+    material_title: str
+    entry_count: int
+    unresolved_count: int
 
 
 class AnswerImageUpload(BaseModel):
@@ -119,6 +158,11 @@ class UpsertEntryRequest(BaseModel):
     # ``None`` means "don't touch any previously-stored images on update";
     # an empty list explicitly clears them.
     user_answer_images: list[AnswerImageUpload] | None = None
+    source: AssessmentSource = "deep_question"
+    material_id: str = ""
+    material_title: str = ""
+    section_id: str = ""
+    section_title: str = ""
     is_correct: bool = False
 
 
@@ -202,19 +246,70 @@ async def upsert_single_entry(payload: UpsertEntryRequest):
     return entry
 
 
+async def _course_session_ids(store: Any, course_id: str) -> list[str] | None:
+    """Resolve a course to the sessions whose questions belong to it.
+
+    Entries carry a session, never a course, so "this course's questions" is
+    always this indirection. Returns ``None`` for no course (do not scope) and
+    ``[]`` for a course with no conversations yet — which must scope to nothing
+    rather than quietly fall back to the whole library.
+    """
+    if not course_id:
+        return None
+    from deeptutor.services.courses import CourseNotFoundError, get_course_service
+    from deeptutor.services.session.organization import list_all_sessions_snapshot
+
+    try:
+        get_course_service().get(course_id)
+    except CourseNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Course not found") from exc
+
+    sessions = await list_all_sessions_snapshot(store)
+    return [
+        session["session_id"]
+        for session in sessions
+        if str((session.get("preferences") or {}).get("course_id") or "") == course_id
+    ]
+
+
 @router.get("/entries", response_model=NotebookEntryListResponse)
 async def list_entries(
     category_id: int | None = Query(default=None),
+    uncategorized: bool = Query(
+        default=False,
+        description="Only entries filed under no category — the triage inbox. "
+        "Ignored when category_id is set.",
+    ),
     bookmarked: bool | None = Query(default=None),
     is_correct: bool | None = Query(default=None),
+    course_id: str = Query(default=""),
+    source: str = Query(
+        default="", pattern="^(deep_question|mastery_path|immersive_reading|book)?$"
+    ),
+    material_id: str = Query(default="", max_length=500),
+    section_id: str = Query(default="", max_length=500),
+    resolved: bool | None = Query(default=None),
+    score_trend: str = Query(default="", pattern="^(new|improved|declined|unchanged)?$"),
+    search: str = Query(default="", max_length=200),
+    sort: str = Query(default="recent", pattern="^(recent|oldest)$"),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> NotebookEntryListResponse:
     store = get_sqlite_session_store()
+    session_ids = await _course_session_ids(store, course_id)
     result = await store.list_notebook_entries(
         category_id=category_id,
+        uncategorized=uncategorized,
         bookmarked=bookmarked,
         is_correct=is_correct,
+        session_ids=session_ids,
+        source=source,
+        material_id=material_id,
+        section_id=section_id,
+        resolved=resolved,
+        score_trend=score_trend,
+        search=search,
+        sort=sort,
         limit=limit,
         offset=offset,
     )
@@ -278,6 +373,20 @@ async def delete_entry(entry_id: int):
 # ── Entry ↔ Category linking ────────────────────────────────────
 
 
+@router.post("/entries/categories/bulk")
+async def bulk_link_entries(payload: BulkCategoryRequest):
+    store = get_sqlite_session_store()
+    changed = await store.link_entries_to_category(
+        payload.entry_ids, payload.category_id, link=payload.link
+    )
+    return {
+        "changed": changed,
+        "requested": len(payload.entry_ids),
+        "category_id": payload.category_id,
+        "link": payload.link,
+    }
+
+
 @router.post("/entries/{entry_id}/categories")
 async def add_entry_to_category(entry_id: int, payload: CategoryAddRequest):
     store = get_sqlite_session_store()
@@ -299,13 +408,49 @@ async def remove_entry_from_category(entry_id: int, category_id: int):
     return {"removed": True, "entry_id": entry_id, "category_id": category_id}
 
 
+# ── Overview ─────────────────────────────────────────────────────
+
+
+@router.get("/stats", response_model=QuestionBankStats)
+async def question_bank_stats(
+    course_id: str = Query(default=""),
+) -> QuestionBankStats:
+    """Counts behind the filter chips; also the agent's one-call overview.
+
+    Takes the same course scope as the listing: showing one course's questions
+    next to whole-library counts would make the rail lie about how much is there.
+    """
+    store = get_sqlite_session_store()
+    session_ids = await _course_session_ids(store, course_id)
+    return QuestionBankStats(**await store.question_bank_stats(session_ids))
+
+
+@router.get("/materials", response_model=list[QuestionBankMaterial])
+async def list_question_bank_materials(
+    course_id: str = Query(default=""),
+) -> list[QuestionBankMaterial]:
+    """Materials represented in the unified review history."""
+    store = get_sqlite_session_store()
+    session_ids = await _course_session_ids(store, course_id)
+    return [
+        QuestionBankMaterial(**item)
+        for item in await store.list_question_bank_materials(session_ids)
+    ]
+
+
 # ── Category CRUD ────────────────────────────────────────────────
 
 
 @router.get("/categories", response_model=list[CategoryItem])
-async def list_categories():
+async def list_categories(course_id: str = Query(default="")):
+    """Categories, with their counts scoped the same way the listing is.
+
+    Without the scope the rail would offer "Address translation 3" inside a
+    course holding none of those three.
+    """
     store = get_sqlite_session_store()
-    return await store.list_categories()
+    session_ids = await _course_session_ids(store, course_id)
+    return await store.list_categories(session_ids)
 
 
 @router.post("/categories", response_model=CategoryItem, status_code=201)
@@ -313,14 +458,17 @@ async def create_category(payload: CategoryCreateRequest):
     store = get_sqlite_session_store()
     try:
         return await store.create_category(payload.name)
-    except Exception:
-        raise HTTPException(status_code=409, detail="Category name already exists")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
 
 
 @router.patch("/categories/{category_id}")
 async def rename_category(category_id: int, payload: CategoryRenameRequest):
     store = get_sqlite_session_store()
-    updated = await store.rename_category(category_id, payload.name)
+    try:
+        updated = await store.rename_category(category_id, payload.name)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
     if not updated:
         raise HTTPException(status_code=404, detail="Category not found")
     return {"updated": True, "id": category_id, "name": payload.name}

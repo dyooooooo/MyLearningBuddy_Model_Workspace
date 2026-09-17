@@ -10,6 +10,8 @@ import json
 import logging
 from pathlib import Path
 
+from deeptutor.services.file_io import atomic_write_json
+
 # Use unified logging system
 
 _logger = logging.getLogger(__name__)
@@ -17,6 +19,22 @@ _logger = logging.getLogger(__name__)
 
 def _logger_instance():
     return _logger
+
+
+def render_message_template(template: str, params: dict[str, object]) -> str:
+    """Fill an i18next-style ``{{name}}`` template with *params*.
+
+    Progress lines are shown verbatim in the web log box, so they have to be
+    translatable — but the backend has no viewer language (indexing runs as a
+    detached task, and the language of record lives in the browser). So the
+    wire carries the English template plus its values and the frontend renders
+    it with ``t()``; this produces the English fallback for every other
+    consumer, from the same single string.
+    """
+    text = template
+    for name, value in params.items():
+        text = text.replace("{{" + name + "}}", str(value))
+    return text
 
 
 class ProgressStage(Enum):
@@ -56,13 +74,11 @@ class ProgressTracker:
 
         if is_server():
             try:
-                from deeptutor.api.utils.progress_broadcaster import ProgressBroadcaster
-
-                broadcaster = ProgressBroadcaster.get_instance()
+                from deeptutor.knowledge.progress_events import broadcast_progress
 
                 try:
                     loop = asyncio.get_running_loop()
-                    loop.create_task(broadcaster.broadcast(self.kb_name, progress))
+                    loop.create_task(broadcast_progress(self.kb_name, progress))
                 except RuntimeError:
                     pass
             except (ImportError, Exception):
@@ -109,11 +125,17 @@ class ProgressTracker:
                     "total": progress.get("total", 0),
                     "file_name": progress.get("file_name"),
                     "error": progress.get("error"),
+                    "error_code": progress.get("error_code"),
+                    "retryable": progress.get("retryable"),
                     "timestamp": progress.get("timestamp"),
                     "task_id": progress.get("task_id"),
                     "indexed_count": progress.get("indexed_count"),
                     "index_changed": progress.get("index_changed"),
                     "index_action": progress.get("index_action"),
+                    # Carried alongside the rendered English so a page reload
+                    # can still translate the last line it shows.
+                    "message_key": progress.get("message_key"),
+                    "message_params": progress.get("message_params"),
                 },
             )
         except Exception as e:
@@ -122,12 +144,7 @@ class ProgressTracker:
         # Persist the last seen progress snapshot so websocket subscribers and
         # page reloads can recover the live state without relying on in-memory callbacks.
         try:
-            self.kb_dir.mkdir(parents=True, exist_ok=True)
-            temp_progress_file = self.progress_file.parent / f"{self.progress_file.name}.tmp"
-            with open(temp_progress_file, "w", encoding="utf-8") as f:
-                json.dump(progress, f, indent=2, ensure_ascii=False)
-                f.flush()
-            temp_progress_file.replace(self.progress_file)
+            atomic_write_json(self.progress_file, progress)
         except Exception as e:
             _logger_instance().warning(
                 "Failed to persist progress snapshot for '%s': %s", self.kb_name, e
@@ -141,12 +158,25 @@ class ProgressTracker:
         total: int = 0,
         file_name: str = "",
         error: str | None = None,
+        error_code: str | None = None,
+        retryable: bool | None = None,
         indexed_count: int | None = None,
         index_changed: bool | None = None,
         index_action: str | None = None,
+        message_key: str | None = None,
+        message_params: dict[str, object] | None = None,
     ):
-        """Update progress"""
-        progress = {
+        """Update progress.
+
+        Pass ``message_key`` (an English ``{{name}}`` template) plus
+        ``message_params`` instead of a pre-formatted ``message`` so the web log
+        box can translate the line; ``message`` is then rendered from the same
+        template for every consumer that has no i18n of its own.
+        """
+        params = message_params or {}
+        if message_key and not message:
+            message = render_message_template(message_key, params)
+        progress: dict[str, object] = {
             "kb_name": self.kb_name,
             "task_id": self.task_id,
             "stage": stage.value,
@@ -163,10 +193,17 @@ class ProgressTracker:
             progress["index_changed"] = index_changed
         if index_action:
             progress["index_action"] = index_action
+        if message_key:
+            progress["message_key"] = message_key
+            progress["message_params"] = params
 
         if error:
             progress["error"] = error
             progress["stage"] = ProgressStage.ERROR.value
+        if error_code:
+            progress["error_code"] = error_code
+        if retryable is not None:
+            progress["retryable"] = retryable
 
         # Output to logger (terminal and log file)
         try:
@@ -205,9 +242,9 @@ class ProgressTracker:
 
         if self.task_id:
             try:
-                from deeptutor.api.utils.task_log_stream import get_task_stream_manager
+                from deeptutor.knowledge.progress_events import emit_task_progress
 
-                get_task_stream_manager().emit(self.task_id, "progress", progress)
+                emit_task_progress(self.task_id, progress)
             except Exception as e:
                 _logger_instance().debug("Failed to emit task progress event: %s", e)
 

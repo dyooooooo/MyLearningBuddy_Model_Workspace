@@ -1,6 +1,7 @@
 "use client";
 
-const ZERO_WIDTH_REGEX = /[\u200B-\u200D\uFEFF]/g;
+const INVISIBLE_CONTROL_REGEX =
+  /[\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g;
 const EMPTY_DETAILS_REGEX =
   /<details(?:\s[^>]*)?>\s*(<summary(?:\s[^>]*)?>\s*(?:&nbsp;|\s|<br\s*\/?>)*\s*<\/summary>\s*)?<\/details>/gi;
 const EMPTY_SUMMARY_REGEX =
@@ -16,7 +17,7 @@ const EMPTY_HTML_BLOCK_REGEX =
 const HTML_TABLE_REGEX = /<table(?:\s[^>]*)?>[\s\S]*?<\/table>/gi;
 
 function stripInvisibleCharacters(value: string): string {
-  return value.replace(ZERO_WIDTH_REGEX, "");
+  return value.replace(INVISIBLE_CONTROL_REGEX, "");
 }
 
 // Tags that the renderer (rehype-raw + react-markdown) is allowed to render
@@ -144,6 +145,15 @@ const INLINE_CODE_SPAN_REGEX = /`[^`\n]*`/g;
 // inline math ($x = [1, 5, 9]$) is protected from citation linkification.
 const MATH_SPAN_REGEX =
   /\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\$(?!\s)(?:\\.|[^$\n])*?(?<!\s)\$/g;
+// ``**Label: **value`` — a label whose closing marker has whitespace just
+// inside it, which CommonMark does not read as strong emphasis, so the raw
+// asterisks stay on screen. Deliberately narrow: the capture must start at a
+// non-space and end at a colon, because this rewrite has no notion of which
+// two delimiters the author meant to pair (see repairStrongEmphasisLine).
+const MALFORMED_STRONG_EMPHASIS_REGEX =
+  /(?<!\S)\*\*(?=\S)([^*\n]*?[:：])[ \t]+\*\*(?=\S)/g;
+const ESCAPED_UNICODE_RUN_REGEX = /(?:\\u[0-9a-fA-F]{4}){3,}/g;
+const INDENTED_CODE_LINE_REGEX = /^(?: {4}|\t)/;
 const PROTECTED_SPAN_REGEX = /```[\s\S]*?```|`[^`\n]*`/g;
 const PROTECTED_PLACEHOLDER_REGEX = /\u0000PROTECTED_(\d+)\u0000/g;
 const HTML_ATTR_VALUE = /(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+)/.source;
@@ -211,6 +221,14 @@ export function markdownUrlTransform(
   }
 
   return "";
+}
+
+export function safeDecodeURIComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 function sanitizeAllowedHtmlTag(tag: string): string {
@@ -546,6 +564,51 @@ function maskProtectedSpans(
   };
 }
 
+export function repairMalformedStrongEmphasis(content: string): string {
+  if (!content.includes("**")) return content;
+
+  const fenced = maskProtectedSpans(
+    content,
+    FENCED_CODE_BLOCK_REGEX,
+    "STRONG_FENCED_CODE",
+  );
+  const math = maskProtectedSpans(
+    fenced.masked,
+    MATH_SPAN_REGEX,
+    "STRONG_MATH",
+  );
+  const inline = maskProtectedSpans(
+    math.masked,
+    INLINE_CODE_SPAN_REGEX,
+    "STRONG_INLINE_CODE",
+  );
+
+  const repaired = inline.masked
+    .split("\n")
+    .map(repairStrongEmphasisLine)
+    .join("\n");
+
+  return fenced.restore(math.restore(inline.restore(repaired)));
+}
+
+/**
+ * Repair one line, or leave it exactly as it was.
+ *
+ * The regex pairs an opening ``**`` with the next one on the line, which is
+ * only the author's intent when every marker on that line is paired off. With
+ * an odd count at least one is literal or unclosed, and rewriting then breaks
+ * emphasis the renderer gets right today — ``In Markdown, use ** to make text
+ * **bold**.`` would lose its bold, and ``**Note: **Important**`` would end up
+ * with a stray ``**``. Bailing out costs nothing: the line renders exactly as
+ * it does on a build without this repair.
+ */
+function repairStrongEmphasisLine(line: string): string {
+  // Indented code blocks are displayed verbatim and are not masked above.
+  if (INDENTED_CODE_LINE_REGEX.test(line)) return line;
+  if ((line.split("**").length - 1) % 2 !== 0) return line;
+  return line.replace(MALFORMED_STRONG_EMPHASIS_REGEX, "**$1** ");
+}
+
 function linkifyCitationsOutsideCode(content: string): string {
   const fenced = maskProtectedSpans(
     content,
@@ -564,11 +627,63 @@ function linkifyCitationsOutsideCode(content: string): string {
   );
 }
 
+function decodeEscapedUnicodeRuns(content: string): string {
+  const fenced = maskProtectedSpans(
+    content,
+    FENCED_CODE_BLOCK_REGEX,
+    "UNICODE_FENCED_CODE",
+  );
+  const math = maskProtectedSpans(
+    fenced.masked,
+    MATH_SPAN_REGEX,
+    "UNICODE_MATH",
+  );
+  const inline = maskProtectedSpans(
+    math.masked,
+    INLINE_CODE_SPAN_REGEX,
+    "UNICODE_INLINE_CODE",
+  );
+  const decoded = inline.masked
+    .split("\n")
+    .map((line) =>
+      INDENTED_CODE_LINE_REGEX.test(line)
+        ? line
+        : line.replace(ESCAPED_UNICODE_RUN_REGEX, decodeEscapedUnicodeRun),
+    )
+    .join("\n");
+  return fenced.restore(math.restore(inline.restore(decoded)));
+}
+
+/**
+ * Decode dense ``\\uXXXX`` runs that represent non-ASCII text.
+ *
+ * Shared by Markdown rendering and plain-text surfaces (``ask_user`` card
+ * prompts) so escaped Chinese that leaked through a JSON round-trip is
+ * repaired before it reaches the learner (#973).
+ */
+export function decodeEscapedUnicodeForDisplay(content: string): string {
+  if (!content) return "";
+  return decodeEscapedUnicodeRuns(String(content));
+}
+
+function decodeEscapedUnicodeRun(escaped: string): string {
+  try {
+    const value = JSON.parse(`"${escaped}"`) as string;
+    const containsNonAscii = Array.from(value).some(
+      (character) => character.charCodeAt(0) > 0x7f,
+    );
+    return containsNonAscii ? value : escaped;
+  } catch {
+    return escaped;
+  }
+}
+
 export function normalizeMarkdownForDisplay(content: string): string {
   if (!content) return "";
 
-  const normalized = stripInvisibleCharacters(String(content))
-    .replace(/\r\n/g, "\n")
+  const normalized = stripInvisibleCharacters(
+    decodeEscapedUnicodeRuns(String(content).replace(/\r\n/g, "\n")),
+  )
     .replace(EMPTY_DETAILS_REGEX, "")
     .replace(EMPTY_SUMMARY_REGEX, "")
     .replace(EMPTY_PROGRESS_REGEX, "")

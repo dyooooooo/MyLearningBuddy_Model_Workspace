@@ -1,11 +1,14 @@
 import { apiFetch, apiUrl } from "@/lib/api";
 
-// ── Real notebook system (file-backed under data/user/workspace/notebook) ──
+// ── Notebooks (file-backed under data/user/workspace/notebook) ──
 //
-// Notebooks created in the Knowledge → Notebooks tab and consumed everywhere
-// chat output is saved (SaveToNotebookModal) or referenced
-// (NotebookRecordPicker) live in this system. They are distinct from the
-// "Question Notebook" categories below which only track quiz entries.
+// Notebooks live at /notebook in the product and under /api/notebooks in the
+// transport. They collect saved output from chat, research
+// and Co-Writer (written by SaveToNotebookModal, read back by
+// NotebookRecordPicker). They are a different feature from the Question
+// Bank at /space/questions further down this file, which only tracks quiz
+// entries — the two share the "notebook" word in their API paths for
+// historical reasons, nothing else.
 
 export type NotebookRecordType =
   | "solve"
@@ -13,7 +16,9 @@ export type NotebookRecordType =
   | "research"
   | "chat"
   | "co_writer"
-  | "tutorbot";
+  | "reading"
+  | "tutorbot"
+  | "video_learning";
 
 export interface NotebookSummary {
   id: string;
@@ -24,6 +29,8 @@ export interface NotebookSummary {
   record_count?: number;
   created_at?: number;
   updated_at?: number;
+  /** Set when the file is on disk but could not be parsed. */
+  unreadable?: boolean;
 }
 
 export interface NotebookRecordItem {
@@ -43,7 +50,7 @@ export interface NotebookDetail extends NotebookSummary {
 }
 
 export async function listNotebooks(): Promise<NotebookSummary[]> {
-  const response = await apiFetch(apiUrl("/api/v1/notebook/list"), {
+  const response = await apiFetch(apiUrl("/api/notebooks"), {
     cache: "no-store",
   });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
@@ -52,7 +59,7 @@ export async function listNotebooks(): Promise<NotebookSummary[]> {
 }
 
 export async function getNotebook(notebookId: string): Promise<NotebookDetail> {
-  const response = await apiFetch(apiUrl(`/api/v1/notebook/${notebookId}`), {
+  const response = await apiFetch(apiUrl(`/api/notebooks/${notebookId}`), {
     cache: "no-store",
   });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
@@ -65,7 +72,7 @@ export async function createNotebook(payload: {
   color?: string;
   icon?: string;
 }): Promise<NotebookSummary> {
-  const response = await apiFetch(apiUrl("/api/v1/notebook/create"), {
+  const response = await apiFetch(apiUrl("/api/notebooks"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -89,7 +96,7 @@ export async function updateNotebook(
     icon?: string;
   },
 ): Promise<NotebookSummary> {
-  const response = await apiFetch(apiUrl(`/api/v1/notebook/${notebookId}`), {
+  const response = await apiFetch(apiUrl(`/api/notebooks/${notebookId}`), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -100,7 +107,7 @@ export async function updateNotebook(
 }
 
 export async function deleteNotebook(notebookId: string): Promise<void> {
-  const response = await apiFetch(apiUrl(`/api/v1/notebook/${notebookId}`), {
+  const response = await apiFetch(apiUrl(`/api/notebooks/${notebookId}`), {
     method: "DELETE",
   });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
@@ -111,10 +118,74 @@ export async function deleteNotebookRecord(
   recordId: string,
 ): Promise<void> {
   const response = await apiFetch(
-    apiUrl(`/api/v1/notebook/${notebookId}/records/${recordId}`),
+    apiUrl(`/api/notebooks/${notebookId}/records/${recordId}`),
     { method: "DELETE" },
   );
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+}
+
+/**
+ * Edit one record in place.
+ *
+ * Send only the fields being changed: the backend distinguishes an omitted
+ * field from an explicit `null`, so spreading a whole record in here would
+ * rewrite values the user never touched.
+ */
+export async function updateNotebookRecord(
+  notebookId: string,
+  recordId: string,
+  changes: {
+    title?: string;
+    summary?: string;
+    user_query?: string;
+    output?: string;
+    metadata?: Record<string, unknown>;
+    kb_name?: string | null;
+  },
+): Promise<NotebookRecordItem> {
+  const response = await apiFetch(
+    apiUrl(`/api/notebooks/${notebookId}/records/${recordId}`),
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(changes),
+    },
+  );
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  const data = (await response.json()) as { record: NotebookRecordItem };
+  return data.record;
+}
+
+/** Move a record to another notebook, or copy it there under a new id. */
+export async function relocateNotebookRecord(
+  notebookId: string,
+  recordId: string,
+  targetNotebookId: string,
+  mode: "move" | "copy",
+): Promise<NotebookRecordItem> {
+  const response = await apiFetch(
+    apiUrl(`/api/notebooks/${notebookId}/records/${recordId}/actions/${mode}`),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_notebook_id: targetNotebookId }),
+    },
+  );
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  const data = (await response.json()) as { record: NotebookRecordItem };
+  return data.record;
+}
+
+/** Fetch a whole notebook rendered as one Markdown document. */
+export async function exportNotebookMarkdown(
+  notebookId: string,
+): Promise<string> {
+  const response = await apiFetch(
+    apiUrl(`/api/notebooks/${notebookId}/export`),
+    { cache: "no-store" },
+  );
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  return await response.text();
 }
 
 // ── Question notebook (quiz entries + categories) ─────────────────
@@ -140,7 +211,14 @@ export interface NotebookEntry {
   difficulty: string;
   user_answer: string;
   user_answer_images?: NotebookAnswerImage[];
+  source: AssessmentSource;
+  material_id: string;
+  material_title: string;
+  section_id: string;
+  section_title: string;
+  score_trend: ScoreTrend;
   is_correct: boolean;
+  resolved: boolean;
   bookmarked: boolean;
   followup_session_id: string;
   /** Latest AI-judge text for this entry; empty when never run. */
@@ -157,6 +235,22 @@ export interface NotebookCategory {
   entry_count: number;
 }
 
+export type AssessmentSource =
+  | "deep_question"
+  | "mastery_path"
+  | "immersive_reading"
+  | "book";
+
+export type ScoreTrend = "new" | "improved" | "declined" | "unchanged";
+
+export interface QuestionBankMaterial {
+  source: AssessmentSource;
+  material_id: string;
+  material_title: string;
+  entry_count: number;
+  unresolved_count: number;
+}
+
 export interface NotebookEntryListResponse {
   items: NotebookEntry[];
   total: number;
@@ -164,34 +258,72 @@ export interface NotebookEntryListResponse {
 
 async function expectJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    // Surface FastAPI's `detail` when there is one: "A category named 'Math'
+    // already exists" is actionable, "Request failed: 409" is not.
+    let detail = "";
+    try {
+      const body = await response.json();
+      if (typeof body?.detail === "string") detail = body.detail;
+    } catch {
+      /* non-JSON error body — fall back to the status line */
+    }
+    throw new Error(detail || `Request failed: ${response.status}`);
   }
   return response.json() as Promise<T>;
 }
 
 // ── Entries ──────────────────────────────────────────────────────
 
+export interface NotebookEntryFilter {
+  category_id?: number;
+  /** Only entries in no category at all — the triage inbox. */
+  uncategorized?: boolean;
+  bookmarked?: boolean;
+  is_correct?: boolean;
+  source?: AssessmentSource;
+  material_id?: string;
+  section_id?: string;
+  resolved?: boolean;
+  score_trend?: ScoreTrend;
+  search?: string;
+  sort?: "recent" | "oldest";
+  limit?: number;
+  offset?: number;
+  /**
+   * Restrict to questions produced by one course's conversations.
+   *
+   * Entries carry a session, not a course, so the server resolves this to the
+   * course's sessions. A course with no sessions yet correctly yields nothing
+   * rather than falling back to everything.
+   */
+  course_id?: string;
+}
+
 export async function listNotebookEntries(
-  filter: {
-    category_id?: number;
-    bookmarked?: boolean;
-    is_correct?: boolean;
-    limit?: number;
-    offset?: number;
-  } = {},
+  filter: NotebookEntryFilter = {},
 ): Promise<NotebookEntryListResponse> {
   const params = new URLSearchParams();
   if (filter.category_id !== undefined)
     params.set("category_id", String(filter.category_id));
+  if (filter.uncategorized) params.set("uncategorized", "true");
   if (filter.bookmarked !== undefined)
     params.set("bookmarked", String(filter.bookmarked));
   if (filter.is_correct !== undefined)
     params.set("is_correct", String(filter.is_correct));
+  if (filter.source) params.set("source", filter.source);
+  if (filter.material_id) params.set("material_id", filter.material_id);
+  if (filter.section_id) params.set("section_id", filter.section_id);
+  if (filter.resolved !== undefined)
+    params.set("resolved", String(filter.resolved));
+  if (filter.score_trend) params.set("score_trend", filter.score_trend);
+  if (filter.search) params.set("search", filter.search);
+  if (filter.sort) params.set("sort", filter.sort);
   if (filter.limit !== undefined) params.set("limit", String(filter.limit));
   if (filter.offset !== undefined) params.set("offset", String(filter.offset));
+  if (filter.course_id) params.set("course_id", filter.course_id);
   const query = params.toString();
   const response = await apiFetch(
-    apiUrl(`/api/v1/question-notebook/entries${query ? `?${query}` : ""}`),
+    apiUrl(`/api/question-notebook/entries${query ? `?${query}` : ""}`),
     { cache: "no-store" },
   );
   return expectJson<NotebookEntryListResponse>(response);
@@ -201,7 +333,7 @@ export async function getNotebookEntry(
   entryId: number,
 ): Promise<NotebookEntry> {
   const response = await apiFetch(
-    apiUrl(`/api/v1/question-notebook/entries/${entryId}`),
+    apiUrl(`/api/question-notebook/entries/${entryId}`),
     {
       cache: "no-store",
     },
@@ -223,7 +355,7 @@ export async function lookupNotebookEntry(
   });
   if (turnId) params.set("turn_id", turnId);
   const response = await apiFetch(
-    apiUrl(`/api/v1/question-notebook/entries/lookup/by-question?${params}`),
+    apiUrl(`/api/question-notebook/entries/lookup/by-question?${params}`),
   );
   // 204 (missing_ok hit) and 404 (older servers) both mean "no entry yet".
   if (response.status === 204 || response.status === 404) return null;
@@ -236,10 +368,11 @@ export async function updateNotebookEntry(
     bookmarked?: boolean;
     followup_session_id?: string;
     ai_judgment?: string;
+    resolved?: boolean;
   },
 ): Promise<void> {
   const response = await apiFetch(
-    apiUrl(`/api/v1/question-notebook/entries/${entryId}`),
+    apiUrl(`/api/question-notebook/entries/${entryId}`),
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -276,9 +409,14 @@ export async function upsertNotebookEntry(data: {
    */
   user_answer_images?: NotebookAnswerImageUpload[];
   is_correct?: boolean;
+  source?: AssessmentSource;
+  material_id?: string;
+  material_title?: string;
+  section_id?: string;
+  section_title?: string;
 }): Promise<NotebookEntry> {
   const response = await apiFetch(
-    apiUrl("/api/v1/question-notebook/entries/upsert"),
+    apiUrl("/api/question-notebook/entries/upsert"),
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -295,7 +433,7 @@ export async function upsertNotebookEntry(data: {
 
 export async function deleteNotebookEntry(entryId: number): Promise<void> {
   const response = await apiFetch(
-    apiUrl(`/api/v1/question-notebook/entries/${entryId}`),
+    apiUrl(`/api/question-notebook/entries/${entryId}`),
     {
       method: "DELETE",
     },
@@ -310,7 +448,7 @@ export async function addEntryToCategory(
   categoryId: number,
 ): Promise<void> {
   const response = await apiFetch(
-    apiUrl(`/api/v1/question-notebook/entries/${entryId}/categories`),
+    apiUrl(`/api/question-notebook/entries/${entryId}/categories`),
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -320,13 +458,83 @@ export async function addEntryToCategory(
   await expectJson<{ added: boolean }>(response);
 }
 
+export interface BulkCategoryResult {
+  changed: number;
+  requested: number;
+  category_id: number;
+  link: boolean;
+}
+
+/**
+ * File (or unfile) many entries in one request.
+ *
+ * One round-trip instead of N: the list refreshes once against a settled
+ * server state rather than racing a burst of per-entry writes.
+ */
+export async function bulkLinkEntriesToCategory(
+  entryIds: number[],
+  categoryId: number,
+  link = true,
+): Promise<BulkCategoryResult> {
+  const response = await apiFetch(
+    apiUrl("/api/question-notebook/entries/categories/bulk"),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        entry_ids: entryIds,
+        category_id: categoryId,
+        link,
+      }),
+    },
+  );
+  return expectJson<BulkCategoryResult>(response);
+}
+
+export interface QuestionBankStats {
+  total: number;
+  wrong: number;
+  unresolved: number;
+  bookmarked: number;
+  uncategorized: number;
+}
+
+/**
+ * Counts behind the scope rail.
+ *
+ * Takes the same course scope as the entry list: showing this course's
+ * questions next to whole-library counts would make the rail lie about how
+ * much is there.
+ */
+export async function getQuestionBankStats(
+  courseId = "",
+): Promise<QuestionBankStats> {
+  const query = courseId ? `?course_id=${encodeURIComponent(courseId)}` : "";
+  const response = await apiFetch(
+    apiUrl(`/api/question-notebook/stats${query}`),
+    { cache: "no-store" },
+  );
+  return expectJson<QuestionBankStats>(response);
+}
+
+export async function listQuestionBankMaterials(
+  courseId = "",
+): Promise<QuestionBankMaterial[]> {
+  const query = courseId ? `?course_id=${encodeURIComponent(courseId)}` : "";
+  const response = await apiFetch(
+    apiUrl(`/api/question-notebook/materials${query}`),
+    { cache: "no-store" },
+  );
+  return expectJson<QuestionBankMaterial[]>(response);
+}
+
 export async function removeEntryFromCategory(
   entryId: number,
   categoryId: number,
 ): Promise<void> {
   const response = await apiFetch(
     apiUrl(
-      `/api/v1/question-notebook/entries/${entryId}/categories/${categoryId}`,
+      `/api/question-notebook/entries/${entryId}/categories/${categoryId}`,
     ),
     { method: "DELETE" },
   );
@@ -335,25 +543,23 @@ export async function removeEntryFromCategory(
 
 // ── Categories ──────────────────────────────────────────────────
 
-export async function listCategories(): Promise<NotebookCategory[]> {
+export async function listCategories(
+  courseId = "",
+): Promise<NotebookCategory[]> {
+  const query = courseId ? `?course_id=${encodeURIComponent(courseId)}` : "";
   const response = await apiFetch(
-    apiUrl("/api/v1/question-notebook/categories"),
-    {
-      cache: "no-store",
-    },
+    apiUrl(`/api/question-notebook/categories${query}`),
+    { cache: "no-store" },
   );
   return expectJson<NotebookCategory[]>(response);
 }
 
 export async function createCategory(name: string): Promise<NotebookCategory> {
-  const response = await apiFetch(
-    apiUrl("/api/v1/question-notebook/categories"),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    },
-  );
+  const response = await apiFetch(apiUrl("/api/question-notebook/categories"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
   return expectJson<NotebookCategory>(response);
 }
 
@@ -362,7 +568,7 @@ export async function renameCategory(
   name: string,
 ): Promise<void> {
   const response = await apiFetch(
-    apiUrl(`/api/v1/question-notebook/categories/${categoryId}`),
+    apiUrl(`/api/question-notebook/categories/${categoryId}`),
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -374,7 +580,7 @@ export async function renameCategory(
 
 export async function deleteCategory(categoryId: number): Promise<void> {
   const response = await apiFetch(
-    apiUrl(`/api/v1/question-notebook/categories/${categoryId}`),
+    apiUrl(`/api/question-notebook/categories/${categoryId}`),
     {
       method: "DELETE",
     },

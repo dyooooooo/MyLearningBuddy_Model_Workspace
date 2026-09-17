@@ -13,7 +13,7 @@ class _FakePages:
     def page_count(self) -> int:
         return 2
 
-    def page_jpeg(self, page_no: int, dpi: int = 120) -> bytes:
+    def page_jpeg(self, page_no: int, dpi: int = 150, quality: int = 92) -> bytes:
         return b"jpeg" + bytes([page_no])
 
 
@@ -77,7 +77,7 @@ def test_process_kb_book_writes_workspace_files(tmp_path, monkeypatch) -> None:
     assert read_toc("b1")["entries"]
 
 
-def test_process_kb_book_uses_workspace_build_toc(tmp_path, monkeypatch) -> None:
+def test_process_kb_book_skips_workspace_build_toc(tmp_path, monkeypatch) -> None:
     from app.config import settings
 
     monkeypatch.setattr(settings, "agent_textbooks_dir", str(tmp_path / "textbooks"))
@@ -119,8 +119,8 @@ def build_toc(root: str, book_id: str = "") -> dict:
     ):
         process_kb_book("b1")
     toc = read_toc("b1")
-    assert toc["entries"][0]["level"] == 2
-    assert toc["entries"][0]["label"] == "1 集合"
+    labels = [str(row.get("label") or "") for row in (toc.get("entries") or [])]
+    assert "1 集合" not in labels
     from app.kb.workspace_store import mineru_toc_path
 
     assert mineru_toc_path("b1").is_file()
@@ -202,9 +202,11 @@ def test_process_kb_book_notifies_agent(tmp_path, monkeypatch) -> None:
         ),
         patch("app.kb.import_service.open_pdf", _open_pdf),
         patch("app.clients.redis_client.is_kb_book_revoked", return_value=False),
+        patch("app.kb.agent_notify.notify_import_converting") as converting,
         patch("app.kb.agent_notify.notify_import_completed") as notify,
     ):
         process_kb_book("b1")
+    converting.assert_called_once_with("b1", conversation_id="")
     notify.assert_called_once_with("b1", conversation_id="")
 
 
@@ -236,9 +238,11 @@ def test_process_kb_book_notifies_existing_conversation(tmp_path, monkeypatch) -
         ),
         patch("app.kb.import_service.open_pdf", _open_pdf),
         patch("app.clients.redis_client.is_kb_book_revoked", return_value=False),
+        patch("app.kb.agent_notify.notify_import_converting") as converting,
         patch("app.kb.agent_notify.notify_import_completed") as notify,
     ):
         process_kb_book("b2")
+    converting.assert_called_once_with("b2", conversation_id="conv-keep")
     notify.assert_called_once_with("b2", conversation_id="conv-keep")
 
 

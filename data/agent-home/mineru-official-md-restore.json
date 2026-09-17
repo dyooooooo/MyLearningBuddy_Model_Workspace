@@ -1,0 +1,362 @@
+{
+  "total": 51,
+  "ok": 50,
+  "exists": 1,
+  "error": 0,
+  "results": [
+    {
+      "book_id": "402571aa88c548d28b36f615f3dfc1c6",
+      "status": "exists"
+    },
+    {
+      "book_id": "65413d165bae410e9bf5cb01c66df905",
+      "status": "ok",
+      "bytes": 5948,
+      "file": "full.md",
+      "label": "2025年上海市普通高中6门科目学业水平等级性考试命题要求"
+    },
+    {
+      "book_id": "7756bdb3822d4ccb88a34d38cc8f09c0",
+      "status": "ok",
+      "bytes": 5948,
+      "file": "full.md",
+      "label": "2025年上海市普通高中6门科目学业水平等级性考试命题要求"
+    },
+    {
+      "book_id": "7eb06ace80ea4665a90dbe6bf130abfb",
+      "status": "ok",
+      "bytes": 5948,
+      "file": "full.md",
+      "label": "2025年上海市普通高中6门科目学业水平等级性考试命题要求"
+    },
+    {
+      "book_id": "7fd4b87974c5481bbadcce24377e9226",
+      "status": "ok",
+      "bytes": 5948,
+      "file": "full.md",
+      "label": "2025年上海市普通高中6门科目学业水平等级性考试命题要求"
+    },
+    {
+      "book_id": "e385beabe9d54002ac89b2f88cf938ea",
+      "status": "ok",
+      "bytes": 5948,
+      "file": "full.md",
+      "label": "2025年上海市普通高中6门科目学业水平等级性考试命题要求"
+    },
+    {
+      "book_id": "bbda0c2bc1a34a4d8d1cbaa304892857",
+      "status": "ok",
+      "bytes": 117868,
+      "file": "full.md",
+      "label": "普通高中语文课程标准（2017年版2020年修订）"
+    },
+    {
+      "book_id": "b8f151471f144707a3b0c43f179532f8",
+      "status": "ok",
+      "bytes": 128687,
+      "file": "full.md",
+      "label": "普通高中思想政治课程标准（2017年版2020年修订）"
+    },
+    {
+      "book_id": "d5a2be8ceb844537bf1495387842ed10",
+      "status": "ok",
+      "bytes": 111333,
+      "file": "full.md",
+      "label": "普通高中地理课程标准（2017年版2020年修订）"
+    },
+    {
+      "book_id": "6574a14709e34bc3a606946e0855ffed",
+      "status": "ok",
+      "bytes": 209604,
+      "file": "full.md",
+      "label": "普通高中英语课程标准（2017年版2020年修订）上"
+    },
+    {
+      "book_id": "d6f21dedb0954d1eb5881da335dfed56",
+      "status": "ok",
+      "bytes": 172545,
+      "file": "full.md",
+      "label": "普通高中生物学课程标准（2017年版2020年修订）"
+    },
+    {
+      "book_id": "2187d1f4256b4032adedab81cb28cba9",
+      "status": "ok",
+      "bytes": 157650,
+      "file": "full.md",
+      "label": "普通高中历史课程标准（2017年版2020年修订）"
+    },
+    {
+      "book_id": "17dbecfdb90942d9a0e7e6acf56c86e2",
+      "status": "ok",
+      "bytes": 182519,
+      "file": "full.md",
+      "label": "普通高中化学课程标准（2017年版2020年修订）"
+    },
+    {
+      "book_id": "fd3b1d43473c4c2f8ba31e7fc73f568b",
+      "status": "ok",
+      "bytes": 157448,
+      "file": "full.md",
+      "label": "普通高中物理课程标准（2017年版2020年修订）"
+    },
+    {
+      "book_id": "62dcf0e0ebe34042ac34952eb73a0f4c",
+      "status": "ok",
+      "bytes": 193580,
+      "file": "full.md",
+      "label": "物理选择性必修第1册"
+    },
+    {
+      "book_id": "c095581978ab43a381b5175af1a054dd",
+      "status": "ok",
+      "bytes": 216964,
+      "file": "full.md",
+      "label": "语文选择性必修第3册"
+    },
+    {
+      "book_id": "09819de027e646a9a1eacc57bf359b17",
+      "status": "ok",
+      "bytes": 230898,
+      "file": "full.md",
+      "label": "语文选择性必修第1册"
+    },
+    {
+      "book_id": "c37ab2548bfe4178b6db6a19b603e38b",
+      "status": "ok",
+      "bytes": 290927,
+      "file": "full.md",
+      "label": "人教版语文必修第1册"
+    },
+    {
+      "book_id": "5308e0be10b2483696407fd70637faac",
+      "status": "ok",
+      "bytes": 151824,
+      "file": "full.md",
+      "label": "普通高中英语课程标准（2017年版2020年修订）下"
+    },
+    {
+      "book_id": "5ad5b2b8265c429292d63b0d88defb43",
+      "status": "ok",
+      "bytes": 334240,
+      "file": "full.md",
+      "label": "人教版语文必修第2册"
+    },
+    {
+      "book_id": "09f36f6dac0e4477b4bf2223b5f164b2",
+      "status": "ok",
+      "bytes": 213990,
+      "file": "full.md",
+      "label": "物理必修第1册"
+    },
+    {
+      "book_id": "6e18e0523a524a13b924252184756ba7",
+      "status": "ok",
+      "bytes": 263418,
+      "file": "full.md",
+      "label": "语文选择性必修第2册"
+    },
+    {
+      "book_id": "7ca6752ddec3489cb67bf2b60fde2463",
+      "status": "ok",
+      "bytes": 152528,
+      "file": "full.md",
+      "label": "普通高中教科书·英语必修 第1册"
+    },
+    {
+      "book_id": "7f0b5a62122b4f4c90a9ac1f96c03eff",
+      "status": "ok",
+      "bytes": 152528,
+      "file": "full.md",
+      "label": "普通高中教科书·英语必修 第1册"
+    },
+    {
+      "book_id": "c1456a5d814c4ef0bcb8095d6674a649",
+      "status": "ok",
+      "bytes": 152528,
+      "file": "full.md",
+      "label": "普通高中教科书·英语 必修 第1册"
+    },
+    {
+      "book_id": "c170f9f3c069460483630c6d62c8242f",
+      "status": "ok",
+      "bytes": 152528,
+      "file": "full.md",
+      "label": "普通高中教科书·英语必修 第1册"
+    },
+    {
+      "book_id": "e275ff3bb7bd4013b41598c58aabfb3e",
+      "status": "ok",
+      "bytes": 152528,
+      "file": "full.md",
+      "label": "普通高中教科书·英语·必修第1册"
+    },
+    {
+      "book_id": "73d4dc7ea9c54ab09628e9aea0869192",
+      "status": "ok",
+      "bytes": 76129,
+      "file": "full.md",
+      "label": "普通高中教科书·数学选择性必修 第3册"
+    },
+    {
+      "book_id": "c99f120b031f486698a78cbd8f4d66fe",
+      "status": "ok",
+      "bytes": 162344,
+      "file": "full.md",
+      "label": "普通高中教科书·英语 必修 第3册"
+    },
+    {
+      "book_id": "143b4a39fb47464abcdbfda4b35f9d1e",
+      "status": "ok",
+      "bytes": 282768,
+      "file": "full.md",
+      "label": "普通高中教科书·物理必修 第3册"
+    },
+    {
+      "book_id": "42041c67e0c54196ae6082406f8b083e",
+      "status": "ok",
+      "bytes": 187665,
+      "file": "full.md",
+      "label": "沪教英语选择性必修第3册"
+    },
+    {
+      "book_id": "e5599c5a08924adca1efdcc0dbfc9416",
+      "status": "ok",
+      "bytes": 173192,
+      "file": "full.md",
+      "label": "沪教英语选择性必修第2册"
+    },
+    {
+      "book_id": "3cd3b0f7e76942849f474dc7365e4721",
+      "status": "ok",
+      "bytes": 167979,
+      "file": "full.md",
+      "label": "普通高中教科书·英语 必修 第2册"
+    },
+    {
+      "book_id": "6e1bcf568b374aa7bed4c335b955384b",
+      "status": "ok",
+      "bytes": 237291,
+      "file": "full.md",
+      "label": "生物学必修2 遗传与进化"
+    },
+    {
+      "book_id": "3abe1999bff44fcdb18e374fd800f521",
+      "status": "ok",
+      "bytes": 220802,
+      "file": "full.md",
+      "label": "化学必修第2册"
+    },
+    {
+      "book_id": "f9327370d3514e3bb827eb75e1c3990f",
+      "status": "ok",
+      "bytes": 172835,
+      "file": "full.md",
+      "label": "沪教英语选择性必修第1册"
+    },
+    {
+      "book_id": "21e0d2c5ec094ee19621385129a60078",
+      "status": "ok",
+      "bytes": 325498,
+      "file": "full.md",
+      "label": "普通高中数学课程标准（2017年版2020年修订）"
+    },
+    {
+      "book_id": "7b6ff6a254774c6cb7d3fa65868adda9",
+      "status": "ok",
+      "bytes": 247740,
+      "file": "full.md",
+      "label": "生物学必修第1册 分子与细胞"
+    },
+    {
+      "book_id": "4c885e9a969e43e69fa6ab2965746e53",
+      "status": "ok",
+      "bytes": 223448,
+      "file": "full.md",
+      "label": "普通高中教科书·物理必修第2册"
+    },
+    {
+      "book_id": "13036f17d454435888c0f499e9773b82",
+      "status": "ok",
+      "bytes": 77105,
+      "file": "full.md",
+      "label": "普通高中教科书·数学必修 第4册"
+    },
+    {
+      "book_id": "6c4ee49ab49d4cfeaf9af1767b7790a8",
+      "status": "ok",
+      "bytes": 291858,
+      "file": "full.md",
+      "label": "化学必修第1册"
+    },
+    {
+      "book_id": "66fdd0558d97406bac2b7840c9547165",
+      "status": "ok",
+      "bytes": 288303,
+      "file": "full.md",
+      "label": "普通高中教科书·数学必修 第1册"
+    },
+    {
+      "book_id": "d687ce49620b445a84ea527d0978d6bb",
+      "status": "ok",
+      "bytes": 362546,
+      "file": "full.md",
+      "label": "普通高中教科书·数学必修 第2册"
+    },
+    {
+      "book_id": "e29abb1858bb4187af6fd4e6393b3c6b",
+      "status": "ok",
+      "bytes": 220506,
+      "file": "full.md",
+      "label": "生物学选择性必修第2册 生物与环境"
+    },
+    {
+      "book_id": "b2d05d61410f4146bed49d6a8d62651d",
+      "status": "ok",
+      "bytes": 228272,
+      "file": "full.md",
+      "label": "生物学选择性必修第1册 稳态与调节"
+    },
+    {
+      "book_id": "0d100cbe267f45df91551d55b851c41c",
+      "status": "ok",
+      "bytes": 237095,
+      "file": "full.md",
+      "label": "生物学选择性必修第3册 生物技术与工程"
+    },
+    {
+      "book_id": "f87fbadabef54590bd40aebe75548b6a",
+      "status": "ok",
+      "bytes": 342525,
+      "file": "full.md",
+      "label": "普通高中教科书·数学选择性必修 第1册"
+    },
+    {
+      "book_id": "e52f109e7b5445769af5596dd3665015",
+      "status": "ok",
+      "bytes": 388636,
+      "file": "full.md",
+      "label": "普通高中教科书·数学必修 第3册"
+    },
+    {
+      "book_id": "1efec97d2afa4b1195bc1268e352e1f7",
+      "status": "ok",
+      "bytes": 197284,
+      "file": "full.md",
+      "label": "化学选择性必修第2册 物质结构与性质"
+    },
+    {
+      "book_id": "d101d98c345141bc82eefe4ab706aa9b",
+      "status": "ok",
+      "bytes": 210128,
+      "file": "full.md",
+      "label": "化学选择性必修第3册 有机化学基础"
+    },
+    {
+      "book_id": "5eb3a4c103974c7da2fb0a5dbb3ebc22",
+      "status": "ok",
+      "bytes": 256495,
+      "file": "full.md",
+      "label": "化学选择性必修第1册 化学反应原理"
+    }
+  ]
+}

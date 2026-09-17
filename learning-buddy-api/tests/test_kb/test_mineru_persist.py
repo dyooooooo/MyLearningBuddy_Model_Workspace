@@ -30,14 +30,22 @@ def test_persist_workdir_copies_official_json(tmp_path: Path) -> None:
     (work / "book_content_list.json").write_text("[]", encoding="utf-8")
     (work / "layout.json").write_text("{}", encoding="utf-8")
     (work / "book_model.json").write_text("[]", encoding="utf-8")
+    (work / "chapter.md").write_text("# 官方正文\n", encoding="utf-8")
+    (work / "images").mkdir()
+    (work / "images" / "fig.jpg").write_bytes(b"\xff\xd8\xff")
     dest = tmp_path / "mineru"
     found = persist_workdir(work, dest)
     assert found["content_list_v2"] == "book_content_list_v2.json"
     assert found["content_list"] == "book_content_list.json"
     assert found["layout"] == "layout.json"
     assert found["model"] == "book_model.json"
+    assert found["markdown"] == "full.md"
     assert (dest / "layout.json").is_file()
     assert (dest / "book_content_list.json").read_text(encoding="utf-8") == "[]"
+    assert (dest / "chapter.md").read_text(encoding="utf-8") == "# 官方正文\n"
+    assert (dest / "full.md").read_text(encoding="utf-8") == "# 官方正文\n"
+    assert found["images"] == "1"
+    assert (dest / "images" / "fig.jpg").read_bytes() == b"\xff\xd8\xff"
 
 
 def test_probe_mineru_blocks_counts_bbox_and_aside() -> None:
@@ -99,7 +107,7 @@ def test_process_kb_book_passes_persist_dir(tmp_path: Path, monkeypatch) -> None
         def page_count(self) -> int:
             return 1
 
-        def page_jpeg(self, page_no: int, dpi: int = 120) -> bytes:
+        def page_jpeg(self, page_no: int, dpi: int = 150, quality: int = 92) -> bytes:
             return b"jpeg"
 
     from contextlib import contextmanager

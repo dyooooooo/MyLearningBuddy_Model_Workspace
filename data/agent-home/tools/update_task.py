@@ -9,10 +9,11 @@ def update_task(
     cron: str = "",
     message: str = "",
     condition: str = "",
+    when: str = "",
     enabled: str = "",
 ) -> dict:
     """Update a workspace task. Empty string keeps the old value.
-    condition is only used for trigger tasks."""
+    condition is Agent-judged; when is meta.json machine match (JSON or k:v)."""
     from app import tasks
 
     fields: dict = {}
@@ -28,6 +29,8 @@ def update_task(
         fields["message"] = message
     if condition:
         fields["condition"] = condition
+    if when:
+        fields["when"] = when
     if enabled != "":
         fields["enabled"] = str(enabled).strip().lower() in ("1", "true", "yes", "on")
     row = tasks.update_task(task_id, **fields)

@@ -1,6 +1,9 @@
 "use client";
 
-import type { CatalogProfile, ServiceName } from "./SettingsContext";
+import type {
+  CatalogProfile,
+  ServiceName,
+} from "@/features/settings/store/SettingsStore";
 
 export const fieldControlClass =
   "w-full rounded-lg border border-[var(--border)] px-3 py-2 text-[14px] text-[var(--foreground)] outline-none transition-colors focus:border-[var(--ring)]";
@@ -13,22 +16,6 @@ export const selectClass = `${nativeSelectClass} appearance-none`;
 
 export const selectOptionClass =
   "bg-[var(--background)] text-[var(--foreground)]";
-
-export const supportedSearchProviders = [
-  "brave",
-  "tavily",
-  "jina",
-  "searxng",
-  "duckduckgo",
-  "perplexity",
-] as const;
-
-export const deprecatedSearchProviders = new Set([
-  "exa",
-  "serper",
-  "baidu",
-  "openrouter",
-]);
 
 export function stringifyExtraHeaders(
   value: CatalogProfile["extra_headers"],
@@ -46,6 +33,21 @@ export function statusDotClass(configured: boolean, hasError: boolean): string {
   if (hasError) return "bg-red-400";
   if (configured) return "bg-emerald-500";
   return "bg-[var(--border)]";
+}
+
+/**
+ * Hairline between two items of the settings status strip. Lives here rather
+ * than inside the strip because items that can render nothing (MemoryUsageItem)
+ * have to draw their own leading rule — otherwise hiding the item leaves a
+ * dangling separator behind.
+ */
+export function StatusStripDivider() {
+  return (
+    <span
+      aria-hidden
+      className="hidden h-7 w-px shrink-0 bg-[var(--border)]/70 sm:block"
+    />
+  );
 }
 
 export function formatContextWindowSource(
@@ -122,7 +124,7 @@ export function SettingRow({
   control: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-6 border-t border-[var(--border)]/50 px-1 py-4 first:border-t-0">
+    <div className="flex items-start justify-between gap-6 border-t border-[var(--border)]/50 py-3.5 first:border-t-0">
       <div className="min-w-0 flex-1">
         <div className="text-[13.5px] font-medium text-[var(--foreground)]">
           {title}
@@ -149,8 +151,8 @@ export function SettingSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-10">
-      <header className="mb-3">
+    <section className="mb-8">
+      <header className="mb-2">
         <h2 className="text-[15px] font-semibold tracking-tight text-[var(--foreground)]">
           {title}
         </h2>
@@ -160,9 +162,13 @@ export function SettingSection({
           </p>
         )}
       </header>
-      <div className="rounded-xl border border-[var(--border)]/60 bg-[var(--card)]/40 px-5">
-        {children}
-      </div>
+      {/* A rule, not a box. The app divides with hairlines and whitespace —
+          a bordered, tinted panel around rows that already separate
+          themselves with hairlines was dividing the same content twice. The
+          top rule is what tells a section where it starts, and it has to live
+          here rather than on the first row because sections also hold custom
+          content (theme tiles, previews) that draws no rule of its own. */}
+      <div className="border-t border-[var(--border)]/60">{children}</div>
     </section>
   );
 }

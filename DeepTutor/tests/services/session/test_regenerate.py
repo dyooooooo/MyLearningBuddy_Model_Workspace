@@ -197,9 +197,9 @@ class TestRegenerateLastTurn:
         assert payload["knowledge_bases"] == ["kb1"]
         assert payload["language"] == "en"
         assert payload["attachments"] == [{"type": "file", "filename": "a.pdf"}]
-        assert payload["config"]["_persist_user_message"] is False
-        assert payload["config"]["_regenerate"] is True
-        assert payload["config"]["_regenerated_from_message_id"] == user_id
+        assert payload["persist_user_message"] is False
+        assert payload["regenerate"] is True
+        assert payload["regenerated_from_message_id"] == user_id
 
         remaining = asyncio.run(store.get_messages(sid))
         assert [m["id"] for m in remaining] == [user_id]
@@ -223,6 +223,19 @@ class TestRegenerateLastTurn:
         assert recorder.calls[0]["book_references"] == [
             {"book_id": "book-1", "page_ids": ["page-1"]}
         ]
+
+    def test_replays_mastery_path_from_request_snapshot(self, store: SQLiteSessionStore) -> None:
+        sid, _, _ = _seed_session(
+            store,
+            user_metadata={"request_snapshot": {"masteryPathId": "path-1"}},
+        )
+        runtime = TurnRuntimeManager(store=store)
+        recorder = _FakeStartTurnRecorder()
+
+        with patch.object(runtime, "start_turn", new=recorder):
+            asyncio.run(runtime.regenerate_last_turn(sid))
+
+        assert recorder.calls[0]["mastery_path_id"] == "path-1"
 
     def test_user_tail_is_kept_and_no_delete(self, store: SQLiteSessionStore) -> None:
         sid, user_id, _ = _seed_session(store, assistant_content=None)
@@ -390,5 +403,5 @@ class TestRegenerateLastTurn:
         assert payload["language"] == "zh"
         assert payload["config"]["temperature"] == 0.2
         # Runtime flags must still be set even when overrides supply config.
-        assert payload["config"]["_persist_user_message"] is False
-        assert payload["config"]["_regenerate"] is True
+        assert payload["persist_user_message"] is False
+        assert payload["regenerate"] is True

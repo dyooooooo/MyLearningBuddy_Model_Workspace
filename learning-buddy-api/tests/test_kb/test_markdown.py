@@ -43,6 +43,31 @@ def test_equation_wrapped_as_display_math():
     assert "A \\cup B" in md
 
 
+def test_ce_reaction_stays_display_math():
+    md = blocks_to_page_markdown([{"type": "equation", "text": r"\ce{H2O}"}], book_id="book1")
+    assert "$$" in md
+    assert r"\ce{H2O}" in md
+    assert "eq-p" not in md
+
+
+def test_diagram_equation_becomes_image():
+    md = blocks_to_page_markdown(
+        [
+            {
+                "type": "equation_interline",
+                "page_idx": 21,
+                "bbox": [10, 140, 400, 180],
+                "text": r"\begin{array}{rl} C + O_2 \xlongequal{\text{点燃}} CO_2 \end{array}",
+            }
+        ],
+        book_id="book1",
+    )
+    assert "eq-p0022-10-140-400-180.jpg" in md
+    assert "$$" not in md
+    assert "xlongequal" in md
+    assert "![公式](" in md
+
+
 def test_table_wrapped_with_caption_no_screenshot():
     md = blocks_to_page_markdown(
         [

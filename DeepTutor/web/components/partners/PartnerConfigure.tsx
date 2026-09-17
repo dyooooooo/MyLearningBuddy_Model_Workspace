@@ -11,7 +11,7 @@ import { Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import PartnerModelSelect from "@/components/partners/PartnerModelSelect";
 import { listLLMOptions, type LLMOption } from "@/lib/llm-options";
-import type { LLMSelection } from "@/lib/unified-ws";
+import type { LLMSelection } from "@/features/chat/model/protocol";
 import {
   addPartnerAssets,
   getPartnerAssets,
@@ -153,9 +153,10 @@ export default function PartnerConfigure({
           partner.builtin_tools ??
             options.builtin_tools.map((tool) => tool.name),
         );
-        setMcpTools(
-          partner.mcp_tools ?? options.mcp_tools.map((tool) => tool.name),
-        );
+        // MCP is deny-by-default. A nullish value must not materialise as
+        // "all selected": the picker hands back exactly what is checked, so
+        // that fallback would re-grant every configured MCP tool on save.
+        setMcpTools(partner.mcp_tools ?? []);
       })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps

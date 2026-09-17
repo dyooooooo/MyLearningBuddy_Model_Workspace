@@ -25,6 +25,8 @@ export type LiveState = {
   kbExpandedBooks?: string[];
   kbExpandedGroups?: string[];
   kbExpandedToc?: Record<string, string[]>;
+  kbIrExpandedBooks?: string[];
+  kbIrExpandedToc?: Record<string, string[]>;
   kbBookSort?: string;
 };
 

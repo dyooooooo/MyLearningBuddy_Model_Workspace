@@ -77,7 +77,7 @@ export function defaultParams(model: CatalogModel | undefined): ModelParam[] {
   if (!model) return [];
   if (model.id === "grok-4.6") {
     return [
-      { id: "effort", value: "xhigh" },
+      { id: "effort", value: "high" },
       { id: "fast", value: "true" },
     ];
   }

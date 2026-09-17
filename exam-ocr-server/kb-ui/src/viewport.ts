@@ -80,14 +80,13 @@ export function mountKbViewport(opts: KbViewportOpts): KbViewport {
     for (const el of shells()) observer.observe(el);
   }
 
-  bindObserver();
-  void (async () => {
+    void (async () => {
     const first = visiblePage();
     setActive(first);
-    const warm = [first - 1, first, first + 1, first + 2, first + 3].filter(
-      (n) => n >= 1 && n <= opts.pageCount,
-    );
-    await Promise.all(warm.map((n) => load(n)));
+    await load(first);
+    const neighbors = [first - 1, first + 1].filter((n) => n >= 1 && n <= opts.pageCount);
+    void Promise.all(neighbors.map((n) => load(n)));
+    bindObserver();
   })();
 
   return {

@@ -1,0 +1,40 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page_size": [595, 841],
+    "layout": {
+      "folio": "recto",
+      "tree": {
+        "id": "page",
+        "kind": "rows",
+        "children": [
+          {
+            "id": "r0",
+            "kind": "cols",
+            "x0": 0,
+            "x1": 595,
+            "children": [
+              { "id": "r0c0", "kind": "flow", "empty": true, "members": [], "slots": ["fig_0"], "x0": 0, "x1": 176 },
+              { "id": "r0c1", "kind": "flow", "members": [0], "slots": ["main"], "x0": 176, "x1": 595 }
+            ]
+          },
+          {
+            "id": "r1",
+            "kind": "cols",
+            "x0": 0,
+            "x1": 595,
+            "children": [
+              { "id": "r1c0", "kind": "flow", "members": [1], "slots": ["fig_0"], "x0": 0, "x1": 176 },
+              { "id": "r1c1", "kind": "flow", "members": [2], "slots": ["main"], "x0": 176, "x1": 595 }
+            ]
+          }
+        ]
+      }
+    },
+    "blocks": [
+      { "id": "title", "type": "title", "kind": "body", "text": "1.1 集合初步" },
+      { "id": "fig", "type": "image", "kind": "figure", "asset": "cantor.jpg" },
+      { "id": "body", "type": "text", "kind": "body", "text": "我们经常需要把对象放在一起。" }
+    ]
+  }
+}

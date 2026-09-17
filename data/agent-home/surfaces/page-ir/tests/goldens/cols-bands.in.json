@@ -1,0 +1,76 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page_size": [595, 841],
+    "layout": {
+      "folio": "recto",
+      "tree": {
+        "id": "page",
+        "kind": "rows",
+        "children": [
+          {
+            "id": "r0",
+            "kind": "flow",
+            "members": [0],
+            "slots": ["main"],
+            "x0": 60,
+            "x1": 535,
+            "y0": 80,
+            "y1": 120
+          },
+          {
+            "id": "r1",
+            "kind": "cols",
+            "x0": 60,
+            "x1": 535,
+            "y0": 130,
+            "y1": 200,
+            "children": [
+              {
+                "id": "r1c0",
+                "kind": "flow",
+                "members": [1],
+                "slots": ["main"],
+                "x0": 60,
+                "x1": 290,
+                "y0": 130,
+                "y1": 200
+              },
+              {
+                "id": "r1c1",
+                "kind": "flow",
+                "members": [2],
+                "slots": ["main"],
+                "x0": 310,
+                "x1": 535,
+                "y0": 130,
+                "y1": 200
+              }
+            ]
+          },
+          {
+            "id": "r2",
+            "kind": "flow",
+            "members": [3],
+            "slots": ["main"],
+            "x0": 60,
+            "x1": 535,
+            "y0": 210,
+            "y1": 260
+          }
+        ]
+      }
+    },
+    "chrome": {
+      "headers": [{ "text": "上海教育出版社", "bbox": [253, 0, 340, 16] }],
+      "page_numbers": [{ "text": "11", "bbox": [532, 812, 547, 826] }],
+      "footnotes": []
+    },
+    "blocks": [
+      { "id": "lead", "type": "text", "kind": "body", "text": "Complete the sentences." },
+      { "id": "l1", "type": "text", "kind": "body", "text": "from different angles" },
+      { "id": "r1", "type": "text", "kind": "body", "text": "meet the demand" },
+      { "id": "q1", "type": "text", "kind": "body", "text": "(1) For years the system has been..." }
+    ]
+  }
+}

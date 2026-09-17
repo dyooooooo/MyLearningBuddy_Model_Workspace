@@ -4,34 +4,38 @@ PocketBase-backed session store.
 Implements SessionStoreProtocol using PocketBase collections for all durable
 storage.  The key performance design:
 
-- All methods except ``append_turn_event`` make direct PocketBase HTTP calls.
-  These are called at most a handful of times per turn (create, get, update
-  status, add message) and the ~5–10 ms overhead is acceptable.
+- Most methods make direct PocketBase HTTP calls. These are called at most a
+  handful of times per turn (create, get, update status, add message) and the
+  ~5–10 ms overhead is acceptable.
 
-- ``append_turn_event`` returns immediately without writing to PocketBase.
-  The existing ``_mirror_event_to_workspace`` in turn_runtime.py already
-  appends every event to a local ``events.jsonl`` file.  When
-  ``update_turn_status`` finalises a turn it reads that file and batch-posts
-  all events to PocketBase ``turn_events`` in a single request, trading
-  real-time durability for ~40× lower per-event latency during streaming.
+- Turn events are flushed before a terminal status is committed.  This makes
+  the PocketBase and SQLite backends share one durability contract: DONE never
+  races a detached upload task and shutdown cannot silently lose trace rows.
 """
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
+from datetime import datetime
 import json
 import logging
-from pathlib import Path
 import re
 import time
 from typing import Any
 import uuid
 
-from deeptutor.services.path_service import get_path_service
+from .ask_user_trace import filter_ask_user_events
+from .provider_response_state import redact_private_message_metadata
+from .scope import StoreScope
+from .workspace_preferences import upgrade_workspace_preferences
 
 logger = logging.getLogger(__name__)
 
 _VALID_ID = re.compile(r"^[a-zA-Z0-9_-]+$")
+_ACTIVE_TURN_STATUSES = frozenset({"queued", "running", "waiting_input"})
+_TERMINAL_TURN_STATUSES = frozenset({"completed", "failed", "cancelled"})
+_ALL_TURN_STATUSES = _ACTIVE_TURN_STATUSES | _TERMINAL_TURN_STATUSES
 
 
 def _validate_id(value: str, name: str = "id") -> str:
@@ -62,15 +66,109 @@ def _to_float(value: Any, default: float = 0.0) -> float:
     try:
         return float(value) if value is not None else default
     except (TypeError, ValueError):
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                pass
         return default
+
+
+def _current_user_id() -> str:
+    """Id of the request-scoped current user, used to isolate session rows.
+
+    PocketBase is a single shared server queried by one process-wide
+    admin-authenticated client, so it has no filesystem-level isolation. Every
+    session row is therefore scoped by ``user_id`` (the SQLite backend isolates
+    via a per-user database file instead — see ``get_sqlite_session_store``).
+    This reads the same ``_current_user`` ContextVar that the SQLite path
+    service resolves against, so the two backends share one source of truth and
+    are equally reliable across HTTP, WebSocket, and turn-runtime threads. Falls
+    back to the local-admin id in single-user / no-auth mode.
+
+    The id is validated (it always matches ``_VALID_ID`` for real users — a
+    PocketBase record id, a ``u_<hex>`` id, or ``local-admin``) so it is safe to
+    interpolate into a PocketBase filter string.
+    """
+    from deeptutor.multi_user.context import get_current_user
+
+    return _validate_id(get_current_user().id, "user_id")
+
+
+def _find_session_record(pb: Any, session_id: str, user_id: str) -> Any | None:
+    """Return the ``sessions`` record for *session_id* owned by *user_id*.
+
+    Scoping every session lookup by ``user_id`` is the single point that keeps
+    one user from reading or mutating another's sessions on the shared
+    PocketBase backend. Returns ``None`` when no such row exists for this user.
+    """
+    records = pb.collection("sessions").get_full_list(
+        query_params={"filter": f'session_id="{session_id}" && user_id="{user_id}"'}
+    )
+    return records[0] if records else None
 
 
 class PocketBaseSessionStore:
     """PocketBase-backed implementation of SessionStoreProtocol."""
 
+    def __init__(self) -> None:
+        self._closed = False
+        self.store_scope: StoreScope | None = None
+
+    async def close(self) -> None:
+        """Prevent lifecycle owners from retaining an already-closed store."""
+        self._closed = True
+
     # ------------------------------------------------------------------
     # Sessions
     # ------------------------------------------------------------------
+
+    async def migrate_workspace_preferences(self) -> int:
+        """Persist canonical workspace metadata for the current PocketBase user.
+
+        The explicit logical timestamps keep this metadata-only migration from
+        changing conversation order even though PocketBase updates its own
+        system ``updated`` field whenever a record is written.
+        """
+
+        uid = _current_user_id()
+
+        def _migrate() -> int:
+            collection = _pb().collection("sessions")
+            records = collection.get_full_list(query_params={"filter": f'user_id="{uid}"'})
+            records.sort(
+                key=lambda record: (
+                    _to_float(getattr(record, "session_updated_at", None))
+                    or _to_float(getattr(record, "updated", None))
+                )
+            )
+            migrated = 0
+            for record in records:
+                current = _json_loads(getattr(record, "preferences_json", None), {})
+                upgraded = upgrade_workspace_preferences(current)
+                created_at = (
+                    _to_float(getattr(record, "session_created_at", None))
+                    or _to_float(getattr(record, "created", None))
+                    or time.time()
+                )
+                updated_at = (
+                    _to_float(getattr(record, "session_updated_at", None))
+                    or _to_float(getattr(record, "updated", None))
+                    or created_at
+                )
+                payload: dict[str, Any] = {}
+                if upgraded != current:
+                    payload["preferences_json"] = upgraded
+                    migrated += 1
+                if not _to_float(getattr(record, "session_created_at", None)):
+                    payload["session_created_at"] = created_at
+                if not _to_float(getattr(record, "session_updated_at", None)):
+                    payload["session_updated_at"] = updated_at
+                if payload:
+                    collection.update(record.id, payload)
+            return migrated
+
+        return await asyncio.to_thread(_migrate)
 
     async def create_session(
         self,
@@ -80,6 +178,7 @@ class PocketBaseSessionStore:
         now = time.time()
         resolved_id = session_id or f"unified_{int(now * 1000)}_{uuid.uuid4().hex[:8]}"
         resolved_title = (title or "New conversation").strip() or "New conversation"
+        owner_id = _current_user_id()
 
         def _create():
             return (
@@ -88,12 +187,15 @@ class PocketBaseSessionStore:
                 .create(
                     {
                         "session_id": resolved_id,
+                        "user_id": owner_id,
                         "title": resolved_title[:100],
                         "compressed_summary": "",
                         "summary_up_to_msg_id": 0,
                         "preferences_json": {},
                         "capability": "",
                         "status": "idle",
+                        "session_created_at": now,
+                        "session_updated_at": now,
                     }
                 )
             )
@@ -103,15 +205,11 @@ class PocketBaseSessionStore:
 
     async def get_session(self, session_id: str) -> dict[str, Any] | None:
         sid = _validate_id(session_id, "session_id")
+        uid = _current_user_id()
 
         def _get():
             try:
-                records = (
-                    _pb()
-                    .collection("sessions")
-                    .get_full_list(query_params={"filter": f'session_id="{sid}"'})
-                )
-                return records[0] if records else None
+                return _find_session_record(_pb(), sid, uid)
             except Exception:
                 return None
 
@@ -139,8 +237,18 @@ class PocketBaseSessionStore:
     ) -> dict[str, Any]:
         sid = session_id or getattr(record, "session_id", getattr(record, "id", ""))
         t = title or getattr(record, "title", "New conversation") or "New conversation"
-        created = _to_float(getattr(record, "created", None)) or now or time.time()
-        updated = _to_float(getattr(record, "updated", None)) or now or time.time()
+        created = (
+            _to_float(getattr(record, "session_created_at", None))
+            or _to_float(getattr(record, "created", None))
+            or now
+            or time.time()
+        )
+        updated = (
+            _to_float(getattr(record, "session_updated_at", None))
+            or _to_float(getattr(record, "updated", None))
+            or now
+            or time.time()
+        )
         preferences_raw = getattr(record, "preferences_json", None)
         return {
             "id": sid,
@@ -150,7 +258,10 @@ class PocketBaseSessionStore:
             "updated_at": updated,
             "compressed_summary": getattr(record, "compressed_summary", "") or "",
             "summary_up_to_msg_id": int(getattr(record, "summary_up_to_msg_id", 0) or 0),
-            "preferences": _json_loads(preferences_raw, {}),
+            # PocketBase has no local schema-upgrade hook. Normalize at the
+            # repository boundary so old remote rows immediately satisfy the
+            # same API contract; their next preference write persists it.
+            "preferences": upgrade_workspace_preferences(_json_loads(preferences_raw, {})),
             "capability": getattr(record, "capability", "") or "",
             "status": getattr(record, "status", "idle") or "idle",
             "active_turn_id": "",
@@ -158,17 +269,18 @@ class PocketBaseSessionStore:
 
     async def update_session_title(self, session_id: str, title: str) -> bool:
         sid = _validate_id(session_id, "session_id")
+        uid = _current_user_id()
 
         def _update():
-            records = (
-                _pb()
-                .collection("sessions")
-                .get_full_list(query_params={"filter": f'session_id="{sid}"'})
-            )
-            if not records:
+            record = _find_session_record(_pb(), sid, uid)
+            if record is None:
                 return False
             _pb().collection("sessions").update(
-                records[0].id, {"title": (title.strip() or "New conversation")[:100]}
+                record.id,
+                {
+                    "title": (title.strip() or "New conversation")[:100],
+                    "session_updated_at": time.time(),
+                },
             )
             return True
 
@@ -178,18 +290,92 @@ class PocketBaseSessionStore:
             logger.warning(f"update_session_title failed: {exc}")
             return False
 
+    async def import_legacy_session(
+        self,
+        session_id: str,
+        title: str,
+        created_at: float,
+        updated_at: float,
+        preferences: dict[str, Any],
+        messages: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Atomically-as-possible import one v1 chat into PocketBase.
+
+        PocketBase has no cross-collection transaction in the Python client,
+        so a failed import explicitly removes every row it created before the
+        error is re-raised. Existing sessions are never updated.
+        """
+
+        sid = _validate_id(session_id, "session_id")
+        owner_id = _current_user_id()
+
+        def _import() -> dict[str, Any]:
+            if _find_session_record(_pb(), sid, owner_id) is not None:
+                return {"session_id": sid, "imported": False, "message_count": 0}
+            session_record = None
+            created_message_ids: list[str] = []
+            try:
+                session_record = (
+                    _pb()
+                    .collection("sessions")
+                    .create(
+                        {
+                            "session_id": sid,
+                            "user_id": owner_id,
+                            "title": (title or "New conversation")[:100],
+                            "compressed_summary": "",
+                            "summary_up_to_msg_id": 0,
+                            "preferences_json": preferences or {},
+                            "capability": "chat",
+                            "status": "idle",
+                            "session_created_at": float(created_at),
+                            "session_updated_at": float(updated_at),
+                        }
+                    )
+                )
+                for message in messages:
+                    record = (
+                        _pb()
+                        .collection("messages")
+                        .create(
+                            {
+                                "session_id": sid,
+                                "role": str(message.get("role") or "user"),
+                                "content": str(message.get("content") or ""),
+                                "capability": "chat",
+                                "events_json": [],
+                                "attachments_json": [],
+                                "metadata_json": message.get("metadata") or {},
+                                "msg_created_at": float(message.get("created_at") or created_at),
+                            }
+                        )
+                    )
+                    created_message_ids.append(str(record.id))
+            except Exception:
+                for message_id in reversed(created_message_ids):
+                    with contextlib.suppress(Exception):
+                        _pb().collection("messages").delete(message_id)
+                if session_record is not None:
+                    with contextlib.suppress(Exception):
+                        _pb().collection("sessions").delete(str(session_record.id))
+                raise
+            return {
+                "session_id": sid,
+                "imported": True,
+                "message_count": len(created_message_ids),
+            }
+
+        return await asyncio.to_thread(_import)
+
     async def delete_session(self, session_id: str) -> bool:
         sid = _validate_id(session_id, "session_id")
+        uid = _current_user_id()
 
         def _delete():
-            records = (
-                _pb()
-                .collection("sessions")
-                .get_full_list(query_params={"filter": f'session_id="{sid}"'})
-            )
-            if not records:
+            record = _find_session_record(_pb(), sid, uid)
+            if record is None:
                 return False
-            _pb().collection("sessions").delete(records[0].id)
+            _pb().collection("sessions").delete(record.id)
             return True
 
         try:
@@ -204,31 +390,92 @@ class PocketBaseSessionStore:
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         page = (offset // limit) + 1
+        uid = _current_user_id()
 
         def _list():
-            query_params: dict[str, Any] = {"sort": "-updated"}
+            query_params: dict[str, Any] = {
+                "sort": "-session_updated_at",
+                "filter": f'user_id="{uid}"',
+            }
             return _pb().collection("sessions").get_list(page, limit, query_params=query_params)
 
         try:
             result = await asyncio.to_thread(_list)
+            # Reading conversations are listed like any other: the sidebar
+            # groups them under their collection and a click returns to the
+            # reader. See the note on ``_WHERE_NATIVE`` in the SQLite store.
             return [self._session_record_to_dict(r) for r in result.items]
         except Exception as exc:
             logger.warning(f"list_sessions failed: {exc}")
             return []
 
-    async def update_summary(self, session_id: str, summary: str, up_to_msg_id: int) -> bool:
+    async def get_session_summaries(
+        self,
+        session_ids: list[str],
+    ) -> list[dict[str, Any]]:
+        """Return bounded metadata without loading complete chat transcripts."""
+
+        async def summarize(session_id: str) -> dict[str, Any] | None:
+            session = await self.get_session(session_id)
+            if session is None:
+                return None
+            message_summary, active_turn = await asyncio.gather(
+                self._get_message_summary(session_id),
+                self.get_active_turn(session_id),
+            )
+            session.update(message_summary)
+            if active_turn is not None:
+                session["status"] = active_turn.get("status") or "running"
+                session["active_turn_id"] = active_turn.get("id") or ""
+            return session
+
+        summaries = await asyncio.gather(
+            *(summarize(session_id) for session_id in dict.fromkeys(session_ids))
+        )
+        return [summary for summary in summaries if summary is not None]
+
+    async def _get_message_summary(self, session_id: str) -> dict[str, Any]:
+        """Fetch one preview row plus PocketBase's aggregate count."""
+
         sid = _validate_id(session_id, "session_id")
 
-        def _update():
-            records = (
+        def _get() -> dict[str, Any]:
+            result = (
                 _pb()
-                .collection("sessions")
-                .get_full_list(query_params={"filter": f'session_id="{sid}"'})
+                .collection("messages")
+                .get_list(
+                    1,
+                    1,
+                    query_params={
+                        "filter": f'session_id="{sid}" && role!="system"',
+                        "sort": "-msg_created_at",
+                    },
+                )
             )
-            if not records:
+            total = getattr(result, "total_items", getattr(result, "totalItems", None))
+            items = list(getattr(result, "items", ()) or ())
+            preview = self._message_record_to_dict(items[0]) if items else None
+            return {
+                "message_count": max(0, int(total if total is not None else len(items))),
+                "last_message": str((preview or {}).get("content") or ""),
+            }
+
+        try:
+            return await asyncio.to_thread(_get)
+        except Exception as exc:
+            logger.warning(f"get message summary failed: {exc}")
+            return {"message_count": 0, "last_message": ""}
+
+    async def update_summary(self, session_id: str, summary: str, up_to_msg_id: int) -> bool:
+        sid = _validate_id(session_id, "session_id")
+        uid = _current_user_id()
+
+        def _update():
+            record = _find_session_record(_pb(), sid, uid)
+            if record is None:
                 return False
             _pb().collection("sessions").update(
-                records[0].id,
+                record.id,
                 {
                     "compressed_summary": summary,
                     "summary_up_to_msg_id": max(0, int(up_to_msg_id)),
@@ -251,17 +498,19 @@ class PocketBaseSessionStore:
             session = await self.get_session(sid)
             if session is None:
                 return False
-            merged = {**session.get("preferences", {}), **(preferences or {})}
+            merged = upgrade_workspace_preferences(
+                {**session.get("preferences", {}), **(preferences or {})}
+            )
+            uid = _current_user_id()
 
             def _update():
-                records = (
-                    _pb()
-                    .collection("sessions")
-                    .get_full_list(query_params={"filter": f'session_id="{sid}"'})
-                )
-                if not records:
+                record = _find_session_record(_pb(), sid, uid)
+                if record is None:
                     return False
-                _pb().collection("sessions").update(records[0].id, {"preferences_json": merged})
+                _pb().collection("sessions").update(
+                    record.id,
+                    {"preferences_json": merged, "session_updated_at": time.time()},
+                )
                 return True
 
             return await asyncio.to_thread(_update)
@@ -277,12 +526,20 @@ class PocketBaseSessionStore:
         if session is None:
             return None
         session["messages"] = await self.get_messages(session_id)
+        redact_private_message_metadata(session["messages"])
         session["active_turns"] = await self.list_active_turns(session_id)
         return session
 
     # ------------------------------------------------------------------
     # Messages
     # ------------------------------------------------------------------
+    # Messages/turns/turn_events are keyed by ``session_id`` and are reached
+    # from the API only through a session lookup that is already user-scoped
+    # (``get_session_with_messages`` returns ``None`` for another user's
+    # session before any message is fetched, and ``create_turn`` rejects a
+    # session the caller doesn't own). Internal callers always operate on the
+    # current user's own session, so these rows don't carry a separate
+    # ``user_id`` filter — the session boundary above is the access gate.
 
     async def add_message(
         self,
@@ -293,8 +550,8 @@ class PocketBaseSessionStore:
         events: list[dict[str, Any]] | None = None,
         attachments: list[dict[str, Any]] | None = None,
         metadata: dict[str, Any] | None = None,
-        parent_message_id: int | None = None,
-    ) -> int:
+        parent_message_id: int | str | None = None,
+    ) -> int | str:
         # ``parent_message_id`` is accepted to match the protocol shape but is
         # not yet wired through PocketBase storage — branching only works on
         # the SQLite backend today.
@@ -314,6 +571,10 @@ class PocketBaseSessionStore:
                 "msg_created_at": now,
             }
             record = _pb().collection("messages").create(payload)
+            uid = _current_user_id()
+            session_record = _find_session_record(_pb(), sid, uid)
+            if session_record is not None:
+                _pb().collection("sessions").update(session_record.id, {"session_updated_at": now})
             # Title generation is owned by the turn runtime (LLM-driven
             # after the first user+assistant pair). Until that runs the
             # session keeps the ``New conversation`` sentinel.
@@ -321,8 +582,11 @@ class PocketBaseSessionStore:
 
         try:
             record = await asyncio.to_thread(_add)
-            # Return a synthetic integer id using epoch ms
-            return int(now * 1000)
+            # Return the real PocketBase record id — the same id
+            # ``get_messages`` serves — so callers (e.g. the DONE-event
+            # reconcile metadata) hand the frontend ids that match what a
+            # later session fetch would return.
+            return str(getattr(record, "id", "") or "")
         except Exception as exc:
             logger.warning(f"add_message failed: {exc}")
             return 0
@@ -397,7 +661,13 @@ class PocketBaseSessionStore:
         _ = leaf_message_id
         messages = await self.get_messages(session_id)
         return [
-            {"id": m["id"], "role": m["role"], "content": m["content"] or ""}
+            {
+                "id": m["id"],
+                "role": m["role"],
+                "content": m["content"] or "",
+                "events": filter_ask_user_events(m.get("events")),
+                "metadata": m.get("metadata") or {},
+            }
             for m in messages
             if m["role"] in ("user", "assistant", "system")
         ]
@@ -419,26 +689,37 @@ class PocketBaseSessionStore:
     # Turns
     # ------------------------------------------------------------------
 
-    async def create_turn(self, session_id: str, capability: str = "") -> dict[str, Any]:
+    async def begin_turn(
+        self,
+        session_id: str,
+        capability: str = "",
+        *,
+        turn_id: str | None = None,
+        owner_id: str = "",
+        fencing_token: int = 0,
+    ) -> dict[str, Any]:
         sid = _validate_id(session_id, "session_id")
+        uid = _current_user_id()
         now = time.time()
-        turn_id = f"turn_{int(now * 1000)}_{uuid.uuid4().hex[:10]}"
+        resolved_turn_id = _validate_id(
+            turn_id or f"turn_{int(now * 1000)}_{uuid.uuid4().hex[:10]}", "turn_id"
+        )
 
         def _create():
-            # Guard: ensure session exists
-            sessions = (
-                _pb()
-                .collection("sessions")
-                .get_full_list(query_params={"filter": f'session_id="{sid}"'})
-            )
-            if not sessions:
+            # Guard: ensure the session exists AND belongs to the current user.
+            if _find_session_record(_pb(), sid, uid) is None:
                 raise ValueError(f"Session not found: {sid}")
             # Guard: no duplicate active turns
-            active = (
+            session_turns = (
                 _pb()
                 .collection("turns")
-                .get_full_list(query_params={"filter": f'session_id="{sid}" && status="running"'})
+                .get_full_list(query_params={"filter": f'session_id="{sid}"'})
             )
+            active = [
+                record
+                for record in session_turns
+                if getattr(record, "status", "") in _ACTIVE_TURN_STATUSES
+            ]
             if active:
                 raise RuntimeError(f"Session already has an active turn: {active[0].turn_id}")
             return (
@@ -446,7 +727,7 @@ class PocketBaseSessionStore:
                 .collection("turns")
                 .create(
                     {
-                        "turn_id": turn_id,
+                        "turn_id": resolved_turn_id,
                         "session_id": sid,
                         "capability": capability or "",
                         "status": "running",
@@ -454,14 +735,19 @@ class PocketBaseSessionStore:
                         "turn_created_at": now,
                         "turn_updated_at": now,
                         "finished_at": None,
+                        "owner_id": owner_id or "",
+                        "fencing_token": max(0, int(fencing_token)),
+                        "state_version": 1,
+                        "failure_code": "",
+                        "retryable": False,
                     }
                 )
             )
 
         await asyncio.to_thread(_create)
         return {
-            "id": turn_id,
-            "turn_id": turn_id,
+            "id": resolved_turn_id,
+            "turn_id": resolved_turn_id,
             "session_id": sid,
             "capability": capability or "",
             "status": "running",
@@ -470,7 +756,15 @@ class PocketBaseSessionStore:
             "updated_at": now,
             "finished_at": None,
             "last_seq": 0,
+            "owner_id": owner_id or "",
+            "fencing_token": max(0, int(fencing_token)),
+            "state_version": 1,
+            "failure_code": "",
+            "retryable": False,
         }
+
+    async def create_turn(self, session_id: str, capability: str = "") -> dict[str, Any]:
+        return await self.begin_turn(session_id, capability)
 
     async def get_turn(self, turn_id: str) -> dict[str, Any] | None:
         tid = _validate_id(turn_id, "turn_id")
@@ -492,13 +786,16 @@ class PocketBaseSessionStore:
                 _pb()
                 .collection("turns")
                 .get_full_list(
-                    query_params={
-                        "filter": f'session_id="{sid}" && status="running"',
-                        "sort": "-turn_updated_at",
-                    }
+                    query_params={"filter": f'session_id="{sid}"', "sort": "-turn_updated_at"}
                 )
             )
-            return records[0] if records else None
+            active = [
+                record
+                for record in records
+                if getattr(record, "status", "") in _ACTIVE_TURN_STATUSES
+            ]
+            active.sort(key=lambda record: getattr(record, "turn_updated_at", 0), reverse=True)
+            return active[0] if active else None
 
         record = await asyncio.to_thread(_get)
         return self._turn_record_to_dict(record) if record else None
@@ -507,16 +804,20 @@ class PocketBaseSessionStore:
         sid = _validate_id(session_id, "session_id")
 
         def _list():
-            return (
+            records = (
                 _pb()
                 .collection("turns")
                 .get_full_list(
-                    query_params={
-                        "filter": f'session_id="{sid}" && status="running"',
-                        "sort": "-turn_updated_at",
-                    }
+                    query_params={"filter": f'session_id="{sid}"', "sort": "-turn_updated_at"}
                 )
             )
+            active = [
+                record
+                for record in records
+                if getattr(record, "status", "") in _ACTIVE_TURN_STATUSES
+            ]
+            active.sort(key=lambda record: getattr(record, "turn_updated_at", 0), reverse=True)
+            return active
 
         try:
             records = await asyncio.to_thread(_list)
@@ -524,10 +825,36 @@ class PocketBaseSessionStore:
         except Exception:
             return []
 
-    async def update_turn_status(self, turn_id: str, status: str, error: str = "") -> bool:
+    async def list_nonterminal_turns(self) -> list[dict[str, Any]]:
+        def _list():
+            records = (
+                _pb().collection("turns").get_full_list(query_params={"sort": "turn_updated_at"})
+            )
+            return [
+                record
+                for record in records
+                if getattr(record, "status", "") in _ACTIVE_TURN_STATUSES
+            ]
+
+        records = await asyncio.to_thread(_list)
+        return [self._turn_record_to_dict(record) for record in records]
+
+    async def transition_turn(
+        self,
+        turn_id: str,
+        status: str,
+        *,
+        expected_status: str | None = None,
+        fencing_token: int | None = None,
+        error: str = "",
+        failure_code: str = "",
+        retryable: bool = False,
+    ) -> bool:
+        if status not in _ALL_TURN_STATUSES:
+            raise ValueError(f"Unsupported turn status: {status}")
         tid = _validate_id(turn_id, "turn_id")
         now = time.time()
-        finished_at = now if status in {"completed", "failed", "cancelled"} else None
+        finished_at = now if status in _TERMINAL_TURN_STATUSES else None
 
         def _update():
             records = (
@@ -535,13 +862,25 @@ class PocketBaseSessionStore:
             )
             if not records:
                 return False
+            record = records[0]
+            current_status = getattr(record, "status", "running")
+            current_token = int(getattr(record, "fencing_token", 0) or 0)
+            if expected_status is not None and current_status != expected_status:
+                return False
+            if fencing_token is not None and current_token != int(fencing_token):
+                return False
+            if current_status in _TERMINAL_TURN_STATUSES and current_status != status:
+                return False
             _pb().collection("turns").update(
-                records[0].id,
+                record.id,
                 {
                     "status": status,
                     "error": error or "",
+                    "failure_code": failure_code or "",
                     "turn_updated_at": now,
                     "finished_at": finished_at,
+                    "state_version": int(getattr(record, "state_version", 1) or 1) + 1,
+                    "retryable": bool(retryable),
                 },
             )
             return True
@@ -552,66 +891,10 @@ class PocketBaseSessionStore:
             logger.warning(f"update_turn_status failed: {exc}")
             return False
 
-        # Batch-flush turn events from local JSONL buffer to PocketBase on finalisation
-        if updated and finished_at is not None:
-            await self._flush_turn_events(tid)
-
         return updated
 
-    async def _flush_turn_events(self, turn_id: str) -> None:
-        """
-        Read the local events.jsonl write-ahead buffer and batch-POST all
-        events to PocketBase turn_events collection in a single background call.
-        """
-        tid = _validate_id(turn_id, "turn_id")
-        try:
-            path_service = get_path_service()
-            # The JSONL file is written by _mirror_event_to_workspace; we look
-            # across all capability workspaces since we only have the turn_id.
-            workspace_root = path_service.get_user_root()
-            jsonl_files: list[Path] = list(workspace_root.rglob(f"{tid}/events.jsonl"))
-
-            if not jsonl_files:
-                return
-
-            events: list[dict[str, Any]] = []
-            for jsonl_path in jsonl_files:
-                try:
-                    for line in jsonl_path.read_text(encoding="utf-8").splitlines():
-                        line = line.strip()
-                        if line:
-                            events.append(json.loads(line))
-                except Exception as exc:
-                    logger.debug(f"Could not read events.jsonl at {jsonl_path}: {exc}")
-
-            if not events:
-                return
-
-            def _batch_create():
-                pb = _pb()
-                for event in events:
-                    try:
-                        pb.collection("turn_events").create(
-                            {
-                                "turn_id": tid,
-                                "session_id": event.get("session_id", ""),
-                                "seq": int(event.get("seq", 0)),
-                                "type": event.get("type", ""),
-                                "source": event.get("source", ""),
-                                "stage": event.get("stage", ""),
-                                "content": str(event.get("content", ""))[:10000],
-                                "metadata_json": event.get("metadata", {}),
-                                "event_timestamp": float(event.get("timestamp", 0)),
-                            }
-                        )
-                    except Exception as exc:
-                        logger.debug(f"turn_events batch item failed: {exc}")
-
-            await asyncio.to_thread(_batch_create)
-            logger.debug(f"Flushed {len(events)} turn events for {tid} to PocketBase")
-
-        except Exception as exc:
-            logger.warning(f"_flush_turn_events failed for {turn_id}: {exc}")
+    async def update_turn_status(self, turn_id: str, status: str, error: str = "") -> bool:
+        return await self.transition_turn(turn_id, status, error=error)
 
     def _turn_record_to_dict(self, record: Any) -> dict[str, Any]:
         turn_id = getattr(record, "turn_id", getattr(record, "id", ""))
@@ -626,26 +909,107 @@ class PocketBaseSessionStore:
             "updated_at": _to_float(getattr(record, "turn_updated_at", None)),
             "finished_at": _to_float(getattr(record, "finished_at", None)) or None,
             "last_seq": 0,
+            "owner_id": getattr(record, "owner_id", "") or "",
+            "fencing_token": int(getattr(record, "fencing_token", 0) or 0),
+            "state_version": int(getattr(record, "state_version", 1) or 1),
+            "failure_code": getattr(record, "failure_code", "") or "",
+            "retryable": bool(getattr(record, "retryable", False)),
         }
 
     # ------------------------------------------------------------------
-    # Turn events — write-ahead only; batch flush handled in update_turn_status
+    # Turn events — synchronously durable before terminal transition
     # ------------------------------------------------------------------
 
     async def append_turn_event(self, turn_id: str, event: dict[str, Any]) -> dict[str, Any]:
-        """
-        Assign a monotonic seq number and return the annotated payload.
+        """Single-event convenience wrapper over ``append_turn_events``."""
+        persisted = await self.append_turn_events(turn_id, [event])
+        return persisted[0]
 
-        Does NOT write to PocketBase immediately — the caller's
-        _mirror_event_to_workspace already appends to events.jsonl, which
-        is flushed to PocketBase in bulk when the turn is finalised.
-        """
-        payload = dict(event)
-        payload.setdefault("turn_id", turn_id)
-        # Assign seq if not provided; use timestamp-based counter as fallback.
-        if not payload.get("seq"):
-            payload["seq"] = int(time.time() * 1000) % 1_000_000
-        return payload
+    async def append_turn_events(
+        self, turn_id: str, events: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        return await self.append_events(turn_id, events)
+
+    async def append_events(
+        self,
+        turn_id: str,
+        events: list[dict[str, Any]],
+        *,
+        fencing_token: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Idempotently persist a batch before the caller can publish DONE."""
+        tid = _validate_id(turn_id, "turn_id")
+
+        def _persist() -> list[dict[str, Any]]:
+            pb = _pb()
+            if fencing_token is not None:
+                turns = pb.collection("turns").get_full_list(
+                    query_params={"filter": f'turn_id="{tid}"'}
+                )
+                if not turns or int(getattr(turns[0], "fencing_token", 0) or 0) != int(
+                    fencing_token
+                ):
+                    raise RuntimeError(f"Turn lease lost: {tid}")
+
+            existing_rows = pb.collection("turn_events").get_full_list(
+                query_params={"filter": f'turn_id="{tid}"', "sort": "seq"}
+            )
+            existing_by_seq = {
+                int(getattr(record, "seq", 0) or 0): record for record in existing_rows
+            }
+            next_seq = max(existing_by_seq, default=0) + 1
+            payloads: list[dict[str, Any]] = []
+            now = time.time()
+            for event in events:
+                payload = dict(event)
+                seq = int(payload.get("seq") or 0)
+                if seq <= 0:
+                    seq = next_seq
+                    next_seq += 1
+                else:
+                    next_seq = max(next_seq, seq + 1)
+                payload["turn_id"] = payload.get("turn_id") or tid
+                payload["seq"] = seq
+                payload["timestamp"] = float(payload.get("timestamp") or now)
+
+                existing = existing_by_seq.get(seq)
+                if existing is not None:
+                    same = (
+                        (getattr(existing, "type", "") or "") == str(payload.get("type", ""))
+                        and (getattr(existing, "source", "") or "")
+                        == str(payload.get("source", ""))
+                        and (getattr(existing, "stage", "") or "") == str(payload.get("stage", ""))
+                        and (getattr(existing, "content", "") or "")
+                        == str(payload.get("content", "") or "")[:10000]
+                        and _json_loads(getattr(existing, "metadata_json", None), {})
+                        == (payload.get("metadata") or {})
+                    )
+                    if not same:
+                        raise ValueError(f"Turn event conflict: {tid} seq={seq}")
+                    payload["timestamp"] = _to_float(
+                        getattr(existing, "event_timestamp", None), payload["timestamp"]
+                    )
+                    payloads.append(payload)
+                    continue
+
+                record = pb.collection("turn_events").create(
+                    {
+                        "turn_id": tid,
+                        "session_id": payload.get("session_id", ""),
+                        "seq": seq,
+                        "type": payload.get("type", ""),
+                        "source": payload.get("source", ""),
+                        "stage": payload.get("stage", ""),
+                        "content": str(payload.get("content", ""))[:10000],
+                        "metadata_json": payload.get("metadata", {}),
+                        "event_timestamp": payload["timestamp"],
+                    }
+                )
+                existing_by_seq[seq] = record
+                payloads.append(payload)
+            return payloads
+
+        return await asyncio.to_thread(_persist)
 
     async def get_turn_events(self, turn_id: str, after_seq: int = 0) -> list[dict[str, Any]]:
         """Retrieve persisted turn events from PocketBase (post-turn replay)."""
@@ -680,3 +1044,6 @@ class PocketBaseSessionStore:
         except Exception as exc:
             logger.warning(f"get_turn_events failed: {exc}")
             return []
+
+    async def get_events(self, turn_id: str, after_seq: int = 0) -> list[dict[str, Any]]:
+        return await self.get_turn_events(turn_id, after_seq)

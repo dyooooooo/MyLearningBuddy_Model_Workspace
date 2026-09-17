@@ -10,7 +10,7 @@ Order matters — it controls match priority and fallback. Gateways first.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from pydantic.alias_generators import to_snake
 
@@ -30,7 +30,7 @@ class ProviderSpec:
     display_name: str = ""
 
     # Which provider implementation to use:
-    # "openai_compat" | "anthropic" | "azure_openai" | "openai_codex" | "github_copilot"
+    # "openai_compat" | "anthropic" | "azure_openai" | "openai_codex" | "github_copilot" | "codebuddy"
     backend: str = "openai_compat"
 
     env_extras: tuple[tuple[str, str], ...] = ()
@@ -44,6 +44,8 @@ class ProviderSpec:
     supports_prompt_caching: bool = False
     supports_stream_options: bool = True
     model_overrides: tuple[tuple[str, dict[str, Any]], ...] = ()
+    # Bare model ids too short or generic for substring-based vendor detection.
+    exact_model_ids: tuple[str, ...] = ()
     is_oauth: bool = False
     is_direct: bool = False
     thinking_style: str = ""
@@ -52,6 +54,18 @@ class ProviderSpec:
     # explicit reasoning_effort, the provider auto-injects "high" so the
     # thinking_style flag (e.g. extra_body.thinking.type=enabled) is sent.
     reasoning_model_patterns: tuple[str, ...] = ()
+    # Exact model ids whose Responses API executes `web_search` server-side.
+    # Exact matching is intentional: providers often expose Responses only on
+    # one model even when sibling models share the same family prefix.
+    native_web_search_models: tuple[str, ...] = ()
+    # Endpoints a vendor exposes for a *non-default* API format, e.g. MiniMax
+    # serving Anthropic Messages at ``/anthropic`` next to its OpenAI-style
+    # ``/v1``. ``default_api_base`` stays the default format's endpoint.
+    api_base_by_format: tuple[tuple[str, str], ...] = ()
+    # Set on entries kept only so stored catalogs keep resolving: the pair is
+    # the (provider, api_format) that expresses the same thing today. Pickers
+    # hide these; ``binding`` values in existing files are never rewritten.
+    legacy_of: tuple[str, ...] = ()
 
     @property
     def mode(self) -> str:
@@ -64,6 +78,48 @@ class ProviderSpec:
         if self.is_local:
             return "local"
         return "standard"
+
+    @property
+    def auth_mode(self) -> str:
+        return "oauth" if self.is_oauth else "api_key"
+
+    @property
+    def supports_wire_api_selection(self) -> bool:
+        """Whether profiles may select an OpenAI wire protocol explicitly."""
+        return self.backend == "openai_compat" and not self.is_oauth
+
+    @property
+    def is_legacy(self) -> bool:
+        return bool(self.legacy_of)
+
+    @property
+    def api_formats(self) -> tuple[str, ...]:
+        """API formats a profile on this provider may choose between.
+
+        Empty means the format is fixed by the backend (OAuth vendors, Azure)
+        and the UI has nothing to offer. Anthropic-backed vendors speak only
+        Anthropic Messages. OpenAI-compatible vendors get the OpenAI pair, plus
+        Anthropic Messages when the vendor is known to serve it too or when
+        the endpoint is user-supplied and could be anything.
+        """
+        if self.is_oauth or self.backend in {"azure_openai", "openai_codex", "github_copilot"}:
+            return ()
+        if self.backend == "anthropic":
+            return ("anthropic",)
+        if self.backend != "openai_compat":
+            return ()
+        formats: tuple[str, ...] = OPENAI_API_FORMATS
+        if self.name == "custom" or "anthropic" in dict(self.api_base_by_format):
+            formats = (*formats, "anthropic")
+        return formats
+
+    @property
+    def default_api_format(self) -> str:
+        return "anthropic" if self.backend == "anthropic" else "auto"
+
+    def default_api_base_for(self, api_format: str | None) -> str:
+        """The vendor endpoint for *api_format*, falling back to the default one."""
+        return dict(self.api_base_by_format).get(api_format or "", self.default_api_base)
 
     @property
     def label(self) -> str:
@@ -87,7 +143,17 @@ PROVIDER_ALIASES = {
     "byteplusCodingPlan": "byteplus_coding_plan",
     "github-copilot": "github_copilot",
     "openai-codex": "openai_codex",
+    "codebuddy-code": "codebuddy",
+    "codebuddy_code": "codebuddy",
+    "workbuddy": "codebuddy",
     "lm-studio": "lm_studio",
+    "atlas": "atlascloud",
+    "atlas_cloud": "atlascloud",
+    "atlas-cloud": "atlascloud",
+    "eden_ai": "edenai",
+    "novita_ai": "novita",
+    "orca_router": "orcarouter",
+    "orca-router": "orcarouter",
 }
 
 
@@ -123,6 +189,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         display_name="Custom (Anthropic API)",
         backend="anthropic",
         is_direct=True,
+        legacy_of=("custom", "anthropic"),
     ),
     ProviderSpec(
         name="azure_openai",
@@ -146,6 +213,27 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         supports_prompt_caching=True,
     ),
     ProviderSpec(
+        name="orcarouter",
+        keywords=("orcarouter", "orca_router", "orca router"),
+        env_key="ORCAROUTER_API_KEY",
+        display_name="OrcaRouter",
+        backend="openai_compat",
+        is_gateway=True,
+        detect_by_key_prefix="sk-orca-",
+        detect_by_base_keyword="orcarouter",
+        default_api_base="https://api.orcarouter.ai/v1",
+    ),
+    ProviderSpec(
+        name="edenai",
+        keywords=("edenai",),
+        env_key="EDENAI_API_KEY",
+        display_name="Eden AI",
+        backend="openai_compat",
+        is_gateway=True,
+        detect_by_base_keyword="edenai",
+        default_api_base="https://api.edenai.run/v3",
+    ),
+    ProviderSpec(
         name="aihubmix",
         keywords=("aihubmix",),
         env_key="OPENAI_API_KEY",
@@ -165,6 +253,26 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         is_gateway=True,
         detect_by_base_keyword="siliconflow",
         default_api_base="https://api.siliconflow.cn/v1",
+    ),
+    ProviderSpec(
+        name="novita",
+        keywords=("novita", "novita-ai", "novita ai"),
+        env_key="NOVITA_API_KEY",
+        display_name="Novita AI",
+        backend="openai_compat",
+        is_gateway=True,
+        detect_by_base_keyword="novita",
+        default_api_base="https://api.novita.ai/openai",
+    ),
+    ProviderSpec(
+        name="atlascloud",
+        keywords=("atlascloud", "atlas-cloud", "atlas cloud"),
+        env_key="ATLASCLOUD_API_KEY",
+        display_name="Atlas Cloud",
+        backend="openai_compat",
+        is_gateway=True,
+        detect_by_base_keyword="atlascloud",
+        default_api_base="https://api.atlascloud.ai/v1",
     ),
     ProviderSpec(
         name="volcengine",
@@ -236,7 +344,6 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         env_key="",
         display_name="OpenAI Codex",
         backend="openai_codex",
-        detect_by_base_keyword="codex",
         is_oauth=True,
         default_api_base="https://chatgpt.com/backend-api",
     ),
@@ -252,6 +359,16 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         supports_max_completion_tokens=True,
     ),
     ProviderSpec(
+        name="codebuddy",
+        keywords=("codebuddy", "workbuddy"),
+        env_key="CODEBUDDY_API_KEY",
+        display_name="CodeBuddy/WorkBuddy",
+        backend="codebuddy",
+        is_oauth=True,
+        strip_model_prefix=True,
+        supports_stream_options=False,
+    ),
+    ProviderSpec(
         name="deepseek",
         keywords=("deepseek",),
         env_key="DEEPSEEK_API_KEY",
@@ -260,6 +377,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_api_base="https://api.deepseek.com",
         thinking_style="thinking_type",
         reasoning_model_patterns=("deepseek-v4-pro", "deepseek-reasoner"),
+        native_web_search_models=("deepseek-v4-flash", "deepseek-v4-pro"),
     ),
     ProviderSpec(
         name="gemini",
@@ -294,18 +412,35 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         display_name="Moonshot",
         backend="openai_compat",
         default_api_base="https://api.moonshot.cn/v1",
+        # Kimi-branded models (k2.5, k2.6, k2.7-code, k3, …) lock temperature
+        # server-side: any value other than the model's fixed default is
+        # rejected with HTTP 400 ("invalid temperature: only 1 is allowed for
+        # this model"). Dropping the parameter (value None) lets the API apply
+        # the correct fixed value per model and per thinking/non-thinking mode —
+        # Moonshot's own recommendation. The tunable moonshot-v1-* series does
+        # not contain "kimi" and keeps the caller's temperature. The Kimi
+        # coding endpoint (api.kimi.com/coding/v1) addresses these models by
+        # bare ids ("k3", ...) without the "kimi-" prefix, so match those too.
         model_overrides=(
-            ("kimi-k2.5", {"temperature": 1.0}),
-            ("kimi-k2.6", {"temperature": 1.0}),
+            ("kimi", {"temperature": None}),
+            ("=k3", {"temperature": None}),
         ),
+        exact_model_ids=("k3",),
     ),
+    # MiniMax runs two separate platforms: global (platform.minimax.io /
+    # api.minimax.io) and mainland China (platform.minimaxi.com /
+    # api.minimaxi.com). Keys are issued per platform and are NOT
+    # interchangeable. The global endpoint is the default here; China-platform
+    # users must override base_url to https://api.minimaxi.com/v1 (or
+    # https://api.minimaxi.com/anthropic) *and* use a China-platform key.
     ProviderSpec(
         name="minimax",
         keywords=("minimax",),
         env_key="MINIMAX_API_KEY",
         display_name="MiniMax",
         backend="openai_compat",
-        default_api_base="https://api.minimaxi.com/v1",
+        default_api_base="https://api.minimax.io/v1",
+        api_base_by_format=(("anthropic", "https://api.minimax.io/anthropic"),),
         thinking_style="reasoning_split",
     ),
     ProviderSpec(
@@ -314,7 +449,8 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         env_key="MINIMAX_API_KEY",
         display_name="MiniMax (Anthropic)",
         backend="anthropic",
-        default_api_base="https://api.minimaxi.com/anthropic",
+        default_api_base="https://api.minimax.io/anthropic",
+        legacy_of=("minimax", "anthropic"),
     ),
     ProviderSpec(
         name="mistral",
@@ -433,6 +569,27 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
 
 NANOBOT_LLM_PROVIDERS: tuple[str, ...] = tuple(spec.name for spec in PROVIDERS)
 
+WireAPI = Literal["auto", "responses", "chat_completions"]
+WIRE_API_VALUES: frozenset[str] = frozenset({"auto", "responses", "chat_completions"})
+
+# The protocol a profile's endpoint speaks. This is the user-facing concept;
+# ``backend`` (which SDK class talks) and ``wire_api`` (which OpenAI endpoint)
+# are derived from it. ``auto`` keeps the historical heuristics: Chat
+# Completions everywhere except reasoning models on api.openai.com.
+ApiFormat = Literal["auto", "openai_chat", "openai_responses", "anthropic"]
+API_FORMAT_VALUES: frozenset[str] = frozenset(
+    {"auto", "openai_chat", "openai_responses", "anthropic"}
+)
+OPENAI_API_FORMATS: tuple[str, ...] = ("auto", "openai_chat", "openai_responses")
+_WIRE_API_BY_FORMAT: dict[str, WireAPI] = {
+    "openai_responses": "responses",
+    "openai_chat": "chat_completions",
+}
+_FORMAT_BY_WIRE_API: dict[str, ApiFormat] = {
+    "responses": "openai_responses",
+    "chat_completions": "openai_chat",
+}
+
 
 def find_by_name(name: str | None) -> ProviderSpec | None:
     canonical = canonical_provider_name(name)
@@ -442,6 +599,84 @@ def find_by_name(name: str | None) -> ProviderSpec | None:
         if spec.name == canonical:
             return spec
     return None
+
+
+def normalize_wire_api(value: Any) -> WireAPI:
+    """Normalize untrusted catalog values to a supported wire protocol."""
+    normalized = str(value or "auto").strip().lower()
+    return normalized if normalized in WIRE_API_VALUES else "auto"  # type: ignore[return-value]
+
+
+def wire_api_for_provider(
+    value: Any,
+    provider: ProviderSpec | str | None,
+) -> WireAPI:
+    """Return a protocol override only for OpenAI-compatible backends."""
+    spec = find_by_name(provider) if isinstance(provider, str) else provider
+    if spec is None or not spec.supports_wire_api_selection:
+        return "auto"
+    return normalize_wire_api(value)
+
+
+def normalize_api_format(value: Any) -> ApiFormat:
+    """Normalize untrusted catalog values to a known API format."""
+    normalized = str(value or "auto").strip().lower()
+    return normalized if normalized in API_FORMAT_VALUES else "auto"  # type: ignore[return-value]
+
+
+def api_format_for_provider(
+    value: Any,
+    provider: ProviderSpec | str | None,
+) -> ApiFormat:
+    """Clamp a requested format to what *provider* can actually speak.
+
+    A vendor with no choice (OAuth, Azure, Anthropic-only) always resolves to
+    its own default, so a stray value in a hand-edited file cannot route an
+    Anthropic key at an OpenAI SDK.
+    """
+    spec = find_by_name(provider) if isinstance(provider, str) else provider
+    requested = normalize_api_format(value)
+    if spec is None:
+        return requested
+    choices = spec.api_formats
+    if not choices:
+        return spec.default_api_format  # type: ignore[return-value]
+    return requested if requested in choices else spec.default_api_format  # type: ignore[return-value]
+
+
+def api_format_from_legacy(
+    provider: ProviderSpec | str | None,
+    wire_api: Any,
+) -> ApiFormat:
+    """Derive the format a pre-``api_format`` profile has been running with.
+
+    Anthropic-backed bindings (including the legacy ``custom_anthropic`` /
+    ``minimax_anthropic`` entries) were always Anthropic Messages; everything
+    else expressed its protocol choice through ``wire_api``.
+    """
+    spec = find_by_name(provider) if isinstance(provider, str) else provider
+    if spec is not None and spec.backend == "anthropic":
+        return "anthropic"
+    return _FORMAT_BY_WIRE_API.get(normalize_wire_api(wire_api), "auto")
+
+
+def wire_api_from_api_format(api_format: Any) -> WireAPI:
+    """The OpenAI endpoint choice an explicit format implies (``auto`` otherwise)."""
+    return _WIRE_API_BY_FORMAT.get(normalize_api_format(api_format), "auto")
+
+
+def effective_backend(spec: ProviderSpec | None, api_format: Any = "auto") -> str:
+    """Which provider implementation serves *spec* under *api_format*.
+
+    The only format that changes the backend is Anthropic Messages on an
+    OpenAI-compatible vendor; the OpenAI formats differ in ``wire_api``, not
+    in backend.
+    """
+    if spec is None:
+        return "openai_compat"
+    if api_format_for_provider(api_format, spec) == "anthropic" and spec.backend == "openai_compat":
+        return "anthropic"
+    return spec.backend
 
 
 def find_by_model(model: str | None) -> ProviderSpec | None:
@@ -457,11 +692,61 @@ def find_by_model(model: str | None) -> ProviderSpec | None:
         if model_prefix and normalized_prefix == spec.name:
             return spec
     for spec in standard_specs:
+        if model_lower in spec.exact_model_ids:
+            return spec
+    for spec in standard_specs:
         if any(
             kw in model_lower or kw.replace("-", "_") in model_normalized for kw in spec.keywords
         ):
             return spec
     return None
+
+
+def _matching_overrides(spec: ProviderSpec, model_lower: str) -> dict[str, Any]:
+    for pattern, overrides in spec.model_overrides:
+        # ``=name`` is an exact bare model id. Most historical patterns are
+        # vendor-family substrings, but a short id such as ``k3`` must not also
+        # match unrelated ids like ``sk3`` or ``k30``.
+        if (pattern.startswith("=") and model_lower == pattern[1:]) or (
+            not pattern.startswith("=") and pattern in model_lower
+        ):
+            return dict(overrides)
+    return {}
+
+
+def model_overrides_for(model: str | None, spec: ProviderSpec | None) -> dict[str, Any]:
+    """Request-parameter overrides *model* needs, whatever route serves it.
+
+    ``model_overrides`` are intrinsic to the model rather than to the route: a
+    Kimi model rejects an explicit ``temperature`` whether the caller reached
+    it through the ``moonshot`` binding, through an OpenAI-compatible router,
+    or through a gateway. Resolving them from the configured binding alone
+    loses them for everyone who picked a generic binding — which is the common
+    case — so #938 still got HTTP 400 ``invalid temperature: only 1 is allowed
+    for this model`` from ``kimi-k3`` under ``binding="openai"``, two months
+    after the override itself landed.
+
+    The configured spec is consulted first so an explicit binding always wins.
+    When it says nothing about this model, the model's own vendor spec does;
+    ``find_by_model`` skips gateway and local entries, so that lookup lands on
+    the vendor whose API is the thing actually enforcing the limit.
+
+    A value of ``None`` means "send this parameter as absent" — see the
+    ``moonshot`` spec for why that differs from sending a fixed value.
+    """
+    model_lower = (model or "").strip().lower()
+    if not model_lower:
+        return {}
+
+    if spec is not None:
+        configured = _matching_overrides(spec, model_lower)
+        if configured:
+            return configured
+
+    vendor = find_by_model(model_lower)
+    if vendor is None or vendor is spec:
+        return {}
+    return _matching_overrides(vendor, model_lower)
 
 
 def find_gateway(
@@ -491,13 +776,25 @@ def strip_provider_prefix(model: str, spec: ProviderSpec | None) -> str:
 
 
 __all__ = [
+    "API_FORMAT_VALUES",
+    "ApiFormat",
+    "OPENAI_API_FORMATS",
     "ProviderSpec",
     "PROVIDERS",
     "NANOBOT_LLM_PROVIDERS",
     "PROVIDER_ALIASES",
+    "WIRE_API_VALUES",
+    "WireAPI",
+    "api_format_for_provider",
+    "api_format_from_legacy",
     "canonical_provider_name",
+    "effective_backend",
     "find_by_name",
     "find_by_model",
     "find_gateway",
+    "normalize_api_format",
+    "normalize_wire_api",
     "strip_provider_prefix",
+    "wire_api_for_provider",
+    "wire_api_from_api_format",
 ]

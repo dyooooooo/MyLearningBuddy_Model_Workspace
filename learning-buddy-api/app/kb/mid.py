@@ -253,11 +253,13 @@ def centered_texts_from_blocks(blocks: list[dict[str, Any]]) -> list[str]:
 
 
 def write_mid(book_id: str, page_no: int, tagged: str) -> Path:
+    from app.kb.workspace_source import sanitize_mid
     from app.kb.workspace_store import mid_path
 
+    tagged = sanitize_mid(tagged or "")
     path = mid_path(book_id, page_no)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(tagged or "", encoding="utf-8")
+    path.write_text(tagged, encoding="utf-8")
     return path
 
 

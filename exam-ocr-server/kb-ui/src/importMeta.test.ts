@@ -71,4 +71,6 @@ test("renderIdentifyMessage embeds MinerU preview and forbids open_pdf_page", ()
   assert.match(out, /propose_import_meta/);
   assert.match(out, /不要再 open_pdf_page/);
   assert.match(out, /第1册/);
+  assert.match(out, /入队全书识别/);
+  assert.doesNotMatch(out, /用户点「开始识别」/);
 });

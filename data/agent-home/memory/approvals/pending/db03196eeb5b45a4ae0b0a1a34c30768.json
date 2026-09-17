@@ -1,0 +1,14 @@
+{
+  "req_id": "db03196eeb5b45a4ae0b0a1a34c30768",
+  "status": "pending",
+  "path": "surfaces/page-body/lib/fences.mjs",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "837e0d05-0e23-4169-b27e-49e9f19abf30",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T03:19:57.648643+00:00",
+  "situation": "化学栏目现在只有栏名后点线和框底 kb-dash，读页上两道线中间仍是正文白底，看不出这是一块专属栏。想一想原书是上线加底线的横框，需要把栏名到虚线收成一组才能画底色和上下边。",
+  "why": "官方 Markdown 不能画底色。围栏解析器不能套娃，所以不能在 mid 里再包一层。读页把 kb-section-icon 到 kb-dash 收成一个盒子，才能给栏框铺底、给想一想画上下两条线，也不把手写 class 写进书页。",
+  "changes": "paint 之后把连续的栏目图标、栏内文字和 kb-dash 收进 kb-chem-mod。栏名含想一想时再加 kb-chem-mod--think。不改围栏名字，金样只多一层包装 div。",
+  "impact": "化学栏目两道虚线之间会有浅底；想一想上下各一条线。语文学习提示若也是图标加 kb-dash 会一起进盒。不改 pages 和 mid 的字。"
+}

@@ -1,0 +1,17 @@
+{
+  "req_id": "76274dacedea4531a525e0292fbdf71e",
+  "status": "granted",
+  "path": "tools/tag_chemistry.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "c60efaa8-a123-4a03-a087-9e14ab00ea7c",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T04:52:25.651466+00:00",
+  "situation": "化学教材里实验探究、学习指南原书和学习聚焦一样是带栏标的虚线框。本册中间文件已按这套收过：栏条小图标和栏名收成 kb-section-icon，框底 kb-dash。还要把同一套写进 tag_chemistry。",
+  "why": "用户要求这两栏和学习聚焦同一套，并写进现有 tag_chemistry，不要另起工具。以后导入化学教材会自动收栏标和底线，不必再手改一书。",
+  "changes": "新增 apply_guide_experiment：把实验探究、学习指南旁边的栏条小图和栏名收成 kb-section-icon，栏内正文后插 kb-dash。实验探究收到「问题」为止，学习指南把练习巩固、例题导引留在虚线内。已收好的不重复。栏目说明页和链接学科不改。经 apply_chemistry_shapes 接入。不把 width 写进书页。",
+  "impact": "以后导入的化学教材会自动把实验探究和学习指南收成和学习聚焦一样的栏框。本册中间文件和读页对齐已改过。不动解析器。",
+  "granted_at": "2026-09-04T07:05:50.552454+00:00",
+  "expires_at": "2026-09-04T07:20:50.552454+00:00",
+  "one_shot": true
+}

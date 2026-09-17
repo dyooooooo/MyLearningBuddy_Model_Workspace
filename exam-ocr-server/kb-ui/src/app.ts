@@ -4,6 +4,12 @@ import { kb, type KbBook, type KbToc } from "./api";
 import { mountKbCompare } from "./compare";
 import { mountKbImport } from "./import";
 import { mountIrLibrary } from "./irLibrary";
+import {
+  CATEGORY_LABEL,
+  groupOf,
+  paintLibraryTree,
+  paintNodeExpanded,
+} from "./libraryTree";
 import { mountKbRail, type KbTabId } from "./rail";
 import { mountKbTasks } from "./tasks";
 import { bindSash } from "./sash";
@@ -14,112 +20,14 @@ import {
   BOOK_SORTS,
   bookSortLabel,
   parseBookSort,
-  sortBooks,
   type BookSortId,
 } from "./bookSort";
+import { fillIrPage } from "./renderIr";
 import { el, renderMarkdown } from "./util/dom";
 import { chevron, closePopover, openPopover } from "./popover";
 import { applyTocExpanded, bindKbPageToc } from "./util/page-toc";
 import { renderTocHtml } from "./util/toc-html";
 import { mountKbViewport, type KbViewport } from "./viewport";
-
-type KbGroupId = "textbook" | "syllabus" | "knowledge" | "material" | "homework";
-
-const GROUPS: { id: KbGroupId; label: string; icon: string }[] = [
-  { id: "textbook", label: "教材", icon: "📕" },
-  { id: "knowledge", label: "知识点", icon: "🧩" },
-  { id: "syllabus", label: "考纲", icon: "📋" },
-  { id: "material", label: "资料", icon: "📎" },
-  { id: "homework", label: "作业", icon: "📝" },
-];
-
-const STAGES: { id: string; label: string }[] = [
-  { id: "ms", label: "初中" },
-  { id: "hs", label: "高中" },
-];
-
-const SUBJECTS: { id: string; label: string }[] = [
-  { id: "math", label: "数学" },
-  { id: "chinese", label: "语文" },
-  { id: "physics", label: "物理" },
-  { id: "chemistry", label: "化学" },
-  { id: "biology", label: "生物" },
-  { id: "english", label: "英语" },
-];
-
-const STAGE_ALIAS: Record<string, string> = {
-  ms: "ms",
-  junior: "ms",
-  初中: "ms",
-  hs: "hs",
-  senior: "hs",
-  高中: "hs",
-  ps: "ps",
-  小学: "ps",
-};
-
-const SUBJECT_ALIAS: Record<string, string> = {
-  math: "math",
-  mathematics: "math",
-  数学: "math",
-  chinese: "chinese",
-  yuwen: "chinese",
-  语文: "chinese",
-  physics: "physics",
-  物理: "physics",
-  chemistry: "chemistry",
-  化学: "chemistry",
-  biology: "biology",
-  生物: "biology",
-  english: "english",
-  英语: "english",
-};
-
-const CATEGORY_ALIAS: Record<string, KbGroupId> = {
-  textbook: "textbook",
-  教材: "textbook",
-  knowledge: "knowledge",
-  知识点: "knowledge",
-  syllabus: "syllabus",
-  考纲: "syllabus",
-  material: "material",
-  资料: "material",
-  homework: "homework",
-  作业: "homework",
-};
-
-const CATEGORY_LABEL: Record<KbGroupId, string> = {
-  textbook: "教材",
-  knowledge: "知识点",
-  syllabus: "考纲",
-  material: "资料",
-  homework: "作业",
-};
-
-function groupOf(book: KbBook): KbGroupId {
-  const raw = (book.category || "").trim();
-  return CATEGORY_ALIAS[raw.toLowerCase()] || CATEGORY_ALIAS[raw] || "textbook";
-}
-
-function stageOf(book: KbBook): string {
-  const raw = (book.grade_band || "").trim();
-  return STAGE_ALIAS[raw.toLowerCase()] || STAGE_ALIAS[raw] || (raw ? "other" : "hs");
-}
-
-function subjectOf(book: KbBook): string {
-  const raw = (book.subject || "").trim();
-  return SUBJECT_ALIAS[raw.toLowerCase()] || SUBJECT_ALIAS[raw] || (raw || "math");
-}
-
-function caretEl(): HTMLElement {
-  const n = el("span", "kb-caret");
-  n.innerHTML = chevron("down");
-  return n;
-}
-
-function moreDots(size = 16): string {
-  return `<svg class="kb-more-ico" viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>`;
-}
 
 export function mountApp(root: HTMLElement): void {
   root.className = "kb-app";
@@ -187,8 +95,9 @@ export function mountApp(root: HTMLElement): void {
   previewWrap.append(placeholder, previewPages);
 
   const irPreviewWrap = el("div", "kb-preview-wrap hidden");
+  const irPlaceholder = el("p", "muted kb-preview-placeholder", "从左侧打开一本书（结构化库）");
   const irPreviewPages = el("div", "kb-preview-pages");
-  irPreviewWrap.append(el("p", "muted kb-preview-placeholder", "从左侧打开一本书（结构化库）"), irPreviewPages);
+  irPreviewWrap.append(irPlaceholder, irPreviewPages);
 
   const importPane = el("div");
   mountKbImport(importPane, {
@@ -227,7 +136,24 @@ export function mountApp(root: HTMLElement): void {
   let books: KbBook[] = [];
   let activeId = "";
   let libMode: "old" | "ir" = "old";
-  const irLib = mountIrLibrary({ treeHost: irTree, previewHost: irPreviewPages });
+  const expandedBooks = new Set<string>(saved.kbExpandedBooks || []);
+  const expandedGroups = new Set<string>(saved.kbExpandedGroups || []);
+  const expandedToc = new Map<string, Set<string>>(
+    Object.entries(saved.kbExpandedToc || {}).map(([id, rows]) => [id, new Set(rows)]),
+  );
+  let bookSort: BookSortId = parseBookSort(saved.kbBookSort);
+  const irLib = mountIrLibrary({
+    treeHost: irTree,
+    previewHost: irPreviewPages,
+    placeholder: irPlaceholder,
+    getBooks: () => books,
+    getSort: () => bookSort,
+    expandedGroups,
+    persist: () => persistTreeState(),
+    savedBooks: saved.kbIrExpandedBooks,
+    savedToc: saved.kbIrExpandedToc,
+    onMore: (anchor, book, node) => openBookMenu(anchor, book, node),
+  });
   irLib.reset();
 
   // 两个库的左树/右预览可见性只在这里算，showTab 和 setLibMode 都走它，
@@ -247,7 +173,11 @@ export function mountApp(root: HTMLElement): void {
     root.classList.toggle("is-irlib", mode === "ir");
     syncLibraryPanes(true);
     if (mode === "ir") irLib.setBooks(books);
-    else markActiveNode(activeId);
+    else {
+      renderTree();
+      void restoreExpandedTocs();
+      markActiveNode(activeId);
+    }
   }
   libBtnOld.onclick = () => setLibMode("old");
   libBtnIr.onclick = () => setLibMode("ir");
@@ -255,12 +185,6 @@ export function mountApp(root: HTMLElement): void {
   let viewport: KbViewport | null = null;
   let lastToc: KbToc | null = null;
   let unbindPageToc: (() => void) | null = null;
-  const expandedBooks = new Set<string>(saved.kbExpandedBooks || []);
-  const expandedGroups = new Set<string>(saved.kbExpandedGroups || []);
-  const expandedToc = new Map<string, Set<string>>(
-    Object.entries(saved.kbExpandedToc || {}).map(([id, rows]) => [id, new Set(rows)]),
-  );
-  let bookSort: BookSortId = parseBookSort(saved.kbBookSort);
   const tocCache = new Map<string, KbToc>();
   const tocMounts = new Map<string, { host: HTMLElement; unbind: () => void }>();
 
@@ -291,13 +215,6 @@ export function mountApp(root: HTMLElement): void {
     placeholder.classList.toggle("hidden", !on);
   }
 
-  function statusLabel(s: string): string {
-    if (s === "ready") return "已入库";
-    if (s === "converting" || s === "uploaded") return "识别中";
-    if (s === "failed") return "失败";
-    return s;
-  }
-
   function paintSort(): void {
     const row = BOOK_SORTS.find((item) => item.id === bookSort);
     sortBtn.replaceChildren();
@@ -314,6 +231,7 @@ export function mountApp(root: HTMLElement): void {
     paintSort();
     renderTree();
     void restoreExpandedTocs();
+    irLib.setBooks(books);
   }
 
   sortBtn.onclick = () => {
@@ -357,6 +275,12 @@ export function mountApp(root: HTMLElement): void {
       kbExpandedGroups: [...expandedGroups],
       kbExpandedToc: Object.fromEntries(
         [...expandedToc]
+          .filter(([, ids]) => ids.size)
+          .map(([id, ids]) => [id, [...ids]]),
+      ),
+      kbIrExpandedBooks: [...irLib.expandedBooks],
+      kbIrExpandedToc: Object.fromEntries(
+        [...irLib.expandedToc]
           .filter(([, ids]) => ids.size)
           .map(([id, ids]) => [id, [...ids]]),
       ),
@@ -433,17 +357,6 @@ export function mountApp(root: HTMLElement): void {
     tocMounts.set(id, { host, unbind });
   }
 
-  function paintNodeExpanded(node: HTMLElement, on: boolean): void {
-    node.classList.toggle("is-expanded", on);
-    const tocHost = node.querySelector<HTMLElement>(".kb-node-toc");
-    const caretBtn = node.querySelector<HTMLButtonElement>(".kb-caret-btn");
-    if (caretBtn) {
-      caretBtn.setAttribute("aria-expanded", on ? "true" : "false");
-      caretBtn.setAttribute("aria-label", on ? "收起目录" : "展开目录");
-    }
-    tocHost?.classList.toggle("hidden", !on);
-  }
-
   async function toggleBook(id: string, on: boolean): Promise<void> {
     if (on) expandedBooks.add(id);
     else expandedBooks.delete(id);
@@ -473,64 +386,6 @@ export function mountApp(root: HTMLElement): void {
     }
     await Promise.all(jobs);
     if (activeId) lastToc = tocCache.get(activeId) || lastToc;
-  }
-
-  function renderNode(b: KbBook): HTMLElement {
-    const expanded = expandedBooks.has(b.id);
-    const li = el("li", `kb-node${b.id === activeId ? " is-active" : ""}${expanded ? " is-expanded" : ""}`);
-    li.dataset.bookId = b.id;
-    const head = el("div", "kb-node-head");
-    const caret = el("button", "kb-caret-btn") as HTMLButtonElement;
-    caret.type = "button";
-    caret.append(caretEl());
-    caret.setAttribute("aria-label", expanded ? "收起目录" : "展开目录");
-    caret.setAttribute("aria-expanded", expanded ? "true" : "false");
-    caret.onclick = (ev) => {
-      ev.stopPropagation();
-      void toggleBook(b.id, !expandedBooks.has(b.id));
-    };
-    const name = el("button", "kb-item-open", b.label || b.filename) as HTMLButtonElement;
-    name.type = "button";
-    name.title = bookTooltip(b);
-    name.onclick = () => void openBook(b.id);
-    const more = el("button", "kb-more-btn") as HTMLButtonElement;
-    more.type = "button";
-    more.setAttribute("aria-label", "教材操作");
-    more.setAttribute("aria-haspopup", "menu");
-    more.insertAdjacentHTML("afterbegin", moreDots());
-    more.onclick = (ev) => {
-      ev.stopPropagation();
-      if (li.classList.contains("is-menu-open")) {
-        closePopover();
-        return;
-      }
-      openBookMenu(more, b, li);
-    };
-    head.append(caret, name, bookMeta(b), more);
-    const tocHost = el("div", "kb-node-toc");
-    if (!expanded) tocHost.classList.add("hidden");
-    li.append(head, tocHost);
-    return li;
-  }
-
-  function bookTooltip(b: KbBook): string {
-    return [b.label || b.filename, statusLabel(b.status), b.page_count ? `${b.page_count} 页` : "", b.is_default ? "默认" : ""]
-      .filter(Boolean)
-      .join(" · ");
-  }
-
-  function bookMeta(b: KbBook): HTMLElement {
-    const meta = el("span", "kb-node-meta");
-    if (b.is_default) meta.append(el("span", "kb-node-chip", "默认"));
-    if (b.status !== "ready") {
-      const kind = b.status === "failed" ? "is-fail" : "is-busy";
-      meta.append(el("span", `kb-node-status ${kind}`, statusLabel(b.status)));
-    } else if (b.page_count) {
-      const pages = el("span", "kb-node-pages", String(b.page_count));
-      pages.title = `${b.page_count} 页`;
-      meta.append(pages);
-    }
-    return meta;
   }
 
   function openBookMenu(anchor: HTMLButtonElement, b: KbBook, node: HTMLElement): void {
@@ -594,6 +449,7 @@ export function mountApp(root: HTMLElement): void {
   async function redoBook(b: KbBook): Promise<void> {
     if (!window.confirm(`重新识别「${b.label}」？`)) return;
     tocCache.delete(b.id);
+    irLib.invalidateToc(b.id);
     await kb.reimport(b.id);
     activeId = b.id;
     await refreshList();
@@ -608,106 +464,35 @@ export function mountApp(root: HTMLElement): void {
     detachToc(b.id);
     persistTreeState();
     if (activeId === b.id) resetPreview();
+    irLib.forgetBook(b.id);
     await refreshList();
-  }
-
-  function renderFolder(
-    id: string,
-    label: string,
-    count: number,
-    fill: (body: HTMLElement) => void,
-    opts: { icon?: string; kind?: string } = {},
-  ): HTMLElement {
-    const collapsed = !expandedGroups.has(id);
-    const kind = opts.kind ? ` kb-group--${opts.kind}` : "";
-    const li = el("li", `kb-group${kind}${collapsed ? " is-collapsed" : ""}`);
-    li.dataset.groupId = id;
-    const head = el("button", "kb-group-head") as HTMLButtonElement;
-    head.type = "button";
-    head.setAttribute("aria-expanded", collapsed ? "false" : "true");
-    head.append(caretEl());
-    if (opts.icon) head.append(el("span", "kb-group-icon", opts.icon));
-    head.append(el("span", "kb-group-label", label), el("span", "kb-group-count muted", String(count)));
-    head.onclick = () => {
-      if (expandedGroups.has(id)) expandedGroups.delete(id);
-      else expandedGroups.add(id);
-      persistTreeState();
-      renderTree();
-      void restoreExpandedTocs();
-    };
-    const body = el("ul", "kb-group-body");
-    if (collapsed) body.classList.add("hidden");
-    fill(body);
-    li.append(head, body);
-    return li;
-  }
-
-  function emptyHint(): HTMLElement {
-    return el("li", "kb-tree-empty muted", "暂无内容（导入后出现）");
-  }
-
-  function appendBooks(host: HTMLElement, items: KbBook[]): void {
-    if (!items.length) host.append(emptyHint());
-    else for (const b of sortBooks(items, bookSort)) host.appendChild(renderNode(b));
-  }
-
-  function renderKindFolders(host: HTMLElement, prefix: string, items: KbBook[]): void {
-    const grouped = new Map<KbGroupId, KbBook[]>();
-    for (const g of GROUPS) grouped.set(g.id, []);
-    for (const b of items) {
-      const gid = groupOf(b);
-      (grouped.get(gid) || grouped.get("textbook")!).push(b);
-    }
-    for (const g of GROUPS) {
-      const hit = grouped.get(g.id) || [];
-      host.appendChild(
-        renderFolder(`${prefix}/${g.id}`, g.label, hit.length, (body) => appendBooks(body, hit), {
-          icon: g.icon,
-          kind: "kind",
-        }),
-      );
-    }
-  }
-
-  function renderSubjectFolders(host: HTMLElement, prefix: string, items: KbBook[]): void {
-    const known = new Set(SUBJECTS.map((s) => s.id));
-    for (const sub of SUBJECTS) {
-      const hit = items.filter((b) => subjectOf(b) === sub.id);
-      host.appendChild(
-        renderFolder(`${prefix}/${sub.id}`, sub.label, hit.length, (body) => {
-          renderKindFolders(body, `${prefix}/${sub.id}`, hit);
-        }, { kind: "subject" }),
-      );
-    }
-    const leftover = items.filter((b) => !known.has(subjectOf(b)));
-    if (leftover.length) {
-      host.appendChild(
-        renderFolder(`${prefix}/other`, "其他", leftover.length, (body) => {
-          renderKindFolders(body, `${prefix}/other`, leftover);
-        }, { kind: "subject" }),
-      );
-    }
-  }
-
-  function renderStageFolders(host: HTMLElement, prefix: string, items: KbBook[]): void {
-    const extra: { id: string; label: string }[] = [];
-    if (items.some((b) => stageOf(b) === "ps")) extra.push({ id: "ps", label: "小学" });
-    if (items.some((b) => stageOf(b) === "other")) extra.push({ id: "other", label: "其他学段" });
-    for (const stage of [...STAGES, ...extra]) {
-      const hit = items.filter((b) => stageOf(b) === stage.id);
-      host.appendChild(
-        renderFolder(`${prefix}/${stage.id}`, stage.label, hit.length, (body) => {
-          renderSubjectFolders(body, `${prefix}/${stage.id}`, hit);
-        }, { kind: "stage" }),
-      );
-    }
   }
 
   function renderTree(): void {
     closePopover();
     clearTocMounts();
-    tree.replaceChildren();
-    renderStageFolders(tree, "kb", books);
+    paintLibraryTree(tree, "kb", books, {
+      sort: bookSort,
+      expandedGroups,
+      expandedBooks,
+      activeId,
+      onToggleGroup: (id) => {
+        if (expandedGroups.has(id)) expandedGroups.delete(id);
+        else expandedGroups.add(id);
+        persistTreeState();
+        renderTree();
+        void restoreExpandedTocs();
+      },
+      onToggleBook: (id, on) => void toggleBook(id, on),
+      onOpenBook: (id) => void openBook(id),
+      onMore: (anchor, book, node) => {
+        if (node.classList.contains("is-menu-open")) {
+          closePopover();
+          return;
+        }
+        openBookMenu(anchor, book, node);
+      },
+    });
   }
 
   function markActiveNode(id: string): void {
@@ -746,27 +531,32 @@ export function mountApp(root: HTMLElement): void {
 
   async function fillMarkdownPane(
     host: HTMLElement,
-    src: "old" | "v2md" | "official",
+    src: "old" | "ir",
   ): Promise<void> {
     if (!activeId) return;
     const pageNo = Number(host.closest("[data-page-no]")?.getAttribute("data-page-no") || host.dataset.pageNo || 0);
     setShadowText(host, "加载中…");
     try {
-      const out = await kb.pageMarkdown(activeId, pageNo, src === "old" ? undefined : src);
-      if (out.ok === false) {
-        setShadowText(host, out.reason || "官方稿本页切不开");
+      if (src === "ir") {
+        const out = await kb.irBlocks(activeId, pageNo);
+        await fillIrPage(host, out.page || {}, activeId);
+        host.classList.remove("is-unloaded", "is-error");
+        return;
+      }
+      const out = await kb.pageMarkdown(activeId, pageNo);
+      if ("ok" in out && out.ok === false) {
+        setShadowText(host, ("reason" in out && out.reason) || "本页读不开");
         host.classList.remove("is-unloaded");
         host.classList.add("is-error");
         return;
       }
       const html = renderMarkdown(out.prepared || out.markdown || "（本页无文本）");
-      const slot = src === "old" ? "page-body" : src === "official" ? "page-official" : "page-v2";
-      await fillShadow(host, slot, html);
+      await fillShadow(host, "page-body", html);
       const inner = host.shadowRoot?.querySelector(".kb-surface-inner");
       if (inner) stampBlocks(inner);
       host.classList.remove("is-unloaded", "is-error");
     } catch (e) {
-      const fallback = src === "v2md" ? "新稿未生成" : src === "official" ? "官方稿本页切不开" : "加载失败";
+      const fallback = src === "ir" ? "中间表示未生成" : "加载失败";
       setShadowText(host, `${fallback}：${(e as Error).message}`);
       host.classList.add("is-unloaded", "is-error");
     }

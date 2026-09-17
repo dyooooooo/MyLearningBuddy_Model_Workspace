@@ -282,9 +282,16 @@ def center_article_heads(
         return result
     written = 0
     for path, text in pending:
-        tmp = path.with_suffix(".md.tmp")
-        tmp.write_text(text, encoding="utf-8")
-        tmp.replace(path)
+        try:
+            from source_text import write_source_atomic
+        except ImportError:
+            write_source_atomic = None
+        if write_source_atomic is not None:
+            write_source_atomic(path, text)
+        else:
+            tmp = path.with_suffix(".md.tmp")
+            tmp.write_text(text, encoding="utf-8")
+            tmp.replace(path)
         written += 1
     result["written"] = written
     return result

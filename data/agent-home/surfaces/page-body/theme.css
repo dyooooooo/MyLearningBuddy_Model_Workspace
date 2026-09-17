@@ -45,7 +45,7 @@ img.kb-fig-inline {
    width percentage; the img inside fills that cell. */
 .kb-fig-row {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
   gap: 0.5rem;
@@ -54,7 +54,6 @@ img.kb-fig-inline {
 }
 .kb-fig-row .kb-fig-cell {
   flex: 0 1 auto;
-  min-width: 0;
   margin: 0;
   padding: 0;
   text-align: center;
@@ -148,36 +147,17 @@ em, i {
   justify-content: flex-start;
   gap: 0.3rem;
   width: 100%;
-  margin: 1.5rem 0 1.65rem;
+  margin: 1.15em 0;
   padding: 0;
   text-align: left;
   text-indent: 0;
   color: #9a4032;
-  font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-size: 0.98rem;
+  font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: 0.04em;
 }
-.kb-section-icon + p,
-.kb-section-icon + .kb-list-item {
-  margin-top: 1.05rem;
-}
-.kb-section-icon ~ p,
-.kb-section-icon ~ .kb-list-item {
-  margin-bottom: 0.45rem;
-  text-indent: 0;
-  font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-size: 0.92em;
-}
-.kb-dash ~ p {
-  font-family: inherit;
-  font-size: inherit;
+.kb-section-icon + p {
   text-indent: 2em;
-}
-.kb-dash ~ .kb-list-item {
-  font-family: inherit;
-  font-size: inherit;
 }
 .kb-section-icon img {
   display: inline-block;
@@ -194,8 +174,6 @@ em, i {
 .kb-section-icon-label {
   flex: 0 0 auto;
   color: #9a4032;
-  font-family: inherit;
-  font-size: inherit;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -205,7 +183,7 @@ em, i {
   min-width: 2em;
   height: 0;
   margin: 0 0 0.08em 0.2rem;
-  border-bottom: 1px dashed #9aa4b2;
+  border-bottom: 1px dotted #c4c4c4;
 }
 .kb-dash {
   border: none;
@@ -229,8 +207,6 @@ em, i {
 .kb-chem-mod p,
 .kb-chem-mod .kb-list-item {
   text-indent: 0;
-  font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-size: 0.92em;
 }
 .kb-chem-mod--think {
   padding-top: 0.75rem;
@@ -383,3 +359,13 @@ th { background: #e8eef6; font-weight: 700; }
   display: block; margin: 0.15rem auto; object-fit: contain;
 }
 .kb-table-foot { color: #667085; font-size: 0.85rem; margin: 0.2rem 0 0.6rem; text-indent: 0; }
+.kb-wikilink { color: #1d4f91; text-decoration: underline; text-underline-offset: 2px; }
+.kb-ofm-highlight { background: #fff3bf; padding: 0 0.15em; }
+.kb-ofm-callout {
+  margin: 0.75rem 0;
+  padding: 0.55rem 0.75rem;
+  border-left: 4px solid #3b6ea5;
+  background: #f3f6fb;
+}
+.kb-ofm-callout-title { font-weight: 700; text-indent: 0; margin: 0 0 0.2rem; }
+.kb-ofm-callout-body { text-indent: 0; margin: 0; }

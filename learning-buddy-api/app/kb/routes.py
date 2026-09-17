@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from app.clients.redis_client import clear_kb_revoke, enqueue_kb_import
 from app.kb import assets as kb_assets
 from app.kb import import_service as svc
+from app.kb.agent_notify import notify_import_converting
+from app.kb.workspace_store import read_meta
 from app.kb.settings import (
     KbMineruConfigError,
     KbMineruOut,
@@ -89,6 +91,8 @@ def convert_book(book_id: str) -> dict[str, Any]:
     if not sid:
         raise HTTPException(status_code=400, detail="id required")
     clear_kb_revoke(sid)
+    meta = read_meta(sid) or {}
+    notify_import_converting(sid, conversation_id=str(meta.get("conversation_id") or ""))
     enqueue_kb_import(sid)
     return {"book_id": sid, "queued": True}
 
@@ -96,3 +100,18 @@ def convert_book(book_id: str) -> dict[str, Any]:
 @router.post("/convert")
 def convert_book_body(body: ConvertBody) -> dict[str, Any]:
     return convert_book(body.book_id)
+
+
+@router.post("/mineru/dump/{book_id}")
+def dump_mineru(book_id: str, page_ranges: str = Query(default="")) -> dict[str, Any]:
+    sid = (book_id or "").strip()
+    if not sid:
+        raise HTTPException(status_code=400, detail="id required")
+    try:
+        return svc.dump_mineru_json(sid, page_ranges=page_ranges)
+    except svc.KbBookGone as exc:
+        raise HTTPException(status_code=404, detail="book not found") from exc
+    except KbMineruConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)[:400]) from exc

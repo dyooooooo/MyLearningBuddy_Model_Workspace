@@ -4,23 +4,38 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 from typing import Any
 
 from deeptutor.agents._shared.tool_composition import (
     ToolMountFlags,
     compose_enabled_tools,
     default_optional_tools,
+    user_has_mastery_topics,
     user_has_memory,
     user_has_notebooks,
+    user_has_question_bank,
 )
 from deeptutor.agents.chat.agent_loop import AgentLoop
+from deeptutor.agents.chat.context_budget import LLMRequestSnapshot, build_context_budget
 from deeptutor.agents.chat.prompt_blocks import ChatPromptAssembler
 from deeptutor.capabilities import (
-    LoopCapability,
+    LoopExtension,
+    PromptBlock,
     active_loop_capabilities,
     any_exclusive_capability_active,
 )
-from deeptutor.core.agentic import (
+from deeptutor.capabilities.protocol import END_LOOP
+from deeptutor.core.context import UnifiedContext
+from deeptutor.core.tool_protocol import ToolLookup
+from deeptutor.core.trace import (
+    build_trace_metadata,
+    derive_trace_metadata,
+    merge_trace_metadata,
+    new_call_id,
+)
+from deeptutor.knowledge.manifest import KbManifest, render_manifest_note
+from deeptutor.runtime.agentic import (
     DispatchOutcome,
     LLMClientConfig,
     UsageTracker,
@@ -29,20 +44,13 @@ from deeptutor.core.agentic import (
     can_use_native_tool_calling,
     dispatch_tool_calls,
 )
-from deeptutor.core.agentic.tool_dispatch import MAX_PARALLEL_TOOL_CALLS
-from deeptutor.core.context import UnifiedContext
-from deeptutor.core.stream_bus import StreamBus
-from deeptutor.core.trace import (
-    build_trace_metadata,
-    derive_trace_metadata,
-    merge_trace_metadata,
-    new_call_id,
-)
-from deeptutor.runtime.registry.deferred_tools import (
-    DeferredToolLoader,
-    render_deferred_tools_manifest,
-)
+from deeptutor.runtime.agentic.tool_dispatch import MAX_PARALLEL_TOOL_CALLS
+from deeptutor.runtime.providers import ToolScope
+from deeptutor.runtime.providers.view import ProviderToolView, build_tool_view
+from deeptutor.runtime.registry.deferred_tools import DeferredToolLoader
 from deeptutor.runtime.registry.tool_registry import get_tool_registry
+from deeptutor.runtime.stream_bus import StreamBus
+from deeptutor.services.cli_apps.models import TOOL_PREFIX as CLI_APP_TOOL_PREFIX
 from deeptutor.services.config import get_chat_params
 from deeptutor.services.llm import (
     get_llm_config,
@@ -188,6 +196,10 @@ class AgenticChatPipeline:
         max_rounds: int | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        initial_tool_choice: str | None = None,
+        event_source: str = "chat",
+        event_stage: str = "responding",
+        emit_result: bool = True,
     ) -> None:
         self.language = "zh" if language.lower().startswith("zh") else "en"
         self.llm_config = get_llm_config()
@@ -198,11 +210,28 @@ class AgenticChatPipeline:
         self.api_version = getattr(self.llm_config, "api_version", None)
         self.extra_headers = getattr(self.llm_config, "extra_headers", None) or {}
         self.reasoning_effort = getattr(self.llm_config, "reasoning_effort", None)
-        self.registry = get_tool_registry()
+        # Process-wide registry. Stays the base for the whole turn; the
+        # per-turn scoped view lives on ``_tool_view`` (see ``tool_lookup``).
+        self.registry: ToolLookup = get_tool_registry()
         self._usage = UsageTracker(model=self.model)
+        self._tool_view: ProviderToolView | None = None
         self._deferred_loader: DeferredToolLoader | None = None
         self._deferred_pool: list[Any] = []
         self._exec_enabled = False
+        self._kb_manifests: list[KbManifest] = []
+        # A selected capability may require one specific tool on the first
+        # internal loop round. Later rounds return to model-directed selection.
+        self.initial_tool_choice = (initial_tool_choice or "").strip() or None
+        # The blocks the turn's system prompt was rendered from, kept for the
+        # context-budget breakdown (see ``measure_context_budget``).
+        self._last_prompt_blocks: list[PromptBlock] = []
+        # The loop engine is capability-neutral. Chat keeps these defaults;
+        # capabilities such as visualize can reuse the exact loop while owning
+        # their stream namespace and final result envelope.
+        self.event_source = str(event_source or "chat")
+        self.event_stage = str(event_stage or "responding")
+        self.emit_result = bool(emit_result)
+        self.last_result: dict[str, Any] | None = None
 
         try:
             chat_cfg = get_chat_params()
@@ -254,11 +283,27 @@ class AgenticChatPipeline:
             api_version=self.api_version,
             extra_headers=self.extra_headers or None,
             reasoning_effort=self.reasoning_effort,
+            wire_api=getattr(self.llm_config, "wire_api", None) or "auto",
+            api_format=getattr(self.llm_config, "api_format", None) or "auto",
         )
 
     @property
     def usage(self) -> UsageTracker:
         return self._usage
+
+    @property
+    def tool_lookup(self) -> ToolLookup:
+        """Registry to use for this turn.
+
+        The scoped view once ``_prepare_deferred_tools`` has resolved it —
+        which is what refuses provider tools the caller is not authorised for
+        at dispatch time — and the process registry before that.
+
+        ``getattr`` because tests construct partially-initialised pipelines
+        via ``__new__`` (the same reason the mount flags read that way).
+        """
+        view = getattr(self, "_tool_view", None)
+        return view.registry if view is not None else self.registry
 
     @property
     def max_rounds(self) -> int:
@@ -269,12 +314,12 @@ class AgenticChatPipeline:
 
         A capability that needs guaranteed loop headroom — the subagent
         capability, which must allow its full consult budget plus a finishing
-        round — sets ``context.metadata["_min_loop_rounds"]``; the loop honours
+        round — sets ``context.runtime.min_loop_rounds``; the loop honours
         the larger of that and the configured budget. A generic seam (like
         solve's ``solve_max_replans``) so the loop stays capability-agnostic.
         """
         try:
-            floor = int(context.metadata.get("_min_loop_rounds") or 0)
+            floor = int(context.runtime.min_loop_rounds or 0)
         except (TypeError, ValueError):
             floor = 0
         return max(self.max_rounds, floor)
@@ -298,17 +343,17 @@ class AgenticChatPipeline:
         """
         return self.respond_max_tokens
 
-    async def run(self, context: UnifiedContext, stream: StreamBus) -> None:
+    async def run(self, context: UnifiedContext, stream: StreamBus) -> dict[str, Any]:
         await self._prepare_deferred_tools(context)
+        await self._prepare_kb_manifests(context)
         self._exec_enabled = await self._exec_allowed(context)
         enabled_tools = self._compose_enabled_tools(context)
         use_native_tools = bool(enabled_tools) and self._can_use_native_tool_calling()
         tool_schemas = (
             self._build_llm_tool_schemas(enabled_tools, context) if use_native_tools else None
         )
-        if tool_schemas is not None and self._deferred_loader is not None:
-            tool_schemas.extend(self._deferred_loader.initial_schemas())
-            self._deferred_loader.bind_live_schemas(tool_schemas)
+        if tool_schemas is not None and self._tool_view is not None:
+            self._tool_view.attach(tool_schemas)
 
         loop = AgentLoop(
             pipeline=self,
@@ -318,7 +363,8 @@ class AgenticChatPipeline:
             enabled_tools=enabled_tools if use_native_tools else [],
             tool_schemas=tool_schemas,
         )
-        await loop.run()
+        self.last_result = await loop.run()
+        return self.last_result
 
     # ---- prompt assembly -------------------------------------------------
 
@@ -329,7 +375,10 @@ class AgenticChatPipeline:
         *,
         include_tool_manifest: bool = True,
     ) -> str:
-        return self._prompt_assembler.system_prompt(
+        # Assemble once, then render: the context-budget breakdown is measured
+        # from these very blocks, so a second ``blocks()`` call could drift from
+        # the prompt actually sent.
+        self._last_prompt_blocks = self._prompt_assembler.blocks(
             context=context,
             tool_manifest=self._tool_manifest(enabled_tools),
             kb_note=self._kb_system_note(context),
@@ -341,6 +390,7 @@ class AgenticChatPipeline:
             capability_blocks=self._capability_system_blocks(context),
             include_tool_manifest=include_tool_manifest,
         )
+        return self._prompt_assembler.render(self._last_prompt_blocks)
 
     def _build_loop_messages(
         self,
@@ -371,7 +421,10 @@ class AgenticChatPipeline:
             role = item.get("role")
             content = item.get("content")
             if role in {"user", "assistant"} and isinstance(content, (str, list)):
-                messages.append({"role": role, "content": content})
+                message: dict[str, Any] = {"role": role, "content": content}
+                if role == "assistant" and isinstance(item.get("_provider_response_state"), dict):
+                    message["_provider_response_state"] = item["_provider_response_state"]
+                messages.append(message)
             elif role == "system" and isinstance(content, str) and content.strip():
                 # ContextBuilder emits the compressed-history summary as a
                 # leading system message; deliver it right after the system
@@ -388,6 +441,9 @@ class AgenticChatPipeline:
     def _finish_exhausted_instruction(self) -> str:
         return self._prompt_assembler.finish_exhausted_instruction()
 
+    def _settle_exhausted_instruction(self) -> str:
+        return self._prompt_assembler.settle_exhausted_instruction()
+
     def _tool_manifest(self, enabled_tools: list[str]) -> str:
         names = list(enabled_tools)
         if self._deferred_loader is not None:
@@ -395,13 +451,13 @@ class AgenticChatPipeline:
                 if name not in names:
                     names.append(name)
         try:
-            return self.registry.build_prompt_text(
+            return self.tool_lookup.build_prompt_text(
                 names,
                 format="list_with_usage",
                 language=self.language,
             )
         except TypeError:
-            return self.registry.build_prompt_text(names)
+            return self.tool_lookup.build_prompt_text(names)
         except Exception:
             logger.warning("failed to build tool prompt text", exc_info=True)
             return ""
@@ -442,48 +498,103 @@ class AgenticChatPipeline:
         return str((context.metadata or {}).get("source") or "") == "partner"
 
     async def _prepare_deferred_tools(self, context: UnifiedContext) -> None:
+        """Resolve this turn's external-provider (MCP / CLI) tool surface.
+
+        The policy — grant intersection, resource-derived grants, filtering,
+        the progressive-disclosure loader, the manifest — lives in
+        ``runtime.providers``. All the pipeline owns is translating the turn's
+        context into a :class:`ToolScope`.
+        """
+        self._pageindex_providers: set[str] = set()
+        self._pageindex_cloud_instructions = ""
+        self._pageindex_oss_instructions = ""
+        pageindex_tools: list[Any] = []
         try:
-            from deeptutor.services.mcp import get_mcp_manager, load_loaded_tools
-
-            await get_mcp_manager().ensure_started()
-            # Caller-scoped whitelist (e.g. a partner's configured MCP tools)
-            # intersected with the current user's grant. ``None`` means
-            # unrestricted; a set narrows the deferred tools. Real non-admin
-            # users fail closed when no MCP grant is present, while partner
-            # turns defer to their owner-scoped metadata whitelist as the
-            # authority (see ``_is_partner_turn``).
-            from deeptutor.multi_user.tool_access import allowed_mcp_tools, combine_whitelists
-
-            raw_filter = context.metadata.get("mcp_tools_filter")
-            caller_allowed = (
-                {str(name) for name in raw_filter} if isinstance(raw_filter, list) else None
-            )
-            user_allowed = None if self._is_partner_turn(context) else allowed_mcp_tools()
-            allowed: set[str] | None = combine_whitelists(caller_allowed, user_allowed)
-            pool = self.registry.deferred_tools()
-            if allowed is not None:
-                pool = [t for t in pool if t.get_definition().name in allowed]
-            self._deferred_pool = pool
-            if not pool:
-                self._deferred_loader = None
-                return
-            self._deferred_loader = DeferredToolLoader(
-                registry=self.registry,
-                session_id=context.session_id,
-                loaded=load_loaded_tools(context.session_id),
-                allowed=allowed,
+            for kb, bundle in await self._pageindex_sdk_tool_bundles(context):
+                self._pageindex_providers.add(bundle.provider)
+                if bundle.provider == "pageindex-oss":
+                    self._pageindex_oss_instructions = bundle.instructions
+                else:
+                    self._pageindex_cloud_instructions = bundle.instructions
+                pageindex_tools.extend(bundle.tools)
+        except Exception:
+            logger.warning("PageIndex SDK tool preparation failed", exc_info=True)
+        try:
+            view = await build_tool_view(
+                base_registry=self.registry,
+                scope=self._tool_scope(context),
+                language=self.language,
+                refusal_message=self._t(
+                    "notices.tool_not_available",
+                    default=(
+                        "This tool is not available in this conversation. Only "
+                        "the tools listed in the prompt can be called."
+                    ),
+                ),
+                overlay_tools=pageindex_tools,
+                preloaded_names=[tool.name for tool in pageindex_tools],
             )
         except Exception:
+            # ``build_tool_view`` is contractually non-raising; this is defence
+            # in depth because it is the turn's first await — a failure here
+            # would kill the turn before a single stream event is emitted.
             logger.warning("deferred-tool preparation failed", exc_info=True)
-            self._deferred_loader = None
+            view = ProviderToolView.empty(self.registry)
+        self._tool_view = view
+        self._deferred_loader = view.loader
+        # Kept as a plain list: the context-budget chip counts the provider
+        # tools whose schemas never entered the window.
+        self._deferred_pool = list(view.pool)
+
+    def _tool_scope(self, context: UnifiedContext) -> ToolScope:
+        """Per-turn policy inputs for the provider layer."""
+        raw_filter = context.metadata.get("mcp_tools_filter")
+        return ToolScope(
+            owner_id=self._current_owner_id(),
+            is_partner=self._is_partner_turn(context),
+            session_id=context.session_id,
+            caller_whitelist=(
+                frozenset(str(name) for name in raw_filter)
+                if isinstance(raw_filter, list)
+                else None
+            ),
+            exclusive_capability=self._exclusive_capability_active(context),
+        )
+
+    async def _pageindex_sdk_tool_bundles(self, context: UnifiedContext):
+        from deeptutor.multi_user.knowledge_access import resolve_kb
+        from deeptutor.services.rag.factory import PAGEINDEX_OSS_PROVIDER, PAGEINDEX_PROVIDER
+        from deeptutor.services.rag.pipelines.pageindex.tools import build_sdk_tool_bundle
+        from deeptutor.services.rag.provider_binding import resolve_bound_provider
+
+        bundles = []
+        seen_providers: set[str] = set()
+        for kb in self._selected_kbs(context):
+            resource = resolve_kb(kb, require_write=False)
+            base_dir = str(resource.base_dir)
+            provider = resolve_bound_provider(base_dir, resource.name)
+            if provider not in {PAGEINDEX_PROVIDER, PAGEINDEX_OSS_PROVIDER}:
+                continue
+            # Cloud tools are account-wide and OSS selection already permits at
+            # most one local library, so one SDK bundle per provider is enough.
+            if provider in seen_providers:
+                continue
+            bundles.append(
+                (
+                    kb,
+                    await build_sdk_tool_bundle(
+                        resource.name,
+                        base_dir,
+                        provider=provider,
+                    ),
+                )
+            )
+            seen_providers.add(provider)
+        return bundles
 
     def _deferred_tools_manifest(self) -> str:
-        if self._deferred_loader is None:
-            return ""
-        return render_deferred_tools_manifest(
-            getattr(self, "_deferred_pool", None) or self.registry.deferred_tools(),
-            language=self.language,
-        )
+        view = getattr(self, "_tool_view", None)
+        return view.manifest if view is not None else ""
 
     async def _exec_allowed(self, context: UnifiedContext) -> bool:
         try:
@@ -521,21 +632,37 @@ class AgenticChatPipeline:
     def _compose_enabled_tools(self, context: UnifiedContext) -> list[str]:
         is_partner = self._is_partner_turn(context)
         composed = compose_enabled_tools(
-            registry=self.registry,
+            registry=self.tool_lookup,
             requested_tools=context.enabled_tools,
             optional_whitelist=CHAT_OPTIONAL_TOOLS,
             mount_flags=ToolMountFlags(
-                has_kb=bool(self._selected_kbs(context)),
+                # PageIndex KBs are read via the preloaded MCP tools, not rag —
+                # a conversation with only PageIndex KBs doesn't mount rag at all.
+                # Excludes KBs owned by an exclusive capability (an Obsidian vault
+                # is read via its own tools, never rag) so a pure-vault turn still
+                # doesn't mount rag, while co-selected LlamaIndex KBs do (#650).
+                has_kb=bool(self._coexisting_rag_kbs(context)),
                 # read_source is owned by the explore_context pre-pass (it runs
                 # the investigation over attached sources), not the answer loop.
                 # Keep it off the answer surface even when sources are present.
                 has_sources=False,
                 has_memory=user_has_memory(),
                 has_notebooks=user_has_notebooks(),
+                has_question_bank=user_has_question_bank(),
                 has_skills=bool(context.skills_manifest),
                 has_deferred_tools=getattr(self, "_deferred_loader", None) is not None,
                 has_exec=getattr(self, "_exec_enabled", False),
                 has_code=getattr(self, "_exec_enabled", False),
+                # Reaching a mastery topic is a chat-wide affordance, not part
+                # of any capability: the learner names what they are studying
+                # and gets a card that opens the real study screen. Only the
+                # atlas listing is withheld from a mastery turn, which reads
+                # its own through ``mastery_paths``.
+                has_mastery_nav=self._mastery_nav_available(context),
+                has_mastery_topics=(
+                    self._mastery_nav_available(context)
+                    and not context.metadata.get("mastery_mode")
+                ),
             ),
             capability_owned=self._capability_owned_tools(context),
             exclusive=self._exclusive_capability_active(context),
@@ -553,15 +680,30 @@ class AgenticChatPipeline:
         )
         return _drop_unconfigured_generation_tools(composed)
 
-    def _active_loop_capabilities(self, context: UnifiedContext) -> tuple[LoopCapability, ...]:
+    def _mastery_nav_available(self, context: UnifiedContext) -> bool:
+        """Whether this turn should be able to point at a mastery topic.
+
+        Resolved once per turn and cached on the context: the gate opens a
+        SQLite connection, and the two flags derived from it are read
+        independently.
+        """
+        cached = context.metadata.get("_mastery_nav_available")
+        if isinstance(cached, bool):
+            return cached
+        available = user_has_mastery_topics()
+        context.metadata["_mastery_nav_available"] = available
+        return available
+
+    def _active_loop_capabilities(self, context: UnifiedContext) -> tuple[LoopExtension, ...]:
         return active_loop_capabilities(context)
 
     @staticmethod
     def _exclusive_capability_active(context: UnifiedContext) -> bool:
         """True when a knowledge capability owns the turn (replaces the surface).
 
-        Suppresses rag scaffolding (KB seed / kb note) too — rag isn't mounted,
-        so seeding or advertising it would be wrong.
+        The capability's own tools replace chat's built-ins. rag scaffolding
+        (mount / KB seed / kb note) is still provided for any co-selected KBs the
+        capability does NOT own — see ``_coexisting_rag_kbs`` (issue #650).
         """
         return any_exclusive_capability_active(context)
 
@@ -571,6 +713,19 @@ class AgenticChatPipeline:
         for cap in self._active_loop_capabilities(context):
             names.extend(cap.owned_tools)
         return tuple(names)
+
+    def _capability_rebinding_tools(self, context: UnifiedContext) -> frozenset[str]:
+        """Tools that repoint the rest of the round at a different target.
+
+        Optional, like ``pre_loop``: a capability declares the tools whose
+        effect the round's other calls must see (``mastery_switch`` moves the
+        turn onto another path), and the dispatcher runs them first and
+        re-binds the rest against the result.
+        """
+        names: list[str] = []
+        for cap in self._active_loop_capabilities(context):
+            names.extend(getattr(cap, "rebinding_tools", ()) or ())
+        return frozenset(names)
 
     def _capability_system_blocks(self, context: UnifiedContext):
         blocks = []
@@ -592,6 +747,85 @@ class AgenticChatPipeline:
         ]
         return "\n\n".join(seed for seed in seeds if seed)
 
+    def _capability_finish_instruction(self, context: UnifiedContext, final_text: str) -> str:
+        """Let an active capability reject a narrow tool-less finish once.
+
+        This is a protocol guard, not a content generator: capabilities return
+        a short instruction only when their own state proves that required tool
+        work remains. A guard failure must not sink the learner's answer.
+        """
+        for cap in self._active_loop_capabilities(context):
+            hook = getattr(cap, "finish_instruction", None)
+            if not callable(hook):
+                continue
+            try:
+                instruction = hook(context, final_text)
+            except Exception:
+                logger.warning(
+                    "finish guard failed for capability %s",
+                    getattr(cap, "name", "?"),
+                    exc_info=True,
+                )
+                continue
+            content = str(instruction or "").strip()
+            if content:
+                return content
+        return ""
+
+    def _capability_tool_round_output_policy(
+        self,
+        context: UnifiedContext,
+        final_text: str,
+        tool_names: tuple[str, ...],
+    ) -> str:
+        """Let a finish-guard capability classify a tool round's prose."""
+        for cap in self._active_loop_capabilities(context):
+            hook = getattr(cap, "tool_round_output_policy", None)
+            if not callable(hook):
+                continue
+            try:
+                policy = str(hook(context, final_text, tool_names) or "").strip()
+            except Exception:
+                logger.warning(
+                    "tool-round policy failed for capability %s",
+                    getattr(cap, "name", "?"),
+                    exc_info=True,
+                )
+                continue
+            if policy in {"publish", "discard"}:
+                return policy
+        return ""
+
+    def _capability_final_text_override(
+        self,
+        context: UnifiedContext,
+        final_text: str,
+    ) -> str | None:
+        """Return a capability-owned canonical answer after private protocol work."""
+        for cap in self._active_loop_capabilities(context):
+            hook = getattr(cap, "final_text_override", None)
+            if not callable(hook):
+                continue
+            try:
+                override = hook(context, final_text)
+            except Exception:
+                logger.warning(
+                    "final-text override failed for capability %s",
+                    getattr(cap, "name", "?"),
+                    exc_info=True,
+                )
+                continue
+            if override is not None:
+                return str(override).strip()
+        return None
+
+    def _has_capability_finish_guard(self, context: UnifiedContext) -> bool:
+        """Whether a capability may need to inspect a tool-less finish first."""
+        return any(
+            callable(getattr(cap, "finish_instruction", None))
+            for cap in self._active_loop_capabilities(context)
+        )
+
     async def _capability_pre_loop_briefings(
         self,
         context: UnifiedContext,
@@ -602,7 +836,7 @@ class AgenticChatPipeline:
 
         The hook is optional (read via ``getattr`` so plain capabilities are
         unaffected) and runs once before the answer loop's first LLM call —
-        see the ``pre_loop`` note on :class:`LoopCapability`. Failures are
+        see the ``pre_loop`` note on :class:`LoopExtension`. Failures are
         swallowed: a pre-pass is best-effort grounding and must never sink the
         turn.
         """
@@ -630,8 +864,8 @@ class AgenticChatPipeline:
         enabled_tools: list[str],
         context: UnifiedContext,
     ) -> list[dict[str, Any]]:
-        schemas = self.registry.build_openai_schemas(enabled_tools)
-        kb_choices = self._selected_kbs(context)
+        schemas = self.tool_lookup.build_openai_schemas(enabled_tools)
+        kb_choices = self._coexisting_rag_kbs(context)
         notebook_choices = self._notebook_choices()
         for schema in schemas:
             function = schema.get("function") if isinstance(schema, dict) else None
@@ -723,16 +957,16 @@ class AgenticChatPipeline:
         stream: StreamBus | None = None,
         retrieve_meta: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        from deeptutor.core.agentic import execute_tool_call
+        from deeptutor.runtime.agentic import execute_tool_call
 
         stream = stream or StreamBus()
         return await execute_tool_call(
-            registry=self.registry,
+            registry=self.tool_lookup,
             tool_name=tool_name,
             tool_args=tool_args,
             stream=stream,
-            source="chat",
-            stage="responding",
+            source=self.event_source,
+            stage=self.event_stage,
             retrieve_meta=retrieve_meta,
             empty_tool_result_message=self._t("notices.empty_tool_result"),
             start_retrieval_message=self._t(
@@ -766,11 +1000,12 @@ class AgenticChatPipeline:
             tool_calls=tool_calls,
             context=context,
             stream=stream,
-            source="chat",
+            source=self.event_source,
             stage=stage,
             iteration_index=iteration_index,
-            registry=self.registry,
+            registry=self.tool_lookup,
             kwarg_augmenter=self._augment_tool_kwargs,
+            rebinding_tools=self._capability_rebinding_tools(context),
             retrieve_meta_factory=lambda meta, tn, ta: self._retrieve_trace_metadata(
                 meta, context=context, tool_name=tn, tool_args=ta
             ),
@@ -786,8 +1021,37 @@ class AgenticChatPipeline:
                 tool=tn,
                 default=f"An unknown error occurred while executing {tn}.",
             ),
-            trace_id_prefix="chat-loop",
+            trace_id_prefix=f"{self.event_source}-loop",
         )
+
+    async def _notify_pause_hooks(
+        self,
+        context: UnifiedContext,
+        hook_name: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Tell the active loop capabilities about an ``ask_user`` boundary.
+
+        These hooks record side state (a mastery path commits the question's
+        awaiting/answered transitions here) — they do not produce the reply.
+        So one failing is a bookkeeping problem, not a reason to throw away a
+        turn the learner is in the middle of: log it and keep the conversation
+        alive, rather than surfacing a traceback where a question should be.
+        """
+        for capability in self._active_loop_capabilities(context):
+            hook = getattr(capability, hook_name, None)
+            if not callable(hook):
+                continue
+            try:
+                await hook(*args, **kwargs)
+            except Exception:
+                logger.warning(
+                    "Loop capability %s failed in %s",
+                    getattr(capability, "name", type(capability).__name__),
+                    hook_name,
+                    exc_info=True,
+                )
 
     async def _await_user_reply_and_resolve(
         self,
@@ -797,7 +1061,8 @@ class AgenticChatPipeline:
         dispatch: DispatchOutcome,
     ) -> bool:
         ask_user = (dispatch.pause_payload or {}).get("ask_user") or {}
-        waiter = context.metadata.get("wait_for_user_reply")
+        await self._notify_pause_hooks(context, "on_user_pause", context, ask_user)
+        waiter = context.runtime.wait_for_user_reply
         if not callable(waiter):
             await self._emit_terminator_final_response(
                 stream,
@@ -813,6 +1078,37 @@ class AgenticChatPipeline:
         if raw_reply is None:
             return False
         reply_text, answers = _normalise_user_reply(raw_reply)
+        await self._notify_pause_hooks(
+            context,
+            "on_user_resume",
+            context,
+            ask_user,
+            reply_text=reply_text,
+            answers=answers,
+        )
+        # The reply happened, so it belongs in the transcript whether or not the
+        # loop goes on — emit the trace before deciding to stop.
+        meta: dict[str, Any] = {
+            "trace_kind": "user_reply",
+            "ask_user_resolved": True,
+            "ask_user_tool_call_id": dispatch.pause_tool_call_id,
+            "reply_preview": (reply_text or "")[:200],
+        }
+        if answers:
+            meta["answers"] = list(answers)
+        await stream.progress(
+            "",
+            source=self.event_source,
+            stage=self.event_stage,
+            metadata=meta,
+        )
+
+        # Neutral stop signal for loop plugins (e.g. a crisis redirect): the
+        # outer capability owns the final message, so skip further LLM rounds.
+        # Everything below only exists to feed the answer back to the model.
+        if context.interaction.end_loop or context.metadata.get(END_LOOP):
+            return False
+
         body_text = _format_user_reply_body(
             reply_text,
             answers,
@@ -831,15 +1127,6 @@ class AgenticChatPipeline:
             if tm.get("tool_call_id") == dispatch.pause_tool_call_id:
                 tm["content"] = directive
                 break
-        meta: dict[str, Any] = {
-            "trace_kind": "user_reply",
-            "ask_user_resolved": True,
-            "ask_user_tool_call_id": dispatch.pause_tool_call_id,
-            "reply_preview": (reply_text or "")[:200],
-        }
-        if answers:
-            meta["answers"] = list(answers)
-        await stream.progress("", source="chat", stage="responding", metadata=meta)
         return True
 
     def _augment_tool_kwargs(
@@ -851,7 +1138,6 @@ class AgenticChatPipeline:
         from deeptutor.services.path_service import get_path_service
 
         kwargs = dict(args)
-        turn_id = str(context.metadata.get("turn_id", "") or "").strip()
         workspace_key = self._workspace_key(context)
         task_dir = (
             get_path_service().get_task_workspace("chat", workspace_key) if workspace_key else None
@@ -859,6 +1145,11 @@ class AgenticChatPipeline:
         exec_dir = task_dir / "exec" if task_dir is not None else None
         if tool_name == "rag":
             kwargs.setdefault("mode", "hybrid")
+        elif tool_name == "kb_files":
+            # The report is read by the user as much as by the model, so it is
+            # written in the turn's language. Injected server-side; the tool
+            # exposes no ``language`` parameter for the model to get wrong.
+            kwargs["language"] = context.language or "en"
         elif tool_name == "load_tools":
             kwargs["_tool_loader"] = self._deferred_loader
         elif tool_name == "exec":
@@ -870,6 +1161,22 @@ class AgenticChatPipeline:
                 kwargs["_sandbox_workdir"] = str(exec_dir)
                 kwargs["_sandbox_mounts"] = (
                     Mount(host_path=str(exec_dir), sandbox_path=str(exec_dir), read_only=False),
+                )
+        elif tool_name.startswith(CLI_APP_TOOL_PREFIX):
+            # A CLI app runs like exec, and for the same reason gets its workdir
+            # from here rather than choosing one: one directory per turn shared by
+            # every app, so the model can render with one and post-process with
+            # another, and the files land where /files/outputs will serve them
+            # (``PathService.is_public_output_path`` has the matching branch).
+            from deeptutor.services.sandbox import Mount
+
+            kwargs["_sandbox_user_id"] = self._current_user_id()
+            cli_dir = task_dir / "cli" if task_dir is not None else None
+            if cli_dir is not None:
+                cli_dir.mkdir(parents=True, exist_ok=True)
+                kwargs["_sandbox_workdir"] = str(cli_dir)
+                kwargs["_sandbox_mounts"] = (
+                    Mount(host_path=str(cli_dir), sandbox_path=str(cli_dir), read_only=False),
                 )
         elif tool_name == "code_execution":
             from deeptutor.services.sandbox import Mount
@@ -884,7 +1191,7 @@ class AgenticChatPipeline:
                 )
         elif tool_name in ("imagegen", "videogen"):
             # Generated media lands in the turn's public workspace so it
-            # surfaces as a download card via /api/outputs (same convention as
+            # surfaces as a download card via /files/outputs (same convention as
             # exec/code_execution artifacts).
             media_dir = task_dir / "media" if task_dir is not None else None
             if media_dir is not None:
@@ -972,9 +1279,11 @@ class AgenticChatPipeline:
                 trace_group="retrieve",
                 query=str(tool_args.get("query", "") or ""),
             )
-        # imagegen/videogen are long-running: wiring retrieve_meta gives them an
-        # event_sink so their progress (esp. videogen's poll loop) streams to the
-        # client, which resets the chat idle-timeout watchdog mid-render.
+        # The remaining entries are pure label/call_kind customisation: every
+        # tool now gets an event_sink and a call_state unconditionally
+        # (``execute_tool_call``), so a long-running tool no longer has to pose
+        # as a retrieval to stream its progress. What it still needs from here
+        # is the call_kind the frontend renders it by.
         if tool_name in ("imagegen", "videogen"):
             return derive_trace_metadata(
                 tool_meta,
@@ -982,10 +1291,8 @@ class AgenticChatPipeline:
                 call_kind="media_generation",
                 query=str(tool_args.get("prompt", "") or ""),
             )
-        # consult_subagent drives a live local agent that runs for as long as it
-        # needs: wiring retrieve_meta gives it an event_sink so every native
-        # output/log streams to the sidebar in real time (and keeps the
-        # idle-timeout watchdog fed during a long agent run).
+        # consult_subagent drives a live local agent; the frontend keys its
+        # in-place transcript row off this call_kind.
         if tool_name == "consult_subagent":
             return derive_trace_metadata(
                 tool_meta,
@@ -1002,9 +1309,9 @@ class AgenticChatPipeline:
         context: UnifiedContext,
         stream: StreamBus,
     ) -> str:
-        if self._exclusive_capability_active(context):
-            return ""
-        kbs = self._selected_kbs(context)
+        # Only traditional RAG KBs are pre-seeded. PageIndex and capability-owned
+        # KBs are read with their tools inside the reasoning loop.
+        kbs = self._coexisting_rag_kbs(context)
         query = (context.user_message or "").strip()
         if not kbs or not query:
             return ""
@@ -1023,7 +1330,10 @@ class AgenticChatPipeline:
             return ""
         if sources:
             await stream.sources(
-                sources, source="chat", stage="responding", metadata={"trace_kind": "sources"}
+                sources,
+                source=self.event_source,
+                stage=self.event_stage,
+                metadata={"trace_kind": "sources"},
             )
         header = self._t(
             "knowledge_base_seed.header",
@@ -1040,10 +1350,10 @@ class AgenticChatPipeline:
         query: str,
         stream: StreamBus,
     ) -> tuple[str, list[dict[str, Any]]] | None:
-        call_id = new_call_id("chat-kb-seed")
+        call_id = new_call_id(f"{self.event_source}-kb-seed")
         retrieve_meta = build_trace_metadata(
             call_id=call_id,
-            phase="responding",
+            phase=self.event_stage,
             label=self._t("labels.retrieve", default="Retrieve"),
             call_kind="rag_retrieval",
             trace_id=call_id,
@@ -1081,8 +1391,8 @@ class AgenticChatPipeline:
             return
         await stream.content(
             text,
-            source="chat",
-            stage="responding",
+            source=self.event_source,
+            stage=self.event_stage,
             metadata=merge_trace_metadata(final_meta, {"trace_kind": "llm_output"}),
         )
 
@@ -1092,11 +1402,11 @@ class AgenticChatPipeline:
         content: str,
     ) -> None:
         final_meta = build_trace_metadata(
-            call_id=new_call_id("chat-final-response"),
-            phase="responding",
+            call_id=new_call_id(f"{self.event_source}-final-response"),
+            phase=self.event_stage,
             label=self._t("labels.final_response", default="Final response"),
             call_kind="llm_final_response",
-            trace_id="chat-final-response",
+            trace_id=f"{self.event_source}-final-response",
             trace_role="response",
             trace_group="stage",
             fallback=True,
@@ -1114,11 +1424,11 @@ class AgenticChatPipeline:
         if not content:
             return
         final_meta = build_trace_metadata(
-            call_id=new_call_id("chat-final-response"),
-            phase="responding",
+            call_id=new_call_id(f"{self.event_source}-final-response"),
+            phase=self.event_stage,
             label=self._t("labels.final_response", default="Final response"),
             call_kind="llm_final_response",
-            trace_id="chat-final-response",
+            trace_id=f"{self.event_source}-final-response",
             trace_role="response",
             trace_group="stage",
             terminator_tool=str(payload.get("tool_name") or ""),
@@ -1129,8 +1439,8 @@ class AgenticChatPipeline:
             merged["tool_metadata"] = dict(tool_metadata)
         await stream.content(
             content,
-            source="chat",
-            stage="responding",
+            source=self.event_source,
+            stage=self.event_stage,
             metadata=merge_trace_metadata(final_meta, merged),
         )
 
@@ -1166,10 +1476,40 @@ class AgenticChatPipeline:
         if snipped:
             await stream.progress(
                 self._t("notices.context_window_guard"),
-                source="chat",
-                stage="responding",
+                source=self.event_source,
+                stage=self.event_stage,
                 metadata={"trace_kind": "warning"},
             )
+
+    def measure_context_budget(self, request: LLMRequestSnapshot) -> dict[str, Any] | None:
+        """Break the turn's last real request down for the composer's chip.
+
+        Measured after the fact from what was actually sent — never a dry run.
+        Returns ``None`` when the measurement fails, so the turn is unaffected.
+        """
+        loaded = self._deferred_loader.loaded_names if self._deferred_loader is not None else set()
+        return build_context_budget(
+            blocks=self._last_prompt_blocks,
+            request=request,
+            model=str(self.model or ""),
+            context_window=getattr(self.llm_config, "context_window", None),
+            max_tokens=getattr(self.llm_config, "max_tokens", None),
+            loaded_deferred_names=loaded,
+            deferred_tool_count=self._unloaded_deferred_tool_count(loaded),
+        )
+
+    def _unloaded_deferred_tool_count(self, loaded: set[str]) -> int:
+        """Extended tools whose full schemas never entered the window.
+
+        They cost only their manifest line (the ``extended_tools`` block), so
+        they are reported as a scalar rather than as a segment.
+        """
+        try:
+            pool = getattr(self, "_deferred_pool", None) or []
+            return sum(1 for tool in pool if tool.get_definition().name not in loaded)
+        except Exception:
+            logger.debug("deferred-tool count probe failed", exc_info=True)
+            return 0
 
     @staticmethod
     def _estimate_messages_tokens(messages: list[dict[str, Any]]) -> int:
@@ -1215,8 +1555,57 @@ class AgenticChatPipeline:
             return "anonymous"
 
     @staticmethod
+    def _current_owner_id() -> str:
+        """Id of the owning account — NOT the same as ``_current_user_id``.
+
+        A partner resolves to the person who owns it and an administrator to the
+        deployment id, which is how owner-keyed state (a caller's own MCP
+        servers and their credentials) is addressed everywhere else. Using the
+        raw current-user id here would have an admin's self-configured servers
+        written under one name and read under another.
+        """
+        try:
+            from deeptutor.multi_user.paths import current_owner_id
+
+            return current_owner_id()
+        except Exception:
+            logger.debug("owner id resolution failed", exc_info=True)
+            return ""
+
+    @staticmethod
     def _selected_kbs(context: UnifiedContext) -> list[str]:
         return [str(kb).strip() for kb in context.knowledge_bases if str(kb).strip()]
+
+    def _rag_kbs(self, context: UnifiedContext) -> list[str]:
+        """Attached KBs served by rag; PageIndex KBs use their SDK tools."""
+        from deeptutor.services.rag.pipelines.pageindex import is_pageindex_kb
+
+        return [kb for kb in self._selected_kbs(context) if not is_pageindex_kb(kb)]
+
+    def _capability_owned_kbs(self, context: UnifiedContext) -> set[str]:
+        """Selected KBs consumed by an active capability's own tools (not rag).
+
+        An exclusive knowledge capability (Obsidian) reads its vault through its
+        own tools; those KB refs must be excluded from the rag surface. Read via
+        ``getattr`` so plain capabilities without the seam are unaffected.
+        """
+        owned: set[str] = set()
+        for cap in self._active_loop_capabilities(context):
+            hook = getattr(cap, "owned_kbs", None)
+            if callable(hook):
+                owned |= set(hook(context))
+        return owned
+
+    def _coexisting_rag_kbs(self, context: UnifiedContext) -> list[str]:
+        """rag-served KBs that coexist with an exclusive knowledge capability.
+
+        When an Obsidian vault owns the turn, co-selected LlamaIndex KBs would
+        otherwise be silently dropped (issue #650). These stay reachable via
+        rag; vault KBs (which have no rag index) are excluded. Equals
+        ``_rag_kbs`` for a plain chat turn (no capability owns any KB).
+        """
+        owned = self._capability_owned_kbs(context)
+        return [kb for kb in self._rag_kbs(context) if kb not in owned]
 
     @staticmethod
     def _workspace_key(context: UnifiedContext) -> str:
@@ -1230,15 +1619,118 @@ class AgenticChatPipeline:
         return cleaned.strip("_") or "direct"
 
     def _kb_system_note(self, context: UnifiedContext) -> str:
-        if self._exclusive_capability_active(context):
+        if not self._selected_kbs(context):
             return ""
-        kbs = self._selected_kbs(context)
+        rag_note = ""
+        # Coexisting rag KBs only: when an Obsidian vault owns the turn, its own
+        # system block covers the vault, and this note tells the model the
+        # co-selected LlamaIndex KBs are reachable via rag (issue #650). A
+        # pure-vault turn yields no coexisting KBs, so the note stays empty.
+        rag_kbs = self._coexisting_rag_kbs(context)
+        if rag_kbs:
+            joined = ", ".join(rag_kbs)
+            rag_note = (
+                f"用户已挂载知识库：{joined}。调用 rag 时，kb_name 必须从其中选一个。"
+                if self.language == "zh"
+                else (
+                    f"Attached knowledge bases: {joined}. When calling rag, kb_name "
+                    "must be one of these names."
+                )
+            )
+        return rag_note + self._kb_manifest_system_note() + self._pageindex_system_note()
+
+    async def _prepare_kb_manifests(self, context: UnifiedContext) -> None:
+        """Read the attached KBs' document inventories once per turn.
+
+        Retrieval cannot answer "how many files are in here" — the passages it
+        returns say nothing about the size of the collection they came from. The
+        inventory is read here instead (off the event loop: a directory walk per
+        local KB, and a cached browse call for a connected library that exposes
+        one) and rendered into the system prompt, which keeps the prompt
+        byte-stable for the whole turn and makes counts answerable without a tool
+        round-trip.
+
+        PageIndex KBs are excluded: ``_pageindex_system_note`` already lists
+        their documents for the SDK tools. Fails soft — a KB
+        whose files cannot be read costs the manifest, not the turn.
+        """
+        self._kb_manifests = []
+        kbs = self._rag_kbs(context)
         if not kbs:
+            return
+        try:
+            self._kb_manifests = await asyncio.to_thread(self._collect_kb_manifests, kbs)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("Failed to build knowledge base manifests: %s", exc)
+
+    @staticmethod
+    def _collect_kb_manifests(kbs: list[str]) -> list[KbManifest]:
+        from deeptutor.multi_user.knowledge_access import resolve_kb_manifest
+
+        manifests: list[KbManifest] = []
+        for kb in kbs:
+            try:
+                manifest = resolve_kb_manifest(kb)
+            except Exception as exc:
+                logger.warning("Failed to read documents of knowledge base '%s': %s", kb, exc)
+                continue
+            if manifest is not None:
+                manifests.append(manifest)
+        return manifests
+
+    def _kb_manifest_system_note(self) -> str:
+        """What the attached KBs contain, from :meth:`_prepare_kb_manifests`."""
+        if not self._kb_manifests:
             return ""
-        joined = ", ".join(kbs)
-        if self.language == "zh":
-            return f"用户已挂载知识库：{joined}。调用 rag 时，kb_name 必须从其中选一个。"
-        return f"Attached knowledge bases: {joined}. When calling rag, kb_name must be one of these names."
+        note = render_manifest_note(self._kb_manifests, language=self.language)
+        return f"\n{note}" if note else ""
+
+    def _pageindex_system_note(self) -> str:
+        """Retrieval instructions for attached PageIndex KBs.
+
+        Populated by ``_prepare_deferred_tools`` once per turn, so the system
+        prompt stays byte-stable for the whole turn (KB cache prefix).
+        """
+        providers = getattr(self, "_pageindex_providers", None) or set()
+        if not providers:
+            return ""
+
+        blocks: list[str] = []
+        if "pageindex" in providers:
+            instructions = str(getattr(self, "_pageindex_cloud_instructions", "") or "").strip()
+            if self.language == "zh":
+                blocks.append(
+                    "\n以下知识库使用 PageIndex Cloud。使用已加载的 pageindex_cloud_* "
+                    "SDK 工具先查看文档结构、再读取相关页面；不要使用 rag 读取这些 "
+                    "PageIndex 知识库。\n\nPageIndex SDK 阅读说明：\n"
+                    f"{instructions}"
+                )
+            else:
+                blocks.append(
+                    "\nThe following knowledge bases use PageIndex Cloud. Read them with "
+                    "the preloaded pageindex_cloud_* SDK tools; inspect structure, then "
+                    "read relevant pages. Do not use rag to read these PageIndex knowledge "
+                    "bases.\n\nPageIndex SDK reading instructions:\n"
+                    f"{instructions}"
+                )
+        if "pageindex-oss" in providers:
+            instructions = str(getattr(self, "_pageindex_oss_instructions", "") or "").strip()
+            if self.language == "zh":
+                blocks.append(
+                    "\n以下知识库使用 PageIndex OSS。使用已加载的 pageindex_oss_* 工具，"
+                    "在当前推理循环中先查看文档结构、再读取相关页面；不要使用 rag 读取这些 "
+                    "PageIndex 知识库。\n\nPageIndex SDK 阅读说明：\n"
+                    f"{instructions}"
+                )
+            else:
+                blocks.append(
+                    "\nThe following knowledge bases use PageIndex OSS. Use the preloaded "
+                    "pageindex_oss_* tools inside this reasoning loop; inspect structure, "
+                    "then read relevant pages. Do not use rag to read these PageIndex knowledge "
+                    "bases.\n\nPageIndex SDK reading instructions:\n"
+                    f"{instructions}"
+                )
+        return "".join(blocks)
 
     def _workspace_system_note(self, context: UnifiedContext) -> str:
         if not getattr(self, "_exec_enabled", False):
@@ -1255,23 +1747,64 @@ class AgenticChatPipeline:
             )
         except Exception:
             return ""
+
+        # Only the "how do I get a script into a file" clause depends on the
+        # host shell; everything else in the note is identical, so vary that
+        # one clause rather than duplicating the whole paragraph per platform.
+        is_windows = sys.platform == "win32"
         if self.language == "zh":
+            how_to_write = (
+                (
+                    "当前 shell 是 Windows PowerShell。列目录使用 Get-ChildItem，限制输出使用 "
+                    "Select-Object -First；连续命令使用分号。`python` 与 `python -m pip` 均指向 "
+                    "DeepTutor 自己的运行环境。通过 exec 使用 PowerShell here-string 将脚本写入文件再运行，例如：\n"
+                    "  @'\n...Python 脚本内容...\n'@ | Set-Content -Encoding utf8 gen.py\n"
+                    "  python gen.py\n"
+                    "本地路径经 Test-Path 或 Get-Item 验证存在后，直接读取，不要要求用户重复上传。"
+                    "命令失败时先根据 STDERR 与退出码修正命令或依赖；只有工具明确返回拒绝访问时，"
+                    "才能判断为权限问题。不要把命令语法或依赖错误说成沙箱无权访问。"
+                )
+                if is_windows
+                else (
+                    "直接通过 exec 写入并运行脚本（如 heredoc：python - <<'PY' … PY，"
+                    "或 cat > gen.py <<'EOF' … EOF 后再运行）。"
+                )
+            )
             return (
                 "[本轮工作区]\n"
                 f"脚本和临时文件应写入：{exec_dir}\n"
                 "相对路径会解析到这个目录。需要创建 PDF、图片、表格或其他下载文件时，"
-                "直接通过 exec 写入并运行脚本（如 heredoc：python - <<'PY' … PY，"
-                "或 cat > gen.py <<'EOF' … EOF 后再运行）。生成的文件会自动以可下载"
-                "卡片呈现给用户——在回答里描述你做了什么即可，不要粘贴原始 URL。"
+                f"{how_to_write}"
+                "生成的文件会自动以可下载卡片呈现给用户——在回答里描述你做了什么即可，"
+                "不要粘贴原始 URL。"
             )
+        how_to_write = (
+            (
+                "the current shell is Windows PowerShell. Use Get-ChildItem to list files, "
+                "Select-Object -First to limit output, and semicolons between commands. "
+                "Both `python` and `python -m pip` resolve to DeepTutor's runtime. "
+                "Write the script to a file through exec with a PowerShell "
+                "here-string, then run it, for example:\n"
+                "  @'\n...Python script contents...\n'@ | Set-Content -Encoding utf8 gen.py\n"
+                "  python gen.py\n"
+                "After Test-Path or Get-Item confirms a local path, read it directly instead "
+                "of asking the user to upload it again. Correct the command or dependency from "
+                "STDERR and the exit code first. Do not describe a syntax or dependency failure "
+                "as denied sandbox access unless the tool explicitly reports access denied. "
+            )
+            if is_windows
+            else (
+                "write and run scripts directly through exec (e.g. a heredoc: "
+                "python - <<'PY' … PY, or cat > gen.py <<'EOF' … EOF then run it). "
+            )
+        )
         return (
             "[Turn workspace]\n"
             f"Scripts and temporary files should be written under: {exec_dir}\n"
             "Relative paths resolve to this directory. When creating PDFs, images, "
-            "spreadsheets, or other downloadable files, write and run scripts directly "
-            "through exec (e.g. a heredoc: python - <<'PY' … PY, or cat > gen.py <<'EOF' "
-            "… EOF then run it). Generated files are shown to the user automatically as "
-            "downloadable cards — describe what you made, do not paste raw URLs."
+            f"spreadsheets, or other downloadable files, {how_to_write}"
+            "Generated files are shown to the user automatically as downloadable "
+            "cards — describe what you made, do not paste raw URLs."
         )
 
     def _t(self, key: str, default: str = "", **kwargs: Any) -> str:

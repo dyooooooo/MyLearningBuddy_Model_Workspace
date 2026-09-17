@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  connectImaKnowledgeBase as connectImaApi,
+  connectWeKnora as connectWeKnoraApi,
   connectLinkedFolder as connectLinkedFolderApi,
+  connectMarginNote4Library as connectMarginNote4Api,
   connectObsidianVault as connectObsidianApi,
   createKnowledgeBase as createKbApi,
   deleteKnowledgeBase as deleteKbApi,
@@ -13,11 +16,12 @@ import {
   reindexKnowledgeBase as reindexKbApi,
   retryKnowledgeBase as retryKbApi,
   setDefaultKnowledgeBase as setDefaultKbApi,
-  uploadKnowledgeBaseFiles as uploadKbApi,
   type KnowledgeTaskResponse,
   type KnowledgeUploadPolicy,
   type RagProviderSummary,
-} from "@/lib/knowledge-api";
+} from "@/features/knowledge/api/catalog";
+import { connectLightRagServer as connectLightRagServerApi } from "@/features/knowledge/api/engines";
+import { uploadKnowledgeBaseFiles as uploadKbApi } from "@/features/knowledge/api/files";
 import {
   DEFAULT_UPLOAD_POLICY,
   type KnowledgeBase,
@@ -92,9 +96,14 @@ export function useKnowledgeBases() {
         const typedKbs = kbList as KnowledgeBase[];
         setKbs(typedKbs);
         setUploadPolicy(policy);
-        setProviders(
-          providerList.length ? providerList : DEFAULT_PROVIDER_FALLBACK,
-        );
+        // Keep the array reference stable across the 4s indexing poll when
+        // nothing changed, so consumers keyed on `providers` don't re-fire.
+        setProviders((prev) => {
+          const next = providerList.length
+            ? providerList
+            : DEFAULT_PROVIDER_FALLBACK;
+          return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+        });
 
         // Auto-resubscribe to progress for KBs that are still live
         // (e.g. user navigated away and came back mid-indexing).
@@ -169,6 +178,8 @@ export function useKnowledgeBases() {
       name: string;
       provider: string;
       files: File[];
+      pageindexMode?: "flash" | "standard";
+      searchMode?: string;
     }): Promise<KnowledgeTaskResponse> => {
       const result = await createKbApi(params);
       invalidateKnowledgeCaches();
@@ -205,8 +216,9 @@ export function useKnowledgeBases() {
       kbName: string,
       files: File[],
       provider?: string,
+      destSubdir?: string,
     ): Promise<KnowledgeTaskResponse> => {
-      const result = await uploadKbApi(kbName, files, { provider });
+      const result = await uploadKbApi(kbName, files, { provider, destSubdir });
       invalidateKnowledgeCaches();
       const fileCount = files.length;
       if (result.task_id) {
@@ -320,6 +332,57 @@ export function useKnowledgeBases() {
     [load],
   );
 
+  const connectLightRagServer = useCallback(
+    async (params: {
+      name: string;
+      serverUrl: string;
+      apiKey?: string;
+      mode?: string;
+    }) => {
+      await connectLightRagServerApi(params);
+      invalidateKnowledgeCaches();
+      await load({ force: true, showSpinner: false });
+    },
+    [load],
+  );
+
+  const connectMarginNote4 = useCallback(
+    async (params: { name: string }) => {
+      await connectMarginNote4Api(params);
+      invalidateKnowledgeCaches();
+      await load({ force: true, showSpinner: false });
+    },
+    [load],
+  );
+
+  const connectWeKnora = useCallback(
+    async (params: {
+      name: string;
+      serverUrl: string;
+      apiKey: string;
+      knowledgeBaseId: string;
+    }) => {
+      await connectWeKnoraApi(params);
+      invalidateKnowledgeCaches();
+      await load({ force: true, showSpinner: false });
+    },
+    [load],
+  );
+
+  const connectIma = useCallback(
+    async (params: {
+      name: string;
+      clientId: string;
+      apiKey: string;
+      knowledgeBaseId: string;
+    }) => {
+      await connectImaApi(params);
+      invalidateKnowledgeCaches();
+      await load({ force: true, showSpinner: false });
+    },
+    [load],
+  );
+
   return {
     kbs: combinedKbs,
     rawKbs: kbs,
@@ -342,6 +405,10 @@ export function useKnowledgeBases() {
     deleteKb,
     connectObsidian,
     connectLinkedFolder,
+    connectLightRagServer,
+    connectWeKnora,
+    connectMarginNote4,
+    connectIma,
   };
 }
 

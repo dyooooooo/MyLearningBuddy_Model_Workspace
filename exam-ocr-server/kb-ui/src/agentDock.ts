@@ -306,7 +306,7 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
   }
 
   function sameThread(job: AgentJob): boolean {
-    if (job.kind !== "chat") return false;
+    if (job.kind !== "chat" && job.kind !== "printed_toc" && job.kind !== "convert") return false;
     if (pendingId && job.job_id === pendingId) return true;
     if (!cid) return false;
     const payloadCid = String(job.payload?.conversation_id || "");
@@ -316,7 +316,7 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
 
   function ingest(job: AgentJob): void {
     const importCid = isImportChatJob(job) ? jobConversationId(job) : "";
-    if (importCid && importCid !== cid) {
+    if (importCid && importCid !== cid && !cid) {
       void openConversation(importCid, String(job.result?.title || ""));
       return;
     }
@@ -562,7 +562,10 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
       if (
         ev.type === "task" &&
         ev.action === "emit" &&
-        (ev.event === "kb.import.completed" || ev.event === "task.import-page-refine.completed")
+        (ev.event === "kb.import.completed"
+          || ev.event === "kb.import.converting"
+          || ev.event === "task.import-page-refine.completed"
+          || ev.event === "task.import-book-toc.completed")
       ) {
         void followImportConversation(ev);
         return;
@@ -713,20 +716,15 @@ export function mountAgentDock(host: HTMLElement): { destroy: () => void } {
     const ids = Array.isArray(ev.conversation_ids)
       ? ev.conversation_ids.map((id) => String(id || "").trim()).filter(Boolean)
       : [];
-    if (ids[0] && ids[0] !== cid) {
-      await openConversation(ids[0]);
+    const next = ids[0] || "";
+    if (!cid && next) {
+      await openConversation(next);
       return;
     }
-    if (Number(ev.started) <= 0) return;
     try {
-      const listed = await agent.conversations();
-      const hit = (listed.conversations || []).find((row) =>
-        String(row.preview || "").includes("教材已导入完成"),
-      );
-      const next = String(hit?.id || "").trim();
-      if (next && next !== cid) await openConversation(next, hit?.title || "");
+      await loadThread();
     } catch {
-      /* job ingest will switch */
+      /* job ingest paints the turn */
     }
   }
 

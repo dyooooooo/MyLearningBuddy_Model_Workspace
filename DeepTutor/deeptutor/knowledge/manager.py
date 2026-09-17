@@ -16,17 +16,29 @@ import shutil
 import stat
 import sys
 from typing import Any
+from urllib.parse import urlparse
 
 from deeptutor.knowledge.kb_types import (
+    IMA_KB_TYPE,
+    LIGHTRAG_SERVER_KB_TYPE,
     LINKED_KB_TYPE,
+    MARGINNOTE4_KB_TYPE,
     OBSIDIAN_KB_TYPE,
     SUBAGENT_KB_TYPE,
+    WEKNORA_KB_TYPE,
     external_root_of,
     is_connected_kb,
 )
+from deeptutor.knowledge.manifest import iter_kb_documents
+from deeptutor.services.file_io import atomic_write_json
 from deeptutor.services.rag.factory import (
     DEFAULT_PROVIDER,
+    IMA_PROVIDER,
     KNOWN_PROVIDERS,
+    LIGHTRAG_SERVER_PROVIDER,
+    PAGEINDEX_OSS_PROVIDER,
+    PAGEINDEX_PROVIDER,
+    WEKNORA_PROVIDER,
     has_ready_provider_index,
     normalize_provider_name,
     provider_uses_embedding_versions,
@@ -37,6 +49,7 @@ from deeptutor.services.rag.index_probe import (
     inspect_provider_version,
     provider_failure_summary,
 )
+from deeptutor.services.web_source.crawler import MAX_CRAWL_DEPTH, MAX_CRAWL_PAGES
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +96,9 @@ def _detect_provider_from_versions(versions: list[dict[str, Any]]) -> str:
     return DEFAULT_PROVIDER
 
 
-# Cross-platform file locking
+# Cross-platform file locking. Writers no longer take locks — every JSON
+# write in this module goes through ``atomic_write_json`` (temp file +
+# ``os.replace``), so readers always see a complete previous or new file.
 @contextmanager
 def file_lock_shared(file_handle):
     """Acquire a shared (read) lock on a file - cross-platform."""
@@ -100,28 +115,6 @@ def file_lock_shared(file_handle):
         import fcntl
 
         fcntl.flock(file_handle.fileno(), fcntl.LOCK_SH)
-        try:
-            yield
-        finally:
-            fcntl.flock(file_handle.fileno(), fcntl.LOCK_UN)
-
-
-@contextmanager
-def file_lock_exclusive(file_handle):
-    """Acquire an exclusive (write) lock on a file - cross-platform."""
-    if sys.platform == "win32":
-        import msvcrt
-
-        msvcrt.locking(file_handle.fileno(), msvcrt.LK_NBLCK, 1)
-        try:
-            yield
-        finally:
-            file_handle.seek(0)
-            msvcrt.locking(file_handle.fileno(), msvcrt.LK_UNLCK, 1)
-    else:
-        import fcntl
-
-        fcntl.flock(file_handle.fileno(), fcntl.LOCK_EX)
         try:
             yield
         finally:
@@ -344,11 +337,7 @@ class KnowledgeBaseManager:
 
                 if config_changed:
                     try:
-                        with open(self.config_file, "w", encoding="utf-8") as f:
-                            with file_lock_exclusive(f):
-                                json.dump(config, f, indent=2, ensure_ascii=False)
-                                f.flush()
-                                os.fsync(f.fileno())
+                        atomic_write_json(self.config_file, config)
                     except Exception as save_err:
                         logger.warning(f"Failed to persist normalized KB config: {save_err}")
 
@@ -359,13 +348,13 @@ class KnowledgeBaseManager:
         return {"knowledge_bases": {}}
 
     def _save_config(self):
-        """Save knowledge base configuration (thread-safe with file locking)"""
-        # Use exclusive lock for writing
-        with open(self.config_file, "w", encoding="utf-8") as f:
-            with file_lock_exclusive(f):
-                json.dump(self.config, f, indent=2, ensure_ascii=False)
-                f.flush()
-                os.fsync(f.fileno())  # Ensure data is written to disk
+        """Save knowledge base configuration.
+
+        Written via temp-file + ``os.replace`` so concurrent readers only
+        ever see the previous or the new file — ``open(..., "w")`` used to
+        truncate the config before the lock was even acquired.
+        """
+        atomic_write_json(self.config_file, self.config)
 
     def _sync_kb_to_pb(self, name: str, kb_entry: dict) -> None:
         """
@@ -483,9 +472,20 @@ class KnowledgeBaseManager:
             kb_config["progress"] = progress
 
         if status == "ready":
-            fp = _get_embedding_fingerprint()
-            if fp:
-                kb_config["embedding_model"], kb_config["embedding_dim"] = fp
+            provider = normalize_provider_name(kb_config.get("rag_provider"))
+            pageindex_provider = provider in {PAGEINDEX_PROVIDER, PAGEINDEX_OSS_PROVIDER}
+            if pageindex_provider:
+                for key in (
+                    "embedding_model",
+                    "embedding_dim",
+                    "embedding_signature",
+                    "embedding_mismatch",
+                ):
+                    kb_config.pop(key, None)
+            else:
+                fp = _get_embedding_fingerprint()
+                if fp:
+                    kb_config["embedding_model"], kb_config["embedding_dim"] = fp
             # Record the active signature + the on-disk version registry so
             # the UI can render version chips without recomputing.
             try:
@@ -493,18 +493,29 @@ class KnowledgeBaseManager:
                     signature_from_embedding_config,
                 )
 
-                sig = signature_from_embedding_config()
+                sig = None if pageindex_provider else signature_from_embedding_config()
                 if sig is not None:
                     kb_config["embedding_signature"] = sig.hash()
                 kb_dir = self.base_dir / name
                 if kb_dir.is_dir():
-                    provider = normalize_provider_name(kb_config.get("rag_provider"))
                     kb_config["index_versions"] = inspect_kb_versions(kb_dir, provider)
             except Exception:  # pragma: no cover - best-effort metadata
                 pass
 
         self._save_config()
         self._sync_kb_to_pb(name, kb_config)
+
+    def get_kb_entry(self, name: str) -> dict | None:
+        """The KB's raw ``kb_config.json`` record, or ``None`` if unregistered.
+
+        A cheap read for callers that need the registered facts (provider,
+        status, connected-KB pointers) without paying for :meth:`get_info`,
+        which additionally probes every index version on disk — and parses a
+        provider's docstore to do it.
+        """
+        self.config = self._load_config()
+        entry = self.config.get("knowledge_bases", {}).get(name)
+        return dict(entry) if isinstance(entry, dict) else None
 
     def get_kb_status(self, name: str) -> dict | None:
         """Get status and progress for a knowledge base."""
@@ -835,6 +846,234 @@ class KnowledgeBaseManager:
         self._save_config()
         return entry
 
+    def register_lightrag_server_kb(
+        self,
+        name: str,
+        server_url: str,
+        *,
+        api_key: str = "",
+        search_mode: str = "",
+        description: str = "",
+    ) -> dict:
+        """Register a pointer to an external LightRAG server as a connected KB.
+
+        Like the other connected types this creates no folder under ``base_dir``
+        and runs no index pipeline: it records a ``type: lightrag_server`` entry
+        whose ``server_url`` (+ optional ``api_key``) the ``lightrag-server``
+        provider queries over HTTP. The server owns indexing entirely. Callers
+        should validate reachability with the probe helper first; this only
+        guards basic invariants. Raises ``ValueError`` on a missing name/URL or a
+        name clash.
+        """
+        name = (name or "").strip()
+        server_url = (server_url or "").strip().rstrip("/")
+        if not name:
+            raise ValueError("Knowledge base name is required.")
+        if not server_url:
+            raise ValueError("LightRAG server URL is required.")
+
+        self.config = self._load_config()
+        knowledge_bases = self.config.setdefault("knowledge_bases", {})
+        if name in knowledge_bases:
+            raise ValueError(f"A knowledge base named '{name}' already exists.")
+
+        now = datetime.now().isoformat()
+        entry: dict[str, Any] = {
+            "path": name,
+            "type": LIGHTRAG_SERVER_KB_TYPE,
+            "rag_provider": LIGHTRAG_SERVER_PROVIDER,
+            "server_url": server_url,
+            "api_key": (api_key or "").strip(),
+            "description": description or f"LightRAG server: {name}",
+            "status": "ready",
+            "needs_reindex": False,
+            "created_at": now,
+            "updated_at": now,
+        }
+        search_mode = (search_mode or "").strip().lower()
+        if search_mode:
+            entry["search_mode"] = search_mode
+        knowledge_bases[name] = entry
+        self._save_config()
+        return entry
+
+    def register_marginnote4_kb(
+        self,
+        name: str,
+        *,
+        db_path: str = "",
+        description: str = "",
+    ) -> dict:
+        """Register a connected MarginNote 4 library as a pointer KB.
+
+        Creates no folder under ``base_dir`` and runs no index pipeline: it
+        records a ``type: marginnote4`` entry whose ``db_path`` (when given)
+        the MarginNote capability binds to. When ``db_path`` is omitted the
+        capability derives a default SQLite path from the KB name, so callers
+        can leave it blank for the simple single-library case. Raises
+        ``ValueError`` on a missing name, a name clash, or a store already
+        claimed by another library.
+        """
+        name = (name or "").strip()
+        if not name:
+            raise ValueError("Knowledge base name is required.")
+
+        self.config = self._load_config()
+        knowledge_bases = self.config.setdefault("knowledge_bases", {})
+        if name in knowledge_bases:
+            raise ValueError(f"A knowledge base named '{name}' already exists.")
+
+        db_path = (db_path or "").strip()
+        claimed_by = self._marginnote4_store_owner(name, db_path, knowledge_bases)
+        if claimed_by:
+            # Distinct names can still derive one store: the default path keeps
+            # only alphanumerics, `-` and `_`, so "My Lib" and "My/Lib" both
+            # land on My_Lib.db. Sharing it would merge two libraries' objects
+            # and let either one's devices sync into the other.
+            raise ValueError(
+                f"Knowledge base '{claimed_by}' already uses that MarginNote store. "
+                "Pick a name that differs by more than punctuation."
+            )
+
+        now = datetime.now().isoformat()
+        entry: dict[str, Any] = {
+            "path": name,
+            "type": MARGINNOTE4_KB_TYPE,
+            "description": description or f"MarginNote 4 library: {name}",
+            "status": "ready",
+            "needs_reindex": False,
+            "created_at": now,
+            "updated_at": now,
+        }
+        if db_path:
+            entry["db_path"] = db_path
+        knowledge_bases[name] = entry
+        self._save_config()
+        return entry
+
+    @staticmethod
+    def _marginnote4_store_owner(
+        name: str,
+        db_path: str,
+        knowledge_bases: dict[str, Any],
+    ) -> str | None:
+        """Name of the MarginNote library already using this store, if any."""
+        from deeptutor.capabilities.marginnote4.store import resolve_db_path
+
+        def _store(kb_name: str, entry: dict) -> Path:
+            return resolve_db_path(kb_name, metadata=entry).expanduser().resolve()
+
+        wanted = _store(name, {"db_path": db_path})
+        for other_name, other in knowledge_bases.items():
+            if not isinstance(other, dict) or other.get("type") != MARGINNOTE4_KB_TYPE:
+                continue
+            if _store(other_name, other) == wanted:
+                return other_name
+        return None
+
+    def register_ima_kb(
+        self,
+        name: str,
+        client_id: str,
+        api_key: str,
+        knowledge_base_id: str,
+        *,
+        description: str = "",
+    ) -> dict:
+        """Register a pointer to a Tencent IMA knowledge base as a connected KB.
+
+        Like the other connected types this creates no folder under ``base_dir``
+        and runs no index pipeline: it records a ``type: ima`` entry whose
+        library id the ``ima`` provider queries over IMA's OpenAPI. IMA owns
+        indexing entirely.
+
+        Credentials are optional here: leave them empty and the KB retrieves
+        with the account-level pair from the engine settings, so rotating that
+        key updates every such KB at once. Passing a pair pins this KB to it —
+        the way to reach a second IMA account. Callers should validate the
+        binding with the probe helper first; this only guards basic invariants.
+        Raises ``ValueError`` on a missing field, a half-filled credential pair,
+        or a name clash.
+        """
+        name = (name or "").strip()
+        client_id = (client_id or "").strip()
+        api_key = (api_key or "").strip()
+        knowledge_base_id = (knowledge_base_id or "").strip()
+        if not name:
+            raise ValueError("Knowledge base name is required.")
+        if bool(client_id) != bool(api_key):
+            raise ValueError("IMA Client ID and API Key must be given together.")
+        if not knowledge_base_id:
+            raise ValueError("IMA knowledge base ID is required.")
+
+        self.config = self._load_config()
+        knowledge_bases = self.config.setdefault("knowledge_bases", {})
+        if name in knowledge_bases:
+            raise ValueError(f"A knowledge base named '{name}' already exists.")
+
+        now = datetime.now().isoformat()
+        entry: dict[str, Any] = {
+            "path": name,
+            "type": IMA_KB_TYPE,
+            "rag_provider": IMA_PROVIDER,
+            # Written only when this KB overrides the account credentials;
+            # absent means "resolve them from the engine settings".
+            **({"client_id": client_id, "api_key": api_key} if client_id else {}),
+            "knowledge_base_id": knowledge_base_id,
+            "description": description or f"Tencent IMA: {name}",
+            "status": "ready",
+            "needs_reindex": False,
+            "created_at": now,
+            "updated_at": now,
+        }
+        knowledge_bases[name] = entry
+        self._save_config()
+        return entry
+
+    def register_weknora_kb(
+        self,
+        name: str,
+        server_url: str,
+        api_key: str,
+        knowledge_base_id: str,
+        *,
+        description: str = "",
+    ) -> dict:
+        """Register a self-hosted WeKnora knowledge base as a pointer KB."""
+        name = (name or "").strip()
+        server_url = (server_url or "").strip().rstrip("/")
+        api_key = (api_key or "").strip()
+        knowledge_base_id = (knowledge_base_id or "").strip()
+        if not name:
+            raise ValueError("Knowledge base name is required.")
+        if not server_url or not knowledge_base_id:
+            raise ValueError("WeKnora server URL and knowledge base ID are required.")
+        if not api_key:
+            raise ValueError("A WeKnora API key is required.")
+
+        self.config = self._load_config()
+        knowledge_bases = self.config.setdefault("knowledge_bases", {})
+        if name in knowledge_bases:
+            raise ValueError(f"A knowledge base named '{name}' already exists.")
+
+        now = datetime.now().isoformat()
+        entry: dict[str, Any] = {
+            "path": name,
+            "type": WEKNORA_KB_TYPE,
+            "rag_provider": WEKNORA_PROVIDER,
+            "server_url": server_url,
+            "api_key": api_key,
+            "knowledge_base_id": knowledge_base_id,
+            "description": description or f"WeKnora knowledge base: {name}",
+            "status": "ready",
+            "needs_reindex": False,
+            "created_at": now,
+            "updated_at": now,
+        }
+        knowledge_bases[name] = entry
+        self._save_config()
+        return entry
+
     def get_knowledge_base_path(self, name: str | None = None) -> Path:
         """Get path to a knowledge base.
 
@@ -907,27 +1146,33 @@ class KnowledgeBaseManager:
         except Exception as e:
             logger.warning(f"Failed to save default to centralized config: {e}")
 
-    def get_default(self) -> str | None:
+    def get_default(self, *, available_names: list[str] | None = None) -> str | None:
         """
         Get default knowledge base name.
 
         Priority:
         1. Canonical KB config service (`data/knowledge_bases/kb_config.json`)
         2. First knowledge base in the list (auto-fallback)
+
+        Args:
+            available_names: An already-reconciled knowledge-base list. Passing
+                this avoids rescanning every index when the caller just listed
+                the available knowledge bases.
         """
+        kb_list = available_names if available_names is not None else self.list_knowledge_bases()
+
         # Try centralized config first
         try:
             from deeptutor.services.config import get_kb_config_service
 
             kb_config_service = get_kb_config_service()
             default_kb = kb_config_service.get_default_kb()
-            if default_kb and default_kb in self.list_knowledge_bases():
+            if default_kb and default_kb in kb_list:
                 return default_kb
         except Exception:
             pass
 
         # Fallback to first knowledge base in sorted list
-        kb_list = self.list_knowledge_bases()
         if kb_list:
             return kb_list[0]
 
@@ -977,6 +1222,15 @@ class KnowledgeBaseManager:
                 "type": kb_config.get("type"),
                 "vault_path": kb_config.get("vault_path"),
                 "external_path": kb_config.get("external_path"),
+                # MarginNote 4 pointer (SQLite store path for synced data).
+                "db_path": kb_config.get("db_path"),
+                # LightRAG server pointer (the URL is safe to surface; the API
+                # key deliberately is not).
+                "server_url": kb_config.get("server_url"),
+                # IMA pointer. The library id identifies which IMA knowledge
+                # base this KB reads; the client id and API key are credentials
+                # and are deliberately absent from this allowlist.
+                "knowledge_base_id": kb_config.get("knowledge_base_id"),
                 # Subagent connection fields (None for non-subagent KBs).
                 "agent_kind": kb_config.get("agent_kind"),
                 "cwd": kb_config.get("cwd"),
@@ -989,7 +1243,13 @@ class KnowledgeBaseManager:
 
         return {}
 
-    def get_info(self, name: str | None = None) -> dict:
+    def get_info(
+        self,
+        name: str | None = None,
+        *,
+        refresh_config: bool = True,
+        default_name: str | None = None,
+    ) -> dict:
         """Get detailed information about a knowledge base.
 
         This method:
@@ -997,11 +1257,24 @@ class KnowledgeBaseManager:
         2. Reads all config from kb_config.json (authoritative source)
         3. Falls back to metadata.json for legacy KBs
         4. Collects statistics about files and RAG status
+
+        Args:
+            name: Knowledge-base name, or the configured default when omitted.
+            refresh_config: Reload and reconcile the complete configuration.
+                Bulk callers that just invoked :meth:`list_knowledge_bases`
+                can reuse that snapshot by passing ``False``.
+            default_name: A pre-resolved default name for bulk callers. This
+                avoids rescanning the knowledge-base list for every item.
         """
         # Reload config to get latest status
-        self.config = self._load_config()
+        if refresh_config:
+            self.config = self._load_config()
 
-        kb_name = name or self.get_default()
+        resolved_default = default_name
+        if resolved_default is None:
+            resolved_default = self.get_default()
+
+        kb_name = name or resolved_default
         if kb_name is None:
             raise ValueError("No knowledge base name provided and no default set")
 
@@ -1034,7 +1307,9 @@ class KnowledgeBaseManager:
             index_versions = inspect_kb_versions(kb_dir, rag_provider)
             has_ready_provider = any(bool(version.get("ready")) for version in index_versions)
         provider_error_summary = (
-            provider_failure_summary(kb_dir, rag_provider) if dir_exists else ""
+            provider_failure_summary(kb_dir, rag_provider, versions=index_versions)
+            if dir_exists
+            else ""
         )
 
         # For old KBs without status field, determine status from rag_storage
@@ -1103,8 +1378,17 @@ class KnowledgeBaseManager:
             metadata["vault_path"] = kb_config.get("vault_path")
         if kb_config.get("external_path"):
             metadata["external_path"] = kb_config.get("external_path")
+        if kb_config.get("db_path"):
+            metadata["db_path"] = kb_config.get("db_path")
         if kb_config.get("agent_kind"):
             metadata["agent_kind"] = kb_config.get("agent_kind")
+        # The server URL is shown read-only in the UI; the API key never leaves
+        # the backend, so it is deliberately not surfaced here.
+        if kb_config.get("server_url"):
+            metadata["server_url"] = kb_config.get("server_url")
+        # Same split for IMA: the library id is shown, the credentials are not.
+        if kb_config.get("knowledge_base_id"):
+            metadata["knowledge_base_id"] = kb_config.get("knowledge_base_id")
 
         metadata.update(self._embedding_fields(kb_config))
 
@@ -1114,7 +1398,7 @@ class KnowledgeBaseManager:
         info = {
             "name": kb_name,
             "path": str(kb_dir),
-            "is_default": kb_name == self.get_default(),
+            "is_default": kb_name == resolved_default,
             "metadata": metadata,
             "status": status,
             "progress": progress,
@@ -1131,11 +1415,10 @@ class KnowledgeBaseManager:
 
         if dir_exists:
             try:
-                raw_count = (
-                    len([f for f in raw_dir.rglob("*") if f.is_file()])
-                    if raw_dir and raw_dir.is_dir()
-                    else 0
-                )
+                # One definition of "a document in a KB", shared with the chat
+                # manifest / ``kb_files`` so a user is never told two different
+                # counts for the same KB (see :mod:`deeptutor.knowledge.manifest`).
+                raw_count = sum(1 for _ in iter_kb_documents(raw_dir)) if raw_dir else 0
             except Exception:
                 pass
 
@@ -1162,18 +1445,26 @@ class KnowledgeBaseManager:
         kb_probe_dir = kb_dir if dir_exists else None
         rag_initialized = has_ready_provider
 
-        active_signature = signature_from_embedding_config()
+        pageindex_provider = rag_provider in {PAGEINDEX_PROVIDER, PAGEINDEX_OSS_PROVIDER}
+        active_signature = None if pageindex_provider else signature_from_embedding_config()
         if provider_uses_embedding_versions(rag_provider):
             matched_entry = (
                 find_matching_version(kb_probe_dir, active_signature)
                 if (kb_probe_dir and active_signature)
                 else None
             )
-            active_match = (
-                inspect_provider_version(matched_entry, rag_provider).ready
-                if matched_entry
-                else False
-            )
+            active_match = False
+            if matched_entry:
+                # Reuse the probe results already computed for ``index_versions``
+                # instead of probing the matched storage a second time — probing
+                # parses provider-owned files (e.g. the multi-MB LlamaIndex
+                # docstore.json) and is the dominant cost of kb list / the
+                # knowledge API (see issue #859).
+                matched_path = matched_entry.get("storage_path")
+                active_match = any(
+                    entry.get("storage_path") == matched_path and entry.get("ready")
+                    for entry in index_versions
+                )
         else:
             active_match = rag_initialized
 
@@ -1224,9 +1515,17 @@ class KnowledgeBaseManager:
         # reference the user's own external resource — or, for subagents, no
         # folder at all. Deleting one must only drop our pointer entry; never
         # touch what it references, and don't warn about the "missing" folder.
-        connected = is_connected_kb(config_kbs.get(name, {}))
+        entry = config_kbs.get(name, {})
+        connected = is_connected_kb(entry)
         if connected:
             dir_exists = False
+        # One connected kind does own storage we created: a MarginNote library's
+        # synced objects live in a SQLite file under our own data directory, not
+        # in an external resource the user manages. Leaving it behind would also
+        # resurrect every paired device the moment a library of the same name is
+        # connected again.
+        if entry.get("type") == MARGINNOTE4_KB_TYPE:
+            self._delete_marginnote4_store(name, entry)
 
         if not confirm:
             # Ask for confirmation in CLI
@@ -1251,7 +1550,14 @@ class KnowledgeBaseManager:
                 # leaving the KB stuck in the list is worse than orphan files on
                 # disk (issue #370).
                 try:
-                    os.chmod(path, stat.S_IWRITE)
+                    current_mode = os.stat(path).st_mode
+                    writable_mode = current_mode | stat.S_IWRITE
+                    if stat.S_ISDIR(current_mode):
+                        # POSIX directories need execute permission to remain
+                        # traversable. Replacing the whole mode with S_IWRITE
+                        # leaves an orphan that even later cleanup cannot enter.
+                        writable_mode |= stat.S_IXUSR
+                    os.chmod(path, writable_mode)
                     func(path)
                 except Exception as retry_exc:
                     logger.warning(
@@ -1276,6 +1582,27 @@ class KnowledgeBaseManager:
 
         self._save_config()
         return True
+
+    def _delete_marginnote4_store(self, name: str, entry: dict) -> None:
+        """Remove a MarginNote library's SQLite store, best-effort.
+
+        A failure here must not strand the config entry: leaving the KB in the
+        list is worse than an orphan file, exactly as for the index directory
+        above.
+        """
+        from deeptutor.capabilities.marginnote4.store import resolve_db_path
+
+        try:
+            db_path = resolve_db_path(name, metadata=entry)
+            db_path.unlink(missing_ok=True)
+            # SQLite's WAL companions, when the last connection left them.
+            for suffix in ("-wal", "-shm"):
+                db_path.with_name(db_path.name + suffix).unlink(missing_ok=True)
+        except Exception as exc:  # noqa: BLE001 - orphan file beats a stuck entry
+            logger.warning(
+                f"Could not remove the MarginNote store for KB '{name}': {exc}. "
+                "Continuing; the config entry is still cleaned up."
+            )
 
     def clean_rag_storage(self, name: str | None = None, backup: bool = True) -> bool:
         """
@@ -1402,9 +1729,7 @@ class KnowledgeBaseManager:
         }
         metadata["linked_folders"].append(folder_info)
 
-        # Save metadata
-        with open(metadata_file, "w", encoding="utf-8") as fp:
-            json.dump(metadata, fp, indent=2, ensure_ascii=False)
+        atomic_write_json(metadata_file, metadata)
 
         return folder_info
 
@@ -1468,8 +1793,7 @@ class KnowledgeBaseManager:
 
         metadata["linked_folders"] = new_linked
 
-        with open(metadata_file, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2, ensure_ascii=False)
+        atomic_write_json(metadata_file, metadata)
 
         return True
 
@@ -1521,16 +1845,7 @@ class KnowledgeBaseManager:
             raise ValueError(f"Linked folder not found: {folder_id}")
 
         folder_path = Path(folder_info["path"]).expanduser().resolve()
-        last_sync = folder_info.get("last_sync")
         synced_files = folder_info.get("synced_files", {})
-
-        # Parse last sync timestamp
-        last_sync_time = None
-        if last_sync:
-            try:
-                last_sync_time = datetime.fromisoformat(last_sync)
-            except Exception:
-                pass
 
         new_files = []
         modified_files = []
@@ -1607,7 +1922,199 @@ class KnowledgeBaseManager:
 
                 folder["synced_files"] = file_states
                 folder["file_count"] = len(file_states)
+                atomic_write_json(metadata_file, metadata)
                 break
+
+    # ------------------------------------------------------------------
+    # GitHub source management
+    # ------------------------------------------------------------------
+
+    def add_github_source(self, kb_name, repo, branch="main", path="", glob="*.md"):
+        """Register a GitHub repo as a document source for a KB."""
+        if kb_name not in self.list_knowledge_bases():
+            raise ValueError(f"Knowledge base not found: {kb_name}")
+        repo_clean = repo.strip().rstrip("/")
+        if repo_clean.endswith(".git"):
+            repo_clean = repo_clean[:-4]
+        if "github.com/" in repo_clean:
+            repo_clean = repo_clean.split("github.com/", 1)[-1]
+        repo_clean = repo_clean.strip("/")
+        source_id = hashlib.md5(  # noqa: S324
+            f"{repo_clean}:{branch}:{path}".encode(), usedforsecurity=False
+        ).hexdigest()[:8]
+        kb_dir = self.base_dir / kb_name
+        metadata_file = kb_dir / "metadata.json"
+        metadata = self._read_kb_metadata(metadata_file)
+        sources = metadata.get("github_sources", [])
+        for existing in sources:
+            if existing.get("id") == source_id:
+                return existing
+        source_info = {
+            "id": source_id,
+            "repo": repo_clean,
+            "branch": branch,
+            "path": path,
+            "glob": glob,
+            "enabled": True,
+            "last_synced_sha": "",
+            "last_synced_at": "",
+            "last_sync_status": "pending",
+            "last_sync_error": None,
+            "files_synced": 0,
+            "added_at": datetime.now().isoformat(),
+        }
+        sources.append(source_info)
+        metadata["github_sources"] = sources
+        atomic_write_json(metadata_file, metadata)
+        return source_info
+
+    def remove_github_source(self, kb_name, source_id):
+        """Remove a GitHub source from a KB."""
+        if kb_name not in self.list_knowledge_bases():
+            raise ValueError(f"Knowledge base not found: {kb_name}")
+        metadata_file = self.base_dir / kb_name / "metadata.json"
+        metadata = self._read_kb_metadata(metadata_file)
+        sources = metadata.get("github_sources", [])
+        new_sources = [s for s in sources if s.get("id") != source_id]
+        if len(new_sources) == len(sources):
+            return False
+        metadata["github_sources"] = new_sources
+        atomic_write_json(metadata_file, metadata)
+        return True
+
+    def get_github_sources(self, kb_name):
+        """Return all GitHub sources registered for a KB."""
+        if kb_name not in self.list_knowledge_bases():
+            raise ValueError(f"Knowledge base not found: {kb_name}")
+        metadata_file = self.base_dir / kb_name / "metadata.json"
+        metadata = self._read_kb_metadata(metadata_file)
+        return metadata.get("github_sources", [])
+
+    def update_github_source_state(self, kb_name, source_id, **fields):
+        """Persist sync state fields into a GitHub source entry."""
+        if kb_name not in self.list_knowledge_bases():
+            raise ValueError(f"Knowledge base not found: {kb_name}")
+        metadata_file = self.base_dir / kb_name / "metadata.json"
+        metadata = self._read_kb_metadata(metadata_file)
+        sources = metadata.get("github_sources", [])
+        for src in sources:
+            if src.get("id") == source_id:
+                src.update(fields)
+                atomic_write_json(metadata_file, metadata)
+                return
+
+    def get_all_github_sources(self):
+        """Scan every KB and return (kb_name, source_dict) pairs."""
+        result = []
+        for kb_name in self.list_knowledge_bases():
+            for src in self.get_github_sources(kb_name):
+                result.append((kb_name, src))
+        return result
+
+    # ------------------------------------------------------------------
+    # Web source management
+    # ------------------------------------------------------------------
+
+    def add_web_source(
+        self,
+        kb_name: str,
+        url: str,
+        max_depth: int = 3,
+        max_pages: int = 200,
+    ) -> dict:
+        """Register a documentation site URL as a document source for a KB."""
+        if kb_name not in self.list_knowledge_bases():
+            raise ValueError(f"Knowledge base not found: {kb_name}")
+        if not 1 <= max_depth <= MAX_CRAWL_DEPTH:
+            raise ValueError(f"Web source crawl depth must be between 1 and {MAX_CRAWL_DEPTH}")
+        if not 1 <= max_pages <= MAX_CRAWL_PAGES:
+            raise ValueError(f"Web source crawl page count must be between 1 and {MAX_CRAWL_PAGES}")
+        normalized_url = url.strip()
+        parsed_url = urlparse(normalized_url)
+        if parsed_url.scheme.lower() not in ("http", "https") or not parsed_url.hostname:
+            raise ValueError("Web source URL must be an absolute http(s) URL")
+        source_id = hashlib.md5(  # noqa: S324
+            normalized_url.encode(), usedforsecurity=False
+        ).hexdigest()[:8]
+        metadata_file = self.base_dir / kb_name / "metadata.json"
+        metadata = self._read_kb_metadata(metadata_file)
+        sources = metadata.get("web_sources", [])
+        for existing in sources:
+            if existing.get("id") == source_id:
+                return existing
+
+        source_info = {
+            "id": source_id,
+            "url": normalized_url,
+            "max_depth": max_depth,
+            "max_pages": max_pages,
+            "enabled": True,
+            "page_hashes": {},
+            "page_count": 0,
+            "last_synced_at": "",
+            "last_sync_status": "pending",
+            "last_sync_error": None,
+            "added_at": datetime.now().isoformat(),
+        }
+        sources.append(source_info)
+        metadata["web_sources"] = sources
+        atomic_write_json(metadata_file, metadata)
+        return source_info
+
+    def remove_web_source(self, kb_name: str, source_id: str) -> bool:
+        """Remove a web source from a KB."""
+        if kb_name not in self.list_knowledge_bases():
+            raise ValueError(f"Knowledge base not found: {kb_name}")
+        metadata_file = self.base_dir / kb_name / "metadata.json"
+        metadata = self._read_kb_metadata(metadata_file)
+        sources = metadata.get("web_sources", [])
+        remaining = [source for source in sources if source.get("id") != source_id]
+        if len(remaining) == len(sources):
+            return False
+
+        metadata["web_sources"] = remaining
+        atomic_write_json(metadata_file, metadata)
+        return True
+
+    def get_web_sources(self, kb_name: str) -> list[dict]:
+        """Return all web sources registered for a KB."""
+        if kb_name not in self.list_knowledge_bases():
+            raise ValueError(f"Knowledge base not found: {kb_name}")
+        metadata_file = self.base_dir / kb_name / "metadata.json"
+        metadata = self._read_kb_metadata(metadata_file)
+        return metadata.get("web_sources", [])
+
+    def update_web_source_state(self, kb_name: str, source_id: str, **fields: object) -> None:
+        """Persist sync state fields into a web source entry."""
+        if kb_name not in self.list_knowledge_bases():
+            raise ValueError(f"Knowledge base not found: {kb_name}")
+        metadata_file = self.base_dir / kb_name / "metadata.json"
+        metadata = self._read_kb_metadata(metadata_file)
+        for source in metadata.get("web_sources", []):
+            if source.get("id") == source_id:
+                source.update(fields)
+                atomic_write_json(metadata_file, metadata)
+                return
+
+    def get_all_web_sources(self) -> list[tuple[str, dict]]:
+        """Scan every KB and return (kb_name, source_dict) pairs."""
+        result = []
+        for kb_name in self.list_knowledge_bases():
+            for source in self.get_web_sources(kb_name):
+                result.append((kb_name, source))
+        return result
+
+    @staticmethod
+    def _read_kb_metadata(metadata_file):
+        """Load metadata.json, returning {} on absence or parse error."""
+        if not metadata_file.exists():
+            return {}
+        try:
+            with open(metadata_file, encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            return {}
+        return data if isinstance(data, dict) else {}
 
 
 def main():

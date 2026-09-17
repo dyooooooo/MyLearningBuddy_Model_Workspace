@@ -13,6 +13,7 @@ import sys
 
 import pytest
 
+from deeptutor.services.subagent import process as process_mod
 from deeptutor.services.subagent.claude_code import ClaudeCodeBackend
 from deeptutor.services.subagent.codex import CodexBackend
 from deeptutor.services.subagent.config import (
@@ -22,7 +23,7 @@ from deeptutor.services.subagent.config import (
     SubagentSettings,
     settings_from_dict,
 )
-from deeptutor.services.subagent.process import stream_process_lines
+from deeptutor.services.subagent.process import resolve_cli_command, stream_process_lines
 from deeptutor.services.subagent.types import ConsultResult
 
 # ---- command building --------------------------------------------------------
@@ -113,6 +114,250 @@ def test_codex_command_attaches_images_with_repeated_flag() -> None:
     assert cmd.count("-i") == 2
     assert cmd[cmd.index("-i") + 1] == "/tmp/dt-y/00_a.png"
     assert cmd[-1] == "look"  # prompt stays the trailing positional
+
+
+# ---- Hermes Agent / OpenClaw / DeepSeek Harness -----------------------------
+
+
+def test_hermes_command_builds_quiet_resumable_run() -> None:
+    from deeptutor.services.subagent.hermes import HermesBackend
+
+    backend = HermesBackend()
+    fresh = backend._build_command(
+        "inspect",
+        session_id=None,
+        config=BackendConfig(
+            model="openrouter/anthropic/claude-sonnet-4",
+            effort="high",
+            system_prompt="Be concise",
+            auto_approve=True,
+            extra_args=["--toolsets", "terminal"],
+        ),
+        images=["/tmp/screenshot.png"],
+    )
+    assert fresh[:3] == ["hermes", "chat", "--quiet"]
+    assert "--yolo" in fresh
+    assert fresh[fresh.index("--model") + 1] == "openrouter/anthropic/claude-sonnet-4"
+    assert fresh[fresh.index("--reasoning") + 1] == "high"
+    assert fresh[fresh.index("--image") + 1] == "/tmp/screenshot.png"
+    assert fresh[-2:] == ["--query", "Be concise\n\ninspect"]
+
+    resumed = backend._build_command(
+        "again",
+        session_id="hermes-session-1",
+        config=BackendConfig(system_prompt="Do not repeat"),
+    )
+    assert resumed[resumed.index("--resume") + 1] == "hermes-session-1"
+    assert resumed[-1] == "again"
+
+
+@pytest.mark.asyncio
+async def test_hermes_consult_captures_answer_and_session(monkeypatch) -> None:
+    from deeptutor.services.subagent import hermes as hermes_mod
+
+    async def fake_stream(cmd, *, cwd=None):
+        assert cmd[:3] == ["hermes", "chat", "--quiet"]
+        assert cwd == "/repo"
+        yield "stdout", "First line"
+        yield "stdout", "second line"
+        yield "stderr", "session_id: hs-42"
+        yield "exit", "0"
+
+    monkeypatch.setattr(hermes_mod, "stream_process_lines", fake_stream)
+    events = []
+
+    async def on_event(event):
+        events.append(event)
+
+    result = await hermes_mod.HermesBackend().consult("q", on_event=on_event, cwd="/repo")
+    assert result.success is True
+    assert result.session_id == "hs-42"
+    assert result.final_text == "First line\nsecond line"
+    assert events[-1].meta["merge_id"] == "hermes:final"
+
+
+def test_openclaw_command_owns_stable_session_key() -> None:
+    from deeptutor.services.subagent.openclaw import OpenClawBackend
+
+    cmd = OpenClawBackend()._build_command(
+        "inspect",
+        session_id="deeptutor-abc",
+        fresh_session=True,
+        config=BackendConfig(
+            model="openai/gpt-5.6-sol",
+            effort="high",
+            system_prompt="Be concise",
+            extra_args=["--local"],
+        ),
+    )
+    assert cmd[:2] == ["openclaw", "agent"]
+    assert cmd[cmd.index("--session-key") + 1] == "deeptutor-abc"
+    assert cmd[cmd.index("--timeout") + 1] == "0"
+    assert cmd[cmd.index("--thinking") + 1] == "high"
+    assert "--local" in cmd
+    assert cmd[-2:] == ["--message", "Be concise\n\ninspect"]
+
+
+@pytest.mark.asyncio
+async def test_openclaw_consult_parses_gateway_json(monkeypatch) -> None:
+    from deeptutor.services.subagent import openclaw as openclaw_mod
+
+    async def fake_stream(cmd, *, cwd=None):
+        assert "--json" in cmd and "--session-key" in cmd
+        yield "stderr", "Gateway connected"
+        yield "stdout", '{"status":"ok","result":{"payloads":[{"text":"Done."}]}}'
+        yield "exit", "0"
+
+    monkeypatch.setattr(openclaw_mod, "stream_process_lines", fake_stream)
+    events = []
+
+    async def on_event(event):
+        events.append(event)
+
+    result = await openclaw_mod.OpenClawBackend().consult("q", on_event=on_event)
+    assert result.success is True
+    assert result.session_id.startswith("deeptutor-")
+    assert result.final_text == "Done."
+    assert [event.kind for event in events] == ["log", "text"]
+
+
+@pytest.mark.asyncio
+async def test_deepseek_headless_fallback_streams_reasoning(monkeypatch) -> None:
+    from deeptutor.services.subagent import deepseek_harness as dsh_mod
+
+    async def fake_stream(cmd, *, cwd=None):
+        assert cmd[:3] == ["dsh", "--profile", "headless"]
+        yield "stderr", "dsh: reasoning:"
+        yield "stderr", "check the files"
+        yield "stdout", "Implemented."
+        yield "exit", "0"
+
+    monkeypatch.setattr(dsh_mod, "_sdk_available", lambda: False)
+    monkeypatch.setattr(dsh_mod, "stream_process_lines", fake_stream)
+    events = []
+
+    async def on_event(event):
+        events.append(event)
+
+    result = await dsh_mod.DeepSeekHarnessBackend().consult("q", on_event=on_event)
+    assert result.success is True
+    assert result.session_id is None  # headless makes no false resume promise
+    assert result.final_text == "Implemented."
+    assert [event.kind for event in events] == ["reasoning", "text"]
+
+
+def test_deepseek_sdk_notification_mapping() -> None:
+    from types import SimpleNamespace
+
+    from deeptutor.services.subagent.deepseek_harness import _sdk_notification_events
+
+    state = {"text": {}, "reasoning": {}}
+
+    def notification(event):
+        return SimpleNamespace(
+            method="session.event",
+            payload={"sessionId": "s1", "event": event},
+        )
+
+    text = _sdk_notification_events(
+        notification(
+            {
+                "type": "assistant/chunk",
+                "data": {"step": 1, "chunk": {"type": "text-delta", "text": "Hi"}},
+            }
+        ),
+        state,
+    )
+    reasoning = _sdk_notification_events(
+        notification(
+            {
+                "type": "assistant/chunk",
+                "data": {
+                    "step": 1,
+                    "chunk": {"type": "reasoning-delta", "text": "Plan"},
+                },
+            }
+        ),
+        state,
+    )
+    tool = _sdk_notification_events(
+        notification(
+            {
+                "type": "tool/call",
+                "data": {"step": 1, "name": "bash", "arguments": '{"cmd":"pwd"}'},
+            }
+        ),
+        state,
+    )
+    assert text[0].kind == "text" and text[0].text == "Hi"
+    assert reasoning[0].kind == "reasoning" and reasoning[0].text == "Plan"
+    assert tool[0].kind == "tool" and tool[0].text.startswith("bash(")
+
+
+@pytest.mark.asyncio
+async def test_deepseek_sdk_consult_streams_and_resumes(monkeypatch, tmp_path) -> None:
+    from types import ModuleType, SimpleNamespace
+
+    from deeptutor.services.subagent.deepseek_harness import DeepSeekHarnessBackend
+
+    calls = []
+
+    class FakeHarness:
+        def __init__(self, **kwargs):
+            calls.append({"kwargs": kwargs})
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def run(self, prompt, *, session_id, on_notification):
+            calls[-1].update({"prompt": prompt, "session_id": session_id})
+            on_notification(
+                SimpleNamespace(
+                    method="session.event",
+                    payload={
+                        "event": {
+                            "type": "assistant/chunk",
+                            "data": {
+                                "step": 1,
+                                "chunk": {"type": "text-delta", "text": "SDK answer"},
+                            },
+                        }
+                    },
+                )
+            )
+            return SimpleNamespace(
+                session_id=session_id,
+                final_response="SDK answer",
+                finish_reason="completed",
+            )
+
+    fake_module = ModuleType("deepseek_harness")
+    fake_module.DeepSeekHarness = FakeHarness
+    monkeypatch.setitem(sys.modules, "deepseek_harness", fake_module)
+    monkeypatch.setenv("DSH_HOME", str(tmp_path / "dsh"))
+    events = []
+
+    async def on_event(event):
+        events.append(event)
+
+    result = await DeepSeekHarnessBackend()._consult_sdk(
+        "again",
+        on_event=on_event,
+        cwd=str(tmp_path),
+        session_id="deepseek-session-7",
+        config=BackendConfig(model="deepseek-v4", effort="high"),
+        images=None,
+    )
+    assert result.success is True
+    assert result.session_id == "deepseek-session-7"
+    assert result.final_text == "SDK answer"
+    assert [event.kind for event in events] == ["text"]
+    assert calls[0]["session_id"] == "deepseek-session-7"
+    assert calls[0]["kwargs"]["model"] == "deepseek-v4"
+    assert calls[0]["kwargs"]["reasoning_effort"] == "high"
 
 
 # ---- Claude Code event parsing -----------------------------------------------
@@ -393,6 +638,52 @@ async def test_stream_process_lines_reports_nonzero_exit() -> None:
     assert seen[-1] == ("exit", "3")
 
 
+# ---- command resolution (Windows .cmd shim fix, issue #759) -------------------
+
+
+def test_resolve_cli_command_passes_empty_through() -> None:
+    assert resolve_cli_command([]) == []
+
+
+def test_resolve_cli_command_returns_absolute_path_unchanged() -> None:
+    # An absolute path that exists (sys.executable) resolves back to itself,
+    # so the live-subprocess tests above are unaffected by the resolve step.
+    resolved = resolve_cli_command([sys.executable, "--version"])
+    assert resolved[0] == sys.executable
+    assert resolved[1] == "--version"
+
+
+def test_resolve_cli_command_resolves_bare_name_to_full_path(monkeypatch) -> None:
+    # On Windows, a bare npm-installed CLI name resolves only via PATHEXT to a
+    # ``.cmd`` shim; shutil.which is what honors PATHEXT, so we monkeypatch it
+    # to stand in for "the shim was found on PATH".
+    monkeypatch.setattr(process_mod.shutil, "which", lambda name, path=None: r"C:\npm\claude.cmd")
+    resolved = resolve_cli_command(["claude", "--version"])
+    assert resolved == [r"C:\npm\claude.cmd", "--version"]
+
+
+def test_resolve_cli_command_falls_back_when_unresolvable(monkeypatch) -> None:
+    # Nothing on PATH matches → return the command unchanged so the OS spawn
+    # (and its FileNotFoundError) behaves exactly as before the fix.
+    monkeypatch.setattr(process_mod.shutil, "which", lambda name, path=None: None)
+    resolved = resolve_cli_command(["nonexistent-cli", "--version"])
+    assert resolved == ["nonexistent-cli", "--version"]
+
+
+def test_resolve_cli_command_honors_caller_supplied_path(monkeypatch) -> None:
+    # stream_process_lines / _spawn pass the child env's PATH so a custom PATH
+    # is honored during resolution rather than only the parent process's PATH.
+    seen: dict[str, str | None] = {}
+
+    def fake_which(name: str, path: str | None = None) -> None:
+        seen["path"] = path
+        return None
+
+    monkeypatch.setattr(process_mod.shutil, "which", fake_which)
+    resolve_cli_command(["claude"], path="/custom/bin")
+    assert seen["path"] == "/custom/bin"
+
+
 # ---- settings ----------------------------------------------------------------
 
 
@@ -597,6 +888,11 @@ async def test_list_backend_options_reads_codex_cache(monkeypatch, tmp_path) -> 
     assert {m.slug for m in claude.models} >= {"opus", "sonnet", "haiku"}
     assert "high" in claude.efforts
 
+    assert options["hermes"].allow_custom_model is True
+    assert "ultra" in options["hermes"].efforts
+    assert "xhigh" in options["openclaw"].efforts
+    assert "max" in options["deepseek_harness"].efforts
+
 
 @pytest.mark.asyncio
 async def test_codex_options_tolerate_missing_cache(monkeypatch, tmp_path) -> None:
@@ -636,7 +932,17 @@ async def test_detect_all_excludes_partner_backend() -> None:
 
     kinds = {d.kind for d in await detect_all()}
     assert "partner" not in kinds
-    assert kinds <= {"claude_code", "codex"}
+    assert kinds <= {
+        "claude_code",
+        "codex",
+        "antigravity",
+        "kimi",
+        "opencode",
+        "mimo",
+        "hermes",
+        "openclaw",
+        "deepseek_harness",
+    }
 
 
 # ---- partner backend: drive a partner as a subagent --------------------------
@@ -659,6 +965,11 @@ class _FakePartnerManager:
         self.started: list[str] = []
         self.sent: list[dict] = []
         self._trace: list = []
+
+    def owner_id(self, partner_id: str) -> str:
+        # These partners are admin-created, so the access check falls through
+        # to the grant rather than short-circuiting on ownership.
+        return ""
 
     def script_trace(self, events: list) -> None:
         self._trace = events
@@ -792,6 +1103,35 @@ async def test_partner_consult_unknown_partner(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_partner_consult_rechecks_revoked_grant(monkeypatch, tmp_path) -> None:
+    from deeptutor.multi_user.models import CurrentUser, UserScope
+    import deeptutor.multi_user.partner_access as partner_access
+    from deeptutor.multi_user.paths import user_context
+    from deeptutor.services.subagent.partner import PartnerBackend
+
+    manager = _FakePartnerManager()
+    _patch_manager(monkeypatch, manager)
+    monkeypatch.setattr(partner_access, "load_grant", lambda uid: {"partners": []})
+    user = CurrentUser(
+        "u_alice",
+        "alice",
+        "user",
+        UserScope("user", "u_alice", (tmp_path / "u_alice").resolve()),
+    )
+
+    async def on_event(ev):
+        pass
+
+    with user_context(user):
+        result = await PartnerBackend().consult("q", on_event=on_event, partner_id="paul")
+
+    assert result.success is False
+    assert "not assigned" in result.error
+    assert manager.started == []
+    assert manager.sent == []
+
+
+@pytest.mark.asyncio
 async def test_partner_consult_empty_reply_is_unsuccessful(monkeypatch) -> None:
     from deeptutor.services.subagent.partner import PartnerBackend
 
@@ -898,3 +1238,356 @@ def test_partner_content_accumulates_cumulatively() -> None:
     )
     assert a[0].text == "The " and b[0].text == "The answer"
     assert a[0].meta["merge_id"] == b[0].meta["merge_id"] == "text:f1"
+
+
+# ---- Kimi CLI: command building + line parsing --------------------------------
+
+
+def test_kimi_command_build_session_yolo_and_thinking() -> None:
+    from deeptutor.services.subagent.kimi import KimiBackend
+
+    backend = KimiBackend()
+    cmd = backend._build_command(
+        "hi",
+        session_id="u-1",
+        fresh_session=True,
+        config=BackendConfig(system_prompt="sp", model="kimi-k2", thinking=False),
+    )
+    assert cmd[:4] == ["kimi", "--print", "--output-format", "stream-json"]
+    assert cmd[cmd.index("--session") + 1] == "u-1"
+    assert "--yolo" in cmd and "--no-thinking" in cmd
+    assert cmd[cmd.index("--model") + 1] == "kimi-k2"
+    assert cmd[-2:] == ["--prompt", "sp\n\nhi"]  # instruction prefixed on fresh session
+
+    resumed = backend._build_command(
+        "again",
+        session_id="u-1",
+        fresh_session=False,
+        config=BackendConfig(system_prompt="sp", auto_approve=False),
+    )
+    assert resumed[-1] == "again" and "--yolo" not in resumed
+    assert "--thinking" in resumed
+
+
+@pytest.mark.asyncio
+async def test_kimi_consult_mints_session_id_upfront() -> None:
+    """A fresh consult pre-generates the session id (never parsed from output)."""
+    import uuid as uuid_mod
+
+    from deeptutor.services.subagent.kimi import KimiBackend
+
+    backend = KimiBackend()
+
+    captured: dict = {}
+
+    def fake_build(question, *, session_id, fresh_session, config):
+        captured["sid"] = session_id
+        captured["fresh"] = fresh_session
+        return [sys.executable, "-c", "pass"]  # exits 0 with no output
+
+    backend._build_command = fake_build  # type: ignore[method-assign]
+
+    async def on_event(event):
+        pass
+
+    result = await backend.consult("q", on_event=on_event)
+    assert captured["fresh"] is True
+    assert result.session_id == captured["sid"]
+    assert uuid_mod.UUID(result.session_id)  # a well-formed UUID
+
+
+@pytest.mark.asyncio
+async def test_kimi_line_parsing_roles_parts_and_tools() -> None:
+    from deeptutor.services.subagent.kimi import KimiBackend
+
+    backend = KimiBackend()
+    events = [
+        # content as a plain string (single text part shorthand)
+        {"role": "assistant", "content": "Working on it."},
+        # content as a part array with thinking + a tool call
+        {
+            "role": "assistant",
+            "content": [{"type": "think", "think": "planning"}],
+            "tool_calls": [
+                {
+                    "type": "function",
+                    "id": "t1",
+                    "function": {"name": "shell", "arguments": '{"command": "ls -la"}'},
+                }
+            ],
+        },
+        {"role": "tool", "content": "<system>OK</system>", "tool_call_id": "t1"},
+        {"role": "assistant", "content": [{"type": "text", "text": "The answer."}]},
+        # role-less service lines
+        {"id": "n1", "category": "task", "title": "background", "body": "done", "severity": "info"},
+        {"content": "# plan", "file_path": "/tmp/plan.md"},
+    ]
+    result, emitted = await _drive(backend, events)
+
+    kinds = [k for k, _ in emitted]
+    assert kinds == ["text", "reasoning", "tool", "tool_result", "text", "log", "log"]
+    assert ("tool", "shell(ls -la)") in emitted  # JSON-string arguments are decoded
+    assert result.final_text == "The answer."  # the latest assistant text wins
+
+
+@pytest.mark.asyncio
+async def test_kimi_echoed_user_lines_are_dropped() -> None:
+    from deeptutor.services.subagent.kimi import KimiBackend
+
+    _, emitted = await _drive(KimiBackend(), [{"role": "user", "content": "echo"}])
+    assert emitted == []
+
+
+# ---- opencode family: bus event mapping + prompt body -------------------------
+
+
+async def _drive_opencode(events, *, auto_approve=True):
+    from deeptutor.services.subagent.opencode_family import OpencodeBackend
+
+    backend = OpencodeBackend()
+    state: dict = {"parts": {}, "kinds": {}, "error": ""}
+    emitted: list[tuple[str, str, dict]] = []
+
+    async def emit(kind, text, raw, meta=None):
+        emitted.append((kind, text, meta or {}))
+
+    config = BackendConfig(auto_approve=auto_approve)
+    for ev in events:
+        await backend._handle_bus_event(ev, "ses_1", state, emit, None, config)
+    return state, emitted
+
+
+@pytest.mark.asyncio
+async def test_opencode_deltas_type_out_and_updated_finalizes() -> None:
+    events = [
+        # the part is created empty, then token deltas grow it
+        {
+            "type": "message.part.updated",
+            "properties": {"part": {"id": "p1", "sessionID": "ses_1", "type": "text", "text": ""}},
+        },
+        {
+            "type": "message.part.delta",
+            "properties": {
+                "sessionID": "ses_1",
+                "messageID": "m1",
+                "partID": "p1",
+                "field": "text",
+                "delta": "Hel",
+            },
+        },
+        {
+            "type": "message.part.delta",
+            "properties": {
+                "sessionID": "ses_1",
+                "messageID": "m1",
+                "partID": "p1",
+                "field": "text",
+                "delta": "lo.",
+            },
+        },
+        # the completed part carries the authoritative cumulative text
+        {
+            "type": "message.part.updated",
+            "properties": {
+                "part": {
+                    "id": "p1",
+                    "sessionID": "ses_1",
+                    "type": "text",
+                    "text": "Hello.",
+                    "time": {"start": 1, "end": 2},
+                },
+            },
+        },
+    ]
+    state, emitted = await _drive_opencode(events)
+    texts = [(t, m.get("merge_id")) for k, t, m in emitted if k == "text"]
+    assert texts == [("Hel", "txt:p1"), ("Hello.", "txt:p1"), ("Hello.", "txt:p1")]
+    assert state["parts"]["p1"] == "Hello."
+
+
+@pytest.mark.asyncio
+async def test_opencode_reasoning_deltas_use_reasoning_channel() -> None:
+    events = [
+        {
+            "type": "message.part.updated",
+            "properties": {
+                "part": {"id": "r1", "sessionID": "ses_1", "type": "reasoning", "text": ""}
+            },
+        },
+        {
+            "type": "message.part.delta",
+            "properties": {
+                "sessionID": "ses_1",
+                "messageID": "m1",
+                "partID": "r1",
+                "field": "text",
+                "delta": "hmm",
+            },
+        },
+    ]
+    _, emitted = await _drive_opencode(events)
+    assert [(k, t, m.get("merge_id")) for k, t, m in emitted] == [("reasoning", "hmm", "rsn:r1")]
+
+
+@pytest.mark.asyncio
+async def test_opencode_tool_lifecycle_running_completed_error() -> None:
+    def tool_event(status, **extra):
+        return {
+            "type": "message.part.updated",
+            "properties": {
+                "part": {
+                    "id": "tp1",
+                    "sessionID": "ses_1",
+                    "type": "tool",
+                    "callID": "c1",
+                    "tool": "bash",
+                    "state": {"status": status, **extra},
+                }
+            },
+        }
+
+    _, emitted = await _drive_opencode(
+        [
+            tool_event("pending", input={"command": "ls"}),
+            tool_event("running", input={"command": "ls"}),
+            tool_event("completed", input={"command": "ls"}, output="a.py", title="List files"),
+            tool_event("error", input={"command": "rm"}, error="denied"),
+        ]
+    )
+    assert [(k, t) for k, t, _ in emitted] == [
+        ("tool", "bash(ls)"),  # pending is silent; running opens the row
+        ("tool", "List files(ls)"),  # completion finalizes the same row (same merge id)
+        ("tool_result", "a.py"),
+        ("tool_result", "denied"),
+    ]
+    tool_merges = [m.get("merge_id") for k, _, m in emitted if k == "tool"]
+    assert tool_merges == ["tool:tp1", "tool:tp1"]
+
+
+@pytest.mark.asyncio
+async def test_opencode_permission_asked_is_answered_and_logged() -> None:
+    ask = {
+        "type": "permission.asked",
+        "properties": {"id": "perm1", "sessionID": "ses_1", "title": "Run bash"},
+    }
+    _, approved = await _drive_opencode([ask], auto_approve=True)
+    assert approved[0][0] == "log" and "auto-approved" in approved[0][1]
+
+    _, rejected = await _drive_opencode([ask], auto_approve=False)
+    assert "rejected" in rejected[0][1]
+
+
+@pytest.mark.asyncio
+async def test_opencode_session_error_and_foreign_session_filtering() -> None:
+    events = [
+        # another session's traffic must not leak into this consult's trace
+        {
+            "type": "message.part.updated",
+            "properties": {
+                "part": {"id": "x", "sessionID": "ses_OTHER", "type": "text", "text": "hi"}
+            },
+        },
+        {
+            "type": "session.error",
+            "properties": {
+                "sessionID": "ses_1",
+                "error": {"name": "ProviderError", "data": {"message": "boom"}},
+            },
+        },
+    ]
+    state, emitted = await _drive_opencode(events)
+    assert [(k, t) for k, t, _ in emitted] == [("error", "boom")]
+    assert state["error"] == "boom"
+
+
+def test_opencode_prompt_body_model_variant_system_and_images(tmp_path) -> None:
+    from deeptutor.services.subagent.opencode_family import OpencodeBackend
+
+    img = tmp_path / "shot.png"
+    img.write_bytes(b"\x89PNG fake")
+    backend = OpencodeBackend()
+    body = backend._prompt_body(
+        "q",
+        config=BackendConfig(model="anthropic/claude-x", effort="high", system_prompt="sys"),
+        images=[str(img)],
+        fresh_session=True,
+    )
+    assert body["model"] == {"providerID": "anthropic", "modelID": "claude-x"}
+    assert body["variant"] == "high"
+    assert body["system"] == "sys"
+    assert body["parts"][0] == {"type": "text", "text": "q"}
+    file_part = body["parts"][1]
+    assert file_part["type"] == "file" and file_part["mime"] == "image/png"
+    assert file_part["url"].startswith("data:image/png;base64,")
+
+    resumed = backend._prompt_body(
+        "q2", config=BackendConfig(system_prompt="sys"), images=None, fresh_session=False
+    )
+    assert "system" not in resumed and "model" not in resumed
+
+
+def test_opencode_final_text_skips_synthetic_parts() -> None:
+    from deeptutor.services.subagent.opencode_family import _text_from_parts
+
+    parts = [
+        {"type": "text", "text": "real answer"},
+        {"type": "text", "text": "injected", "synthetic": True},
+        {"type": "tool", "text": "not text"},
+    ]
+    assert _text_from_parts(parts) == "real answer"
+
+
+# ---- opencode family: managed server registry ---------------------------------
+
+
+class _FakeServerProc:
+    def __init__(self):
+        self.returncode: int | None = None
+        self.terminated = False
+
+    def terminate(self):
+        self.terminated = True
+        self.returncode = -15
+
+    def kill(self):
+        self.returncode = -9
+
+    async def wait(self):
+        return self.returncode
+
+
+def test_server_registry_reaps_idle_and_dead_handles() -> None:
+    from deeptutor.services.subagent import opencode_server as srv
+
+    fresh_proc, stale_proc, dead_proc = _FakeServerProc(), _FakeServerProc(), _FakeServerProc()
+    dead_proc.returncode = 1
+    fresh = srv.ServerHandle(base_url="http://x", username="u", password="p", process=fresh_proc)
+    stale = srv.ServerHandle(base_url="http://y", username="u", password="p", process=stale_proc)
+    stale.last_used -= srv._IDLE_TTL_SECONDS + 1
+    dead = srv.ServerHandle(base_url="http://z", username="u", password="p", process=dead_proc)
+
+    srv._servers.clear()
+    srv._servers[("cli", "a")] = fresh
+    srv._servers[("cli", "b")] = stale
+    srv._servers[("cli", "c")] = dead
+    try:
+        srv._reap_stale()
+        assert set(srv._servers) == {("cli", "a")}
+        assert stale_proc.terminated is True
+        assert fresh_proc.terminated is False
+    finally:
+        srv._servers.clear()
+
+
+@pytest.mark.asyncio
+async def test_server_registry_shutdown_terminates_everything() -> None:
+    from deeptutor.services.subagent import opencode_server as srv
+
+    proc = _FakeServerProc()
+    srv._servers.clear()
+    srv._servers[("cli", "a")] = srv.ServerHandle(
+        base_url="http://x", username="u", password="p", process=proc
+    )
+    await srv.shutdown_servers()
+    assert srv._servers == {}
+    assert proc.terminated is True

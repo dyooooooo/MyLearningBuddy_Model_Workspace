@@ -8,20 +8,17 @@ from typing import Callable
 
 def _load_strip_sub_sup_tags() -> Callable[[str], str]:
     """Load sibling strip_sub_sup.py even if tools/ is not on sys.path."""
-    candidates = [
-        Path(__file__).resolve().with_name("strip_sub_sup.py"),
-        Path("/data/agent/tools/strip_sub_sup.py"),
-    ]
-    for path in candidates:
-        if not path.is_file():
-            continue
+    try:
+        from strip_sub_sup import strip_sub_sup_tags
+    except ImportError:
+        path = Path(__file__).resolve().with_name("strip_sub_sup.py")
         spec = importlib.util.spec_from_file_location("_refine_page_strip_sub_sup", path)
         if spec is None or spec.loader is None:
-            continue
+            raise ImportError(f"cannot load {path}") from None
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module.strip_sub_sup_tags
-    raise ImportError("cannot load strip_sub_sup.py")
+    return strip_sub_sup_tags
 
 
 strip_sub_sup_tags = _load_strip_sub_sup_tags()
@@ -40,20 +37,24 @@ def refine_page(book_id: str, page_no: int, root: str = "") -> dict[str, object]
     n = int(page_no)
     if n < 1:
         raise ValueError("page_no must be >= 1")
-    base = Path(root).resolve() if root else Path.cwd()
-    if (base / "textbooks").is_dir():
-        path = base / "textbooks" / sid / "pages" / f"{n:04d}.md"
-    else:
-        path = base / sid / "pages" / f"{n:04d}.md"
+    base = Path(root) if root else Path.cwd()
+    path = base / sid / "pages" / f"{n:04d}.md"
     if not path.is_file():
         raise FileNotFoundError(str(path))
     original = path.read_text(encoding="utf-8")
     cleaned = _polish(original)
-    changed = cleaned != original
-    if changed:
-        tmp = path.with_suffix(".md.tmp")
-        tmp.write_text(cleaned, encoding="utf-8")
-        tmp.replace(path)
+    try:
+        from source_text import write_source_atomic
+    except ImportError:
+        write_source_atomic = None
+    if write_source_atomic is not None:
+        changed = write_source_atomic(path, cleaned)
+    else:
+        changed = cleaned != original
+        if changed:
+            tmp = path.with_suffix(".md.tmp")
+            tmp.write_text(cleaned, encoding="utf-8")
+            tmp.replace(path)
     return {
         "book_id": sid,
         "page_no": n,
@@ -68,6 +69,12 @@ def _polish(text: str) -> str:
     out = _JSON_FENCE.sub("", out)
     out = _BAKED_DIV.sub("", out)
     out = strip_sub_sup_tags(out)
+    try:
+        from source_text import sanitize_source
+    except ImportError:
+        sanitize_source = None
+    if sanitize_source is not None:
+        out = sanitize_source(out)
     out = "\n".join(line.rstrip() for line in out.split("\n"))
     out = _MULTI_NL.sub("\n\n", out)
     return out.strip() + ("\n" if out.strip() else "")

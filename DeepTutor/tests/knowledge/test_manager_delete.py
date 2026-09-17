@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import stat
 
 import pytest
 
@@ -49,21 +50,29 @@ def test_delete_knowledge_base_clears_config_when_rmtree_fails(
     manager = KnowledgeBaseManager(base_dir=str(tmp_path))
     _create_kb(manager, "broken")
 
-    import shutil as _shutil
+    from deeptutor.knowledge import manager as manager_module
 
     def _rmtree_always_errors(path, onerror=None, **_kwargs):
         # Simulate a persistent OSError that chmod-retry cannot recover from.
         if onerror is not None:
-            onerror(_shutil.rmtree, str(path), (OSError, OSError("busy"), None))
+            onerror(
+                manager_module.shutil.rmtree,
+                str(path),
+                (OSError, OSError("busy"), None),
+            )
+        else:
+            raise OSError("busy")
 
-    monkeypatch.setattr(_shutil, "rmtree", _rmtree_always_errors)
-    # The manager imports shutil at module level, so patch there too.
-    from deeptutor.knowledge import manager as manager_mod
-
-    monkeypatch.setattr(manager_mod.shutil, "rmtree", _rmtree_always_errors)
-
-    assert manager.delete_knowledge_base("broken", confirm=True) is True
+    # manager_module.shutil is the global stdlib module object. Restore it
+    # immediately after the behavior under test so pytest's tmp cleanup keeps
+    # the real rmtree implementation.
+    with monkeypatch.context() as scoped_patch:
+        scoped_patch.setattr(manager_module.shutil, "rmtree", _rmtree_always_errors)
+        assert manager.delete_knowledge_base("broken", confirm=True) is True
     assert "broken" not in _read_config(manager.config_file).get("knowledge_bases", {})
+    # A failed POSIX directory retry must preserve traversal permission so a
+    # later cleanup pass can remove the orphan.
+    assert (manager.base_dir / "broken").stat().st_mode & stat.S_IXUSR
 
 
 def test_delete_knowledge_base_removes_orphan_config_when_directory_missing(

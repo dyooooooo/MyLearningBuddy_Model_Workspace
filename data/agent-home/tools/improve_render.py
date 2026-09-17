@@ -35,7 +35,8 @@ KIND_META = {
         "layer": "source",
         "action": "polish",
         "surface_already": True,
-        "hint": "OCR 把公式拍成图，下文已有 LaTeX。apply 按画面同一规则丢掉这类图。",
+        "hint": "OCR 把公式拍成图，下文已有可排版 LaTeX。apply 丢掉这类图。"
+        " ``<!-- eq … -->`` 注释不算下文，示意图公式图会留下。",
     },
     "bare_latex": {
         "title": "未包 $ 的 LaTeX",
@@ -194,6 +195,7 @@ UNICODE_MATH = re.compile(r"[√∞∪∩≤≥≠παβγθ∈∉∅]")
 LETTER_REL = re.compile(r"[a-zA-Z]\s*[=<>]")
 PROTECTED_MATH = re.compile(
     r"\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|"
+    r"<!--[\s\S]*?-->|"
     r"!\[[\s\S]*?\]\([^)]+\)|"
     r'<div class="kb-table-wrap"[\s\S]+?</div>|'
     r'<div class="kb-page-toc-heading"[\s\S]+?</div>|'
@@ -203,6 +205,7 @@ PROTECTED_MATH = re.compile(
     r'<p class="kb-(?:list-item|solution|solution-tail|lead|page-toc-heading)"[\s\S]+?</p>',
     re.I,
 )
+HTML_COMMENT = re.compile(r"<!--[\s\S]*?-->")
 TEXT_OR_ENV = re.compile(
     r"\\text\s*\{[^{}]*\}|\\begin\{([a-zA-Z*]+)\}[\s\S]*?\\end\{\1\}"
 )
@@ -279,9 +282,20 @@ def _add(hits: dict[str, list], kind: str, page: str, raw: str) -> None:
 
 def _unprotected(text: str) -> str:
     stripped = IMG.sub(" ", text or "")
+    stripped = HTML_COMMENT.sub(" ", stripped)
     stripped = TABLE.sub(" ", stripped)
     stripped = MATH_CHUNK.sub(" ", stripped)
     return stripped
+
+
+def _next_visible_line(lines: list[str], start: int) -> str:
+    """First non-empty line after ``start`` that is not an HTML comment."""
+    for later in lines[start:]:
+        text = later.strip()
+        if not text or text.startswith("<!--"):
+            continue
+        return text
+    return ""
 
 
 def _scan_page(page: str, text: str) -> dict[str, list]:
@@ -308,11 +322,7 @@ def _scan_page(page: str, text: str) -> dict[str, list]:
         alt = alt_m.group(1).strip()
         if alt.startswith("图") or alt.startswith("表"):
             continue
-        nxt = ""
-        for later in lines[i + 1 :]:
-            if later.strip():
-                nxt = later.strip()
-                break
+        nxt = _next_visible_line(lines, i + 1)
         open_nxt = _unprotected(nxt)
         if nxt and (BARE_CMD.search(open_nxt) or BARE_SUB.search(open_nxt)):
             if alt in {"插图", "公式", ""} or MINERU_SPAN.search(alt):
@@ -450,11 +460,7 @@ def _drop_formula_shots(text: str) -> str:
         img = re.match(r"!\[([^\]]*)\]\(([^)]+)\)\s*$", line.strip())
         if img:
             alt = img.group(1).strip()
-            nxt = ""
-            for later in lines[i + 1 :]:
-                if later.strip():
-                    nxt = later.strip()
-                    break
+            nxt = _next_visible_line(lines, i + 1)
             drop_alt = alt in {"插图", "公式", ""} or bool(MINERU_SPAN.search(alt))
             open_nxt = _unprotected(nxt)
             if drop_alt and not alt.startswith("图") and nxt and (
@@ -981,9 +987,17 @@ def _apply_book(book: Path, apply_level: str) -> dict:
     pages_dir = book / "pages"
     if not pages_dir.is_dir():
         return {"pages_changed": 0}
+    try:
+        from source_text import write_source_atomic
+    except ImportError:
+        write_source_atomic = None
     for path in sorted(pages_dir.glob("*.md")):
         before = path.read_text(encoding="utf-8", errors="ignore")
         after = _polish_page(before, apply_level)
+        if write_source_atomic is not None:
+            if write_source_atomic(path, after):
+                changed += 1
+            continue
         if after != before:
             path.write_text(after, encoding="utf-8")
             changed += 1

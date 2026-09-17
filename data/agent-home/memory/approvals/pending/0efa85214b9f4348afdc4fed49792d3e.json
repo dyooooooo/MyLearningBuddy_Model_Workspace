@@ -1,0 +1,14 @@
+{
+  "req_id": "0efa85214b9f4348afdc4fed49792d3e",
+  "status": "pending",
+  "path": "tools/tag_section_icons.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "f7114b3b-ad5a-455e-a089-e693d4f20190",
+  "conversation_id": "59668091-3598-4313-8e7b-339a14c4ffb5",
+  "requested_at": "2026-09-01T02:30:56.924027+00:00",
+  "situation": "语文教材里「学习提示」前有一枚栏目圆标。导入后 tag_chinese_layout 把这张小图包进 kb-center，书页 theme 又把 img 设成整宽块级，图标被拉成大方块顶在标题上方。这是人教语文教材共有的栏目形状，不是这一册特例。",
+  "why": "新功能必须用新工具，不能给 tag_chinese_layout 打补丁。工具只改 mid 围栏，把「图标 + 栏目标题」收成 kb-section-icon；源页仍写官方 Markdown。任务在语文版式任务之后触发，且仅科目为语文、类型为教材时执行。",
+  "changes": "新建 tools/tag_section_icons.py 并登记到 manifest。认紧挮栏目标题（学习提示、单元学习任务、阅读指导等）之前的一张图（可带 kb-center），写成 ::: kb-section-icon 围栏。封面、单元扉页、课文插图不收。科目不是 chinese 或类型不是 textbook 则跳过。不改 tag_chinese_layout / build_toc / improve_render。",
+  "impact": "本册十二处「学习提示」和以后导入的语文教材，都能把栏目图标和标题收成一组。源页不写 HTML。图标缩小、赤褐色和右侧点线仍须 page-body 另授权后才能画出来。"
+}

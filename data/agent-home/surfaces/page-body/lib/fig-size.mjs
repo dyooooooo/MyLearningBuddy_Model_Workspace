@@ -9,8 +9,7 @@
 // become a flex row instead of each taking its own line.
 //
 // Setting only `width` (never `height`) lets the browser derive the height from
-// the asset, so the original aspect ratio survives untouched. Heading-line
-// decorations are not plates: they follow the title font, not the printed box.
+// the asset, so the original aspect ratio survives untouched.
 
 const IMAGE = /!\[([^\]]*)\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)/g;
 const CAPTION = "(?:\\s*(?:\\*[^\\*\\n]+\\*|<em>[^<]*<\\/em>|<i>[^<]*<\\/i>))?";
@@ -54,46 +53,22 @@ function widthOf(tag) {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function lineAround(whole, offset, length) {
-  const lineStart = whole.lastIndexOf("\n", offset - 1) + 1;
-  let lineEnd = whole.indexOf("\n", offset + length);
-  if (lineEnd < 0) lineEnd = whole.length;
-  return {
-    start: lineStart,
-    end: lineEnd,
-    text: whole.slice(lineStart, lineEnd),
-  };
-}
-
 // A glyph-sized figure sitting between words is an inline symbol, not a plate:
 // it must flow with the sentence instead of breaking onto its own centered
 // line. One alone on its line is a small standalone figure and stays centered.
 function sharesLineWithText(whole, offset, length) {
-  const line = lineAround(whole, offset, length);
-  const before = line.text.slice(0, offset - line.start).trim();
-  const after = line.text.slice(offset - line.start + length).trim();
+  const lineStart = whole.lastIndexOf("\n", offset - 1) + 1;
+  let lineEnd = whole.indexOf("\n", offset + length);
+  if (lineEnd < 0) lineEnd = whole.length;
+  const before = whole.slice(lineStart, offset).trim();
+  const after = whole.slice(offset + length, lineEnd).trim();
   return Boolean(before) || Boolean(after);
-}
-
-function onHeadingLine(whole, offset, length) {
-  const line = lineAround(whole, offset, length).text.trim();
-  return /^(#{1,6}\s+|<h[1-6][\s>])/.test(line);
-}
-
-function headingGlyph(alt, url) {
-  return (
-    `<img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}"` +
-    ` class="kb-fig-inline" style="height:1em;width:auto">`
-  );
 }
 
 const SMALL_PCT = 12;
 
 function applyWidths(md, widths) {
   return String(md || "").replace(IMAGE, (all, alt, url, offset, whole) => {
-    if (onHeadingLine(whole, offset, all.length)) {
-      return headingGlyph(alt, url);
-    }
     const pct = Number(widths[assetName(url)]);
     if (!Number.isFinite(pct) || pct <= 0) return all;
     const names = [];
@@ -136,9 +111,7 @@ function restyleCell(unit, pct) {
 function wrapRow(units) {
   const raw = units.map((u) => widthOf(u.text) || 0);
   const sum = raw.reduce((a, b) => a + b, 0);
-  const gap = units.length >= 2 ? 2.5 * (units.length - 1) : 0;
-  const target = Math.max(70, 100 - gap);
-  const scale = sum > target && sum > 0 ? target / sum : 1;
+  const scale = sum > 100 && sum > 0 ? 100 / sum : 1;
   const cells = units.map((u, i) => restyleCell(u.text, raw[i] * scale));
   return `<div class="kb-fig-row">\n\n${cells.join("\n\n")}\n\n</div>`;
 }
@@ -205,5 +178,6 @@ export function groupRowImages(md, ctx = {}) {
 
 export function sizeImages(md, ctx = {}) {
   const widths = ctx && typeof ctx.figWidths === "object" && ctx.figWidths ? ctx.figWidths : {};
-  return groupRowImages(applyWidths(md || "", widths), ctx);
+  const sized = Object.keys(widths).length ? applyWidths(md, widths) : md || "";
+  return groupRowImages(sized, ctx);
 }

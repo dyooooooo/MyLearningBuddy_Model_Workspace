@@ -41,6 +41,11 @@ _NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 PERSONA_FILE = "PERSONA.md"
 
+# Bundled default personas shipped inside the package (see
+# ``pyproject.toml`` package-data ``**/*.md``). Seeded into the admin workspace
+# on first run so fresh installs expose them as read-only presets (issue #659).
+PRESETS_DIR = Path(__file__).resolve().parent / "presets"
+
 # Product-seeded persona skills that predate the persona/skill split. Only
 # these well-known names are migrated automatically — arbitrary user skills
 # cannot be classified safely and stay where they are.
@@ -200,10 +205,17 @@ class PersonaService:
         body = body.strip()
         if not body:
             return ""
+        # The scope sentence has to name capability playbooks, because they are
+        # what a persona actually competes with. Mastery Path's playbook runs
+        # 600 words and prescribes its own tone ("be warm and encouraging"),
+        # sits above this block, and is plainly not a "generic style default" —
+        # so a persona claiming only those was read as the weaker instruction
+        # and the tutor stayed a stock teacher no matter what was written (#793).
         return (
             "## Active Persona\n"
-            "Embody the persona below for this entire conversation. "
-            "It overrides generic style defaults.\n\n"
+            "Embody the persona below for this entire conversation. It sets your "
+            "voice and outranks any tone a mode above prescribes; carry out that "
+            "mode's steps in this voice.\n\n"
             f"### Persona: {detail.name}\n\n{body}"
         )
 
@@ -254,6 +266,39 @@ class PersonaService:
         if not target_dir.exists():
             raise PersonaNotFoundError(slug)
         shutil.rmtree(target_dir)
+
+    # ── default-preset seeding ──────────────────────────────────────────
+
+    def seed_presets(self) -> list[str]:
+        """Copy bundled default personas into this root for any missing name.
+
+        Idempotent and non-destructive: a persona that already exists (a user
+        edit or a prior seed) is never overwritten. Seeding the admin workspace
+        makes ``peer`` / ``teacher`` / ``research-assistant`` appear as
+        read-only presets on fresh installs (issue #659). Returns seeded names.
+        """
+        if not PRESETS_DIR.is_dir():
+            return []
+        seeded: list[str] = []
+        for preset_dir in sorted(PRESETS_DIR.iterdir()):
+            source_file = preset_dir / PERSONA_FILE
+            if not preset_dir.is_dir() or not source_file.exists():
+                continue
+            try:
+                name = self._validate_name(preset_dir.name)
+            except InvalidPersonaNameError:
+                continue
+            if self._persona_dir(name).exists():
+                continue
+            try:
+                text = source_file.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            target_dir = self._persona_dir(name)
+            target_dir.mkdir(parents=True, exist_ok=True)
+            self._persona_file(name).write_text(text, encoding="utf-8")
+            seeded.append(name)
+        return seeded
 
     # ── legacy migration ────────────────────────────────────────────────
 

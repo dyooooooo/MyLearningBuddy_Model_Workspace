@@ -53,7 +53,7 @@ def mineru_models_ready(_source: str = "huggingface") -> bool:
 def mineru_readiness(config) -> ReadinessReport:
     """Whether a MinerU parse can run now under ``config``."""
     if config.is_cloud:
-        if not (config.api_token or "").strip():
+        if not config.api_keys:
             return ReadinessReport(
                 ready=False,
                 reason="not_configured",
@@ -72,7 +72,7 @@ def mineru_readiness(config) -> ReadinessReport:
             ready=False,
             reason="cli_missing",
             message=(
-                "MinerU CLI not found. Install it (`pip install mineru`), set its "
+                "MinerU CLI not found. Install it (`pip install -U 'mineru[all]>=3.4.5'`), set its "
                 "path in Settings → Document Parsing, or switch to text-only / "
                 "cloud / markitdown."
             ),

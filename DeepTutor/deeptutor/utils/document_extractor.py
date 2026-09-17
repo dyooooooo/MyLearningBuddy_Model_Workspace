@@ -3,9 +3,11 @@
 Bytes-in, text-out. Used by the chat turn runtime to inline the text of
 user-dropped files into the ``effective_user_message`` sent to the LLM.
 
-Two format families:
+Three format families:
   * **Binary Office** (.pdf / .docx / .xlsx / .pptx) — parsed with pymupdf /
     python-docx / openpyxl / python-pptx.
+  * **EPUB** (.epub) — ZIP of XHTML documents; text is pulled in the OPF
+    spine reading order using only the standard library.
   * **Text-like** (plain text, Markdown, source code, JSON, XML, CSV, …) —
     the extension set is imported from ``FileTypeRouter.TEXT_EXTENSIONS`` so
     the chat composer accepts every format the knowledge-base pipeline
@@ -19,11 +21,15 @@ from __future__ import annotations
 
 import base64
 from collections.abc import Iterable
+from dataclasses import dataclass
+from html.parser import HTMLParser
 import io
 import logging
 from pathlib import Path, PurePosixPath
+import posixpath
 import re
 from typing import Any
+from urllib.parse import unquote
 import zipfile
 
 from defusedxml import ElementTree as DefusedElementTree
@@ -31,35 +37,18 @@ from defusedxml.common import DefusedXmlException
 
 from deeptutor.services.rag.file_routing import FileTypeRouter
 
-try:
-    import fitz  # pymupdf
-except ImportError:  # pragma: no cover
-    fitz = None  # type: ignore[assignment]
-
-try:
-    from pypdf import PdfReader
-    from pypdf.errors import FileNotDecryptedError as _PypdfNotDecryptedError
-except ImportError:  # pragma: no cover
-    PdfReader = None  # type: ignore[assignment]
-    _PypdfNotDecryptedError = Exception  # type: ignore[assignment,misc]
-
-try:
-    from docx import Document as DocxDocument
-except ImportError:  # pragma: no cover
-    DocxDocument = None  # type: ignore[assignment]
-
-try:
-    from openpyxl import load_workbook
-except ImportError:  # pragma: no cover
-    load_workbook = None  # type: ignore[assignment]
-
-try:
-    from pptx import Presentation as PptxPresentation
-except ImportError:  # pragma: no cover
-    PptxPresentation = None  # type: ignore[assignment]
-
-
 logger = logging.getLogger(__name__)
+
+# Optional parser libraries are resolved on first use.  The public-ish module
+# names remain overrideable because downstream deployments and tests use
+# ``None`` to force the pure-OOXML fallback.
+_NOT_LOADED = object()
+fitz: Any = _NOT_LOADED
+PdfReader: Any = _NOT_LOADED
+_PypdfNotDecryptedError: Any = _NOT_LOADED
+DocxDocument: Any = _NOT_LOADED
+load_workbook: Any = _NOT_LOADED
+PptxPresentation: Any = _NOT_LOADED
 
 
 _OFFICE_EXTENSIONS: frozenset[str] = frozenset(FileTypeRouter.PARSER_EXTENSIONS)
@@ -68,13 +57,76 @@ _OFFICE_EXTENSIONS: frozenset[str] = frozenset(FileTypeRouter.PARSER_EXTENSIONS)
 TEXT_LIKE_EXTENSIONS: frozenset[str] = frozenset(FileTypeRouter.TEXT_EXTENSIONS)
 SUPPORTED_DOC_EXTENSIONS: frozenset[str] = _OFFICE_EXTENSIONS | TEXT_LIKE_EXTENSIONS
 
-MAX_DOC_BYTES = 10 * 1024 * 1024
+# Built-in defaults, kept as module constants for callers that pass explicit
+# budgets (the KB text_only engine, tests). The chat turn path resolves the
+# effective values from system.json via ``_current_limits()`` on every call,
+# so the /settings/attachments page applies without a restart.
+MAX_DOC_BYTES = 20 * 1024 * 1024
 MAX_TOTAL_DOC_BYTES = 25 * 1024 * 1024
 MAX_EXTRACTED_CHARS_PER_DOC = 200_000
 MAX_EXTRACTED_CHARS_TOTAL = 150_000
 
+
+def _current_limits() -> tuple[int, int, int, int]:
+    """(max_file_bytes, max_total_bytes, max_chars_per_doc, max_chars_total).
+
+    Falls back to the module defaults when the settings layer is unavailable
+    (e.g. unit tests running without a data directory).
+    """
+    try:
+        from deeptutor.services.config.runtime_settings import get_chat_attachment_limits
+
+        limits = get_chat_attachment_limits()
+        return (
+            limits.max_file_bytes,
+            limits.max_total_bytes,
+            limits.max_chars_per_doc,
+            limits.max_chars_total,
+        )
+    except Exception:  # pragma: no cover - defensive fallback
+        return (
+            MAX_DOC_BYTES,
+            MAX_TOTAL_DOC_BYTES,
+            MAX_EXTRACTED_CHARS_PER_DOC,
+            MAX_EXTRACTED_CHARS_TOTAL,
+        )
+
+
 _PDF_MAGIC = b"%PDF-"
 _OOXML_MAGIC = b"PK\x03\x04"
+
+_EPUB_CONTENT_EXTENSIONS: frozenset[str] = frozenset({".xhtml", ".html", ".htm"})
+_EPUB_MAX_MEMBERS = 4096
+_EPUB_MAX_MEMBER_BYTES = 20 * 1024 * 1024
+_EPUB_MAX_TOTAL_UNCOMPRESSED_BYTES = 200 * 1024 * 1024
+_EPUB_MAX_COMPRESSION_RATIO = 200.0
+_EPUB_BLOCK_TAGS: frozenset[str] = frozenset(
+    {
+        "p",
+        "div",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "li",
+        "blockquote",
+        "tr",
+        "table",
+        "section",
+        "article",
+        "header",
+        "footer",
+        "aside",
+        "figure",
+        "figcaption",
+        "dd",
+        "dt",
+        "dl",
+        "hr",
+    }
+)
 
 
 class DocumentExtractionError(Exception):
@@ -99,6 +151,29 @@ class EmptyDocumentError(DocumentExtractionError):
 
 class DocumentTooLargeError(DocumentExtractionError):
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class EpubSpineUnit:
+    """One EPUB spine document in package reading order.
+
+    ``href`` is the normalised archive-member path. Keeping the source address
+    next to its extracted text lets a faithful browser rendition and the
+    server's numeric locator space refer to the same chapter.
+    """
+
+    href: str
+    text: str
+    title: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class EpubOutlineItem:
+    """One EPUB navigation entry resolved to a spine locator."""
+
+    locator: int
+    title: str
+    level: int = 1
 
 
 def is_document_extension(filename: str) -> bool:
@@ -131,6 +206,12 @@ def _check_magic(ext: str, data: bytes, filename: str) -> None:
         if not data.startswith(_OOXML_MAGIC):
             raise CorruptDocumentError(
                 f"{filename} does not look like a valid Office file (bad header)",
+                filename=filename,
+            )
+    elif ext == ".epub":
+        if not data.startswith(_OOXML_MAGIC):
+            raise CorruptDocumentError(
+                f"{filename} does not look like a valid EPUB (bad header)",
                 filename=filename,
             )
 
@@ -174,6 +255,8 @@ def extract_text_from_bytes(
         text = _extract_xlsx(data, filename)
     elif ext == ".pptx":
         text = _extract_pptx(data, filename)
+    elif ext == ".epub":
+        text = _extract_epub(data, filename)
     elif ext in TEXT_LIKE_EXTENSIONS:
         text = _extract_text_like(data, filename)
     else:  # pragma: no cover - guarded above
@@ -200,7 +283,68 @@ def extract_text_from_path(
     )
 
 
+async def extract_text_from_path_isolated(
+    file_path: str | Path,
+    *,
+    max_bytes: int | None = MAX_DOC_BYTES,
+    max_chars: int | None = MAX_EXTRACTED_CHARS_PER_DOC,
+    timeout: float = 120.0,
+) -> str:
+    """Extract in a short-lived spawn process and preserve public errors."""
+
+    from deeptutor.runtime.isolated_worker import (
+        IsolatedWorkerError,
+        run_in_isolated_process,
+    )
+
+    path = Path(file_path)
+    try:
+        result = await run_in_isolated_process(
+            "deeptutor.runtime.worker_tasks:extract_document_text",
+            str(path),
+            timeout=timeout,
+            kwargs={"max_bytes": max_bytes, "max_chars": max_chars},
+        )
+    except IsolatedWorkerError as exc:
+        error_types: dict[str, type[DocumentExtractionError]] = {
+            cls.__name__: cls
+            for cls in (
+                DocumentExtractionError,
+                UnsupportedDocumentError,
+                CorruptDocumentError,
+                EmptyDocumentError,
+                DocumentTooLargeError,
+            )
+        }
+        error_type = error_types.get(exc.remote_type)
+        if error_type is not None:
+            filename = str(exc.remote_attrs.get("filename") or path.name)
+            raise error_type(str(exc), filename=filename) from exc
+        if exc.remote_module == "builtins" and exc.remote_type in {
+            "OSError",
+            "FileNotFoundError",
+            "PermissionError",
+        }:
+            raise OSError(str(exc)) from exc
+        raise
+    if not isinstance(result, str):
+        raise DocumentExtractionError(
+            f"{path.name}: isolated extractor returned invalid output",
+            filename=path.name,
+        )
+    return result
+
+
 def _extract_pdf(data: bytes, filename: str) -> str:
+    global fitz, PdfReader, _PypdfNotDecryptedError
+    if fitz is _NOT_LOADED:
+        try:
+            import fitz as fitz_module  # pymupdf
+
+            fitz = fitz_module
+        except ImportError:  # pragma: no cover
+            fitz = None
+
     if fitz is not None:
         try:
             with fitz.open(stream=data, filetype="pdf") as doc:
@@ -216,6 +360,17 @@ def _extract_pdf(data: bytes, filename: str) -> str:
             raise
         except Exception as exc:
             logger.warning("pymupdf failed on %s: %s — falling back to pypdf", filename, exc)
+
+    if PdfReader is _NOT_LOADED:
+        try:
+            from pypdf import PdfReader as reader_type
+            from pypdf.errors import FileNotDecryptedError
+
+            PdfReader = reader_type
+            _PypdfNotDecryptedError = FileNotDecryptedError
+        except ImportError:  # pragma: no cover
+            PdfReader = None
+            _PypdfNotDecryptedError = Exception
 
     if PdfReader is None:
         raise CorruptDocumentError(
@@ -246,6 +401,15 @@ def _extract_pdf(data: bytes, filename: str) -> str:
 
 
 def _extract_docx(data: bytes, filename: str) -> str:
+    global DocxDocument
+    if DocxDocument is _NOT_LOADED:
+        try:
+            from docx import Document as document_type
+
+            DocxDocument = document_type
+        except ImportError:  # pragma: no cover
+            DocxDocument = None
+
     primary_error: Exception | None = None
     primary_text = ""
     if DocxDocument is not None:
@@ -276,6 +440,15 @@ def _extract_docx(data: bytes, filename: str) -> str:
 
 
 def _extract_xlsx(data: bytes, filename: str) -> str:
+    global load_workbook
+    if load_workbook is _NOT_LOADED:
+        try:
+            from openpyxl import load_workbook as workbook_loader
+
+            load_workbook = workbook_loader
+        except ImportError:  # pragma: no cover
+            load_workbook = None
+
     if load_workbook is None:
         return _extract_xlsx_ooxml(data, filename)
     try:
@@ -305,6 +478,15 @@ def _extract_xlsx(data: bytes, filename: str) -> str:
 
 
 def _extract_pptx(data: bytes, filename: str) -> str:
+    global PptxPresentation
+    if PptxPresentation is _NOT_LOADED:
+        try:
+            from pptx import Presentation as presentation_type
+
+            PptxPresentation = presentation_type
+        except ImportError:  # pragma: no cover
+            PptxPresentation = None
+
     if PptxPresentation is None:
         return _extract_pptx_ooxml(data, filename)
     try:
@@ -340,6 +522,366 @@ def _extract_text_like(data: bytes, filename: str) -> str:
         raise CorruptDocumentError(
             f"{filename}: failed to decode text ({exc})", filename=filename
         ) from exc
+
+
+def _epub_parse_member(zf: zipfile.ZipFile, member: str, filename: str) -> Any | None:
+    """Parse one XML/XHTML member, returning ``None`` when unreadable.
+
+    Real-world EPUBs occasionally ship sloppy XHTML (undeclared entities,
+    stray tags); a single bad chapter must not sink the whole book, so parse
+    failures are logged and skipped instead of raising.
+    """
+    try:
+        return _parse_xml_member(zf, member, filename)
+    except CorruptDocumentError as exc:
+        logger.warning("EPUB %s: skipping unparseable member %s (%s)", filename, member, exc)
+        return None
+
+
+class _EpubHTMLTextParser(HTMLParser):
+    """Best-effort text renderer for EPUB chapters that are not valid XML."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self._ignored_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        del attrs
+        tag = tag.lower()
+        if tag in {"script", "style"}:
+            self._ignored_depth += 1
+        elif not self._ignored_depth and tag == "br":
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in {"script", "style"} and self._ignored_depth:
+            self._ignored_depth -= 1
+        elif not self._ignored_depth and tag in _EPUB_BLOCK_TAGS:
+            self.parts.append("\n\n")
+
+    def handle_data(self, data: str) -> None:
+        if not self._ignored_depth:
+            self.parts.append(data)
+
+
+def _epub_render_text(element: Any, parts: list[str]) -> None:
+    """Append the text of one XHTML element and its subtree to ``parts``.
+
+    Element text is emitted before its children and each child's tail after
+    it, preserving the document's word spacing. Block-level tags contribute a
+    paragraph break; ``script``/``style`` subtrees are dropped entirely.
+    """
+    tag = _local_name(element.tag) if isinstance(element.tag, str) else ""
+    if tag in {"head", "script", "style"}:
+        return
+    if element.text:
+        parts.append(element.text)
+    if tag == "br":
+        parts.append("\n")
+    for child in element:
+        _epub_render_text(child, parts)
+        if child.tail:
+            parts.append(child.tail)
+    if tag in _EPUB_BLOCK_TAGS:
+        parts.append("\n\n")
+
+
+def _epub_xhtml_text(root: Any) -> str:
+    """Render one XHTML document as plain text with paragraph breaks.
+
+    Keeps the source whitespace of text nodes (XHTML carries its own word
+    spacing) and collapses each line afterwards, so ``<b>world</b>.`` stays
+    ``world.`` instead of gaining a stray space.
+    """
+    parts: list[str] = []
+    _epub_render_text(root, parts)
+    return _normalize_epub_text(parts)
+
+
+def _normalize_epub_text(parts: Iterable[str]) -> str:
+    raw = "".join(parts)
+    lines = [re.sub(r"\s+", " ", line).strip() for line in raw.split("\n")]
+    return "\n".join(line for line in lines if line)
+
+
+def _epub_chapter_text(zf: zipfile.ZipFile, member: str, filename: str) -> str:
+    """Render a chapter as XHTML, falling back to tolerant HTML parsing."""
+    try:
+        root = _parse_xml_member(zf, member, filename)
+    except CorruptDocumentError as exc:
+        try:
+            raw = zf.read(member)
+            parser = _EpubHTMLTextParser()
+            parser.feed(FileTypeRouter.decode_bytes(raw))
+            parser.close()
+        except Exception:
+            logger.warning("EPUB %s: skipping unparseable member %s", filename, member)
+            return ""
+        text = _normalize_epub_text(parser.parts)
+        if text:
+            logger.info("EPUB %s: used tolerant HTML parser for %s (%s)", filename, member, exc)
+        return text
+    return _epub_xhtml_text(root) if root is not None else ""
+
+
+def _epub_html_members(names: list[str]) -> list[str]:
+    """Archive members that look like XHTML content, in archive order."""
+    return [name for name in names if _ext(name) in _EPUB_CONTENT_EXTENSIONS]
+
+
+def _epub_content_files(zf: zipfile.ZipFile, filename: str) -> list[str]:
+    """Resolve the XHTML content documents of an EPUB in reading order.
+
+    Follows the standard chain ``META-INF/container.xml`` -> OPF package
+    document -> spine ``itemref`` order. Falls back to every HTML/XHTML
+    member in archive order when package metadata is missing or unusable.
+    """
+    names = zf.namelist()
+    name_set = set(names)
+
+    container_root = _epub_parse_member(zf, "META-INF/container.xml", filename)
+    if container_root is None:
+        return _epub_html_members(names)
+
+    opf_path = ""
+    for node in container_root.iter():
+        if _local_name(node.tag) == "rootfile":
+            opf_path = node.get("full-path") or ""
+            break
+    if not opf_path or opf_path not in name_set:
+        return _epub_html_members(names)
+
+    opf_root = _epub_parse_member(zf, opf_path, filename)
+    if opf_root is None:
+        return _epub_html_members(names)
+
+    manifest: dict[str, str] = {}
+    spine_ids: list[str] = []
+    for node in opf_root.iter():
+        name = _local_name(node.tag)
+        if name == "item":
+            item_id = node.get("id")
+            href = node.get("href")
+            if item_id and href:
+                manifest[item_id] = href
+        elif name == "itemref":
+            idref = node.get("idref")
+            if idref:
+                spine_ids.append(idref)
+
+    opf_dir = posixpath.dirname(opf_path)
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for idref in spine_ids:
+        href = manifest.get(idref)
+        if not href:
+            continue
+        member = posixpath.normpath(posixpath.join(opf_dir, unquote(href.split("#", 1)[0])))
+        if member in name_set and member not in seen:
+            ordered.append(member)
+            seen.add(member)
+    return ordered or _epub_html_members(names)
+
+
+def _epub_element_text(node: Any) -> str:
+    return re.sub(r"\s+", " ", "".join(node.itertext())).strip()
+
+
+def _epub_package_navigation(
+    zf: zipfile.ZipFile,
+    filename: str,
+    spine_members: list[str],
+) -> list[EpubOutlineItem]:
+    """Read EPUB3 nav or EPUB2 NCX entries and map them to spine locators."""
+    container_root = _epub_parse_member(zf, "META-INF/container.xml", filename)
+    if container_root is None:
+        return []
+    opf_path = next(
+        (
+            str(node.get("full-path") or "")
+            for node in container_root.iter()
+            if _local_name(node.tag) == "rootfile"
+        ),
+        "",
+    )
+    if not opf_path:
+        return []
+    opf_root = _epub_parse_member(zf, opf_path, filename)
+    if opf_root is None:
+        return []
+
+    opf_dir = posixpath.dirname(opf_path)
+    nav_member = ""
+    ncx_member = ""
+    spine_toc = ""
+    manifest: dict[str, tuple[str, str]] = {}
+    for node in opf_root.iter():
+        name = _local_name(node.tag)
+        if name == "item":
+            item_id = str(node.get("id") or "")
+            href = str(node.get("href") or "")
+            properties = str(node.get("properties") or "")
+            media_type = str(node.get("media-type") or "")
+            if item_id and href:
+                manifest[item_id] = (href, media_type)
+                if "nav" in properties.split():
+                    nav_member = posixpath.normpath(
+                        posixpath.join(opf_dir, unquote(href.split("#", 1)[0]))
+                    )
+        elif name == "spine":
+            spine_toc = str(node.get("toc") or "")
+
+    if spine_toc in manifest:
+        href, media_type = manifest[spine_toc]
+        if media_type == "application/x-dtbncx+xml" or href.lower().endswith(".ncx"):
+            ncx_member = posixpath.normpath(posixpath.join(opf_dir, unquote(href.split("#", 1)[0])))
+
+    locator_by_member = {member: index for index, member in enumerate(spine_members, start=1)}
+
+    def resolve_locator(href: str, base_member: str) -> int:
+        path = unquote(href.split("#", 1)[0])
+        member = posixpath.normpath(posixpath.join(posixpath.dirname(base_member), path))
+        return locator_by_member.get(member, 0)
+
+    rows: list[EpubOutlineItem] = []
+    if nav_member:
+        nav_root = _epub_parse_member(zf, nav_member, filename)
+        if nav_root is not None:
+            nav_nodes = [node for node in nav_root.iter() if _local_name(node.tag) == "nav"]
+            toc_nav = next(
+                (
+                    node
+                    for node in nav_nodes
+                    if "toc"
+                    in str(
+                        node.get("{http://www.idpf.org/2007/ops}type")
+                        or node.get("epub:type")
+                        or ""
+                    ).split()
+                ),
+                nav_nodes[0] if nav_nodes else None,
+            )
+
+            def walk_nav(node: Any, level: int) -> None:
+                for child in node:
+                    name = _local_name(child.tag)
+                    if name == "li":
+                        link = next(
+                            (item for item in child if _local_name(item.tag) in {"a", "span"}),
+                            None,
+                        )
+                        href = str(link.get("href") or "") if link is not None else ""
+                        title = _epub_element_text(link) if link is not None else ""
+                        locator = resolve_locator(href, nav_member) if href else 0
+                        if locator and title:
+                            rows.append(EpubOutlineItem(locator, title, max(1, level)))
+                        for item in child:
+                            if _local_name(item.tag) == "ol":
+                                walk_nav(item, level + 1)
+                    elif name == "ol":
+                        walk_nav(child, level)
+
+            if toc_nav is not None:
+                walk_nav(toc_nav, 1)
+
+    if not rows and ncx_member:
+        ncx_root = _epub_parse_member(zf, ncx_member, filename)
+        if ncx_root is not None:
+
+            def walk_ncx(node: Any, level: int) -> None:
+                for point in node:
+                    if _local_name(point.tag) != "navPoint":
+                        continue
+                    label = next(
+                        (item for item in point.iter() if _local_name(item.tag) == "navLabel"),
+                        None,
+                    )
+                    content = next(
+                        (item for item in point if _local_name(item.tag) == "content"),
+                        None,
+                    )
+                    title = _epub_element_text(label) if label is not None else ""
+                    href = str(content.get("src") or "") if content is not None else ""
+                    locator = resolve_locator(href, ncx_member) if href else 0
+                    if locator and title:
+                        rows.append(EpubOutlineItem(locator, title, max(1, level)))
+                    walk_ncx(point, level + 1)
+
+            nav_map = next(
+                (node for node in ncx_root.iter() if _local_name(node.tag) == "navMap"),
+                None,
+            )
+            if nav_map is not None:
+                walk_ncx(nav_map, 1)
+    return rows
+
+
+def extract_epub_spine(
+    data: bytes,
+    filename: str,
+) -> tuple[tuple[EpubSpineUnit, ...], tuple[EpubOutlineItem, ...]]:
+    """Return safe, source-addressed EPUB spine units and its nested outline."""
+    _check_magic(".epub", data, filename)
+    with _open_ooxml(data, filename) as zf:
+        _validate_epub_archive(zf, filename)
+        members = _epub_content_files(zf, filename)
+        units: list[EpubSpineUnit] = []
+        for member in members:
+            text = _epub_chapter_text(zf, member, filename)
+            heading = ""
+            root = _epub_parse_member(zf, member, filename)
+            if root is not None:
+                heading_node = next(
+                    (
+                        node
+                        for node in root.iter()
+                        if _local_name(node.tag) in {"h1", "h2", "title"}
+                        and _epub_element_text(node)
+                    ),
+                    None,
+                )
+                if heading_node is not None:
+                    heading = _epub_element_text(heading_node)
+            units.append(EpubSpineUnit(href=member, text=text, title=heading))
+        outline = _epub_package_navigation(zf, filename, members)
+    return tuple(units), tuple(outline)
+
+
+def _extract_epub(data: bytes, filename: str) -> str:
+    """Extract the reading text of an EPUB with only the standard library."""
+    units, _ = extract_epub_spine(data, filename)
+    return "\n\n".join(unit.text for unit in units if unit.text)
+
+
+def _validate_epub_archive(zf: zipfile.ZipFile, filename: str) -> None:
+    """Reject oversized or suspicious EPUB ZIPs before reading any member."""
+    members = [info for info in zf.infolist() if not info.is_dir()]
+    if len(members) > _EPUB_MAX_MEMBERS:
+        raise DocumentTooLargeError(
+            f"{filename}: EPUB has too many archive members ({len(members)})",
+            filename=filename,
+        )
+
+    total = 0
+    for info in members:
+        if info.file_size > _EPUB_MAX_MEMBER_BYTES:
+            raise DocumentTooLargeError(
+                f"{filename}: EPUB member {info.filename} is too large",
+                filename=filename,
+            )
+        total += info.file_size
+        if total > _EPUB_MAX_TOTAL_UNCOMPRESSED_BYTES:
+            raise DocumentTooLargeError(
+                f"{filename}: EPUB uncompressed contents are too large",
+                filename=filename,
+            )
+        if info.compress_size and info.file_size / info.compress_size > _EPUB_MAX_COMPRESSION_RATIO:
+            raise DocumentTooLargeError(
+                f"{filename}: EPUB member {info.filename} has a suspicious compression ratio",
+                filename=filename,
+            )
 
 
 def _open_ooxml(data: bytes, filename: str) -> zipfile.ZipFile:
@@ -562,6 +1104,7 @@ def extract_documents_from_records(
     """
     doc_texts: list[str] = []
     updated: list[dict] = []
+    max_file_bytes, max_total_bytes, max_chars_per_doc, max_chars_total = _current_limits()
     total_bytes = 0
     total_chars = 0
     over_quota = False
@@ -594,7 +1137,7 @@ def extract_documents_from_records(
             updated.append(record)
             continue
 
-        if total_bytes + len(data) > MAX_TOTAL_DOC_BYTES:
+        if total_bytes + len(data) > max_total_bytes:
             over_quota = True
             doc_texts.append(f"[File: {filename} — skipped: total attachment quota exceeded]")
             record["base64"] = ""
@@ -605,7 +1148,12 @@ def extract_documents_from_records(
         total_bytes += len(data)
 
         try:
-            text = extract_text_from_bytes(filename, data)
+            text = extract_text_from_bytes(
+                filename,
+                data,
+                max_bytes=max_file_bytes,
+                max_chars=max_chars_per_doc,
+            )
         except DocumentExtractionError as exc:
             logger.info("Document extraction failed for %s: %s", filename, exc)
             doc_texts.append(f"[File: {filename} — could not be read: {exc}]")
@@ -614,7 +1162,7 @@ def extract_documents_from_records(
             updated.append(record)
             continue
 
-        remaining_budget = MAX_EXTRACTED_CHARS_TOTAL - total_chars
+        remaining_budget = max_chars_total - total_chars
         if remaining_budget <= 0:
             doc_texts.append(f"[File: {filename} — skipped: total extracted-text quota exceeded]")
             record["base64"] = ""

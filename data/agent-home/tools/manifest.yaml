@@ -1,7 +1,7 @@
 tools:
 - id: search_md
   path: search_md.py
-  description: 在 textbooks/ 下按关键词搜索 Markdown 文件
+  description: 默认搜 ir/pages 块文本，命中报 书:页#块ID；无中间表示时再扫 Markdown
 - id: open_pdf_page
   path: open_pdf_page.py
   description: 按路径或书名定位原版 PDF，并给出要打开的页码
@@ -10,25 +10,31 @@ tools:
   description: 清空工作区 traces/ 目录下所有轨迹文件
 - id: build_toc
   path: build_toc.py
-  description: 从印刷目录抽出章/节，正文回补引论/第N部分/附录并写回目录页，合并 toc_agent.json 的小节，写入 toc.json。
+  description: 有 toc_printed.json 就用它当骨架，只合并印张页、PDF 页和 from_body 子层。写入 toc.json。目录页由 write_toc_pages 落盘。
+- id: resolve_printed_toc
+  path: resolve_printed_toc.py
+  description: 看原图判定印刷目录页并抽出章/节骨架，与 MinerU 对照后写入 toc_printed.json。不要用词法重读目录页。
 - id: toc_extract
   path: toc_extract.py
-  description: 先看原文 PDF 目录页，再读 toc.json，然后一次抽各兄弟节区间的小节（对话里不另开会话）。
+  description: 只扫正文子层挂到骨架下。有 toc_printed.json 时不再把目录页字送进词法当权威。
 - id: improve_render
   path: improve_render.py
   description: 扫描整本教材的渲染问题；apply=safe 含裸公式包装、text嵌套美元符、多项拆分、填空下划线和公式里的不等号。unwrap 拆回写的目录和表格包装。
 - id: propose_import_meta
   path: propose_import_meta.py
-  description: 把判断出的显示名、书名提示、科目、学段写回导入表。不要开始识别。
+  description: 把判断出的显示名、书名提示、科目、学段写回导入表。若还是草稿，接着入队全书识别。
 - id: refine_page
   path: refine_page.py
   description: 对教材一页 Markdown 做确定性清洗（去残留 JSON/HTML、收空白），原子写回
+- id: refine_book
+  path: refine_book.py
+  description: 整书一次清洗：逐页 refine_page，再 audit_mid_syntax(fix)，再 improve_render 扫描。返回页数、空页、是否有 book.pdf。不要 glob。
 - id: strip_sub_sup
   path: strip_sub_sup.py
   description: 剥除教材页内 sub/sup 导入残留（HTML 标签与 \lt sub\gt 等），scan 只统计，fix 原子写回
 - id: create_task
   path: create_task.py
-  description: 在工作区建一条任务（定时或事件触发；对话发给 Agent。触发任务可写 condition，由 Agent 判断是否执行）
+  description: 在工作区建一条任务（定时或事件触发；对话发给 Agent。触发任务可写 condition 与 when）
 - id: list_tasks
   path: list_tasks.py
   description: 列出工作区任务（内置 + 用户）
@@ -51,7 +57,24 @@ tools:
     字码还原成 IPA。scan 只统计，fix 原子写回。不按单词另编音标。无此类残留的书 0 hits。
 - id: fill_unit_toc
   path: fill_unit_toc.py
-  description: '有「第N单元」的书：课序号为节、同课篇名并列为小节，写入 toc.json；目录源页写官方 Markdown，中间文件写 ::: kb-page-toc。无该形状则不改。'
+  description: '有「第N单元」的书：课序号为节、同课篇名并列为小节，只写入 toc.json。目录页由 write_toc_pages 落盘。无该形状则不改。'
+- id: write_toc_pages
+  path: write_toc_pages.py
+  description: 按 toc.json 写目录源页与中间围栏。apply=scan 只统计，apply=fix 经闸门落盘。行末只写印张页。
+- id: retag_page
+  path: retag_page.py
+  description: 强制整页重判围栏并覆盖 mid/（sync_page 只在首次建 mid 时整页判定，之后不会重问「这页是不是目录页」）。pages="6,7"
+    或 scope=toc。不动官方 pages/。
+- id: audit_toc
+  path: audit_toc.py
+  description: 对照 toc.json 扫描正文目录，把报告落到 logs/audit/。
+- id: audit_mid_syntax
+  path: audit_mid_syntax.py
+  description: 审核中间层围栏语法（套娃、未闭合、粘在图注上的 kb-center 等）。apply=scan
+    只报告，apply=fix 经闸门剥残片。报告落 logs/audit/。
+- id: tag_chinese_layout
+  path: tag_chinese_layout.py
+  description: 仅语文教材：篇名/副标题/作者居中，文中分标题按原书框左齐或居中。诗正文整首一个 kb-verse 或 kb-verse-center。源文件不改。非语文教材跳过。
 - id: restore_footnotes
   path: restore_footnotes.py
   description: 从 MinerU 回补圈号页注，正文圈号改成 $^{n}$，注释块上方加横杠。无该形状则不改。
@@ -61,3 +84,48 @@ tools:
 - id: center_article_heads
   path: center_article_heads.py
   description: '目录末级是「篇名 / 作者」时，正文写成 ## 篇名加下一行作者。不写带 style 的 HTML。无该形状则不改。'
+- id: tag_section_icons
+  path: tag_section_icons.py
+  description: 语文教材栏目图标与标题收成 kb-section-icon，经闸门写中间文件；标题上下空行
+- id: tag_drama
+  path: tag_drama.py
+  description: '语文教材：把戏剧对白收成 ::: kb-drama，开场说明收成 ::: kb-stage。两列角色/台词表拆回围栏。只改中间文件，经闸门
+    write_mid。非语文教材跳过。'
+- id: mineru_convert
+  path: mineru_convert.py
+  description: 旁路整书重跑 MinerU 导入。首次导入仍走前端，不要接任务。
+- id: mineru_dump
+  path: mineru_dump.py
+  description: 旁路只重跑 MinerU JSON，不改 pages。page_ranges 如 6-12。
+- id: mineru_status
+  path: mineru_status.py
+  description: 读本地 meta.json 与 mineru/manifest.json，查看识别状态。
+- id: tag_chemistry
+  path: tag_chemistry.py
+  description: 化学教材版式：按小图逐栏补想一想/书写表达、聚焦回放加虚线、跨页实验探究只补框底、剥非节首误居中、资料库收窄栏、先写源再最后一次 write_mid。非化学教材跳过。
+- id: v2md_generate
+  path: v2md_generate.py
+  retired: true
+  description: 已退役。原从 MinerU V2 生成 v2md/ 分页稿；接口 src=v2md 现返回 410。
+- id: official_slice
+  path: official_slice.py
+  retired: true
+  description: 已退役。原按页从 layout.json 出官方稿；接口 src=official 现返回 410。
+- id: ir_bands
+  path: ir_bands.py
+  description: 页级竖轨 + 递归切带出 layout.tree；explain 打印一页的轨/带/收口分组。阈值在 ir/band_rules.yaml，改完即时生效。
+- id: ingest_layout
+  path: ingest_layout.py
+  description: 五源摄取（layout 主源 + model/v1/v2 辅源）：写 textbooks/<书>/ir/pages/NNNN.json 与 remap.json。book_id=* 或空=全部有 layout 的书。不写 pages/、mid/、v2md/。apply=scan 只统计。
+- id: ir_toc
+  path: ir_toc.py
+  description: 新线 TOC 处理器：从 layout 识别目录页、解析「标题 …… 页码」条目、用页码块映射印刷页→pdf页，写 ir/toc.json。与人工 toc.json 对拍只报差异。
+- id: ir_note
+  path: ir_notes.py
+  description: 注解叠加：读 ir/notes/NNNN.yaml（replace/retitle/delete，old 不匹配拒绝），渲染页 IR+注解。不写源。
+- id: ir_diff
+  path: ir_diff.py
+  description: 试金石：IR(+注解) 渲染 vs 老线 pages（只读参照），逐页相似度与差异分类报告。
+- id: ir_review
+  path: ir_review.py
+  description: 扫中间表示里低置信分栏与识别，fix 只写 ir/review.json。二次识别必须由知识库 Agent 对照原图、订正写 ir/notes；禁止 refine_page、禁止 35B、禁止 buddy-api 版式升级。

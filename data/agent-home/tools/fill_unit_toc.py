@@ -47,7 +47,7 @@ CN_DIGIT = {
 
 
 def fill_unit_toc(book_id: str, root: str = "") -> dict[str, Any]:
-    """Fill toc.json and directory pages for books that use 第N单元 + lesson numbers."""
+    """Fill toc.json for books that use 第N单元 + lesson numbers. Pages are written by write_toc_pages."""
     sid = (book_id or "").strip()
     if not _SAFE_ID.match(sid):
         raise ValueError("book_id required")
@@ -89,21 +89,23 @@ def fill_unit_toc(book_id: str, root: str = "") -> dict[str, Any]:
     if not reused:
         _attach_pdf_pages(entries, texts, toc_pages)
         _fill_lesson_pages_from_children(entries)
-    html_pages = _split_like_source(parsed_pages, entries)
+    prev_entries = existing if reused else _load_json_entries(book)
     _write_toc_json(book, entries, toc_pages)
-    _write_toc_markdown(pages_dir, toc_pages, html_pages)
+    levels: dict[str, int] = {}
+    for item in entries:
+        key = str(item.get("level"))
+        levels[key] = levels.get(key, 0) + 1
     return {
         "book_id": sid,
         "skipped": False,
+        "ok": True,
         "entries": len(entries),
         "toc_pages": toc_pages,
-        "levels": {
-            "0": sum(1 for e in entries if e["level"] == 0),
-            "1": sum(1 for e in entries if e["level"] == 1),
-            "2": sum(1 for e in entries if e["level"] == 2),
-        },
+        "toc_pages_dirty": list(toc_pages),
+        "levels": levels,
+        "toc_diff": _toc_diff_summary(prev_entries, entries),
         "reused_toc_json": reused,
-        "wrote": "official_md_and_mid_fence",
+        "wrote": "toc.json",
     }
 
 
@@ -403,18 +405,26 @@ def _fill_lesson_pages_from_children(entries: list[dict[str, Any]]) -> None:
         i += 1
 
 
-def _split_like_source(
-    parsed_pages: list[list[dict[str, Any]]], entries: list[dict[str, Any]]
-) -> list[list[dict[str, Any]]]:
-    counts = [len(chunk) for chunk in parsed_pages]
-    if sum(counts) != len(entries) or not counts:
-        return [entries]
-    out: list[list[dict[str, Any]]] = []
-    cur = 0
-    for n in counts:
-        out.append(entries[cur : cur + n])
-        cur += n
-    return out
+def _load_json_entries(book: Path) -> list[dict[str, Any]]:
+    path = book / "toc.json"
+    if not path.is_file():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    rows = data.get("entries") if isinstance(data, dict) else []
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
+def _toc_diff_summary(prev: list[dict[str, Any]], nxt: list[dict[str, Any]]) -> dict[str, int]:
+    old_map = {(str(item.get("label") or ""), item.get("print_page")): item.get("level") for item in prev}
+    new_map = {(str(item.get("label") or ""), item.get("print_page")): item.get("level") for item in nxt}
+    return {
+        "added": sum(1 for key in new_map if key not in old_map),
+        "removed": sum(1 for key in old_map if key not in new_map),
+        "level_changed": sum(1 for key in new_map if key in old_map and old_map[key] != new_map[key]),
+    }
 
 
 def _write_toc_json(book: Path, entries: list[dict[str, Any]], toc_pages: list[int]) -> None:
@@ -432,40 +442,3 @@ def _write_toc_json(book: Path, entries: list[dict[str, Any]], toc_pages: list[i
     tmp = path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     tmp.replace(path)
-
-
-def _official_line(e: dict[str, Any]) -> str:
-    label = e["label"]
-    if e.get("is_chapter") or LESSON_ONLY.match(label):
-        return label
-    page = e.get("pdf_page") or e.get("print_page")
-    if page:
-        return f"{label} {int(page)}"
-    return label
-
-
-def _official_page(rows: list[dict[str, Any]], heading: bool) -> str:
-    lines = ["目录"] if heading else []
-    lines.extend(_official_line(e) for e in rows)
-    return "\n".join(lines).rstrip() + "\n"
-
-
-def _write_toc_markdown(
-    pages_dir: Path, toc_pages: list[int], chunks: list[list[dict[str, Any]]]
-) -> None:
-    if len(chunks) != len(toc_pages):
-        chunks = [sum(chunks, [])] if chunks else [[]]
-        toc_pages = toc_pages[:1] or [1]
-    mid_dir = pages_dir.parent / "mid"
-    mid_dir.mkdir(parents=True, exist_ok=True)
-    for i, (n, rows) in enumerate(zip(toc_pages, chunks)):
-        body = _official_page(rows, heading=(i == 0))
-        path = pages_dir / f"{n:04d}.md"
-        tmp = path.with_suffix(".md.tmp")
-        tmp.write_text(body, encoding="utf-8")
-        tmp.replace(path)
-        mid = f"::: kb-page-toc\n{body.rstrip()}\n:::\n"
-        mid_path = mid_dir / f"{n:04d}.md"
-        mid_tmp = mid_path.with_suffix(".md.tmp")
-        mid_tmp.write_text(mid, encoding="utf-8")
-        mid_tmp.replace(mid_path)

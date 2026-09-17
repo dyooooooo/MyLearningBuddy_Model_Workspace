@@ -1,0 +1,14 @@
+{
+  "req_id": "60dab1bf2c1a4741b7ccea07649940c6",
+  "status": "pending",
+  "path": "tools/tag_chemistry.py",
+  "scope": "chemistry textbooks",
+  "tool_name": "request_code_edit",
+  "job_id": "",
+  "conversation_id": "",
+  "requested_at": "2026-09-04T07:55:22.204477+00:00",
+  "situation": "上一张授权票已过期。盘上 tag_chemistry 已能按栏条尺寸收想一想/书写表达，但干跑暴露：已收好的想一想图标会被宽度误判成书写表达；MinerU 把栏条小图贴成图N.N 时会漏补；无 Markdown 插图的页补不回图标；学习指南会跨虚线偷前图；导语后的方式一、小题和表会被打到虚线外。本册书页已按修好的逻辑落盘，工具注册表还是旧版。",
+  "why": "用户要求全书把想一想和书写表达收回原书栏框，并优化 tag_chemistry。这些是化学教材共性：栏名画在问号/笔形小图里、尺寸稳定；跨对话结论规定仍进同一工具，不要另起。只改本册 pages 无法覆盖导入后的新书。",
+  "changes": "把 /tmp 里干跑过的 tag_chemistry 登记进 manifest：1) 栏条小图已在 kb-section-icon 里就不要按宽度改判栏名；2) 误标成图题的栏条小图剥回插图、图注还给真正的照片；3) 没有 Markdown 图时用 HTML img 或书号拼资产地址；4) 想一想/书写表达收导语、方式一、小题和已有虚线内的图，不要吮下一栏的图；5) 前面的图标不要跨 kb-dash 贴到学习指南上；6) 实验探究在想一想小图前停栏。先写 mid 再写源，虚线以最后一次 write_mid 为准。",
+  "impact": "化学教材再跑 tag_chemistry 会按原书补回缺栏名的想一想/书写表达并加虚线；已收好的页不改栏名；栏目说明页不动。非化学书跳过。读页仍用已有栏框虚线皮肤，不把 class 写进书页。"
+}

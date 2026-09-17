@@ -1,12 +1,21 @@
-"""Build a clickable book outline from MinerU Cloud content_list blocks."""
+"""Build a clickable book outline from MinerU Cloud content_list blocks.
+
+行级判定（剥印刷页码、定层级、栏目停用词）委托 agent 的共享词法
+`/data/agent/tools/toc_lexicon.py`，见 `app/kb/workspace_lexicon.py`。
+下面 `_TRAILING_PAGE` 之类的内置正则只是 agent 卷缺失时的兜底，不要往它们上面加规则
+—— 加规则请改 `agents/textbook-agent/workspace/configs/toc_lexicon.yaml`。
+"""
 
 from __future__ import annotations
 
 import re
 from typing import Any
 
+from app.kb.workspace_lexicon import lexicon
+
+# 兜底：共享词法的 space_page 与 slash_page 两条的等价物
 _TRAILING_PAGE = re.compile(
-    r"^(?P<label>.+?)\s+(?P<page>\d{1,4})$"
+    r"^(?P<label>.+?)(?:\s+|\s*/\s*)(?P<page>\d{1,4})$"
 )
 _CHAPTER = re.compile(r"^第[一二三四五六七八九十百零\d]+章")
 _SECTION = re.compile(r"^\*?\d+\.\d+")
@@ -77,6 +86,22 @@ def parse_entry(raw_text: str) -> dict[str, Any]:
     text = (raw_text or "").strip()
     if text.startswith("\\*"):
         text = "*" + text[2:]
+    # 页面 Markdown 里目录的章行常带 ATX 标记（`### 第三章·…`），剥掉才认得出是章
+    text = re.sub(r"^#{1,6}\s*", "", text)
+    lex = lexicon()
+    if lex is not None:
+        parsed = lex.parse_toc_line(text)
+        label = str(parsed.get("label") or "")
+        if label and not label.isdigit():
+            # `or 1` 会把章的 level 0 顶成 1（0 是假值），跟下面的回退分支不一致。
+            # 只有真的没给 level 时才补默认值。
+            raw_level = parsed.get("level")
+            return {
+                "label": label,
+                "print_page": parsed.get("print_page"),
+                "is_chapter": bool(parsed.get("is_chapter")),
+                "level": 1 if raw_level is None else int(raw_level),
+            }
     match = _TRAILING_PAGE.match(text)
     if match:
         label = match.group("label").strip(" .\u3000．…·•")
@@ -106,20 +131,58 @@ def _level(label: str) -> int:
     return 1
 
 
+# 共享词法里「一眼就是目录标题」的规则 id。这里是整页投票（`kb/mid.py::_tag_toc` 拿
+# 命中比例决定要不要把整页包成 `::: kb-page-toc`），所以刻意排掉正文里也常见的松形状：
+# `cn_enum_*`（一、/（一））、`toc_simple`（1 xxx）、`lesson_only`（纯数字）、
+# `letter_section`（A xxx）、`latin_unit`。它们只在有印张页码时才算命中。
+_STRONG_LINE_IDS = frozenset(
+    {
+        "chapter_cn",
+        "part_cn",
+        "section_cn_jie",
+        "unit_cn",
+        "intro",
+        "appendix_head",
+        "appendix_item",
+        "back_matter",
+        "named_cn",
+        "toc_dot3",
+        "toc_section",
+        "self_assess",
+        "unit_task",
+    }
+)
+
+
 def _looks_like_entry(line: str) -> bool:
     s = (line or "").strip()
     if not s or s in _TOC_TITLES:
         return False
     if any(tok in s for tok in _MATHY) or s.startswith(("(", "当", "解")):
         return False
+    lex = lexicon()
+    if lex is not None:
+        if lex.has_skip_prefix(s):
+            return False
+        label, page = lex.strip_page(s)
+        if not label or label.isdigit():
+            return False
+        hit = lex.match_line(label)
+        if hit is not None and hit.id in _STRONG_LINE_IDS:
+            return True
+        return page is not None
     if _CHAPTER.match(s) or _SECTION.match(s):
         return True
     ent = parse_entry(s)
     return bool(ent.get("print_page") is not None and ent.get("label"))
 
 
+# 纯插图行不参与比例：目录页常在章名旁配缩略图，把它算进分母会把整页判成非目录页
+_IMAGE_ONLY = re.compile(r"^!\[[^\]]*\]\([^)]*\)$")
+
+
 def looks_like_toc_blob(text: str) -> bool:
-    lines = _split_lines(text)
+    lines = [ln for ln in _split_lines(text) if not _IMAGE_ONLY.match(ln)]
     if not lines:
         return False
     hits = [ln for ln in lines if _looks_like_entry(ln)]
@@ -163,6 +226,13 @@ def keep_entry(item: dict[str, Any]) -> bool:
         return False
     if label.startswith(("(", "当", "解")):
         return False
+    lex = lexicon()
+    if lex is not None:
+        if lex.has_skip_prefix(label):
+            return False
+        hit = lex.match_line(label)
+        if hit is not None and hit.id in _STRONG_LINE_IDS:
+            return True
     if _CHAPTER.match(label) or _SECTION.match(label) or item.get("is_chapter"):
         return True
     if label in {"内容提要", "复习题"}:

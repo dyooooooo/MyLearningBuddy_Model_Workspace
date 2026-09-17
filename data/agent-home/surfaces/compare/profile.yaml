@@ -2,3 +2,23 @@ image_side: right
 legend_left: MinerU 文本
 legend_right: 原始页图
 image_tag: 第 {page} 页 · 原图
+default_mode: old-ir
+modes:
+  - id: old-ir
+    label: 旧|IR
+    left: old
+    right: ir
+    left_label: 旧稿
+    right_label: 中间表示
+  - id: ir-image
+    label: IR|原图
+    left: ir
+    right: image
+    left_label: 中间表示
+    right_label: 原图
+  - id: old-image
+    label: 旧|原图
+    left: old
+    right: image
+    left_label: 旧稿
+    right_label: 原图

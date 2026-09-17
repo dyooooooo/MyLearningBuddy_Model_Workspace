@@ -10,6 +10,7 @@ from typing import Any
 
 import aiohttp
 
+from deeptutor.services.keypool import primary_api_key
 from deeptutor.services.llm.config import LLMConfig
 from deeptutor.services.llm.context_window import (
     coerce_positive_int,
@@ -24,15 +25,21 @@ _CONTEXT_WINDOW_KEYS = (
     "context_window",
     "context_window_tokens",
     "context_length",
+    "context_size",
     "max_context_tokens",
     "max_input_tokens",
     "input_token_limit",
     "max_prompt_tokens",
     "max_model_len",
     "max_sequence_length",
+    "n_ctx",
 )
 
-_KNOWN_CONTEXT_WINDOWS: tuple[tuple[str, int], ...] = (("deepseek-v4", 1_000_000),)
+_KNOWN_CONTEXT_WINDOWS: tuple[tuple[str, int], ...] = (
+    ("deepseek-v4", 1_000_000),
+    ("minimax-m3", 1_000_000),
+    ("minimax-m2.7", 204_800),
+)
 
 
 @dataclass(frozen=True)
@@ -146,7 +153,7 @@ async def _detect_from_models_endpoint(
         return None
 
     url = f"{base_url.rstrip('/')}/models"
-    headers = build_auth_headers(llm_config.api_key, llm_config.binding)
+    headers = build_auth_headers(primary_api_key(llm_config.api_key), llm_config.binding)
     headers.pop("Content-Type", None)
 
     timeout = aiohttp.ClientTimeout(total=12)

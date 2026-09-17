@@ -7,20 +7,21 @@ import { Cpu, Loader2, Plug, Plus, Trash2, X } from "lucide-react";
 import { agentGlyph } from "@/components/agents/agent-icons";
 import PartnerAvatar from "@/components/partners/PartnerAvatar";
 import SpaceSectionHeader from "@/components/space/SpaceSectionHeader";
-import { listPartners, type PartnerInfo } from "@/lib/partners-api";
 import {
   connectSubagent,
   detectSubagents,
   disconnectSubagent,
+  listConnectablePartners,
   listSubagentConnections,
+  type ConnectablePartner,
   type SubagentBackendInfo,
   type SubagentConnection,
 } from "@/lib/subagents-api";
 
 /**
  * Connected agents — live agents the chat composer can select and consult in
- * real time: Claude Code / Codex on the user's machine, or one of their
- * partners. Distinct from the imported-history agents below it: those replay
+ * real time: a supported local agent harness, or one of the user's partners.
+ * Distinct from the imported-history agents below it: those replay
  * past transcripts, these drive the live agent now. CLI detection is
  * machine-global (is the CLI installed here); partners come from the user's
  * partner list. Consulting a partner opens a fresh session on it — every
@@ -34,6 +35,13 @@ type Lang = { zh: string; en: string };
 function backendLabel(kind: string, tr: (l: Lang) => string): string {
   if (kind === "claude_code") return "Claude Code";
   if (kind === "codex") return "Codex";
+  if (kind === "antigravity") return "Antigravity CLI";
+  if (kind === "kimi") return "Kimi CLI";
+  if (kind === "opencode") return "opencode";
+  if (kind === "mimo") return "MiMo Code";
+  if (kind === "hermes") return "Hermes Agent";
+  if (kind === "openclaw") return "OpenClaw";
+  if (kind === "deepseek_harness") return "DeepSeek Harness";
   if (kind === PARTNER_KIND) return tr({ zh: "伙伴", en: "Partner" });
   return kind;
 }
@@ -45,7 +53,7 @@ export default function ConnectedAgents() {
 
   const [backends, setBackends] = useState<SubagentBackendInfo[]>([]);
   const [connections, setConnections] = useState<SubagentConnection[]>([]);
-  const [partners, setPartners] = useState<PartnerInfo[]>([]);
+  const [partners, setPartners] = useState<ConnectablePartner[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [busyName, setBusyName] = useState<string | null>(null);
@@ -56,7 +64,7 @@ export default function ConnectedAgents() {
       const [detected, conns, parts] = await Promise.all([
         detectSubagents().catch(() => [] as SubagentBackendInfo[]),
         listSubagentConnections().catch(() => [] as SubagentConnection[]),
-        listPartners().catch(() => [] as PartnerInfo[]),
+        listConnectablePartners().catch(() => [] as ConnectablePartner[]),
       ]);
       setBackends(detected);
       setConnections(conns);
@@ -109,8 +117,8 @@ export default function ConnectedAgents() {
         icon={Plug}
         title={tr({ zh: "连接的智能体", en: "Connected agents" })}
         description={tr({
-          zh: "把本机的 Claude Code / Codex 或你的伙伴接进来，在对话中选中后直接向它提问 —— 它的完整运行过程会实时展示。",
-          en: "Bring in the Claude Code / Codex on this machine, or one of your partners — select one in chat to consult it directly, with its full run shown live.",
+          zh: "把本机的 Claude Code、Codex、Antigravity CLI、Kimi CLI、opencode、MiMo Code、Hermes Agent、OpenClaw、DeepSeek Harness 或你的伙伴接进来，在对话中选中后直接向它提问 —— 它的运行过程会实时展示。",
+          en: "Bring in a supported local harness — including Claude Code, Codex, Hermes Agent, OpenClaw, and DeepSeek Harness — or one of your partners. Select it in chat to consult it directly and see its run live.",
         })}
         action={
           canConnect ? (
@@ -134,15 +142,15 @@ export default function ConnectedAgents() {
       ) : !canConnect ? (
         <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)]/40 px-4 py-5 text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
           {tr({
-            zh: "未在本机检测到 Claude Code 或 Codex，也还没有任何伙伴。安装并登录其中任一 CLI，或在「伙伴」里新建一个，即可连接。",
-            en: "No Claude Code or Codex detected on this machine, and no partners yet. Install and log in to either CLI, or create a partner, to connect one.",
+            zh: "未在本机检测到受支持的智能体 CLI（包括 Hermes Agent、OpenClaw、DeepSeek Harness），也还没有任何伙伴。安装并登录其中任一 CLI，或在「伙伴」里新建一个，即可连接。",
+            en: "No supported agent CLI was detected on this machine (including Hermes Agent, OpenClaw, and DeepSeek Harness), and there are no partners yet. Install and log in to one, or create a partner, to connect it.",
           })}
         </div>
       ) : connections.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)]/40 px-4 py-5 text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
           {tr({
-            zh: "尚未连接任何智能体。点击「连接智能体」把本机的 Claude Code / Codex 或你的伙伴接进来。",
-            en: "No agents connected yet. Click “Connect agent” to bring in your local Claude Code / Codex, or a partner.",
+            zh: "尚未连接任何智能体。点击「连接智能体」把本机检测到的智能体 CLI 或你的伙伴接进来。",
+            en: "No agents connected yet. Click “Connect agent” to bring in a detected local agent CLI, or a partner.",
           })}
         </div>
       ) : (
@@ -239,7 +247,7 @@ function ConnectModal({
   onConnected,
 }: {
   backends: SubagentBackendInfo[];
-  partners: PartnerInfo[];
+  partners: ConnectablePartner[];
   existingNames: string[];
   tr: (l: Lang) => string;
   onClose: () => void;
@@ -337,7 +345,8 @@ function ConnectModal({
             <label className="mb-1.5 block text-[12px] font-medium text-[var(--foreground)]">
               {tr({ zh: "智能体", en: "Agent" })}
             </label>
-            <div className="flex gap-2">
+            {/* Two per row; the detected backend list is registry-driven. */}
+            <div className="grid grid-cols-2 gap-2">
               {options.map((opt) => {
                 const Glyph = agentGlyph(opt.kind);
                 return (
@@ -345,7 +354,7 @@ function ConnectModal({
                     key={opt.kind}
                     type="button"
                     onClick={() => setKind(opt.kind)}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[12.5px] font-medium transition-colors ${
+                    className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-[12.5px] font-medium transition-colors ${
                       kind === opt.kind
                         ? "border-[var(--primary)] bg-[var(--primary)]/[0.07] text-[var(--foreground)]"
                         : "border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--border)] hover:text-[var(--foreground)]"

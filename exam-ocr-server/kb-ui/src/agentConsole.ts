@@ -128,7 +128,15 @@ export function mountAgentConsole(host: HTMLElement): {
   async function refreshJobs(): Promise<void> {
     const [cOut, jOut] = await Promise.all([agent.conversations(), agent.jobs()]);
     convs = cOut.conversations || [];
-    grades = (jOut.jobs || []).filter((j) => j.kind === "grade" || j.kind === "page_refine" || j.kind === "task");
+    grades = (jOut.jobs || []).filter(
+      (j) =>
+        j.kind === "grade" ||
+        j.kind === "page_refine" ||
+        j.kind === "task" ||
+        j.kind === "printed_toc" ||
+        j.kind === "toc_extract" ||
+        j.kind === "convert",
+    );
     if (!activeConv && !activeGrade) {
       activeConv = pickLiveConversationId(convs) || convs[0]?.id || "";
       if (!activeConv && grades[0]) activeGrade = grades[0].job_id;
@@ -643,7 +651,7 @@ export function mountAgentConsole(host: HTMLElement): {
       btn.type = "button";
       btn.append(
         badge(statusZh(job.status), `is-${job.status}`),
-        el("span", "kb-agent-jobkind", job.kind === "page_refine" ? "清洗" : job.kind === "task" ? "任务" : "判题"),
+        el("span", "kb-agent-jobkind", kindLabel(job.kind)),
         el("span", "kb-agent-jobq", questionOf(job) || String(job.payload?.book_id || "（无摘要）")),
         el("span", "muted kb-agent-jobt", clock(job.updated_at)),
       );
@@ -690,7 +698,7 @@ export function mountAgentConsole(host: HTMLElement): {
     const head = el("header", "kb-agent-case");
     head.append(
       badge(statusZh(job.status), `is-${job.status}`),
-      el("strong", "", job.kind === "page_refine" ? "清洗" : job.kind === "task" ? "任务" : "判题"),
+      el("strong", "", kindLabel(job.kind)),
       el("span", "muted", clock(job.updated_at)),
     );
     const turn = el("article", "kb-turn kb-turn--replay");
@@ -826,6 +834,15 @@ function clock(iso: string): string {
 
 function pad(n: number): string {
   return n < 10 ? `0${n}` : String(n);
+}
+
+function kindLabel(kind: string): string {
+  if (kind === "page_refine") return "清洗";
+  if (kind === "printed_toc") return "建目录";
+  if (kind === "toc_extract") return "抽子层";
+  if (kind === "convert") return "全书识别";
+  if (kind === "task") return "任务";
+  return "判题";
 }
 
 function statusZh(s: string): string {

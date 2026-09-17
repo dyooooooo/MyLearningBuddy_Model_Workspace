@@ -1,0 +1,162 @@
+# Shared TOC lexicon. Python builder and JS page-toc both read this file.
+# Regexes must stay in the Python re + JS RegExp common subset:
+# numbered groups only, no (?P<name>) / (?<name>), no \p{Han}.
+
+page_suffix:
+  - id: slash
+    pattern: '\s*/\s*(\d{1,4})$'
+  - id: leader
+    pattern: '[.…·•、]+(\d{1,4})$'
+  - id: space
+    pattern: '\s+(\d{1,4})$'
+
+# Matched after page_suffix is peeled. First hit wins.
+lines:
+  - id: chapter_cn
+    pattern: '^第\s*(\d+|[一二三四五六七八九十两零百]+)\s*章[\s·．.、]*(.+)$'
+    kind: chapter
+    level: 0
+  - id: part_cn
+    pattern: '^第\s*(\d+|[一二三四五六七八九十两零百]+)\s*部分(?:[\s·．.、]+(.+))?$'
+    kind: chapter
+    level: 0
+  - id: section_cn_jie
+    pattern: '^第\s*(\d+|[一二三四五六七八九十两零百]+)\s*节[\s·．.、]*(.+)$'
+    kind: section
+    level: 1
+  - id: inquiry_cn
+    pattern: '^探究[·.•． ]*(实验|建模|设计)\s*.+$'
+    kind: named
+    level: 1
+  - id: unit_cn
+    pattern: '^第[一二三四五六七八九十百零〇两\d]+单元'
+    kind: chapter
+    level: 0
+  - id: intro
+    pattern: '^(引\s*论|绪\s*言)$'
+    kind: chapter
+    level: 0
+  - id: appendix_head
+    pattern: '^(附\s*录|Appendices)$'
+    kind: chapter
+    level: 0
+    flags: i
+  - id: back_matter
+    pattern: '^后记$'
+    kind: chapter
+    level: 0
+  - id: appendix_item
+    pattern: '^附录\s*(\d+)\s+(.+)$'
+    kind: named
+    level: 1
+  - id: appendix_roman
+    pattern: '^[Ⅰ-Ⅹ]\s+(.+)$'
+    kind: named
+    level: 1
+  - id: named_cn
+    pattern: '^(内容提要|复习题|本章复习|本章小结)$'
+    kind: named
+    level: 1
+  - id: toc_dot3
+    pattern: '^(\*?)(\d+\.\d+\.\d+)(?!\.\d)\s+(.+)$'
+    kind: dotted
+    level: 2
+  - id: toc_section
+    pattern: '^(\*?)(\d+\.\d+)(?!\.\d)\s+(.+)$'
+    kind: section
+    level: 1
+  - id: letter_section
+    pattern: '^([A-E])\s+(.+)$'
+    kind: section
+    level: 1
+  - id: latin_unit
+    pattern: '^(\d+)\s+([A-Z][A-Za-z][A-Za-z0-9’'' \-]*)$'
+    kind: chapter
+    level: 0
+  - id: self_assess
+    pattern: '^Self-assessment$'
+    kind: named
+    level: 1
+    flags: i
+  - id: cn_enum_chapter
+    pattern: '^[一二三四五六七八九十]+、'
+    kind: chapter
+    level: 0
+  - id: cn_enum_section
+    pattern: '^[（(][一二三四五六七八九十]+[）)]'
+    kind: section
+    level: 1
+  - id: lesson_only
+    pattern: '^[1-9]\d{0,1}$'
+    kind: section
+    level: 1
+  - id: unit_task
+    pattern: '^单元学习任务$'
+    kind: section
+    level: 1
+  - id: toc_simple
+    pattern: '^(\*?)([1-9]\d{0,1})\s+(?!(?:世纪|年代))(.+)$'
+    kind: section
+    level: 1
+
+body:
+  - id: chapter_cn
+    pattern: '^第\s*(\d+|[一二三四五六七八九十两零百]+)\s*章[\s·．.、]*(.+)$'
+    kind: chapter
+  - id: part_cn
+    pattern: '^第\s*(\d+|[一二三四五六七八九十两零百]+)\s*部分(?:[\s·．.、]+(.+))?$'
+    kind: chapter
+  - id: section_cn_jie
+    pattern: '^第\s*(\d+|[一二三四五六七八九十两零百]+)\s*节[\s·．.、]*(.+)$'
+    kind: section
+  - id: body_dot3
+    pattern: '^(\*?)(\d+\.\d+\.\d+)(?!\.\d)\s+(.+)$'
+    kind: dotted
+  - id: body_section
+    pattern: '^(\*?)(\d+\.\d+)(?!\.\d)(?:\s+(.+))?$'
+    kind: section
+
+# 栏目名：正文里排成标题样子，但不是小节。前缀匹配（「实验」也挡「实验一」）。
+column_labels:
+  - 自主活动
+  - 大家谈
+  - 助一臂
+  - STSE
+  - 拓展视野
+  - 问题与思考
+  - 复习与巩固
+  - 学期活动
+  - 科学漫步
+  - 做一做
+  - 说一说
+  - 思考与讨论
+  - 练习与应用
+  - 实验
+  - 演示
+  - 学生实验
+  - 交流与讨论
+  # OCR 偶尔把「交流与讨论」认成少一个「与」，同一个栏目要一起挡
+  - 交流讨论
+  - 数据分析
+  - 提出问题
+  - 实验结论
+  - 实验原理与方案
+  - 实验装置与方法
+  - 实验操作与数据收集
+  - 小结
+
+# 目录页剩余行 / 小节号不得收成条目的标题形状（全书共性，不写书号）。
+reject_titles:
+  - id: timeline_era
+    pattern: '^\d+\s*(世纪|年代)'
+  - id: leader_only
+    pattern: '^[.…·•、\s]+$'
+
+# 项目符号开头的行永远不是目录条目（章末小结里的「·基本方法」「·知识结构图」）。
+skip_prefixes:
+  - "·"
+  - "•"
+  - "‧"
+  - "・"
+
+per_book: {}

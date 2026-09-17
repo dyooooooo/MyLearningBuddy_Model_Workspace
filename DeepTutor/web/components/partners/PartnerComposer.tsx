@@ -16,18 +16,18 @@ import {
 } from "@/lib/partners-api";
 import {
   ATTACHMENT_ACCEPT,
-  MAX_ATTACHMENT_BYTES,
-  MAX_TOTAL_ATTACHMENT_BYTES,
   classifyFile,
   docIconFor,
   formatBytes,
   isSvgFilename,
 } from "@/lib/doc-attachments";
+import { useAttachmentLimits } from "@/lib/attachment-limits";
 import {
   extractBase64FromDataUrl,
   readFileAsDataUrl,
 } from "@/lib/file-attachments";
 import { useAutoSizedTextarea } from "@/lib/use-auto-sized-textarea";
+import { useImeComposing } from "@/lib/use-ime-composing";
 
 export interface PartnerPendingAttachment {
   type: "image" | "file";
@@ -45,7 +45,8 @@ export const PartnerComposer = memo(function PartnerComposer({
   streaming,
   placeholder,
 }: {
-  onSend: (content: string, attachments: PartnerPendingAttachment[]) => void;
+  /** Returns true when sending starts an asynchronous streamed response. */
+  onSend: (content: string, attachments: PartnerPendingAttachment[]) => boolean;
   onStop?: () => void;
   disabled?: boolean;
   streaming?: boolean;
@@ -56,6 +57,7 @@ export const PartnerComposer = memo(function PartnerComposer({
   const [attachments, setAttachments] = useState<PartnerPendingAttachment[]>(
     [],
   );
+  const attachmentLimits = useAttachmentLimits();
   const [dragging, setDragging] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [commands, setCommands] = useState<PartnerCommandInfo[]>([]);
@@ -64,11 +66,53 @@ export const PartnerComposer = memo(function PartnerComposer({
   const [showHelp, setShowHelp] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const restoreFocusOnReturnRef = useRef(false);
+  const restoreFocusAfterSendRef = useRef(false);
   const dragCounterRef = useRef(0);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isComposingRef = useRef(false);
+  const { isComposingRef, onCompositionStart, onCompositionEnd } =
+    useImeComposing();
 
   useAutoSizedTextarea(textareaRef, input, { min: 24, max: 180 });
+
+  const focusTextarea = useCallback(() => {
+    requestAnimationFrame(() => {
+      if (!disabled && !streaming) textareaRef.current?.focus();
+    });
+  }, [disabled, streaming]);
+
+  useEffect(() => {
+    const rememberFocus = () => {
+      restoreFocusOnReturnRef.current =
+        document.activeElement === textareaRef.current;
+    };
+    const restoreFocus = () => {
+      if (
+        restoreFocusOnReturnRef.current &&
+        document.visibilityState === "visible"
+      ) {
+        focusTextarea();
+      }
+    };
+
+    window.addEventListener("blur", rememberFocus);
+    window.addEventListener("focus", restoreFocus);
+    document.addEventListener("visibilitychange", restoreFocus);
+    return () => {
+      window.removeEventListener("blur", rememberFocus);
+      window.removeEventListener("focus", restoreFocus);
+      document.removeEventListener("visibilitychange", restoreFocus);
+    };
+  }, [focusTextarea]);
+
+  useEffect(() => {
+    if (disabled || streaming) return;
+    if (!restoreFocusAfterSendRef.current && !restoreFocusOnReturnRef.current) {
+      return;
+    }
+    restoreFocusAfterSendRef.current = false;
+    focusTextarea();
+  }, [disabled, focusTextarea, streaming]);
 
   // Slash commands (same 5 the IM channels expose) — fetched once; the palette
   // is partner-independent so no id is needed.
@@ -100,13 +144,16 @@ export const PartnerComposer = memo(function PartnerComposer({
   const slashOpen = !slashClosed && slashMatches.length > 0;
   const boundedSlashIndex = Math.min(slashIndex, slashMatches.length - 1);
 
-  const acceptCommand = useCallback((command: PartnerCommandInfo) => {
-    // Arg-taking commands keep the menu out of the way with a trailing space;
-    // zero-arg ones are left ready to send.
-    setInput(command.arg_hint ? `${command.command} ` : command.command);
-    setSlashClosed(true);
-    requestAnimationFrame(() => textareaRef.current?.focus());
-  }, []);
+  const acceptCommand = useCallback(
+    (command: PartnerCommandInfo) => {
+      // Arg-taking commands keep the menu out of the way with a trailing
+      // space; zero-arg ones are left ready to send.
+      setInput(command.arg_hint ? `${command.command} ` : command.command);
+      setSlashClosed(true);
+      focusTextarea();
+    },
+    [focusTextarea],
+  );
 
   const showAttachmentError = useCallback((message: string) => {
     setAttachmentError(message);
@@ -131,11 +178,11 @@ export const PartnerComposer = memo(function PartnerComposer({
           rejected.push({ name: file.name, reason: "unsupported" });
           continue;
         }
-        if (file.size > MAX_ATTACHMENT_BYTES) {
+        if (file.size > attachmentLimits.maxFileBytes) {
           rejected.push({ name: file.name, reason: "too_large" });
           continue;
         }
-        if (runningTotal + file.size > MAX_TOTAL_ATTACHMENT_BYTES) {
+        if (runningTotal + file.size > attachmentLimits.maxTotalBytes) {
           rejected.push({ name: file.name, reason: "quota" });
           break;
         }
@@ -160,7 +207,7 @@ export const PartnerComposer = memo(function PartnerComposer({
 
       return accepted;
     },
-    [attachments, showAttachmentError, t],
+    [attachments, attachmentLimits, showAttachmentError, t],
   );
 
   const fileToAttachment = useCallback(
@@ -194,11 +241,15 @@ export const PartnerComposer = memo(function PartnerComposer({
   const submit = useCallback(() => {
     const content = input.trim();
     if ((!content && attachments.length === 0) || disabled) return;
-    onSend(content, attachments);
+    const awaitsResponse = onSend(content, attachments);
     setInput("");
     setAttachments([]);
-    requestAnimationFrame(() => textareaRef.current?.focus());
-  }, [attachments, disabled, input, onSend]);
+    if (awaitsResponse) {
+      restoreFocusAfterSendRef.current = true;
+    } else {
+      focusTextarea();
+    }
+  }, [attachments, disabled, focusTextarea, input, onSend]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -230,7 +281,14 @@ export const PartnerComposer = memo(function PartnerComposer({
         submit();
       }
     },
-    [acceptCommand, boundedSlashIndex, slashMatches, slashOpen, submit],
+    [
+      acceptCommand,
+      boundedSlashIndex,
+      slashMatches,
+      slashOpen,
+      submit,
+      isComposingRef,
+    ],
   );
 
   const handleInputChange = useCallback(
@@ -390,14 +448,8 @@ export const PartnerComposer = memo(function PartnerComposer({
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        onCompositionStart={() => {
-          isComposingRef.current = true;
-        }}
-        onCompositionEnd={() => {
-          setTimeout(() => {
-            isComposingRef.current = false;
-          }, 0);
-        }}
+        onCompositionStart={onCompositionStart}
+        onCompositionEnd={onCompositionEnd}
         placeholder={placeholder ?? t("Type a message...")}
         rows={1}
         maxLength={32000}

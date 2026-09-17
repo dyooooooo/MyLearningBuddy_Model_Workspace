@@ -1,0 +1,17 @@
+{
+  "req_id": "0727d6024ae74e559567085245be7d05",
+  "status": "granted",
+  "path": "surfaces/page-body/lib/fences.mjs",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "f7114b3b-ad5a-455e-a089-e693d4f20190",
+  "conversation_id": "59668091-3598-4313-8e7b-339a14c4ffb5",
+  "requested_at": "2026-09-01T02:31:08.535721+00:00",
+  "situation": "书页 theme 把所有 img 设成块级且最宽 100%，栏目小图标会被拉满栏宽。原文是小圆标贴在「学习提示」左侧，标题与图标同为赤褐色，右侧一条灰色点线。这是读页时该由 prepare 加 theme 画的版式，不能把 HTML 写进书页。",
+  "why": "点线、颜色和图标尺寸只许在读页时画。新增围栏 kb-section-icon 是全书可用的栏目图标标题形状，不写一书专名，也不改已有的 kb-center / kb-verse。",
+  "changes": "改 surfaces/page-body/lib/fences.mjs：登记并绘制 kb-section-icon，围栏里第一张图在左、标题在右。改 theme.css：小图标与标题同行、赤褐色字、右侧点线。补金样 tests/goldens/section-icon.in.md、section-icon.out.md 与 ctx。不改 toc-tree 和 compare。",
+  "impact": "中间文件写了该围栏的页会按原文画成「图标+标题+点线」。没写该围栏的书不受影响。金样全绿后才 reload_surfaces。不把 class 或点线写回 pages/ 或 mid/。",
+  "granted_at": "2026-09-01T02:31:16.190949+00:00",
+  "expires_at": "2026-09-01T02:46:16.190949+00:00",
+  "one_shot": true
+}

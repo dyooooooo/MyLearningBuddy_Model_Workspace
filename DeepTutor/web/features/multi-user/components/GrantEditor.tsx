@@ -1,9 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Loader2, Save } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  GraduationCap,
+  Loader2,
+  Save,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import McpToolGroups from "@/components/common/McpToolGroups";
+import { toggleToolName as toggleName } from "@/lib/mcp-tool-groups";
 import { fetchAdminResources, fetchUserGrant, saveUserGrant } from "../api";
-import type { GrantPayload, McpToolOption, MultiUserResources } from "../types";
+import type {
+  GrantPayload,
+  LearningPolicy,
+  MultiUserResources,
+} from "../types";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -14,9 +27,28 @@ function emptyGrant(userId: string): GrantPayload {
     models: { llm: [] },
     knowledge_bases: [],
     skills: [],
+    partners: [],
     enabled_tools: null,
     mcp_tools: null,
     exec_enabled: null,
+    learning_policy: null,
+  };
+}
+
+const LEARNING_AGE_BANDS = ["6-8", "9-12", "13-15"] as const;
+
+function conservativeLearningPolicy(): LearningPolicy {
+  return {
+    age_band: "9-12",
+    locked_persona: "teacher",
+    allowed_capabilities: ["chat", "immersive_reading"],
+    default_capability: "immersive_reading",
+    allowed_surfaces: ["chat", "reading"],
+    reading: {
+      allow_upload: false,
+      material_ids: [],
+      extensions: [],
+    },
   };
 }
 
@@ -125,7 +157,14 @@ function ModeSwitch({
   );
 }
 
-export function GrantEditor({ userId }: { userId: string }) {
+export function GrantEditor({
+  userId,
+  lockLearningPolicy = false,
+}: {
+  userId: string;
+  lockLearningPolicy?: boolean;
+}) {
+  const { t } = useTranslation();
   const [resources, setResources] = useState<MultiUserResources | null>(null);
   const [grant, setGrant] = useState<GrantPayload>(() => emptyGrant(userId));
   const [loading, setLoading] = useState(true);
@@ -175,6 +214,13 @@ export function GrantEditor({ userId }: { userId: string }) {
         grant.skills.map((item) => String(item.skill_id || item.id || "")),
       ),
     [grant.skills],
+  );
+  const partnerIds = useMemo(
+    () =>
+      new Set(
+        grant.partners.map((item) => String(item.partner_id || item.id || "")),
+      ),
+    [grant.partners],
   );
 
   const selectedModelCount = useMemo(
@@ -244,6 +290,19 @@ export function GrantEditor({ userId }: { userId: string }) {
     });
   }
 
+  function togglePartner(partnerId: string, name: string) {
+    setGrant((current) => {
+      const next = structuredClone(current) as GrantPayload;
+      const exists = partnerIds.has(partnerId);
+      next.partners = exists
+        ? next.partners.filter(
+            (item) => String(item.partner_id || item.id || "") !== partnerId,
+          )
+        : [...next.partners, { partner_id: partnerId, name, source: "admin" }];
+      return next;
+    });
+  }
+
   function setToolList(
     key: "enabled_tools" | "mcp_tools",
     value: string[] | null,
@@ -251,14 +310,73 @@ export function GrantEditor({ userId }: { userId: string }) {
     setGrant((current) => ({ ...current, [key]: value }));
   }
 
-  function toggleToolName(key: "enabled_tools" | "mcp_tools", name: string) {
+  function enableLearningPolicy() {
+    setGrant((current) => ({
+      ...current,
+      learning_policy: conservativeLearningPolicy(),
+    }));
+  }
+
+  function disableLearningPolicy() {
+    setGrant((current) => ({ ...current, learning_policy: null }));
+  }
+
+  function setLearningAgeBand(ageBand: LearningPolicy["age_band"]) {
+    setGrant((current) =>
+      current.learning_policy
+        ? {
+            ...current,
+            learning_policy: { ...current.learning_policy, age_band: ageBand },
+          }
+        : current,
+    );
+  }
+
+  function updateReadingPolicy(
+    update: (reading: LearningPolicy["reading"]) => LearningPolicy["reading"],
+  ) {
+    setGrant((current) => {
+      if (!current.learning_policy) return current;
+      const reading = current.learning_policy.reading;
+      return {
+        ...current,
+        learning_policy: {
+          ...current.learning_policy,
+          allowed_surfaces: current.learning_policy.allowed_surfaces ?? [
+            "chat",
+            "reading",
+          ],
+          reading: update(reading),
+        },
+      };
+    });
+  }
+
+  function toggleReadingMaterial(materialId: string) {
+    updateReadingPolicy((reading) => ({
+      ...reading,
+      material_ids: reading.material_ids.includes(materialId)
+        ? reading.material_ids.filter((id) => id !== materialId)
+        : [...reading.material_ids, materialId],
+    }));
+  }
+
+  function toggleReadingExtension(extensionId: string) {
+    updateReadingPolicy((reading) => ({
+      ...reading,
+      extensions: reading.extensions.includes(extensionId)
+        ? reading.extensions.filter((id) => id !== extensionId)
+        : [...reading.extensions, extensionId],
+    }));
+  }
+
+  // Named apart from the imported `toggleName` helper it wraps, and narrowed to
+  // the one key that still uses it: MCP rows go through McpToolGroups now.
+  function toggleGrantTool(key: "enabled_tools", name: string) {
     setGrant((current) => {
       const list = current[key];
       if (list === null) return current;
-      const next = list.includes(name)
-        ? list.filter((item) => item !== name)
-        : [...list, name];
-      return { ...current, [key]: next };
+      return { ...current, [key]: toggleName(list, name) };
     });
   }
 
@@ -305,15 +423,6 @@ export function GrantEditor({ userId }: { userId: string }) {
   const mcpSummary =
     grant.mcp_tools === null ? "no MCP" : `${grant.mcp_tools.length} MCP`;
 
-  const mcpByServer = useMemo(() => {
-    const groups = new Map<string, McpToolOption[]>();
-    for (const tool of resources?.mcp_tools || []) {
-      const key = tool.server || "other";
-      groups.set(key, [...(groups.get(key) ?? []), tool]);
-    }
-    return groups;
-  }, [resources?.mcp_tools]);
-
   if (loading && !resources) {
     return (
       <div className="border-t border-[var(--border)] bg-[var(--background)]/40 p-4">
@@ -350,6 +459,9 @@ export function GrantEditor({ userId }: { userId: string }) {
                 {skillIds.size} skills
               </span>
               <span className="rounded-full bg-[var(--muted)]/60 px-2 py-1">
+                {partnerIds.size} partners
+              </span>
+              <span className="rounded-full bg-[var(--muted)]/60 px-2 py-1">
                 {toolsSummary}
               </span>
               <span className="rounded-full bg-[var(--muted)]/60 px-2 py-1">
@@ -361,6 +473,146 @@ export function GrantEditor({ userId }: { userId: string }) {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 [scrollbar-gutter:stable]">
           <div className="grid gap-5 md:grid-cols-3">
+            <section className="min-w-0 md:col-span-3">
+              <SectionTitle>{t("Learning policy")}</SectionTitle>
+              <div className="rounded-lg border border-[var(--border)]/60 p-3">
+                <CheckRow
+                  label={t("Enable learning policy")}
+                  description={t(
+                    "Teacher persona; Chat and Immersive Reading only",
+                  )}
+                  checked={Boolean(grant.learning_policy)}
+                  disabled={controlsDisabled || lockLearningPolicy}
+                  onToggle={() =>
+                    grant.learning_policy
+                      ? disableLearningPolicy()
+                      : enableLearningPolicy()
+                  }
+                />
+                {grant.learning_policy && (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <label className="text-xs text-[var(--foreground)]">
+                      <span className="mb-1 block text-[11px] text-[var(--muted-foreground)]">
+                        {t("Age band")}
+                      </span>
+                      <select
+                        value={grant.learning_policy.age_band}
+                        disabled={controlsDisabled}
+                        onChange={(event) =>
+                          setLearningAgeBand(
+                            event.target.value as LearningPolicy["age_band"],
+                          )
+                        }
+                        className="h-8 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2"
+                      >
+                        {LEARNING_AGE_BANDS.map((band) => (
+                          <option key={band} value={band}>
+                            {band}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="text-xs text-[var(--foreground)]">
+                      <span className="mb-1 block text-[11px] text-[var(--muted-foreground)]">
+                        {t("Persona")}
+                      </span>
+                      <select
+                        value={grant.learning_policy.locked_persona}
+                        disabled
+                        className="h-8 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2"
+                      >
+                        <option value="teacher">{t("Teacher")}</option>
+                      </select>
+                    </label>
+                    <div className="text-xs">
+                      <span className="mb-1 block text-[11px] text-[var(--muted-foreground)]">
+                        {t("Modes")}
+                      </span>
+                      <div className="flex h-8 items-center gap-1.5">
+                        <GraduationCap
+                          size={14}
+                          className="text-[var(--muted-foreground)]"
+                        />
+                        <span>{t("Chat · Immersive Reading")}</span>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:col-span-3 lg:grid-cols-2">
+                      <div>
+                        <div className="mb-1 text-[11px] text-[var(--muted-foreground)]">
+                          {t("Assigned reading materials")}
+                        </div>
+                        <div className="grid gap-1 sm:grid-cols-2">
+                          {(resources?.reading_materials ?? []).map(
+                            (material) => (
+                              <CheckRow
+                                key={material.material_id}
+                                label={material.title || material.filename}
+                                description={material.filename}
+                                checked={Boolean(
+                                  grant.learning_policy?.reading.material_ids.includes(
+                                    material.material_id,
+                                  ),
+                                )}
+                                disabled={controlsDisabled}
+                                onToggle={() =>
+                                  toggleReadingMaterial(material.material_id)
+                                }
+                              />
+                            ),
+                          )}
+                          {(resources?.reading_materials ?? []).length === 0 ? (
+                            <p className="text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+                              {t(
+                                "Upload books in Reading before assigning them.",
+                              )}
+                            </p>
+                          ) : null}
+                        </div>
+                        <label className="mt-2 flex items-center gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={grant.learning_policy.reading.allow_upload}
+                            disabled={controlsDisabled}
+                            onChange={(event) =>
+                              updateReadingPolicy((reading) => ({
+                                ...reading,
+                                allow_upload: event.target.checked,
+                              }))
+                            }
+                          />
+                          {t("Allow learner uploads")}
+                        </label>
+                      </div>
+                      <div>
+                        <div className="mb-1 text-[11px] text-[var(--muted-foreground)]">
+                          {t("Reading extensions")}
+                        </div>
+                        <div className="grid gap-1 sm:grid-cols-2">
+                          {(resources?.reading_extensions ?? []).map(
+                            (extension) => (
+                              <CheckRow
+                                key={extension.id}
+                                label={extension.name}
+                                description={`${extension.id} · ${extension.version}`}
+                                checked={Boolean(
+                                  grant.learning_policy?.reading.extensions.includes(
+                                    extension.id,
+                                  ),
+                                )}
+                                disabled={controlsDisabled}
+                                onToggle={() =>
+                                  toggleReadingExtension(extension.id)
+                                }
+                              />
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
             <section className="min-w-0">
               <SectionTitle>Models</SectionTitle>
               <div className="space-y-1.5 text-xs">
@@ -424,6 +676,32 @@ export function GrantEditor({ userId }: { userId: string }) {
                 ))}
               </div>
             </section>
+            <section className="min-w-0">
+              <SectionTitle>Partners</SectionTitle>
+              <div className="space-y-1.5 text-xs">
+                {(resources?.partners || []).length === 0 ? (
+                  <p className="px-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+                    No partners yet. Create one under Partners to assign it.
+                  </p>
+                ) : (
+                  (resources?.partners || []).map((partner) => (
+                    <CheckRow
+                      key={partner.partner_id}
+                      label={partner.name || partner.partner_id}
+                      description={partner.description}
+                      checked={partnerIds.has(partner.partner_id)}
+                      disabled={controlsDisabled}
+                      onToggle={() =>
+                        togglePartner(
+                          partner.partner_id,
+                          partner.name || partner.partner_id,
+                        )
+                      }
+                    />
+                  ))
+                )}
+              </div>
+            </section>
 
             <section className="min-w-0">
               <SectionTitle>System tools</SectionTitle>
@@ -448,7 +726,7 @@ export function GrantEditor({ userId }: { userId: string }) {
                       checked={grant.enabled_tools!.includes(tool.name)}
                       disabled={controlsDisabled}
                       onToggle={() =>
-                        toggleToolName("enabled_tools", tool.name)
+                        toggleGrantTool("enabled_tools", tool.name)
                       }
                     />
                   ))}
@@ -462,43 +740,64 @@ export function GrantEditor({ userId }: { userId: string }) {
                 disabled={controlsDisabled}
                 defaultLabel="Default · none"
                 onDefault={() => setToolList("mcp_tools", null)}
-                onCustom={() =>
-                  setToolList(
-                    "mcp_tools",
-                    (resources?.mcp_tools || []).map((tool) => tool.name),
-                  )
-                }
+                // Custom starts empty: the admin picks the services to assign,
+                // rather than un-picking hundreds of tools they never meant to
+                // grant by switching modes.
+                onCustom={() => setToolList("mcp_tools", [])}
               />
               {grant.mcp_tools === null ? (
                 <p className="px-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
                   MCP tools proxy host-side capabilities, so they stay denied by
-                  default. Switch to Custom to grant specific tools.
+                  default. Switch to Custom to assign specific services.
                 </p>
               ) : null}
               {grant.mcp_tools !== null &&
                 (resources?.mcp_tools?.length ? (
-                  <div className="space-y-2 text-xs">
-                    {[...mcpByServer.entries()].map(([server, tools]) => (
-                      <div key={server}>
-                        <p className="mb-1 px-1 font-mono text-[11px] text-[var(--muted-foreground)]">
-                          {server}
-                        </p>
-                        <div className="space-y-1.5">
-                          {tools.map((tool) => (
-                            <CheckRow
-                              key={tool.name}
-                              label={tool.name}
-                              description={tool.description}
-                              checked={grant.mcp_tools!.includes(tool.name)}
-                              disabled={controlsDisabled}
-                              onToggle={() =>
-                                toggleToolName("mcp_tools", tool.name)
-                              }
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="text-xs">
+                    {/* Bulk affordance: with ~40 curated services, granting
+                        everything must not mean forty clicks. Mirrors the
+                        partner picker, which has had All/None all along. */}
+                    <div className="mb-1.5 flex items-center gap-2 px-1">
+                      <button
+                        type="button"
+                        disabled={controlsDisabled}
+                        onClick={() =>
+                          setToolList(
+                            "mcp_tools",
+                            (resources.mcp_tools ?? []).map(
+                              (tool) => tool.name,
+                            ),
+                          )
+                        }
+                        className="rounded px-1.5 py-0.5 text-[11px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] disabled:opacity-50"
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        disabled={controlsDisabled}
+                        onClick={() => setToolList("mcp_tools", [])}
+                        className="rounded px-1.5 py-0.5 text-[11px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] disabled:opacity-50"
+                      >
+                        None
+                      </button>
+                    </div>
+                    <McpToolGroups
+                      tools={resources.mcp_tools}
+                      selected={grant.mcp_tools}
+                      onChange={(next) => setToolList("mcp_tools", next)}
+                      disabled={controlsDisabled}
+                      renderTool={({ tool, checked, onToggle }) => (
+                        <CheckRow
+                          key={tool.name}
+                          label={tool.name}
+                          description={tool.description}
+                          checked={checked}
+                          disabled={controlsDisabled}
+                          onToggle={onToggle}
+                        />
+                      )}
+                    />
                   </div>
                 ) : (
                   <p className="text-xs text-[var(--muted-foreground)]">

@@ -18,6 +18,7 @@ labels:
   report_intro: "Write introduction"
   report_section: "Write section"
   report_conclusion: "Write conclusion"
+  report_retry: "Report section was incomplete; retrying."
   queue_append: "Sub-topic added"
   references_heading: "References"
   addendum_title: "Additional findings"
@@ -36,6 +37,7 @@ empty:
 system:
   warning_prefix: "⚠ "
   kb_system_note: "Attached knowledge bases: {kb_name}. When calling rag, kb_name must be {kb_name_repr}."
+  obsidian_kb_system_note: "Attached knowledge base {kb_name} is a read-only Obsidian vault. Gather evidence with obsidian_search, obsidian_list and obsidian_read. Do not call rag."
 
 # --------------------- Notices (stream.progress) -----------------------
 notices:
@@ -45,6 +47,7 @@ notices:
   tool_unknown_error: "Error executing {tool}."
   too_many_tool_calls: "Requested {requested} tool calls; capped at {limit}."
   max_iterations_reached: "Reached the iteration ceiling for this block; forcing FINISH."
+  partial_results: "{failed} of {total} research subtopics could not be completed; the report is based on the remaining evidence."
   rephrase_cap_reached: "ask_user limit reached ({max_rounds} rounds). Emit FINISH now with the best refined topic you can produce from prior answers."
   rephrase_only_ask_user: "Inside rephrase you may only call `ask_user`; `{tool}` is ignored."
   append_rejected_empty: "APPEND rejected: provide a title on the first line after the label."
@@ -205,6 +208,8 @@ note:
 # Phase 4 — Reporting (sequence of one-shot labeled steps)
 # =======================================================================
 report:
+  retry_complete: |
+    The previous report part was empty or truncated. Regenerate the complete part from its ## heading, follow the required label protocol, and finish every sentence. Do not comment on the retry.
   outline:
     system: |
       You are planning the final report's structure from a pile of finished research blocks. Each block has an id, a sub-topic title, and a short knowledge preview.

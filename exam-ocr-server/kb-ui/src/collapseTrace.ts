@@ -106,6 +106,12 @@ export function toolLabel(tool: { name: string; status: string; detail?: string 
     edit: "编辑",
     write: "写入",
     "35b 版式": "35B 版式",
+    toc_locate: "定位目录页",
+    toc_read: "看印刷目录",
+    toc_reconcile: "核对目录",
+    resolve_printed_toc: "判断目录",
+    全书识别: "全书识别",
+    已出页: "已出页",
   };
   const base = map[key] || tool.name;
   const label = hint ? `${base} ${hint}` : base;

@@ -1,4 +1,6 @@
 import { wrapBareMath } from "./bare-math.mjs";
+import { stripBlockIds } from "./block-ids.mjs";
+import { extractOfm, extractTopLevel } from "./md-parse.bundle.mjs";
 import { liftPageToc } from "./page-toc.mjs";
 
 export const FENCE_NAMES = new Set([
@@ -195,11 +197,116 @@ function peelInnerFenceTokens(body) {
   return lines.join("\n");
 }
 
-export function paintFences(md, ctx = {}) {
+function parserMode(ctx) {
+  const raw = ctx?.profile && typeof ctx.profile === "object" ? ctx.profile.parser : "";
+  return String(raw || "remark").trim().toLowerCase();
+}
+
+function renderWikilink(hit) {
+  const path = String(hit.url || "").trim();
+  const label = String(hit.alias || path || hit.value || "").trim() || path;
+  const frag = String(hit.fragment || "").replace(/^#/, "");
+  const href = `#ofm-${encodeURIComponent(path)}${frag ? `#${encodeURIComponent(frag)}` : ""}`;
+  return `<a class="kb-wikilink" href="${escapeAttr(href)}">${escapeText(label)}</a>`;
+}
+
+function renderCallout(hit) {
+  const lines = String(hit.value || "").split(/\r?\n/);
+  const title = String(hit.title || hit.calloutType || "").trim();
+  const body = lines
+    .slice(1)
+    .map((line) => line.replace(/^>\s?/, ""))
+    .join("\n")
+    .trim();
+  const kind = escapeAttr(hit.calloutType || "note");
+  return (
+    `<aside class="kb-ofm-callout" data-callout="${kind}">` +
+    (title ? `<p class="kb-ofm-callout-title">${escapeText(title)}</p>` : "") +
+    (body ? `<p class="kb-ofm-callout-body">${escapeText(body)}</p>` : "") +
+    `</aside>`
+  );
+}
+
+function renderOfmHit(hit) {
+  if (hit.kind === "wikilink") return renderWikilink(hit);
+  if (hit.kind === "highlight") {
+    const inner = String(hit.value || "").replace(/^==/, "").replace(/==$/, "");
+    return `<mark class="kb-ofm-highlight">${escapeText(inner)}</mark>`;
+  }
+  if (hit.kind === "comment") return "";
+  if (hit.kind === "callout") return renderCallout(hit);
+  return hit.value || "";
+}
+
+export function paintOfm(text, { escape = false } = {}) {
+  const raw = String(text || "");
+  const hits = extractOfm(raw);
+  if (!hits.length) return escape ? escapeText(raw) : raw;
+  let out = "";
+  let cursor = 0;
+  for (const hit of hits) {
+    const gap = raw.slice(cursor, hit.start);
+    out += escape ? escapeText(gap) : gap;
+    out += renderOfmHit(hit);
+    cursor = hit.end;
+  }
+  const tail = raw.slice(cursor);
+  out += escape ? escapeText(tail) : tail;
+  return out;
+}
+
+function paintOne(name, rawInner, ctx) {
+  const profile = ctx.profile && typeof ctx.profile === "object" ? ctx.profile : {};
+  const printToPdf = ctx.printToPdf && typeof ctx.printToPdf === "object" ? ctx.printToPdf : {};
+  const kids = extractTopLevel(rawInner);
+  let body;
+  if (kids.length) {
+    body = stripBlockIds(paintFences(rawInner, ctx));
+  } else {
+    body = stripBlockIds(
+      peelInnerFenceTokens(String(rawInner || "").replace(/^\n/, "").replace(/\n$/, "")),
+    );
+    if (
+      name !== "kb-list-item" &&
+      name !== "kb-solution-tail" &&
+      name !== "kb-lead" &&
+      name !== "kb-drama"
+    ) {
+      body = paintOfm(body, { escape: false });
+    }
+  }
+  const tocEntries = Array.isArray(ctx.tocEntries) ? ctx.tocEntries : [];
+  if (name === "kb-page-toc") return liftPageToc(body, printToPdf, profile, tocEntries, ctx.lexicon);
+  if (name === "kb-list-item") return itemHtml(body, "kb-list-item", profile);
+  if (name === "kb-solution") {
+    return '<p class="kb-solution"><span class="kb-solution-label">解</span></p>';
+  }
+  if (name === "kb-solution-tail") return itemHtml(body, "kb-solution-tail", profile);
+  if (name === "kb-lead") return paintLead(body, profile);
+  if (name === "kb-center") return `<div class="kb-center">\n\n${body}\n\n</div>`;
+  if (name === "kb-title") return `<div class="kb-title">\n\n${body}\n\n</div>`;
+  if (name === "kb-subtitle") return `<div class="kb-subtitle">\n\n${body}\n\n</div>`;
+  if (name === "kb-author") return `<div class="kb-author">\n\n${body}\n\n</div>`;
+  if (name === "kb-section") return `<div class="kb-section">\n\n${body}\n\n</div>`;
+  if (name === "kb-section-center") return `<div class="kb-section-center">\n\n${body}\n\n</div>`;
+  if (name === "kb-verse") return `<div class="kb-verse">\n\n${body}\n\n</div>`;
+  if (name === "kb-verse-center") return `<div class="kb-verse-center">\n\n${body}\n\n</div>`;
+  if (name === "kb-date") return `<div class="kb-date">\n\n${body}\n\n</div>`;
+  if (name === "kb-table-wrap") return `<div class="kb-table-wrap">${body}</div>`;
+  if (name === "kb-section-icon") return paintSectionIcon(body);
+  if (name === "kb-drama") return paintDrama(body, profile);
+  if (name === "kb-stage") return `<div class="kb-stage">\n\n${body}\n\n</div>`;
+  if (name === "kb-dash") return `<div class="kb-dash"></div>`;
+  return body;
+}
+
+export function paintFencesLegacy(md, ctx = {}) {
   const profile = ctx.profile && typeof ctx.profile === "object" ? ctx.profile : {};
   const printToPdf = ctx.printToPdf && typeof ctx.printToPdf === "object" ? ctx.printToPdf : {};
   return (md || "").replace(FENCE, (_m, name, inner) => {
-    const body = peelInnerFenceTokens(String(inner || "").replace(/^\n/, "").replace(/\n$/, ""));
+    const body = stripBlockIds(
+      peelInnerFenceTokens(String(inner || "").replace(/^\n/, "").replace(/\n$/, "")),
+    );
     const tocEntries = Array.isArray(ctx.tocEntries) ? ctx.tocEntries : [];
     if (name === "kb-page-toc") return liftPageToc(body, printToPdf, profile, tocEntries, ctx.lexicon);
     if (name === "kb-list-item") return itemHtml(body, "kb-list-item", profile);
@@ -224,6 +331,22 @@ export function paintFences(md, ctx = {}) {
     if (name === "kb-dash") return `<div class="kb-dash"></div>`;
     return body;
   });
+}
+
+export function paintFences(md, ctx = {}) {
+  if (parserMode(ctx) === "legacy") return paintFencesLegacy(md, ctx);
+  const text = String(md || "");
+  const top = extractTopLevel(text);
+  if (!top.length) return paintOfm(text, { escape: false });
+  let out = "";
+  let cursor = 0;
+  for (const fence of top) {
+    if (fence.start > cursor) out += paintOfm(text.slice(cursor, fence.start), { escape: false });
+    out += paintOne(fence.name, text.slice(fence.innerStart, fence.innerEnd), ctx);
+    cursor = fence.end;
+  }
+  if (cursor < text.length) out += paintOfm(text.slice(cursor), { escape: false });
+  return out;
 }
 
 const THINK_LABEL = /想一想|书写表达/;

@@ -1,19 +1,26 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
-import tempfile
 from typing import Any, Callable
 
+from deeptutor.services.file_io import atomic_write_json as _atomic_write_json
 from deeptutor.services.path_service import get_path_service
 
 from .origins import normalize_origins
 
 DEFAULT_SYSTEM_SETTINGS: dict[str, Any] = {
     "version": 1,
+    # About → Updates performs at most one release lookup per process/day.
+    # Operators may disable even that explicit network boundary for offline or
+    # audited deployments; DEEPTUTOR_VERSION_CHECK_ENABLED is the deployment
+    # override for read-only settings volumes.
+    "version_check_enabled": True,
     "backend_port": 8001,
+    "backend_workers": 1,
     "frontend_port": 3782,
     "next_public_api_base_external": "",
     "next_public_api_base": "",
@@ -27,7 +34,37 @@ DEFAULT_SYSTEM_SETTINGS: dict[str, Any] = {
     # deployment shapes; a stronger backend (runner sidecar / bwrap) still
     # takes precedence when available. Set false to disable host-side exec.
     "sandbox_allow_subprocess": True,
+    # Conservative chat -> deep_question routing. Explicit requests only, and
+    # callers can still pass config.auto_route=false for a single turn.
+    "capability_routing_enabled": False,
+    # Reference policy applied after every web-search provider. This belongs in
+    # runtime JSON so packaged installs and the settings service share one
+    # source of truth; project main.yaml is intentionally not an operator
+    # configuration surface.
+    "web_search_source_filtering": {
+        "enabled": True,
+        "blocked_domains": [],
+        "trusted_domains": [],
+    },
+    # Chat attachment policy. Size caps gate what the composer accepts and
+    # what the turn runtime / partner upload endpoints extract; the char
+    # budgets bound how much extracted text is inlined into the LLM context
+    # per document / per turn. Enforcement reads these at call time, so
+    # changes apply to the next message — but uploads whose base64 payload
+    # exceeds the WebSocket frame ceiling need a restart (see
+    # ``compute_ws_max_size``, wired at every uvicorn launch point).
+    "chat_attachment_max_file_mb": 20,
+    "chat_attachment_max_total_mb": 25,
+    "chat_attachment_max_chars_per_doc": 200_000,
+    "chat_attachment_max_chars_total": 150_000,
 }
+
+# Clamp bounds for the chat attachment knobs. The MB ceilings are deliberately
+# generous (local deployments parse in-process; the WS frame cap is derived
+# from the total) while still refusing nonsense like 0 or 10^9.
+CHAT_ATTACHMENT_MAX_FILE_MB_RANGE = (1, 1024)
+CHAT_ATTACHMENT_MAX_TOTAL_MB_RANGE = (1, 2048)
+CHAT_ATTACHMENT_CHARS_RANGE = (10_000, 5_000_000)
 
 DEFAULT_AUTH_SETTINGS: dict[str, Any] = {
     "version": 1,
@@ -39,12 +76,21 @@ DEFAULT_AUTH_SETTINGS: dict[str, Any] = {
 }
 
 DEFAULT_INTEGRATIONS_SETTINGS: dict[str, Any] = {
-    "version": 1,
+    "version": 2,
     "pocketbase_url": "",
     "pocketbase_port": 8090,
     "pocketbase_external_url": "",
     "pocketbase_admin_email": "",
     "pocketbase_admin_password": "",
+    "turn_coordination": {
+        "backend": "memory",
+        "redis_url": "",
+        "key_prefix": "deeptutor",
+        "lease_ttl_seconds": 30,
+        "renew_interval_seconds": 10,
+        "recovery_interval_seconds": 10,
+        "stream_retention_seconds": 86_400,
+    },
 }
 
 # Document parsing settings. The parse layer (deeptutor/services/parsing)
@@ -68,6 +114,10 @@ _LEGACY_DOCUMENT_PARSING_SETTINGS_NAME = "mineru"
 MINERU_MODE_LOCAL = "local"
 MINERU_MODE_CLOUD = "cloud"
 _MINERU_MODES = frozenset({MINERU_MODE_LOCAL, MINERU_MODE_CLOUD})
+
+DOCLING_MODE_LOCAL = "local"
+DOCLING_MODE_REMOTE = "remote"
+_DOCLING_MODES = frozenset({DOCLING_MODE_LOCAL, DOCLING_MODE_REMOTE})
 _MINERU_MODEL_VERSIONS = frozenset({"pipeline", "vlm"})
 _MINERU_DOWNLOAD_SOURCES = frozenset({"huggingface", "modelscope"})
 
@@ -75,14 +125,25 @@ DOCUMENT_PARSING_ENGINE_TEXT_ONLY = "text_only"
 DOCUMENT_PARSING_ENGINE_MINERU = "mineru"
 DOCUMENT_PARSING_ENGINE_DOCLING = "docling"
 DOCUMENT_PARSING_ENGINE_MARKITDOWN = "markitdown"
+DOCUMENT_PARSING_ENGINE_PYMUPDF4LLM = "pymupdf4llm"
+DOCUMENT_PARSING_ENGINE_LITEPARSE = "liteparse"
+DOCUMENT_PARSING_ENGINE_TIKA = "tika"
 _DOCUMENT_PARSING_ENGINES = frozenset(
     {
         DOCUMENT_PARSING_ENGINE_TEXT_ONLY,
         DOCUMENT_PARSING_ENGINE_MINERU,
         DOCUMENT_PARSING_ENGINE_DOCLING,
         DOCUMENT_PARSING_ENGINE_MARKITDOWN,
+        DOCUMENT_PARSING_ENGINE_PYMUPDF4LLM,
+        DOCUMENT_PARSING_ENGINE_LITEPARSE,
+        DOCUMENT_PARSING_ENGINE_TIKA,
     }
 )
+# Image formats PyMuPDF4LLM can write extracted page images as.
+_PYMUPDF4LLM_IMAGE_FORMATS = frozenset({"png", "jpg", "jpeg", "webp"})
+# How LiteParse presents images in its Markdown. Independent of whether the
+# image bytes are extracted (that is the engine's ``extract_images`` knob).
+LITEPARSE_IMAGE_MODES = frozenset({"off", "placeholder", "embed"})
 # Fresh installs default to the built-in text extractor so parsing works out of
 # the box without optional parser packages or model weights.
 # Migrated v1 installs keep MinerU (see ``_normalize_document_parsing``).
@@ -115,9 +176,14 @@ _DEFAULT_MINERU_ENGINE: dict[str, Any] = {
     "allow_local_model_download": False,
 }
 
-# Docling engine slice. Downloads layout/table models on first run, hence the
-# same ``allow_local_model_download`` gate as MinerU local.
+# Docling engine slice. ``mode`` selects the in-process ``docling`` package
+# ("local") or a Docling Serve HTTP server ("remote"; needs ``api_base_url`` and
+# optionally ``api_token``). Local downloads layout/table models on first run,
+# hence the same ``allow_local_model_download`` gate as MinerU local.
 _DEFAULT_DOCLING_ENGINE: dict[str, Any] = {
+    "mode": DOCLING_MODE_LOCAL,
+    "api_base_url": "http://localhost:5001",
+    "api_token": "",
     "do_ocr": False,
     "do_table_structure": True,
     "allow_local_model_download": False,
@@ -127,6 +193,32 @@ _DEFAULT_DOCLING_ENGINE: dict[str, Any] = {
 # DeepTutor's VLM to describe images.
 _DEFAULT_MARKITDOWN_ENGINE: dict[str, Any] = {
     "enable_llm_image_description": False,
+}
+
+# PyMuPDF4LLM engine slice. Pure-Python on top of PyMuPDF — no model downloads,
+# no CUDA, runs on low-end / GPU-less machines. Unlike text-only/markitdown it
+# can also extract embedded images and rendered vector graphics into the parse's
+# images/ dir. ``image_dpi`` is the render resolution for those images.
+_DEFAULT_PYMUPDF4LLM_ENGINE: dict[str, Any] = {
+    "write_images": True,
+    "image_format": "png",
+    "image_dpi": 150,
+}
+
+# LiteParse engine slice. Rust-backed, no model downloads. Like PyMuPDF4LLM it
+# can extract embedded images into the parse's images/ dir. Output format and
+# image directory are fixed by the workdir contract, so neither is a knob here
+# (see engines/liteparse/engine.py). ``max_pages`` 0 means the whole document.
+_DEFAULT_LITEPARSE_ENGINE: dict[str, Any] = {
+    "image_mode": "placeholder",
+    "extract_links": True,
+    "extract_images": False,
+    "max_pages": 0,
+}
+
+# Tika engine slice. Remote-only Apache Tika server; no local package or models.
+_DEFAULT_TIKA_ENGINE: dict[str, Any] = {
+    "server_url": "http://localhost:9998",
 }
 
 # Built-in text-only engine slice. It deliberately has no knobs: it reuses
@@ -145,6 +237,9 @@ DEFAULT_DOCUMENT_PARSING_SETTINGS: dict[str, Any] = {
         DOCUMENT_PARSING_ENGINE_MINERU: _DEFAULT_MINERU_ENGINE,
         DOCUMENT_PARSING_ENGINE_DOCLING: _DEFAULT_DOCLING_ENGINE,
         DOCUMENT_PARSING_ENGINE_MARKITDOWN: _DEFAULT_MARKITDOWN_ENGINE,
+        DOCUMENT_PARSING_ENGINE_PYMUPDF4LLM: _DEFAULT_PYMUPDF4LLM_ENGINE,
+        DOCUMENT_PARSING_ENGINE_LITEPARSE: _DEFAULT_LITEPARSE_ENGINE,
+        DOCUMENT_PARSING_ENGINE_TIKA: _DEFAULT_TIKA_ENGINE,
     },
 }
 
@@ -154,14 +249,25 @@ DEFAULT_MINERU_SETTINGS: dict[str, Any] = _DEFAULT_MINERU_ENGINE
 
 # PageIndex cloud RAG engine. A KB indexed with the ``pageindex`` provider
 # ships its documents to the hosted PageIndex service for tree building and
-# reasoning-based retrieval. Only an API key (per PageIndex account) and the
-# API base URL are needed; the same key is reused by every ``pageindex`` KB.
+# reasoning-based retrieval. The SDK owns the official endpoint; the same
+# deployment-level credential is reused by every ``pageindex`` KB.
 # Kept in its own JSON file so the credential lives beside other per-feature
 # settings and never leaks into model/network config.
 DEFAULT_PAGEINDEX_SETTINGS: dict[str, Any] = {
     "version": 1,
     "api_key": "",
-    "api_base_url": "https://api.pageindex.ai",
+}
+
+# Tencent IMA. The credential pair (``client_id`` + ``api_key``, issued at
+# https://ima.qq.com/agent-interface) identifies one IMA account, and every
+# library in that account is reachable with it — so it belongs here, beside the
+# other engine credentials, rather than being retyped for each connected KB.
+# A KB may still carry its own pair to reach a *different* IMA account; that
+# per-KB binding wins (see ``pipelines/ima/config.py``).
+DEFAULT_IMA_SETTINGS: dict[str, Any] = {
+    "version": 1,
+    "client_id": "",
+    "api_key": "",
 }
 
 # LlamaIndex local RAG engine. These are the retrieval + chunking knobs the
@@ -172,8 +278,14 @@ DEFAULT_PAGEINDEX_SETTINGS: dict[str, Any] = {
 # * ``top_k`` — default number of chunks a query returns.
 # * ``vector_top_k_multiplier`` / ``bm25_top_k_multiplier`` — how many extra
 #   candidates each child retriever fetches before fusion re-ranks to ``top_k``.
+# * ``reranker_model`` / ``rerank_top_k`` — optional cross-encoder refinement.
+#   An empty model keeps the existing embedding-only ranking.
+# * ``vector_index_type`` — FAISS index type for the next full index build.
+#   HNSW is opt-in and trades exact recall for sub-linear search at scale.
 # * ``chunk_size`` / ``chunk_overlap`` — indexing chunk geometry; changes apply
 #   on the next (re-)index, not retroactively.
+# * ``image_description_concurrency`` / ``image_description_timeout_seconds`` —
+#   bounded multimodal LLM work while indexing image-heavy documents.
 #
 # ``fusion_num_queries`` is intentionally NOT exposed: query generation needs a
 # real LLM, but the fusion retriever runs on a MockLLM, so any value > 1 would
@@ -181,6 +293,11 @@ DEFAULT_PAGEINDEX_SETTINGS: dict[str, Any] = {
 LLAMAINDEX_VECTOR_PROFILE = "vector"
 LLAMAINDEX_HYBRID_PROFILE = "hybrid"
 _LLAMAINDEX_PROFILES = frozenset({LLAMAINDEX_VECTOR_PROFILE, LLAMAINDEX_HYBRID_PROFILE})
+LLAMAINDEX_FLAT_VECTOR_INDEX = "flat"
+LLAMAINDEX_HNSW_VECTOR_INDEX = "hnsw"
+_LLAMAINDEX_VECTOR_INDEX_TYPES = frozenset(
+    {LLAMAINDEX_FLAT_VECTOR_INDEX, LLAMAINDEX_HNSW_VECTOR_INDEX}
+)
 
 DEFAULT_LLAMAINDEX_SETTINGS: dict[str, Any] = {
     "version": 1,
@@ -188,8 +305,16 @@ DEFAULT_LLAMAINDEX_SETTINGS: dict[str, Any] = {
     "top_k": 5,
     "vector_top_k_multiplier": 2,
     "bm25_top_k_multiplier": 2,
+    "reranker_model": "",
+    "rerank_top_k": 50,
+    "vector_index_type": LLAMAINDEX_FLAT_VECTOR_INDEX,
+    "hnsw_m": 32,
+    "hnsw_ef_construction": 200,
+    "hnsw_ef_search": 64,
     "chunk_size": 512,
     "chunk_overlap": 50,
+    "image_description_concurrency": 4,
+    "image_description_timeout_seconds": 60,
 }
 
 # GraphRAG retrieval knobs (microsoft/graphrag). Only query-time params that the
@@ -206,15 +331,31 @@ DEFAULT_GRAPHRAG_SETTINGS: dict[str, Any] = {
     "dynamic_community_selection": False,
 }
 
-# LightRAG retrieval knobs (HKUDS/LightRAG via RAG-Anything). ``top_k`` is the
-# number of entities/relations the query pulls; ``response_type`` mirrors
-# GraphRAG's. These ride into ``QueryParam`` via the engine's aquery() call;
-# wiring is defensive (an older RAG-Anything that rejects a kwarg degrades to a
-# mode-only query).
+# LightRAG retrieval + indexing knobs (HKUDS/LightRAG native SDK). ``top_k``
+# is the number of entities/relations the query pulls; ``response_type`` mirrors
+# GraphRAG's. These ride into ``QueryParam`` and the pinned SDK constructor.
+# ``max_concurrent_files`` sizes the native parser worker pool after DeepTutor
+# has frozen each ParseService result; pre-parsing itself remains serial.
+# Stable catalog references let LightRAG use a dedicated LLM while the global
+# active chat model remains unchanged for ordinary chat.
 DEFAULT_LIGHTRAG_SETTINGS: dict[str, Any] = {
     "version": 1,
     "top_k": 60,
     "response_type": "Multiple Paragraphs",
+    "max_concurrent_files": 1,
+    "llm_model_max_async": 4,
+    "entity_extract_max_gleaning": 1,
+    "llm_profile_id": "",
+    "llm_model_id": "",
+}
+
+# LightRAG Server connection defaults. Individual knowledge bases remain free
+# to override the URL/key when they are connected; this account-level slice is
+# the reusable starting point shown on the engine page and in the create flow.
+DEFAULT_LIGHTRAG_SERVER_SETTINGS: dict[str, Any] = {
+    "version": 1,
+    "server_url": "",
+    "api_key": "",
 }
 
 IGNORE_PROCESS_OVERRIDES_ENV = "DEEPTUTOR_IGNORE_PROCESS_ENV_OVERRIDES"
@@ -268,22 +409,14 @@ def _json_object(path: Path) -> dict[str, Any]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        dir=str(path.parent),
-        delete=False,
-    ) as handle:
-        json.dump(payload, handle, indent=2, ensure_ascii=False)
-        handle.write("\n")
-        tmp_path = Path(handle.name)
-    tmp_path.replace(path)
-
-
 def _string(value: Any) -> str:
     return "" if value is None else str(value).strip()
+
+
+def _string_or_list(value: Any) -> str | list[str]:
+    if isinstance(value, list):
+        return [item for raw in value if (item := _string(raw))]
+    return _string(value)
 
 
 class RuntimeSettingsService:
@@ -385,6 +518,12 @@ class RuntimeSettingsService:
             engines[DOCUMENT_PARSING_ENGINE_MINERU] = self._apply_mineru_process_overrides(
                 dict(engines[DOCUMENT_PARSING_ENGINE_MINERU])
             )
+            engines[DOCUMENT_PARSING_ENGINE_DOCLING] = self._apply_docling_process_overrides(
+                dict(engines[DOCUMENT_PARSING_ENGINE_DOCLING])
+            )
+            engines[DOCUMENT_PARSING_ENGINE_TIKA] = self._apply_tika_process_overrides(
+                dict(engines[DOCUMENT_PARSING_ENGINE_TIKA])
+            )
             payload = {**payload, "engines": engines}
         return payload
 
@@ -436,6 +575,17 @@ class RuntimeSettingsService:
         _atomic_write_json(self.path_for("pageindex"), payload)
         return payload
 
+    def load_ima(self, *, include_process_overrides: bool = True) -> dict[str, Any]:
+        payload = self._load_or_create("ima", DEFAULT_IMA_SETTINGS, self._normalize_ima)
+        if include_process_overrides:
+            payload = self._apply_ima_process_overrides(payload)
+        return payload
+
+    def save_ima(self, settings: dict[str, Any]) -> dict[str, Any]:
+        payload = self._normalize_ima({**DEFAULT_IMA_SETTINGS, **settings})
+        _atomic_write_json(self.path_for("ima"), payload)
+        return payload
+
     def load_llamaindex(self, *, include_process_overrides: bool = True) -> dict[str, Any]:
         payload = self._load_or_create(
             "llamaindex",
@@ -467,15 +617,29 @@ class RuntimeSettingsService:
         _atomic_write_json(self.path_for("lightrag"), payload)
         return payload
 
+    def load_lightrag_server(self) -> dict[str, Any]:
+        return self._load_or_create(
+            "lightrag_server",
+            DEFAULT_LIGHTRAG_SERVER_SETTINGS,
+            self._normalize_lightrag_server,
+        )
+
+    def save_lightrag_server(self, settings: dict[str, Any]) -> dict[str, Any]:
+        payload = self._normalize_lightrag_server({**DEFAULT_LIGHTRAG_SERVER_SETTINGS, **settings})
+        _atomic_write_json(self.path_for("lightrag_server"), payload)
+        return payload
+
     def ensure_defaults(self) -> None:
         self.load_system(include_process_overrides=False)
         self.load_auth(include_process_overrides=False)
         self.load_integrations(include_process_overrides=False)
         self.load_mineru(include_process_overrides=False)
         self.load_pageindex(include_process_overrides=False)
+        self.load_ima(include_process_overrides=False)
         self.load_llamaindex(include_process_overrides=False)
         self.load_graphrag()
         self.load_lightrag()
+        self.load_lightrag_server()
 
     def render_environment(self) -> dict[str, str]:
         """Render non-model settings into process env names for subprocesses."""
@@ -483,7 +647,9 @@ class RuntimeSettingsService:
         auth = self.load_auth()
         integrations = self.load_integrations()
         return {
+            "DEEPTUTOR_VERSION_CHECK_ENABLED": _bool_env(system["version_check_enabled"]),
             "BACKEND_PORT": str(system["backend_port"]),
+            "BACKEND_WORKERS": str(system["backend_workers"]),
             "FRONTEND_PORT": str(system["frontend_port"]),
             "NEXT_PUBLIC_API_BASE_EXTERNAL": system["next_public_api_base_external"],
             "NEXT_PUBLIC_API_BASE": system["next_public_api_base"],
@@ -506,10 +672,16 @@ class RuntimeSettingsService:
             # so the two deployment paths stay in sync. DEEPTUTOR_API_BASE_URL is
             # the address the frontend *server* uses to reach the backend; the
             # browser itself only ever talks to the frontend origin.
+            #
+            # The fallback is the IPv4 loopback, not "localhost": on a dual-stack
+            # host that name resolves to ::1 first, while uvicorn binds 0.0.0.0
+            # (IPv4 only), so every rewritten /api/* request fails to connect.
+            # The launcher passes the same literal (see runtime/launcher.py), so
+            # both deployment paths agree.
             "DEEPTUTOR_API_BASE_URL": (
                 system["next_public_api_base"]
                 or system["next_public_api_base_external"]
-                or f"http://localhost:{system['backend_port']}"
+                or f"http://127.0.0.1:{system['backend_port']}"
             ),
             "DEEPTUTOR_AUTH_ENABLED": _bool_env(auth["enabled"]),
             "POCKETBASE_URL": integrations["pocketbase_url"],
@@ -585,6 +757,8 @@ class RuntimeSettingsService:
 
     def _apply_system_process_overrides(self, settings: dict[str, Any]) -> dict[str, Any]:
         payload = dict(settings)
+        if value := self._process_env_value("DEEPTUTOR_VERSION_CHECK_ENABLED"):
+            payload["version_check_enabled"] = value
         if value := self._process_env_value("BACKEND_PORT"):
             payload["backend_port"] = value
         if value := self._process_env_value("FRONTEND_PORT"):
@@ -603,8 +777,23 @@ class RuntimeSettingsService:
             payload["disable_ssl_verify"] = value
         if value := self._process_env_value("CHAT_ATTACHMENT_DIR"):
             payload["chat_attachment_dir"] = value
+        if value := (
+            self._process_env_value("DEEPTUTOR_BACKEND_WORKERS")
+            or self._process_env_value("BACKEND_WORKERS")
+        ):
+            payload["backend_workers"] = value
         if value := self._process_env_value("DEEPTUTOR_SANDBOX_ALLOW_SUBPROCESS"):
             payload["sandbox_allow_subprocess"] = value
+        if value := self._process_env_value("DEEPTUTOR_CAPABILITY_ROUTING_ENABLED"):
+            payload["capability_routing_enabled"] = value
+        if value := self._process_env_value("CHAT_ATTACHMENT_MAX_FILE_MB"):
+            payload["chat_attachment_max_file_mb"] = value
+        if value := self._process_env_value("CHAT_ATTACHMENT_MAX_TOTAL_MB"):
+            payload["chat_attachment_max_total_mb"] = value
+        if value := self._process_env_value("CHAT_ATTACHMENT_MAX_CHARS_PER_DOC"):
+            payload["chat_attachment_max_chars_per_doc"] = value
+        if value := self._process_env_value("CHAT_ATTACHMENT_MAX_CHARS_TOTAL"):
+            payload["chat_attachment_max_chars_total"] = value
         return self._normalize_system(payload)
 
     def _apply_auth_process_overrides(self, settings: dict[str, Any]) -> dict[str, Any]:
@@ -636,6 +825,14 @@ class RuntimeSettingsService:
             payload["pocketbase_admin_email"] = value
         if value := self._process_env_value("POCKETBASE_ADMIN_PASSWORD"):
             payload["pocketbase_admin_password"] = value
+        coordination = dict(payload.get("turn_coordination") or {})
+        if value := self._process_env_value("DEEPTUTOR_TURN_COORDINATION_BACKEND"):
+            coordination["backend"] = value
+        if value := self._process_env_value("DEEPTUTOR_REDIS_URL"):
+            coordination["redis_url"] = value
+        if value := self._process_env_value("DEEPTUTOR_REDIS_KEY_PREFIX"):
+            coordination["key_prefix"] = value
+        payload["turn_coordination"] = coordination
         return self._normalize_integrations(payload)
 
     def _apply_mineru_process_overrides(self, settings: dict[str, Any]) -> dict[str, Any]:
@@ -664,16 +861,27 @@ class RuntimeSettingsService:
         payload = dict(settings)
         if value := self._process_env_value("PAGEINDEX_API_KEY"):
             payload["api_key"] = value
-        if value := self._process_env_value("PAGEINDEX_API_BASE_URL"):
-            payload["api_base_url"] = value
         return self._normalize_pageindex(payload)
 
     def _normalize_pageindex(self, settings: dict[str, Any]) -> dict[str, Any]:
         return {
             "version": 1,
             "api_key": _string(settings.get("api_key")),
-            "api_base_url": _string(settings.get("api_base_url")).rstrip("/")
-            or "https://api.pageindex.ai",
+        }
+
+    def _apply_ima_process_overrides(self, settings: dict[str, Any]) -> dict[str, Any]:
+        payload = dict(settings)
+        if value := self._process_env_value("IMA_CLIENT_ID"):
+            payload["client_id"] = value
+        if value := self._process_env_value("IMA_API_KEY"):
+            payload["api_key"] = value
+        return self._normalize_ima(payload)
+
+    def _normalize_ima(self, settings: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "version": 1,
+            "client_id": _string(settings.get("client_id")),
+            "api_key": _string(settings.get("api_key")),
         }
 
     def _apply_llamaindex_process_overrides(self, settings: dict[str, Any]) -> dict[str, Any]:
@@ -691,6 +899,9 @@ class RuntimeSettingsService:
         profile = _string(settings.get("retrieval_profile")).lower()
         if profile not in _LLAMAINDEX_PROFILES:
             profile = LLAMAINDEX_HYBRID_PROFILE
+        vector_index_type = _string(settings.get("vector_index_type")).lower()
+        if vector_index_type not in _LLAMAINDEX_VECTOR_INDEX_TYPES:
+            vector_index_type = LLAMAINDEX_FLAT_VECTOR_INDEX
         chunk_size = _coerce_clamped_int(settings.get("chunk_size"), 512, 64, 8192)
         # Overlap must stay below the chunk size or chunking degenerates.
         chunk_overlap = _coerce_clamped_int(
@@ -706,8 +917,22 @@ class RuntimeSettingsService:
             "bm25_top_k_multiplier": _coerce_clamped_int(
                 settings.get("bm25_top_k_multiplier"), 2, 1, 10
             ),
+            "reranker_model": _string(settings.get("reranker_model"))[:200],
+            "rerank_top_k": _coerce_clamped_int(settings.get("rerank_top_k"), 50, 1, 100),
+            "vector_index_type": vector_index_type,
+            "hnsw_m": _coerce_clamped_int(settings.get("hnsw_m"), 32, 4, 64),
+            "hnsw_ef_construction": _coerce_clamped_int(
+                settings.get("hnsw_ef_construction"), 200, 16, 512
+            ),
+            "hnsw_ef_search": _coerce_clamped_int(settings.get("hnsw_ef_search"), 64, 1, 512),
             "chunk_size": chunk_size,
             "chunk_overlap": chunk_overlap,
+            "image_description_concurrency": _coerce_clamped_int(
+                settings.get("image_description_concurrency"), 4, 1, 16
+            ),
+            "image_description_timeout_seconds": _coerce_clamped_int(
+                settings.get("image_description_timeout_seconds"), 60, 5, 600
+            ),
         }
 
     def _normalize_response_type(self, value: Any) -> str:
@@ -731,6 +956,24 @@ class RuntimeSettingsService:
             "version": 1,
             "top_k": _coerce_clamped_int(settings.get("top_k"), 60, 1, 200),
             "response_type": self._normalize_response_type(settings.get("response_type")),
+            "max_concurrent_files": _coerce_clamped_int(
+                settings.get("max_concurrent_files"), 1, 1, 16
+            ),
+            "llm_model_max_async": _coerce_clamped_int(
+                settings.get("llm_model_max_async"), 4, 1, 32
+            ),
+            "entity_extract_max_gleaning": _coerce_clamped_int(
+                settings.get("entity_extract_max_gleaning"), 1, 0, 5
+            ),
+            "llm_profile_id": _string(settings.get("llm_profile_id"))[:128],
+            "llm_model_id": _string(settings.get("llm_model_id"))[:128],
+        }
+
+    def _normalize_lightrag_server(self, settings: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "version": 1,
+            "server_url": _string(settings.get("server_url")).rstrip("/"),
+            "api_key": _string(settings.get("api_key")),
         }
 
     def _normalize_document_parsing(self, settings: dict[str, Any]) -> dict[str, Any]:
@@ -764,6 +1007,15 @@ class RuntimeSettingsService:
             DOCUMENT_PARSING_ENGINE_MARKITDOWN: self._normalize_markitdown_engine(
                 engines_in.get(DOCUMENT_PARSING_ENGINE_MARKITDOWN) or {}
             ),
+            DOCUMENT_PARSING_ENGINE_PYMUPDF4LLM: self._normalize_pymupdf4llm_engine(
+                engines_in.get(DOCUMENT_PARSING_ENGINE_PYMUPDF4LLM) or {}
+            ),
+            DOCUMENT_PARSING_ENGINE_LITEPARSE: self._normalize_liteparse_engine(
+                engines_in.get(DOCUMENT_PARSING_ENGINE_LITEPARSE) or {}
+            ),
+            DOCUMENT_PARSING_ENGINE_TIKA: self._normalize_tika_engine(
+                engines_in.get(DOCUMENT_PARSING_ENGINE_TIKA) or {}
+            ),
         }
 
         engine = _string(settings.get("engine")).lower().replace("-", "_").replace(" ", "_")
@@ -789,7 +1041,7 @@ class RuntimeSettingsService:
             "mode": mode,
             "api_base_url": _string(settings.get("api_base_url")).rstrip("/")
             or "https://mineru.net",
-            "api_token": _string(settings.get("api_token")),
+            "api_token": _string_or_list(settings.get("api_token")),
             "local_cli_path": _string(settings.get("local_cli_path")),
             "model_download_source": download_source,
             "model_download_endpoint": _string(settings.get("model_download_endpoint")).rstrip("/"),
@@ -804,7 +1056,14 @@ class RuntimeSettingsService:
         }
 
     def _normalize_docling_engine(self, settings: dict[str, Any]) -> dict[str, Any]:
+        mode = _string(settings.get("mode")).lower()
+        if mode not in _DOCLING_MODES:
+            mode = DOCLING_MODE_LOCAL
         return {
+            "mode": mode,
+            "api_base_url": _string(settings.get("api_base_url")).rstrip("/")
+            or "http://localhost:5001",
+            "api_token": _string(settings.get("api_token")),
             "do_ocr": _coerce_bool(settings.get("do_ocr"), False),
             "do_table_structure": _coerce_bool(settings.get("do_table_structure"), True),
             "allow_local_model_download": _coerce_bool(
@@ -812,11 +1071,54 @@ class RuntimeSettingsService:
             ),
         }
 
+    def _apply_docling_process_overrides(self, settings: dict[str, Any]) -> dict[str, Any]:
+        payload = dict(settings)
+        if value := self._process_env_value("DOCLING_MODE"):
+            payload["mode"] = value
+        if value := self._process_env_value("DOCLING_API_BASE_URL"):
+            payload["api_base_url"] = value
+        if value := self._process_env_value("DOCLING_API_TOKEN"):
+            payload["api_token"] = value
+        return self._normalize_docling_engine(payload)
+
+    def _normalize_tika_engine(self, settings: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "server_url": _string(settings.get("server_url")).rstrip("/")
+            or "http://localhost:9998",
+        }
+
+    def _apply_tika_process_overrides(self, settings: dict[str, Any]) -> dict[str, Any]:
+        payload = dict(settings)
+        if value := self._process_env_value("TIKA_SERVER_URL"):
+            payload["server_url"] = value
+        return self._normalize_tika_engine(payload)
+
     def _normalize_markitdown_engine(self, settings: dict[str, Any]) -> dict[str, Any]:
         return {
             "enable_llm_image_description": _coerce_bool(
                 settings.get("enable_llm_image_description"), False
             ),
+        }
+
+    def _normalize_liteparse_engine(self, settings: dict[str, Any]) -> dict[str, Any]:
+        image_mode = _string(settings.get("image_mode")).lower() or "placeholder"
+        if image_mode not in LITEPARSE_IMAGE_MODES:
+            image_mode = "placeholder"
+        return {
+            "image_mode": image_mode,
+            "extract_links": _coerce_bool(settings.get("extract_links"), True),
+            "extract_images": _coerce_bool(settings.get("extract_images"), False),
+            "max_pages": _coerce_clamped_int(settings.get("max_pages"), 0, 0, 100_000),
+        }
+
+    def _normalize_pymupdf4llm_engine(self, settings: dict[str, Any]) -> dict[str, Any]:
+        image_format = _string(settings.get("image_format")).lower() or "png"
+        if image_format not in _PYMUPDF4LLM_IMAGE_FORMATS:
+            image_format = "png"
+        return {
+            "write_images": _coerce_bool(settings.get("write_images"), True),
+            "image_format": image_format,
+            "image_dpi": _coerce_clamped_int(settings.get("image_dpi"), 150, 72, 600),
         }
 
     def _normalize_text_only_engine(self, _settings: dict[str, Any]) -> dict[str, Any]:
@@ -826,9 +1128,25 @@ class RuntimeSettingsService:
         public_api_base = _string(settings.get("next_public_api_base_external")) or _string(
             settings.get("public_api_base")
         )
+        raw_source_filter = settings.get("web_search_source_filtering")
+        source_filter = raw_source_filter if isinstance(raw_source_filter, dict) else {}
+        max_file_mb = _coerce_clamped_int(
+            settings.get("chat_attachment_max_file_mb"),
+            DEFAULT_SYSTEM_SETTINGS["chat_attachment_max_file_mb"],
+            *CHAT_ATTACHMENT_MAX_FILE_MB_RANGE,
+        )
+        max_total_mb = _coerce_clamped_int(
+            settings.get("chat_attachment_max_total_mb"),
+            DEFAULT_SYSTEM_SETTINGS["chat_attachment_max_total_mb"],
+            *CHAT_ATTACHMENT_MAX_TOTAL_MB_RANGE,
+        )
+        # A per-message total below the per-file cap is contradictory; lift it.
+        max_total_mb = max(max_total_mb, max_file_mb)
         return {
             "version": 1,
+            "version_check_enabled": _coerce_bool(settings.get("version_check_enabled"), True),
             "backend_port": _coerce_port(settings.get("backend_port"), 8001),
+            "backend_workers": _coerce_clamped_int(settings.get("backend_workers"), 1, 1, 64),
             "frontend_port": _coerce_port(settings.get("frontend_port"), 3782),
             "next_public_api_base_external": public_api_base,
             "next_public_api_base": _string(settings.get("next_public_api_base")),
@@ -838,6 +1156,26 @@ class RuntimeSettingsService:
             "chat_attachment_dir": _string(settings.get("chat_attachment_dir")),
             "sandbox_allow_subprocess": _coerce_bool(
                 settings.get("sandbox_allow_subprocess"), True
+            ),
+            "capability_routing_enabled": _coerce_bool(
+                settings.get("capability_routing_enabled"), False
+            ),
+            "web_search_source_filtering": {
+                "enabled": _coerce_bool(source_filter.get("enabled"), True),
+                "blocked_domains": _string_or_list(source_filter.get("blocked_domains")),
+                "trusted_domains": _string_or_list(source_filter.get("trusted_domains")),
+            },
+            "chat_attachment_max_file_mb": max_file_mb,
+            "chat_attachment_max_total_mb": max_total_mb,
+            "chat_attachment_max_chars_per_doc": _coerce_clamped_int(
+                settings.get("chat_attachment_max_chars_per_doc"),
+                DEFAULT_SYSTEM_SETTINGS["chat_attachment_max_chars_per_doc"],
+                *CHAT_ATTACHMENT_CHARS_RANGE,
+            ),
+            "chat_attachment_max_chars_total": _coerce_clamped_int(
+                settings.get("chat_attachment_max_chars_total"),
+                DEFAULT_SYSTEM_SETTINGS["chat_attachment_max_chars_total"],
+                *CHAT_ATTACHMENT_CHARS_RANGE,
             ),
         }
 
@@ -852,13 +1190,36 @@ class RuntimeSettingsService:
         }
 
     def _normalize_integrations(self, settings: dict[str, Any]) -> dict[str, Any]:
+        raw_coordination = settings.get("turn_coordination")
+        coordination = raw_coordination if isinstance(raw_coordination, dict) else {}
+        backend = _string(coordination.get("backend")).lower()
+        if backend not in {"memory", "redis"}:
+            backend = "memory"
+        key_prefix = _string(coordination.get("key_prefix")).strip(":") or "deeptutor"
         return {
-            "version": 1,
+            "version": 2,
             "pocketbase_url": _string(settings.get("pocketbase_url")).rstrip("/"),
             "pocketbase_port": _coerce_port(settings.get("pocketbase_port"), 8090),
             "pocketbase_external_url": _string(settings.get("pocketbase_external_url")).rstrip("/"),
             "pocketbase_admin_email": _string(settings.get("pocketbase_admin_email")),
             "pocketbase_admin_password": _string(settings.get("pocketbase_admin_password")),
+            "turn_coordination": {
+                "backend": backend,
+                "redis_url": _string(coordination.get("redis_url")),
+                "key_prefix": key_prefix,
+                "lease_ttl_seconds": _coerce_clamped_int(
+                    coordination.get("lease_ttl_seconds"), 30, 10, 300
+                ),
+                "renew_interval_seconds": _coerce_clamped_int(
+                    coordination.get("renew_interval_seconds"), 10, 1, 100
+                ),
+                "recovery_interval_seconds": _coerce_clamped_int(
+                    coordination.get("recovery_interval_seconds"), 10, 1, 300
+                ),
+                "stream_retention_seconds": _coerce_clamped_int(
+                    coordination.get("stream_retention_seconds"), 86_400, 60, 2_592_000
+                ),
+            },
         }
 
 
@@ -897,6 +1258,69 @@ def load_system_settings() -> dict[str, Any]:
     return get_runtime_settings_service().load_system()
 
 
+@dataclass(frozen=True)
+class ChatAttachmentLimits:
+    """Effective chat-attachment policy, in enforcement-ready units."""
+
+    max_file_bytes: int
+    max_total_bytes: int
+    max_chars_per_doc: int
+    max_chars_total: int
+
+
+def get_chat_attachment_limits() -> ChatAttachmentLimits:
+    """Resolve the chat attachment policy from system.json (+ env overrides).
+
+    Read at call time by every enforcement site (turn runtime extraction,
+    partner uploads, the composer via the settings API) so edits apply to the
+    next message without a restart.
+    """
+    system = load_system_settings()
+    return ChatAttachmentLimits(
+        max_file_bytes=int(system["chat_attachment_max_file_mb"]) * 1024 * 1024,
+        max_total_bytes=int(system["chat_attachment_max_total_mb"]) * 1024 * 1024,
+        max_chars_per_doc=int(system["chat_attachment_max_chars_per_doc"]),
+        max_chars_total=int(system["chat_attachment_max_chars_total"]),
+    )
+
+
+# uvicorn's default WebSocket frame ceiling. Never derive below it so chat
+# behaves identically to older builds even if the configured totals are tiny.
+_WS_MAX_SIZE_FLOOR = 16 * 1024 * 1024
+
+
+def compute_ws_max_size(max_total_bytes: int) -> int:
+    """WebSocket message ceiling that fits a full attachment batch.
+
+    Chat attachments ride the unified WS as base64 inside one JSON message
+    (×4/3 inflation), so uvicorn's frame cap — not the policy above — is the
+    binding constraint for large uploads. Add slack for the JSON envelope
+    (message text, metadata, quoting) on top of the inflated payload.
+    """
+    inflated = (max_total_bytes * 4) // 3
+    return max(_WS_MAX_SIZE_FLOOR, inflated + 8 * 1024 * 1024)
+
+
+def get_ws_max_size() -> int:
+    """Frame ceiling for the current settings — wire into every uvicorn launch."""
+    return compute_ws_max_size(get_chat_attachment_limits().max_total_bytes)
+
+
+# Idle keep-alive window for backend HTTP connections — wire into every uvicorn
+# launch. The browser never reaches the backend directly: `web/proxy.ts` rewrites
+# `/api/*` and Next.js forwards over Node's `http.globalAgent`, which pools idle
+# sockets and reaps them on its own 5s `timeout`. uvicorn's `timeout_keep_alive`
+# also defaults to 5s, so both ends armed an identical idle timer on the same
+# socket and raced to close it: when the server's FIN landed on a socket the pool
+# was simultaneously handing to a new request, the request died with `ECONNRESET`
+# and the proxy turned it into a 500 ("Failed to proxy ... socket hang up" ->
+# "Failed to load sessions" in the UI). Any value comfortably above the proxy's
+# 5s reaper leaves the client as the only side that closes an idle connection,
+# which is the safe direction — a pool retiring its own socket removes it before
+# any request can be assigned to it, so the collision cannot happen at all.
+HTTP_KEEP_ALIVE_TIMEOUT = 300
+
+
 def load_auth_settings() -> dict[str, Any]:
     return get_runtime_settings_service().load_auth()
 
@@ -921,6 +1345,10 @@ def load_lightrag_settings() -> dict[str, Any]:
     return get_runtime_settings_service().load_lightrag()
 
 
+def load_lightrag_server_settings() -> dict[str, Any]:
+    return get_runtime_settings_service().load_lightrag_server()
+
+
 def load_document_parsing_settings() -> dict[str, Any]:
     return get_runtime_settings_service().load_document_parsing()
 
@@ -930,30 +1358,46 @@ def export_runtime_settings_to_env(*, overwrite: bool = True) -> dict[str, str]:
 
 
 __all__ = [
+    "CHAT_ATTACHMENT_CHARS_RANGE",
+    "CHAT_ATTACHMENT_MAX_FILE_MB_RANGE",
+    "CHAT_ATTACHMENT_MAX_TOTAL_MB_RANGE",
     "DEFAULT_AUTH_SETTINGS",
     "DEFAULT_DOCUMENT_PARSING_SETTINGS",
     "DEFAULT_GRAPHRAG_SETTINGS",
+    "DEFAULT_IMA_SETTINGS",
     "DEFAULT_INTEGRATIONS_SETTINGS",
     "DEFAULT_LIGHTRAG_SETTINGS",
+    "DEFAULT_LIGHTRAG_SERVER_SETTINGS",
     "DEFAULT_LLAMAINDEX_SETTINGS",
     "DEFAULT_MINERU_SETTINGS",
     "DEFAULT_PAGEINDEX_SETTINGS",
     "DEFAULT_SYSTEM_SETTINGS",
     "DOCUMENT_PARSING_ENGINE_DOCLING",
+    "DOCUMENT_PARSING_ENGINE_LITEPARSE",
     "DOCUMENT_PARSING_ENGINE_MARKITDOWN",
     "DOCUMENT_PARSING_ENGINE_MINERU",
+    "DOCUMENT_PARSING_ENGINE_PYMUPDF4LLM",
     "DOCUMENT_PARSING_ENGINE_TEXT_ONLY",
+    "DOCUMENT_PARSING_ENGINE_TIKA",
+    "DOCLING_MODE_LOCAL",
+    "DOCLING_MODE_REMOTE",
+    "LITEPARSE_IMAGE_MODES",
     "MINERU_MODE_CLOUD",
     "MINERU_MODE_LOCAL",
+    "ChatAttachmentLimits",
     "RuntimeSettingsService",
+    "compute_ws_max_size",
     "ensure_runtime_settings_files",
     "export_runtime_settings_to_env",
+    "get_chat_attachment_limits",
     "get_runtime_settings_service",
+    "get_ws_max_size",
     "load_auth_settings",
     "load_document_parsing_settings",
     "load_graphrag_settings",
     "load_integrations_settings",
     "load_lightrag_settings",
+    "load_lightrag_server_settings",
     "load_llamaindex_settings",
     "load_mineru_settings",
     "load_system_settings",

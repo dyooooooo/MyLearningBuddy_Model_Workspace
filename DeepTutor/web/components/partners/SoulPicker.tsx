@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuthStatus } from "@/hooks/useAuthStatus";
 import {
   BookHeart,
   Check,
@@ -28,12 +29,16 @@ import SoulEditor from "@/components/partners/SoulEditor";
 
 type SourceTab = "library" | "persona" | "custom";
 
+// Soul ids ride in /souls/<id> URLs, so keep them ASCII/URL-safe (a CJK id is
+// unreachable) — the server re-slugs authoritatively and the create flow uses
+// the returned id, but producing an ASCII slug here keeps the preview honest
+// and avoids sending a non-ASCII id over the wire.
 function slugifySoulId(name: string): string {
   return (
     name
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9一-鿿]+/g, "-")
+      .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || `soul-${Date.now().toString(36)}`
   );
 }
@@ -46,6 +51,8 @@ export default function SoulPicker({
   onChange: (next: SoulSpec) => void;
 }) {
   const { t } = useTranslation();
+  // The soul library is shared deployment-wide; only an admin may add to it.
+  const { isAdmin } = useAuthStatus();
   const [sources, setSources] = useState<SoulSources | null>(null);
   const [tab, setTab] = useState<SourceTab>(
     value.source === "persona"
@@ -225,7 +232,7 @@ export default function SoulPicker({
         </div>
       )}
 
-      {tab === "custom" && (value.content ?? "").trim() && (
+      {isAdmin && tab === "custom" && (value.content ?? "").trim() && (
         <div className="flex flex-wrap items-center gap-2">
           <input
             value={saveName}

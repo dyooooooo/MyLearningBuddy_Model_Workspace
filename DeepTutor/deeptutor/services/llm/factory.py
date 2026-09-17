@@ -9,9 +9,11 @@ from types import SimpleNamespace
 from typing import Any, TypedDict
 
 from deeptutor.config.settings import settings
+from deeptutor.services.keypool import primary_api_key
 from deeptutor.services.provider_registry import (
     PROVIDERS,
     canonical_provider_name,
+    effective_backend,
     find_by_model,
     find_by_name,
     find_gateway,
@@ -78,14 +80,14 @@ def _resolve_provider_spec(
     *,
     binding: str | None,
     model: str,
-    api_key: str,
+    api_key: str | list[str],
     base_url: str | None,
     fallback: str | None,
 ):
     explicit = find_by_name(binding)
     gateway = find_gateway(
         provider_name=explicit.name if explicit else None,
-        api_key=api_key or None,
+        api_key=primary_api_key(api_key),
         api_base=base_url or None,
     )
     if explicit and gateway and explicit.name == "openai":
@@ -125,7 +127,7 @@ def _binding_matches_current(binding: str | None, current: LLMConfig) -> bool:
 def _matching_current_config(
     *,
     model: str,
-    api_key: str,
+    api_key: str | list[str],
     base_url: str | None,
     api_version: str | None,
     binding: str | None,
@@ -153,7 +155,7 @@ def _matching_current_config(
 def _resolve_call_config(
     *,
     model: str | None,
-    api_key: str | None,
+    api_key: str | list[str] | None,
     base_url: str | None,
     api_version: str | None,
     binding: str | None,
@@ -201,6 +203,8 @@ def _resolve_call_config(
             provider_mode=provider_mode,
             api_version=api_version,
             extra_headers=merged_headers,
+            wire_api=current.wire_api if current is not None else "auto",
+            api_format=current.api_format if current is not None else "auto",
             reasoning_effort=resolved_reasoning_effort,
         )
         return config, provider_spec
@@ -238,6 +242,8 @@ def _resolve_call_config(
             "provider_mode": provider_mode,
             "api_version": resolved_api_version,
             "extra_headers": merged_headers,
+            "wire_api": current.wire_api,
+            "api_format": current.api_format,
             "reasoning_effort": (
                 reasoning_effort if reasoning_effort is not None else current.reasoning_effort
             ),
@@ -247,9 +253,7 @@ def _resolve_call_config(
 
 
 def _capability_binding(config: LLMConfig, provider_spec: Any) -> str:
-    backend = (
-        getattr(provider_spec, "backend", "openai_compat") if provider_spec else "openai_compat"
-    )
+    backend = effective_backend(provider_spec, config.api_format)
     if backend == "anthropic":
         return "anthropic"
     if backend == "azure_openai":
@@ -338,7 +342,7 @@ async def complete(
     prompt: str,
     system_prompt: str = "You are a helpful assistant.",
     model: str | None = None,
-    api_key: str | None = None,
+    api_key: str | list[str] | None = None,
     base_url: str | None = None,
     api_version: str | None = None,
     binding: str | None = None,
@@ -346,6 +350,7 @@ async def complete(
     max_retries: int = DEFAULT_MAX_RETRIES,
     retry_delay: float = DEFAULT_RETRY_DELAY,
     exponential_backoff: bool = DEFAULT_EXPONENTIAL_BACKOFF,
+    allow_image_fallback: bool | None = None,
     **kwargs: Any,
 ) -> str:
     caller_extra_headers = kwargs.pop("extra_headers", None)
@@ -378,6 +383,11 @@ async def complete(
     extra_kwargs = _sanitize_call_kwargs(
         binding=capability_binding, model=config.model, kwargs=kwargs
     )
+    image_fallback_enabled = (
+        not supports_vision(capability_binding, config.model)
+        if allow_image_fallback is None
+        else allow_image_fallback
+    )
 
     try:
         response = await provider.chat_with_retry(
@@ -385,7 +395,7 @@ async def complete(
             model=config.model,
             reasoning_effort=config.reasoning_effort,
             retry_delays=retry_delays,
-            allow_image_fallback=not supports_vision(capability_binding, config.model),
+            allow_image_fallback=image_fallback_enabled,
             **extra_kwargs,
         )
     except Exception as exc:
@@ -402,7 +412,7 @@ async def stream(
     prompt: str,
     system_prompt: str = "You are a helpful assistant.",
     model: str | None = None,
-    api_key: str | None = None,
+    api_key: str | list[str] | None = None,
     base_url: str | None = None,
     api_version: str | None = None,
     binding: str | None = None,
@@ -410,6 +420,7 @@ async def stream(
     max_retries: int = DEFAULT_MAX_RETRIES,
     retry_delay: float = DEFAULT_RETRY_DELAY,
     exponential_backoff: bool = DEFAULT_EXPONENTIAL_BACKOFF,
+    allow_image_fallback: bool | None = None,
     **kwargs: Any,
 ) -> AsyncGenerator[str, None]:
     caller_extra_headers = kwargs.pop("extra_headers", None)
@@ -448,6 +459,11 @@ async def stream(
     extra_kwargs = _sanitize_call_kwargs(
         binding=capability_binding, model=config.model, kwargs=kwargs
     )
+    image_fallback_enabled = (
+        not supports_vision(capability_binding, config.model)
+        if allow_image_fallback is None
+        else allow_image_fallback
+    )
 
     queue: asyncio.Queue[str | BaseException | None] = asyncio.Queue()
     saw_output = False
@@ -485,7 +501,7 @@ async def stream(
                 on_content_delta=_on_content_delta,
                 on_reasoning_delta=_on_reasoning_delta,
                 retry_delays=retry_delays,
-                allow_image_fallback=not supports_vision(capability_binding, config.model),
+                allow_image_fallback=image_fallback_enabled,
                 **extra_kwargs,
             )
             if in_think_block:
@@ -588,9 +604,15 @@ async def stream(
 
 async def fetch_models(
     binding: str,
-    base_url: str,
+    base_url: str = "",
     api_key: str | None = None,
+    api_format: str = "auto",
 ) -> list[str]:
+    if canonical_provider_name(binding) == "codebuddy":
+        from .provider_core.codebuddy_models import fetch_codebuddy_models
+
+        return await fetch_codebuddy_models(api_key)
+
     if is_local_llm_server(base_url):
         from . import local_provider
 
@@ -598,7 +620,7 @@ async def fetch_models(
 
     from . import cloud_provider
 
-    return await cloud_provider.fetch_models(base_url, api_key, binding)
+    return await cloud_provider.fetch_models(base_url, api_key, binding, api_format=api_format)
 
 
 def _build_api_provider_presets() -> dict[str, ApiProviderPreset]:

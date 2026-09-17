@@ -20,7 +20,7 @@ Phase shape:
 
 The orchestrator owns control flow (per-question iteration, repair pass,
 incremental emission) and prompt assembly; everything else is delegated
-to :mod:`deeptutor.core.agentic` and the shared tool-composition policy.
+to :mod:`deeptutor.runtime.agentic` and the shared tool-composition policy.
 """
 
 from __future__ import annotations
@@ -40,8 +40,16 @@ from deeptutor.agents._shared.tool_composition import (
     default_optional_tools,
     user_has_memory,
     user_has_notebooks,
+    user_has_question_bank,
 )
-from deeptutor.core.agentic import (
+from deeptutor.core.context import Attachment, UnifiedContext
+from deeptutor.core.trace import (
+    build_trace_metadata,
+    derive_trace_metadata,
+    merge_trace_metadata,
+    new_call_id,
+)
+from deeptutor.runtime.agentic import (
     DispatchOutcome,
     LabeledStepResult,
     LabelProtocol,
@@ -54,17 +62,11 @@ from deeptutor.core.agentic import (
     run_agentic_loop,
     run_labeled_step,
 )
-from deeptutor.core.agentic.labels import find_inline_labels
-from deeptutor.core.agentic.tool_dispatch import MAX_PARALLEL_TOOL_CALLS
-from deeptutor.core.context import Attachment, UnifiedContext
-from deeptutor.core.stream_bus import StreamBus
-from deeptutor.core.trace import (
-    build_trace_metadata,
-    derive_trace_metadata,
-    merge_trace_metadata,
-    new_call_id,
-)
+from deeptutor.runtime.agentic.labels import find_inline_labels
+from deeptutor.runtime.agentic.tool_dispatch import MAX_PARALLEL_TOOL_CALLS
+from deeptutor.runtime.agentic.usage import record_streamed_usage
 from deeptutor.runtime.registry.tool_registry import get_tool_registry
+from deeptutor.runtime.stream_bus import StreamBus
 from deeptutor.services.config import parse_language
 from deeptutor.services.llm import get_llm_config, prepare_multimodal_messages
 from deeptutor.services.path_service import get_path_service
@@ -411,6 +413,8 @@ class QuestionPipeline:
             api_version=getattr(self.llm_config, "api_version", None),
             extra_headers=getattr(self.llm_config, "extra_headers", None) or None,
             reasoning_effort=self.reasoning_effort,
+            wire_api=getattr(self.llm_config, "wire_api", None) or "auto",
+            api_format=getattr(self.llm_config, "api_format", None) or "auto",
         )
 
         self.registry = get_tool_registry()
@@ -471,6 +475,7 @@ class QuestionPipeline:
         client = build_openai_client(self.client_config)
 
         try:
+            await self._prepare_pageindex_tools()
             return await self._run_inner(
                 context=context,
                 user_message=user_message,
@@ -1026,23 +1031,18 @@ class QuestionPipeline:
                 reasoning_effort=self.reasoning_effort,
             ),
         }
-        try:
-            kwargs["stream_options"] = {"include_usage": True}
-        except Exception:
-            pass
+        kwargs["stream_options"] = {"include_usage": True}
 
         chunks: list[str] = []
+        # Keep the latest usage frame only — some providers emit usage on
+        # multiple stream chunks; recording each one would N× inflate calls.
+        usage_seen = None
         try:
             response_stream = await client.chat.completions.create(**kwargs)
             async for chunk in response_stream:
-                # Usage frames have no choices; surface them to the usage
-                # tracker so the cost summary reflects the summarizer too.
                 usage_frame = getattr(chunk, "usage", None)
-                if usage_frame and self.usage is not None:
-                    try:
-                        self.usage.add_from_response(usage_frame)
-                    except Exception:
-                        logger.debug("usage recording failed for summarizer", exc_info=True)
+                if usage_frame is not None:
+                    usage_seen = usage_frame
                 if not getattr(chunk, "choices", None):
                     continue
                 delta = chunk.choices[0].delta
@@ -1058,6 +1058,8 @@ class QuestionPipeline:
                     stage=STAGE_EXPLORING,
                     metadata=merge_trace_metadata(meta, {"trace_kind": "llm_chunk"}),
                 )
+            # Zero-char defaults: the summarizer has no estimate fallback.
+            record_streamed_usage(self.usage, usage_seen)
         except Exception as exc:
             logger.warning("Tool summarizer failed for %s: %s", tool_name, exc)
             await stream.progress(
@@ -1301,11 +1303,12 @@ class QuestionPipeline:
         try:
             parsed = json.loads(text)
         except json.JSONDecodeError:
-            obj = re.search(r"\{[\s\S]*\}", text)
-            if obj is None:
+            # First JSON object only; trailing brace-prose must not extend the slice.
+            start = text.find("{")
+            if start == -1:
                 return {}
             try:
-                parsed = json.loads(obj.group(0))
+                parsed, _end = json.JSONDecoder().raw_decode(text[start:])
             except json.JSONDecodeError:
                 return {}
         return parsed if isinstance(parsed, dict) else {}
@@ -1478,22 +1481,40 @@ class QuestionPipeline:
     # ------------------------------------------------------------------
     # Tool integration (mirrors chat's policy)
     # ------------------------------------------------------------------
+    async def _prepare_pageindex_tools(self) -> None:
+        from deeptutor.services.rag.pipelines.pageindex.tools import (
+            build_pageindex_tool_context,
+        )
+
+        self._pageindex_tool_context = await build_pageindex_tool_context(
+            self.kb_name,
+            base_registry=self.registry,
+        )
+        if self._pageindex_tool_context is not None:
+            self.registry = self._pageindex_tool_context.registry
+
+    def _pageindex_tool_names(self) -> list[str]:
+        tool_context = getattr(self, "_pageindex_tool_context", None)
+        return [tool.name for tool in tool_context.tools] if tool_context is not None else []
+
     def _mount_flags(self, context: UnifiedContext) -> ToolMountFlags:
         return ToolMountFlags(
-            has_kb=bool(self.kb_name),
+            has_kb=bool(self.kb_name and not getattr(self, "_pageindex_tool_context", None)),
             has_sources=bool(self._source_index(context)),
             has_memory=user_has_memory(),
             has_notebooks=user_has_notebooks(),
+            has_question_bank=user_has_question_bank(),
             has_code=exec_capability_available(),
         )
 
     def _resolved_tools(self, context: UnifiedContext) -> list[str]:
-        return compose_enabled_tools(
+        names = compose_enabled_tools(
             registry=self.registry,
             requested_tools=self.enabled_tools,
             optional_whitelist=self._optional_tools,
             mount_flags=self._mount_flags(context),
         )
+        return list(dict.fromkeys([*names, *self._pageindex_tool_names()]))
 
     def _use_native_tools(self, context: UnifiedContext) -> bool:
         """Native tool calling is only worth enabling when (a) the binding /
@@ -1610,6 +1631,28 @@ class QuestionPipeline:
     def _kb_system_note(self) -> str:
         if not self.kb_name:
             return ""
+        tool_context = getattr(self, "_pageindex_tool_context", None)
+        if tool_context is not None:
+            docs = (
+                "; ".join(
+                    f"{name} (doc_id: {doc_id})"
+                    for name, doc_id in sorted(tool_context.documents.items())
+                )
+                or "(no indexed documents)"
+            )
+            tools = ", ".join(self._pageindex_tool_names())
+            instructions = tool_context.instructions.strip()
+            if self.language == "zh":
+                return (
+                    f"已挂载 PageIndex 知识库 {self.kb_name!r}。使用这些工具在当前推理循环中"
+                    f"阅读文档，不要调用 rag：{tools}。文档：{docs}。"
+                    + (f"\nPageIndex SDK 阅读说明：\n{instructions}" if instructions else "")
+                )
+            return (
+                f"Attached PageIndex knowledge base: {self.kb_name!r}. Read it inside this "
+                f"reasoning loop with these tools; do not call rag: {tools}. Documents: {docs}."
+                + (f"\nPageIndex SDK reading instructions:\n{instructions}" if instructions else "")
+            )
         if self.language == "zh":
             return f"用户已挂载知识库：{self.kb_name}。调用 rag 时，kb_name 必须填这个名称。"
         return (
@@ -1920,7 +1963,7 @@ class _BaseLoopHost:
                 requested=len(tool_calls),
                 limit=MAX_PARALLEL_TOOL_CALLS,
             )
-        return await dispatch_tool_calls(
+        outcome = await dispatch_tool_calls(
             tool_calls=tool_calls,
             context=self._context,
             stream=self._stream,
@@ -1946,6 +1989,12 @@ class _BaseLoopHost:
             ),
             trace_id_prefix=self._trace_id_prefix,
         )
+        pageindex_sources = [
+            source for source in outcome.sources if source.get("type") == "pageindex"
+        ]
+        if pageindex_sources:
+            await self._stream.sources(pageindex_sources, source=SOURCE, stage=self._stage)
+        return outcome
 
     async def resolve_pause(self, dispatch: DispatchOutcome) -> bool:
         # ``ask_user`` would pause the turn — quiz pipeline v1 doesn't wire up
@@ -1955,28 +2004,6 @@ class _BaseLoopHost:
     async def emit_terminator(self, payload: dict[str, Any] | None) -> None:
         # No quiz tool is wired to terminate the loop with content.
         return
-
-    def assistant_message_with_tool_calls(
-        self,
-        *,
-        content: str,
-        tool_calls: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        return {
-            "role": "assistant",
-            "content": content or None,
-            "tool_calls": [
-                {
-                    "id": tc["id"],
-                    "type": "function",
-                    "function": {
-                        "name": tc["name"],
-                        "arguments": tc.get("arguments") or "{}",
-                    },
-                }
-                for tc in tool_calls
-            ],
-        }
 
     def protocol_retry_notice(self) -> str:
         return self._pipeline._t(

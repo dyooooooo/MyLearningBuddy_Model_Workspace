@@ -15,7 +15,6 @@ from app.kb.pdf_pages import open_pdf
 from app.kb.pdf_slice import slice_pdf_pages
 from app.kb.settings import require_export_config
 from app.kb.toc import extract_toc, refine_toc
-from app.kb.workspace_toc import run_workspace_toc
 from app.kb.workspace_store import (
     book_dir,
     book_to_dict,
@@ -45,9 +44,6 @@ class KbBookGone(RuntimeError):
 
 
 def _finalize_toc(book_id: str, toc: dict[str, Any], page_texts: dict[int, str]) -> dict[str, Any]:
-    workspace = run_workspace_toc(book_id)
-    if workspace is not None:
-        return workspace
     refined = refine_toc(toc, page_texts)
     write_toc(book_id, refined)
     return refined
@@ -195,6 +191,12 @@ def process_kb_book(book_id: str) -> dict[str, Any]:
     meta["status"] = "converting"
     meta["error"] = ""
     write_meta(book_id, meta)
+    try:
+        from app.kb.agent_notify import notify_import_converting
+
+        notify_import_converting(book_id, conversation_id=str(meta.get("conversation_id") or ""))
+    except Exception:
+        logger.warning("import converting notify failed id=%s", book_id, exc_info=True)
 
     path = pdf_path(book_id)
     if not path.is_file():
@@ -209,6 +211,12 @@ def process_kb_book(book_id: str) -> dict[str, Any]:
         book_id=book_id,
         persist_dir=mineru_dir(book_id),
     )
+    try:
+        from app.kb.figure_recrop import recrop_figures
+
+        recrop_figures(book_id, raw, list(parsed.blocks or []))
+    except Exception:
+        logger.warning("figure recrop skipped id=%s", book_id, exc_info=True)
     _write_mineru_manifest(
         book_id,
         page_ranges="",
@@ -228,11 +236,12 @@ def process_kb_book(book_id: str) -> dict[str, Any]:
             page_md = blocks_to_page_markdown(
                 grouped.get(page_no, []),
                 print_to_pdf=toc.get("print_to_pdf") if isinstance(toc.get("print_to_pdf"), dict) else None,
+                book_id=book_id,
             )
             if not page_md.strip() and page_no == 1 and not grouped:
                 page_md = (parsed.markdown or "").strip()
             page_texts[page_no] = page_md
-            jpeg = pages.page_jpeg(page_no, dpi=120)
+            jpeg = pages.page_jpeg(page_no)
             write_page(book_id, page_no, page_md, jpeg)
             write_mid(
                 book_id,

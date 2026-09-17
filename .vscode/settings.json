@@ -1,4 +1,10 @@
 {
   "http.proxy": "",
-  "http.proxySupport": "off"
+  "http.proxySupport": "off",
+  // Claude Code 聊天面板字体：西文等宽在前，CJK 黑体回退在后
+  "chat.fontFamily": "'JetBrains Mono', 'Sarasa Gothic SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif",
+  "chat.fontSize": 14,
+  // 聊天中代码块的字体
+  "chat.editor.fontFamily": "'JetBrains Mono', 'Sarasa Mono SC', Consolas, 'Courier New', monospace",
+  "chat.editor.fontSize": 13
 }

@@ -20,7 +20,7 @@ from deeptutor.capabilities.subagent import (
     connection_for_turn,
 )
 from deeptutor.capabilities.subagent import binding as subagent_binding
-from deeptutor.core.context import UnifiedContext
+from deeptutor.core.context import TurnRuntimeContext, UnifiedContext
 from deeptutor.runtime.registry.tool_registry import get_tool_registry
 from deeptutor.services.subagent.config import BackendConfig
 from deeptutor.services.subagent.types import ConsultResult, SubagentEvent
@@ -60,7 +60,7 @@ def test_active_injects_spec_and_min_rounds(monkeypatch) -> None:
     assert block is not None and "myagent" in block.content
     # The loop budget floor is lifted so the full consult budget + a finish
     # round always fit.
-    assert ctx.metadata.get("_min_loop_rounds", 0) >= 2
+    assert ctx.runtime.min_loop_rounds >= 2
 
     spec = cap.augment_kwargs("consult_subagent", {"question": "q"}, ctx)["_subagent"]
     assert spec["kind"] == "codex"
@@ -72,14 +72,14 @@ def test_active_injects_spec_and_min_rounds(monkeypatch) -> None:
     assert "_subagent" not in cap.augment_kwargs("rag", {}, ctx)
 
 
-def test_consult_budget_override_from_config(monkeypatch) -> None:
+def test_consult_budget_override_from_runtime_context(monkeypatch) -> None:
     _bind(monkeypatch)
     cap = SubagentCapability()
-    # Per-turn override from the composer (request config) wins over the default.
+    # Typed per-turn override from the composer wins over the default.
     ctx = UnifiedContext(
         user_message="hi",
         knowledge_bases=["myagent"],
-        config_overrides={"subagent_consult_budget": 3},
+        runtime=TurnRuntimeContext(subagent_consult_budget=3),
     )
     assert (
         cap.augment_kwargs("consult_subagent", {"question": "q"}, ctx)["_subagent"]["budget"] == 3
@@ -88,7 +88,7 @@ def test_consult_budget_override_from_config(monkeypatch) -> None:
     ctx_hi = UnifiedContext(
         user_message="hi",
         knowledge_bases=["myagent"],
-        config_overrides={"subagent_consult_budget": 999},
+        runtime=TurnRuntimeContext(subagent_consult_budget=999),
     )
     assert (
         cap.augment_kwargs("consult_subagent", {"question": "q"}, ctx_hi)["_subagent"]["budget"]
@@ -113,12 +113,27 @@ def test_binding_cached(monkeypatch) -> None:
 # ---- exclusivity -------------------------------------------------------------
 
 
-def test_exclusive_compose_drops_everything_but_consult_and_ask_user() -> None:
+def test_exclusive_compose_drops_builtins_but_keeps_coexisting_rag() -> None:
+    # Issue #650: the KB built-ins coexist when has_kb is set (a co-selected
+    # real KB the capability does not own is both searchable and enumerable);
+    # other built-ins/toggles stay dropped.
     composed = compose_enabled_tools(
         registry=get_tool_registry(),
         requested_tools=["web_search", "rag"],
         optional_whitelist=["web_search", "rag"],
         mount_flags=ToolMountFlags(has_kb=True, has_code=True, has_memory=True),
+        capability_owned=["consult_subagent"],
+        exclusive=True,
+    )
+    assert set(composed) == {"consult_subagent", "rag", "kb_files", "ask_user"}
+
+
+def test_exclusive_compose_pure_subagent_mounts_no_rag() -> None:
+    composed = compose_enabled_tools(
+        registry=get_tool_registry(),
+        requested_tools=["web_search"],
+        optional_whitelist=["web_search"],
+        mount_flags=ToolMountFlags(has_kb=False),
         capability_owned=["consult_subagent"],
         exclusive=True,
     )
@@ -131,6 +146,16 @@ def test_registry_flags_subagent_turn_as_exclusive(monkeypatch) -> None:
     plain_turn = UnifiedContext(user_message="hi", knowledge_bases=["plain-kb"])
     assert any_exclusive_capability_active(subagent_turn) is True
     assert any_exclusive_capability_active(plain_turn) is False
+
+
+def test_owned_kbs_reports_only_agent_ref(monkeypatch) -> None:
+    # Issue #650: the agent ref is owned (consulted, not rag'd); a co-selected
+    # LlamaIndex KB is not owned, so it keeps its rag surface.
+    _bind(monkeypatch)  # only "myagent" resolves as a subagent
+    cap = SubagentCapability()
+    ctx = UnifiedContext(user_message="hi", knowledge_bases=["myagent", "kb-plain"])
+    assert cap.owned_kbs(ctx) == {"myagent"}
+    assert subagent_binding.subagent_refs(ctx) == {"myagent"}
 
 
 # ---- consult tool ------------------------------------------------------------

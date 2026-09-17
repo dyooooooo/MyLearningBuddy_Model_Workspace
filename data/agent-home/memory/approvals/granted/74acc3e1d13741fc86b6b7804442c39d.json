@@ -1,0 +1,17 @@
+{
+  "req_id": "74acc3e1d13741fc86b6b7804442c39d",
+  "status": "granted",
+  "path": "surfaces/page-body/theme.css",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "ff80f1d3-e535-4dcd-9a1d-143fb60ad324",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T04:48:47.844348+00:00",
+  "situation": "学习聚焦第一条紧振栏名，读页清掉了首行缩进；后面各条仍走正文 2em 缩进，换行却顶格，第一行和下面对不齐。",
+  "why": "官方 Markdown 不能写 class。只能在读页把栏名到虚线之间的段落缩进清掉，虚线后的正文再恢复 2em。",
+  "changes": "把 `.kb-section-icon + p` 的无缩进和栏内字体扩成 `~ p` / `~ .kb-list-item`，让栏内所有条目和第一条对齐。`.kb-dash ~ p` 仍把虚线后的正文恢复为 2em 缩进和正文字体。金样 HTML 不变。",
+  "impact": "学习聚焦、知识回放等栏内条目换行后左齐。不改书页和 mid 的字。语文栏目若也是图标加 kb-dash 会一起受益。",
+  "granted_at": "2026-09-04T04:49:20.006275+00:00",
+  "expires_at": "2026-09-04T05:04:20.006275+00:00",
+  "one_shot": true
+}

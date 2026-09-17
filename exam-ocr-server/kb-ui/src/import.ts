@@ -1,4 +1,5 @@
 import { agent, kb, type KbBook } from "./api";
+import { shouldAbandonIdentify } from "./importLeave";
 import { IDENTIFY_TEMPLATE, importMetaFromJob, parseImportMeta, renderIdentifyMessage } from "./importMeta";
 import { isJob, onLive } from "./live";
 import { mountKbSettings } from "./settings";
@@ -26,7 +27,7 @@ export function mountKbImport(
   host.className = "kb-import hidden";
   host.append(
     el("h1", "kb-title", "导入教材"),
-    el("p", "muted", "拖入 PDF 后，MinerU 先认前三页，再交给 Agent 抽科目、学段、显示名和书名提示；点开始识别才全书入库清洗。"),
+    el("p", "muted", "拖入 PDF 后，MinerU 先认前三页，Agent 抽科目学段并自动全书识别。认书、识别、清洗、建目录都在同一条对话里，底栏能看见进度。"),
   );
 
   const work = el("div", "kb-import-work");
@@ -45,8 +46,17 @@ export function mountKbImport(
   let identifyJobId = "";
   let conversationId = "";
   let committed = false;
+  let chatStarted = false;
   let clearingFile = false;
   let identifyWait: Promise<void> = Promise.resolve();
+
+  function setFormLocked(locked: boolean): void {
+    labelInput.disabled = locked;
+    hintInput.disabled = locked;
+    subject.disabled = locked;
+    grade.disabled = locked;
+    category.disabled = locked;
+  }
 
   function applyMeta(meta: {
     label: string;
@@ -72,15 +82,21 @@ export function mountKbImport(
     }
   }
 
-  async function abandonIdentify(): Promise<void> {
+  function detachIdentify(): void {
     identifyGen += 1;
     uploadMsg.textContent = "";
-    const bookId = draftId;
-    const jobId = identifyJobId;
+    setFormLocked(false);
     draftId = "";
     identifyJobId = "";
     conversationId = "";
     committed = false;
+    chatStarted = false;
+  }
+
+  async function abandonIdentify(): Promise<void> {
+    const bookId = draftId;
+    const jobId = identifyJobId;
+    detachIdentify();
     if (jobId) {
       try {
         await agent.cancelJob(jobId);
@@ -97,6 +113,8 @@ export function mountKbImport(
     identifyJobId = "";
     conversationId = "";
     committed = false;
+    chatStarted = false;
+    setFormLocked(false);
     uploadMsg.textContent = "正在用 MinerU 识别前三页…";
     try {
       const book = await kb.stageDraft(file);
@@ -111,6 +129,7 @@ export function mountKbImport(
         return;
       }
       uploadMsg.textContent = "前三页已出，交给 Agent 抽科目学段…";
+      chatStarted = true;
       const chat = await agent.chat({
         message: renderIdentifyMessage(
           IDENTIFY_TEMPLATE,
@@ -121,32 +140,28 @@ export function mountKbImport(
         task_id: "import-page-refine",
         trigger: "kb.import.dropped",
       });
-      if (gen !== identifyGen) {
-        if (chat.job_id) {
-          try {
-            await agent.cancelJob(chat.job_id);
-          } catch {
-            /* abandoned */
-          }
-        }
-        await dropIfDraft(book.id);
-        return;
-      }
       identifyJobId = chat.job_id || "";
       conversationId = String(chat.conversation_id || "").trim();
+      committed = Boolean(identifyJobId);
       if (conversationId) {
         try {
           await kb.patchDraft(book.id, { conversation_id: conversationId });
         } catch {
-          /* form can still fill from import_meta */
+          /* convert watch still reads the chat payload */
         }
+      }
+      if (gen !== identifyGen) {
+        // Form was detached (user left import). Keep the queued chat.
+        return;
+      }
+      if (conversationId) {
         window.dispatchEvent(
           new CustomEvent("kb:open-conversation", {
             detail: { id: conversationId, title: "判断教材科目学段" },
           }),
         );
       }
-      uploadMsg.textContent = "Agent 正在根据前三页填写，可改完再点开始识别。";
+      uploadMsg.textContent = "Agent 正在根据前三页判断，随后自动全书识别。";
     } catch (e) {
       if (gen === identifyGen) {
         const detail = (e as Error).message || "";
@@ -244,65 +259,41 @@ export function mountKbImport(
     field("类型", category),
   );
 
-  const uploadBtn = el("button", "btn btn-primary", "开始识别") as HTMLButtonElement;
-  uploadBtn.type = "button";
   const uploadMsg = el("p", "muted kb-msg", "");
   const actions = el("div", "kb-import-actions");
-  actions.append(uploadBtn, uploadMsg);
+  actions.append(uploadMsg);
 
-  uploadBtn.onclick = async () => {
-    const f = fileInput.files?.[0];
-    if (!f && !draftId) {
-      uploadMsg.textContent = "请先选择 PDF";
-      return;
-    }
-    const hint =
-      hintInput.value.trim() ||
-      labelInput.value.trim() ||
-      (f ? f.name.replace(/\.pdf$/i, "") : "");
-    if (!hint || hint.toLowerCase().endsWith(".pdf")) {
-      uploadMsg.textContent = "请填写不含 .pdf 的书名提示";
-      return;
-    }
-    hintInput.value = hint;
-    uploadBtn.disabled = true;
-    uploadMsg.textContent = "等前三页识别并交给 Agent…";
+  async function markQueued(
+    bookId: string,
+    meta?: {
+      label: string;
+      textbook_hint: string;
+      subject: string;
+      grade_band: string;
+      category?: string;
+    },
+  ): Promise<void> {
+    if (committed) return;
+    const sid = String(bookId || draftId || "").trim();
+    if (!sid) return;
+    committed = true;
+    setFormLocked(true);
+    const keepCid = conversationId;
     try {
-      await identifyWait;
+      const row = await kb.get(sid);
+      if (keepCid) {
+        window.dispatchEvent(
+          new CustomEvent("kb:open-conversation", {
+            detail: { id: keepCid, title: row.label || meta?.label || "导入教材" },
+          }),
+        );
+      }
+      uploadMsg.textContent = `已入队：${row.label || meta?.label || sid}。全书识别在底栏同一条对话里。`;
+      opts.onQueued(row);
     } catch {
-      /* start with whatever we have */
+      uploadMsg.textContent = `已写入判断${meta?.label ? `：${meta.label}` : ""}。全书识别已开始。`;
     }
-    const ready = fileInput.files?.[0] || null;
-    if (!ready && !draftId) {
-      uploadMsg.textContent = "请先选择 PDF";
-      uploadBtn.disabled = false;
-      return;
-    }
-    uploadMsg.textContent = "开始识别全书…";
-    try {
-      const out = await kb.upload(draftId ? null : ready, {
-        label: labelInput.value.trim() || hint,
-        textbook_hint: hint,
-        subject: subject.value,
-        grade_band: grade.value,
-        category: category.value,
-        book_id: draftId || undefined,
-        conversation_id: conversationId || undefined,
-      });
-      committed = true;
-      identifyGen += 1;
-      identifyJobId = "";
-      conversationId = "";
-      draftId = "";
-      resetDrop();
-      uploadMsg.textContent = `已入队：${out.label}。全书识别完成后，同一条导入对话会抽目录和清洗。`;
-      opts.onQueued(out);
-    } catch (e) {
-      uploadMsg.textContent = `失败：${(e as Error).message}`;
-    } finally {
-      uploadBtn.disabled = false;
-    }
-  };
+  }
 
   const adv = el("details", "kb-import-adv");
   const sum = document.createElement("summary");
@@ -320,7 +311,8 @@ export function mountKbImport(
     const sid = String(bookId || "").trim();
     if (!draftId || (sid && sid !== draftId)) return;
     applyMeta(meta);
-    uploadMsg.textContent = "已填入判断结果，可改完再点开始识别。";
+    uploadMsg.textContent = "已写入判断，Agent 正在全书识别。";
+    void markQueued(sid || draftId, meta);
   }
 
   onLive((ev) => {
@@ -329,14 +321,26 @@ export function mountKbImport(
       if (meta) fillFromMeta(meta, String(ev.book_id || ""));
       return;
     }
+    if (isJob(ev) && ev.kind === "convert") {
+      const payload =
+        ev.payload && typeof ev.payload === "object"
+          ? (ev.payload as Record<string, unknown>)
+          : {};
+      const bid = String(payload.book_id || "");
+      if (bid && bid === draftId) void markQueued(bid);
+      return;
+    }
     if (!identifyJobId || !isJob(ev) || ev.job_id !== identifyJobId) return;
     const meta = importMetaFromJob(ev);
     if (meta) fillFromMeta(meta);
   });
 
   host.addEventListener("kb:leave-import", () => {
-    if (committed) return;
     resetDrop();
+    if (!shouldAbandonIdentify({ committed, identifyJobId, chatStarted })) {
+      detachIdentify();
+      return;
+    }
     void abandonIdentify();
   });
 }

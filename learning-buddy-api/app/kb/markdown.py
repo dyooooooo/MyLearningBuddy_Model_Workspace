@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.kb.assets import asset_url
 from app.kb.math_text import wrap_bare_math
 from app.kb.prose import looks_like_heading, polish_page_prose
 from app.kb.table_html import polish_table_html
 from app.kb.toc import is_index_block, looks_like_toc_blob
+from app.kb.workspace_figures import figure_recrop as load_equation_algo
 
 _SKIP_TYPES = frozenset(
     {
@@ -175,14 +177,49 @@ def _is_toc_block(block: dict[str, Any], text: str) -> bool:
     return looks_like_toc_blob(text)
 
 
-def _equation_markdown(block: dict[str, Any]) -> str:
+def _equation_alt(latex: str) -> str:
+    flat = " ".join((latex or "").split())
+    return (flat.replace("[", "(").replace("]", ")") or "公式")[:240]
+
+
+def _diagram_image_path(block: dict[str, Any], book_id: str) -> str:
+    path = _image_path(block)
+    if path:
+        return path
+    sid = (book_id or "").strip()
+    algo = load_equation_algo()
+    if not sid or algo is None:
+        return ""
+    xy = algo.block_bbox(block)
+    if xy is None:
+        return ""
+    page_no = int(algo.block_page_no(block) or 0)
+    if page_no < 1:
+        return ""
+    name = algo.diagram_asset_name(page_no, xy)
+    return asset_url(f"kb/pdfs/{sid}/assets/mineru/{name}")
+
+
+def _is_diagram_equation(latex: str) -> bool:
+    algo = load_equation_algo()
+    if algo is None:
+        return False
+    return bool(algo.is_diagram_latex(latex))
+
+
+def _equation_markdown(block: dict[str, Any], *, book_id: str = "") -> str:
     latex = _plain_text(block)
-    if latex:
-        inner = latex.strip()
-        if inner.startswith("$$") and inner.endswith("$$"):
-            return inner
-        if inner.startswith("$") and inner.endswith("$") and "\n" not in inner:
-            inner = inner[1:-1].strip()
+    inner = (latex or "").strip()
+    if inner.startswith("$$") and inner.endswith("$$"):
+        inner = inner[2:-2].strip()
+    elif inner.startswith("$") and inner.endswith("$") and "\n" not in inner:
+        inner = inner[1:-1].strip()
+    if inner and _is_diagram_equation(inner):
+        path = _diagram_image_path(block, book_id)
+        if path:
+            hint = _equation_alt(inner).replace("\\", "")
+            return f"![公式]({path})\n\n<!-- eq {hint} -->"
+    if inner:
         return f"$$\n{inner}\n$$"
     return _image_markdown(block, alt_default="公式")
 
@@ -192,6 +229,7 @@ def _render_block(
     print_to_pdf: dict[int, int] | None,
     *,
     skip_chrome: bool = True,
+    book_id: str = "",
 ) -> str:
     btype = str(block.get("type") or "").strip().lower()
     if skip_chrome and btype in _SKIP_TYPES:
@@ -202,7 +240,7 @@ def _render_block(
     if _is_toc_block(block, text):
         return _toc_plain(_block_lines(block, text))
     if btype in _EQUATION_TYPES:
-        return _equation_markdown(block)
+        return _equation_markdown(block, book_id=book_id)
     if btype in _FIGURE_TYPES:
         return _image_markdown(block)
     if btype == "table":
@@ -247,12 +285,13 @@ def blocks_to_page_markdown(
     blocks: list[dict[str, Any]],
     *,
     print_to_pdf: dict[int, int] | None = None,
+    book_id: str = "",
 ) -> str:
     parts: list[str] = []
     for block in blocks:
         if not isinstance(block, dict):
             continue
-        piece = _render_block(block, print_to_pdf)
+        piece = _render_block(block, print_to_pdf, book_id=book_id)
         if piece:
             parts.append(piece)
     return _join_parts(parts)

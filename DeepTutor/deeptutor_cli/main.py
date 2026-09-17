@@ -13,6 +13,7 @@ from .book import register as register_book
 from .chat import register as register_chat
 from .common import build_turn_request, console, maybe_run
 from .config_cmd import register as register_config
+from .doctor import register as register_doctor
 from .init_cmd import register as register_init
 from .kb import register as register_kb
 from .memory import register as register_memory
@@ -69,6 +70,7 @@ register_session(session_app)
 register_notebook(notebook_app)
 register_provider(provider_app)
 register_book(book_app)
+register_doctor(app)
 register_init(app)
 
 
@@ -117,11 +119,37 @@ def run_capability(
 @app.command()
 def start(
     home: Path | None = typer.Option(None, "--home", help="Runtime workspace root."),
+    dev: bool = typer.Option(
+        False,
+        "--dev",
+        help="Use the Next.js development server for frontend work.",
+    ),
+    detach: bool = typer.Option(
+        False,
+        "--detach",
+        help="Run outside the current console; stop later with `deeptutor stop`.",
+    ),
+    open_browser: bool = typer.Option(
+        True,
+        "--open-browser/--no-browser",
+        help="Open the frontend automatically after startup.",
+    ),
 ) -> None:
-    """Launch backend + frontend together. Press Ctrl+C to stop."""
+    """Launch backend + frontend together. Source installs default to production."""
     from deeptutor.runtime.launcher import start as start_web
 
-    start_web(home=home)
+    start_web(home=home, dev=dev, detach=detach, open_browser=open_browser)
+
+
+@app.command()
+def stop(
+    home: Path | None = typer.Option(None, "--home", help="Runtime workspace root."),
+) -> None:
+    """Stop a DeepTutor launcher started with ``--detach``."""
+    from deeptutor.runtime.launcher import stop as stop_web
+
+    if not stop_web(home=home):
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -155,12 +183,28 @@ def serve(
         )
         raise typer.Exit(code=1)
 
+    from deeptutor.services.config import (
+        HTTP_KEEP_ALIVE_TIMEOUT,
+        get_ws_max_size,
+        load_system_settings,
+    )
+
+    backend_workers = max(1, int(load_system_settings().get("backend_workers") or 1))
+    if reload and backend_workers > 1:
+        console.print("[bold red]Error:[/] --reload cannot be used when backend_workers > 1.")
+        raise typer.Exit(code=2)
+
+    # ws_max_size tracks the configured chat-attachment total so base64
+    # uploads fit in one WS frame (uvicorn defaults to 16MB).
     uvicorn.run(
         "deeptutor.api.main:app",
         host=host,
         port=port,
         reload=reload,
+        workers=backend_workers,
         reload_excludes=["web/*", "data/*"] if reload else None,
+        ws_max_size=get_ws_max_size(),
+        timeout_keep_alive=HTTP_KEEP_ALIVE_TIMEOUT,
     )
 
 

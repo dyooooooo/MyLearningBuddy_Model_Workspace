@@ -1,0 +1,17 @@
+{
+  "req_id": "b79a590862d4423b8b019d8ef1ce02d0",
+  "status": "granted",
+  "path": "tools/tag_chemistry.py",
+  "scope": "tools/tag_chemistry.py",
+  "tool_name": "request_code_edit",
+  "job_id": "9f60fd39-342e-496b-b5b3-86f770ea7976",
+  "conversation_id": "fa9e065d-3ad8-4868-a869-018e3b0eac7a",
+  "requested_at": "2026-09-04T08:30:36.414598+00:00",
+  "situation": "化学教材各节页首主标题原先格式不一：节号与节名被拆开、裸节号被收成 kb-page-toc、导语被卷进目录围栏、有的缺节号。本轮已按一书数据把化学必修第1册的 13 个节首改成 `## X.Y 标题`，中间文件用 `::: kb-center` 居中。用户现在要求把这套收法写进已有工具 tag_chemistry，以后导入后能自动统一，不要再手写一书。",
+  "why": "tag-chemistry 技能规定：化学专属版式都进同一个工具，不要另起工具。节首主标题是化学教材的共性形状（X.Y 加节名同一行、居中二级标题），和已有的帽标、栏目收法配套。写进工具后，导入清洗会自动落盘；不写进去，版式闸门仍可能把裸节号收成目录，下一本也要再手改。",
+  "changes": "在 tools/tag_chemistry.py 的 apply_chemistry_shapes 里增加节首主标题归一：按 toc.json 里 X.Y 节条定位节首页；源页写成 `## X.Y 标题`；中间文件用 `::: kb-center` 包住这一行；剥掉只包节号或把导语卷进去的 kb-page-toc；不要把正文小节帽标 `## ![5e3d标] 标题` 收成栏目或再套 kb-center。apply_databank 里对普通标题的去 kb-center 不要误拆这些节首。scan/fix 的 shapes 列表加上 section_head。同步改 .cursor/skills/tag-chemistry/SKILL.md，写明这套节首收法。",
+  "impact": "只影响科目是 chemistry 且类型是 textbook 的书。已修好的化学必修第1册再跑会保持 `## X.Y 标题` 加居中围栏。新导入的同类化学教材会自动统一节首。语文、物理等其它科目不跑此工具。不改 surfaces，不改 build_toc，也不把一书专名写进正则。",
+  "granted_at": "2026-09-04T08:32:01.346181+00:00",
+  "expires_at": "2026-09-04T08:47:01.346181+00:00",
+  "one_shot": true
+}

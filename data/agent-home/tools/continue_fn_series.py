@@ -187,6 +187,13 @@ def _write_page(path: Path, body: str, notes: list[str]) -> None:
     text = re.sub(r"([^\n])\n---\n", r"\1\n\n---\n", text)
     if not text.endswith("\n"):
         text += "\n"
+    try:
+        from source_text import write_source_atomic
+    except ImportError:
+        write_source_atomic = None
+    if write_source_atomic is not None:
+        write_source_atomic(path, text)
+        return
     tmp = path.with_suffix(".md.tmp")
     tmp.write_text(text, encoding="utf-8")
     tmp.replace(path)

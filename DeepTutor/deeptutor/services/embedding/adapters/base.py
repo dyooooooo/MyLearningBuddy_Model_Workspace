@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from deeptutor.services.keypool import KeyPool
+
 
 def looks_like_multimodal_embedding_model(model_name: Optional[str]) -> bool:
     """Best-effort guard for OpenAI-compatible multimodal embedding models."""
@@ -42,8 +44,12 @@ class EmbeddingRequest:
         input_type: Input type hint for task-aware embeddings (optional)
             - Cohere: Maps to 'input_type' ("search_document", "search_query", "classification", "clustering")
             - Jina: Maps to 'task' ("retrieval.passage", "retrieval.query", etc.)
+            - Gemini Embedding 2: Maps to retrieval-specific text instructions
             - OpenAI/Ollama: Ignored
-        encoding_format: Output format ("float" or "base64", default: "float")
+        encoding_format: Output format ("float" or "base64"). ``None`` (the
+            default) lets each adapter decide: OpenAI-compatible gateways omit
+            the param entirely (several, e.g. SiliconFlow, return HTTP 400 when
+            it is present), while the official OpenAI SDK path pins "float".
         truncate: Whether to truncate texts that exceed max tokens (default: True)
         normalized: Whether to return L2-normalized embeddings (Jina/Ollama only)
         late_chunking: Enable late chunking for long context (Jina v3 only)
@@ -61,7 +67,7 @@ class EmbeddingRequest:
     model: str
     dimensions: Optional[int] = None
     input_type: Optional[str] = None
-    encoding_format: Optional[str] = "float"
+    encoding_format: Optional[str] = None
     truncate: Optional[bool] = True
     normalized: Optional[bool] = True
     late_chunking: Optional[bool] = False
@@ -128,6 +134,12 @@ class BaseEmbeddingAdapter(ABC):
     (OpenAI, Cohere, Ollama, etc.) while exposing a unified interface.
     """
 
+    # Whether this adapter turns ``EmbeddingRequest.input_type`` into a
+    # provider parameter. Opt-in, because doing so changes the vectors a
+    # provider returns for the same text: switching it on for a backend that
+    # previously sent no role invalidates every index already built with it.
+    SUPPORTS_INPUT_TYPE: bool = False
+
     def __init__(self, config: Dict[str, Any]):
         """
         Initialize the adapter with configuration.
@@ -144,7 +156,11 @@ class BaseEmbeddingAdapter(ABC):
                   model family (default).
                 - request_timeout: Request timeout in seconds
         """
-        self.api_key = config.get("api_key")
+        raw_api_key = config.get("api_key")
+        keys = raw_api_key if isinstance(raw_api_key, list) else [raw_api_key]
+        keys = [str(key).strip() for key in keys if str(key or "").strip()]
+        self._key_pool = KeyPool(keys) if keys else None
+        self.api_key = keys[0] if keys else ""
         self.base_url = config.get("base_url")
         self.api_version = config.get("api_version")
         self.model = config.get("model")

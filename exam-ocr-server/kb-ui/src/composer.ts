@@ -125,6 +125,11 @@ export function mountComposer(
       if (modelId && !models.some((m) => m.id === modelId)) modelId = preferred || auto?.id || modelId;
       const row = models.find((m) => m.id === modelId);
       if (!modelParams.length) modelParams = defaultParams(row);
+      else {
+        modelParams = modelParams.map((p) =>
+          p.id === "effort" && p.value === "xhigh" ? { ...p, value: "high" } : p,
+        );
+      }
       if (modelId) saveModelState(modelId, modelParams);
       paintModel();
     })

@@ -1,0 +1,51 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page_size": [595, 841],
+    "layout": {
+      "folio": "recto",
+      "tree": {
+        "id": "page",
+        "kind": "rows",
+        "children": [
+          { "id": "r0c0", "kind": "flow", "members": [0], "slots": ["main"], "x0": 52, "x1": 543 },
+          { "id": "r1c0", "kind": "flow", "members": [1], "slots": ["main"], "x0": 52, "x1": 543 }
+        ]
+      }
+    },
+    "blocks": [
+      {
+        "id": "kb-close-0-0",
+        "type": "text",
+        "kind": "body",
+        "text": "1. 写出 H2O 的摩尔质量；\t2. 求 x1 的值。",
+        "lines": [
+          [
+            { "t": "text", "c": "1. 写出 H", "b": "src-a" },
+            { "t": "sub", "c": "2", "b": "src-a" },
+            { "t": "text", "c": "O 的摩尔质量，其中 ", "b": "src-a" },
+            { "t": "eq", "c": "M = 18", "b": "src-a" },
+            { "t": "text", "c": " g/mol；", "b": "src-a" },
+            { "t": "tab", "c": "\t" },
+            { "t": "text", "c": "2. 求 x", "b": "src-b" },
+            { "t": "sup", "c": "2", "b": "src-b" },
+            { "t": "text", "c": " 的值。", "b": "src-b" }
+          ]
+        ]
+      },
+      {
+        "id": "kb-close-0-1",
+        "type": "text",
+        "kind": "body",
+        "text": "即 $$A = \\{x \\mid p(x)\\}$$",
+        "lines": [
+          [
+            { "t": "text", "c": "即", "b": "src-c" },
+            { "t": "ieq", "c": "A = \\{x \\mid p(x)\\}", "latex": "A = \\{x \\mid p(x)\\}", "b": "src-d" },
+            { "t": "img", "c": "note.jpg", "b": "src-e" }
+          ]
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "req_id": "4486580abbf348529b309601e1bf7b70",
+  "status": "granted",
+  "path": "surfaces/page-body/theme.css",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "5ef9da10-416d-42fc-b2aa-6fc80e8d36cf",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T03:12:00.170302+00:00",
+  "situation": "化学栏名现在和正文同一套正文字号气质，只有颜色略红。用户要学习聚焦、知识回放、想一想等栏目在视觉上有别于正文，需要换字体或字号。点线和缩进不能写回书页，只能改读页 CSS。",
+  "why": "官方 Markdown 不能指定字体。栏名已经走 kb-section-icon，改 theme.css 就能让化学栏目标题和栏内条目跟正文分开，不必新围栏，也不必把手写 class 写进 pages 或 mid。",
+  "changes": "栏名改用稍小的加粗无衬线字体，和正文衬线分开；栏名下到虚线前的条目略缩小、取消首行缩进。只动读页皮肤，不改围栏名字，也不改金样 HTML 结构。",
+  "impact": "读页上化学栏目标题和栏内文字会明显有别于正文。语文学习提示若也用同一围栏会一起变；不改书页源文件。金样仍比 HTML，CSS 字号不进金样。",
+  "granted_at": "2026-09-04T03:12:15.624719+00:00",
+  "expires_at": "2026-09-04T03:27:15.624719+00:00",
+  "one_shot": true
+}

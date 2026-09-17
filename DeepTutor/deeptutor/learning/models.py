@@ -179,6 +179,130 @@ class PendingQuestion(BaseModel):
     question_type: str = "short"
     expected_answer: str = ""
     options: list[str] = Field(default_factory=list)
+    # Reference explanation and difficulty, captured when the question is
+    # posed. Server-side like ``expected_answer`` — ``public_pending_question``
+    # never projects them, so an explanation cannot leak the answer into the
+    # card the learner is about to answer. They travel with the attempt into
+    # the question bank, which is what makes a mastery mistake reviewable
+    # later instead of a bare right/wrong.
+    explanation: str = ""
+    difficulty: str = ""
+    created_at: float = Field(default_factory=time.time)
+
+
+class InteractionStatus(str, Enum):
+    """Durable lifecycle for one learner-facing mastery interaction.
+
+    The chat runtime may disappear at any point; this state is the source of
+    truth for whether a question still needs an answer or has already been
+    graded.  Terminal interactions are retained for idempotent retries and
+    audit history.
+    """
+
+    REGISTERED = "registered"
+    AWAITING_INPUT = "awaiting_input"
+    ANSWERED = "answered"
+    GRADED = "graded"
+    ABANDONED = "abandoned"
+
+
+class MasteryInteraction(BaseModel):
+    """A persisted question/answer transaction for a mastery path."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    interaction_id: str
+    path_id: str
+    question: PendingQuestion
+    status: InteractionStatus = InteractionStatus.REGISTERED
+    session_id: str = ""
+    turn_id: str = ""
+    user_answer: str = ""
+    result: dict[str, Any] = Field(default_factory=dict)
+    created_at: float = Field(default_factory=time.time)
+    updated_at: float = Field(default_factory=time.time)
+
+
+class MasteryEvent(BaseModel):
+    """Committed path event consumed by recovery and future live UIs."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: int = 0
+    path_id: str
+    revision: int
+    event_type: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    session_id: str = ""
+    turn_id: str = ""
+    created_at: float = Field(default_factory=time.time)
+
+
+class MasteryPathLease(BaseModel):
+    """The one active mutating turn allowed for a mastery path."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    path_id: str
+    session_id: str
+    turn_id: str
+    acquired_at: float = Field(default_factory=time.time)
+
+
+class TopicSourceKind(str, Enum):
+    GOAL = "goal"
+    BOOK = "book"
+    NOTEBOOK = "notebook"
+    KNOWLEDGE_BASE = "knowledge_base"
+    FILE = "file"
+    CHAT = "chat"
+
+
+class TopicSource(BaseModel):
+    """One ordered source selected while designing a learning topic."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    kind: TopicSourceKind
+    source_id: str = ""
+    label: str
+    excerpt: str = ""
+    position: int = 0
+    available: bool = True
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: float = Field(default_factory=time.time)
+
+
+class TopicMetadata(BaseModel):
+    """Product-level identity around the deterministic learning aggregate."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    path_id: str
+    goal: str = ""
+    description: str = ""
+    emoji: str = "🧭"
+    map_seed: int = 0
+    status: Literal["active", "archived"] = "active"
+    created_at: float = Field(default_factory=time.time)
+    updated_at: float = Field(default_factory=time.time)
+
+
+class MasteryTopic(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    metadata: TopicMetadata
+    sources: list[TopicSource] = Field(default_factory=list)
+
+
+class LearnerMasteryOverride(BaseModel):
+    """Explicit learner claim that bypasses, but never impersonates, evidence."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    knowledge_point_id: str
+    note: str = ""
     created_at: float = Field(default_factory=time.time)
 
 
@@ -186,6 +310,11 @@ class LearningProgress(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     book_id: str
+    # The learner-facing name of this path. Empty means "never named": the
+    # display name is then derived (``policy.path_display_name``), which is how
+    # every path behaved before this field existed — so an aggregate persisted
+    # without it needs no migration.
+    name: str = ""
     diagnostic: DiagnosticResult | None = None
     modules: list[LearningModule] = Field(default_factory=list)
     current_module_id: str = ""
@@ -201,6 +330,10 @@ class LearningProgress(BaseModel):
     error_records: list[ErrorRecord] = Field(default_factory=list)
     repetition_states: dict[str, RepetitionState] = Field(default_factory=dict)
     review_queue: list[ReviewTask] = Field(default_factory=list)
+    # A learner may explicitly claim prior mastery.  Policy exposes this as a
+    # separate provenance (``mastery_source=learner``); assessed mastery and
+    # its evidence remain untouched and can take over later.
+    learner_mastery_overrides: dict[str, LearnerMasteryOverride] = Field(default_factory=dict)
     # A single outstanding question; grading reads its expected answer so the
     # model never has to recall it across turns.
     pending_question: PendingQuestion | None = None
@@ -226,5 +359,14 @@ __all__ = [
     "RepetitionState",
     "ReviewTask",
     "PendingQuestion",
+    "InteractionStatus",
+    "MasteryInteraction",
+    "MasteryEvent",
+    "MasteryPathLease",
+    "TopicSourceKind",
+    "TopicSource",
+    "TopicMetadata",
+    "MasteryTopic",
+    "LearnerMasteryOverride",
     "LearningProgress",
 ]

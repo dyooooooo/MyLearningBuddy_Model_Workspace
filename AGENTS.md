@@ -10,7 +10,7 @@ This guide is written for AI coding agents that need to work in the repository a
 
 The workspace builds an **AI learning companion** with several integrated layers:
 
-- **DeepTutor** (`DeepTutor/`) — A general-purpose agent-native tutoring platform (RAG, multi-agent, Web UI, CLI, API). Forked from the HKUDS open-source project.
+- **DeepTutor** (`DeepTutor/`) — A general-purpose agent-native tutoring platform (RAG, multi-agent, Web UI, CLI, API). Vendored snapshot of [HKUDS/DeepTutor](https://github.com/HKUDS/DeepTutor) **v1.6.4**.
 - **Learning Buddy API** (`learning-buddy-api/`) — A pilot FastAPI backend focused on Chinese K-12 education: OCR import, corpus management, homework evaluation, mastery tracking, and RAG over textbooks.
 - **Exam OCR Server / C2 Gateway** (`exam-ocr-server/`) — FastAPI gateway that exposes the local vLLM vision endpoint, an OpenAI-compatible LAN proxy, and the companion/studio APIs used by the Android tablet.
 - **Learning Buddy C2** (`learning-buddy-c2/`) — Docker Compose orchestration for the Spark dual-Docker stack: vLLM Qwen3.6‑35B‑NVFP4, PostgreSQL, Redis, Milvus, MinIO, and the above services.
@@ -120,6 +120,8 @@ pip install -e .
 pip install -e ".[partners]"     # IM channel SDKs + MCP
 pip install -e ".[dev]"          # test tools
 pip install -e ".[server]"       # API server dependencies
+pip install -e ".[video-learning]"  # YouTube/Invidious captions
+pip install -e ".[rag-lightrag]"    # LightRAG engine
 pip install -e ".[all]"          # everything
 ```
 
@@ -242,7 +244,7 @@ cd vllm-tune
 
 - `api/` — FastAPI app, routers, and utility middleware.
 - `agents/` — Domain agents: chat, question, research, math animator, vision solver, notebook, etc.
-- `capabilities/` — High-level capability definitions (deep solve, mastery, explore context, Obsidian, subagent).
+- `capabilities/` — Turn capabilities: chat extras, deep solve, mastery, ask_questions, immersive reading/watching, course study, Obsidian, IMA, MarginNote 4, subagent.
 - `core/` — Core agentic primitives.
 - `knowledge/`, `memory/` — Knowledge-base and long-term memory systems.
 - `partners/` — IM channel integrations (Telegram, WeCom, Lark, DingTalk, Slack, QQ, Matrix, Zulip, etc.).
@@ -491,3 +493,6 @@ cd vllm-tune
 - `vllm-tune/README.md` / `vllm-tune/AGENTS.md` — vLLM tuning details.
 - `doc/learning-buddy-status-and-roadmap.md` — Overall architecture and roadmap.
 - `doc/corpus-three-layer-ops.md` — Corpus operations contract.
+- `doc/textbook-agent-logging.md` — 教材 Agent 导入链日志（`trace_id`、`events.jsonl`、排障命令）。
+- `doc/import-entities.md` — 导入实体契约（技能 + 工具 + 任务）。
+- `doc/fig-code-ownership.md` — 教材插图插入代码归属（原大 / 同行 / 裁切）。

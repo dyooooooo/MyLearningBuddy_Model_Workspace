@@ -239,7 +239,7 @@ def test_ingest_layout_tool_scan_then_fix(tmp_path: Path) -> None:
     assert not (tmp_path / "irbook" / "ir").exists()
 
     fix = ingest_layout("irbook", root=str(tmp_path), apply="fix")
-    assert fix["ok"] and fix["remapped"] == 0
+    assert fix["ok"] and fix["remapped"] == 0 and fix["cleared"] == 0
     written = tmp_path / "irbook" / "ir" / "pages" / "0001.json"
     data = json.loads(written.read_text(encoding="utf-8"))
     assert data["blocks"][0]["text"] == "工具出稿"
@@ -250,6 +250,79 @@ def test_ingest_layout_tool_scan_then_fix(tmp_path: Path) -> None:
     again = ingest_layout("irbook", root=str(tmp_path), apply="fix")
     assert again["ok"] and again["remapped"] == 0
     assert json.loads(written.read_text(encoding="utf-8")) == data
+
+
+def test_ingest_layout_fix_clears_leftover_pages_keeps_notes(tmp_path: Path) -> None:
+    """apply=fix 先删 ir/pages 再写；残页清掉，注解 ir/notes 留下。"""
+    _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [_block("text", 0, [[_span("text", "正本")]], bbox=[60, 100, 540, 140])],
+            "discarded_blocks": [],
+        }],
+    )
+    first = ingest_layout("irbook", root=str(tmp_path), apply="fix")
+    assert first["ok"] and first["cleared"] == 0
+    pages = tmp_path / "irbook" / "ir" / "pages"
+    leftover = pages / "0099.json"
+    leftover.write_text('{"page": 99, "stale": true}\n', encoding="utf-8")
+    notes = tmp_path / "irbook" / "ir" / "notes"
+    notes.mkdir(parents=True)
+    note = notes / "0001.yaml"
+    note.write_text("- id: n1\n  op: delete\n  block: kb-keep\n", encoding="utf-8")
+
+    again = ingest_layout("irbook", root=str(tmp_path), apply="fix")
+    assert again["ok"] and again["cleared"] == 2
+    assert not leftover.exists()
+    assert (pages / "0001.json").is_file()
+    assert json.loads((pages / "0001.json").read_text(encoding="utf-8"))["blocks"][0]["text"] == "正本"
+    assert note.read_text(encoding="utf-8") == "- id: n1\n  op: delete\n  block: kb-keep\n"
+
+
+def test_ingest_layout_single_page_does_not_clear_others(tmp_path: Path) -> None:
+    pages_data = [
+        {
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [_block("text", 0, [[_span("text", "第一页")]], bbox=[60, 100, 540, 140])],
+            "discarded_blocks": [],
+        },
+        {
+            "page_idx": 1,
+            "page_size": [600, 800],
+            "para_blocks": [_block("text", 0, [[_span("text", "第二页")]], bbox=[60, 100, 540, 140])],
+            "discarded_blocks": [],
+        },
+    ]
+    _book(tmp_path, pages_data)
+    ingest_layout("irbook", root=str(tmp_path), apply="fix")
+    pages = tmp_path / "irbook" / "ir" / "pages"
+    page2 = json.loads((pages / "0002.json").read_text(encoding="utf-8"))
+    out = ingest_layout("irbook", page_no=1, root=str(tmp_path), apply="fix")
+    assert out["ok"] and out["pages"] == 1 and out["cleared"] == 1
+    assert json.loads((pages / "0002.json").read_text(encoding="utf-8")) == page2
+    assert json.loads((pages / "0001.json").read_text(encoding="utf-8"))["blocks"][0]["text"] == "第一页"
+
+
+def test_ingest_layout_scan_does_not_clear_pages(tmp_path: Path) -> None:
+    _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [_block("text", 0, [[_span("text", "只扫")]], bbox=[60, 100, 540, 140])],
+            "discarded_blocks": [],
+        }],
+    )
+    ingest_layout("irbook", root=str(tmp_path), apply="fix")
+    pages = tmp_path / "irbook" / "ir" / "pages"
+    leftover = pages / "0099.json"
+    leftover.write_text('{"page": 99}\n', encoding="utf-8")
+    scan = ingest_layout("irbook", root=str(tmp_path), apply="scan")
+    assert scan["ok"] and scan.get("cleared", 0) == 0
+    assert leftover.exists()
 
 
 def test_ingest_layout_reingest_writes_remap(tmp_path: Path) -> None:
@@ -462,6 +535,106 @@ def test_apply_notes_replace_retitle_delete(tmp_path: Path) -> None:
     assert "要删掉的噪声块" not in texts
     # 输入页不被改动
     assert any(b["text"] == "原文有错别字的段落" for b in page["blocks"])
+
+
+def test_apply_notes_with_no_notes_is_a_no_op(tmp_path: Path) -> None:
+    """没有注解时，读页必须原样返回。
+
+    收口块的 text 在摄取时来自版式器的 piece 文本，比它自己的 span 更全；
+    无条件照 span 重拼就会让接口吐出的字跟磁盘上的字不一样（一条注解都没有也不一样）。
+    """
+    book = _notes_book(tmp_path)
+    page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    out, rejected = ir_lib.apply_notes(page, [])
+    assert rejected == []
+    assert out["blocks"] == page["blocks"]
+    assert out.get("layout") == page.get("layout")
+
+
+def test_apply_notes_still_rebuilds_close_blocks_it_touches(tmp_path: Path) -> None:
+    """按需重生成不能变成不重生成：改到的源块，它的收口块要跟着变。"""
+    book = _notes_book(tmp_path)
+    page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    src = next(b for b in page["blocks"] if b.get("text") == "原文有错别字的段落")
+    closes = [b for b in page["blocks"] if ir_lib.is_close_block(b) and src["id"] in (b.get("source_ids") or [])]
+    assert closes, "这页没有引用该源块的收口块，换个原料"
+
+    out, rejected = ir_lib.apply_notes(
+        page,
+        [{"id": "n", "block": src["id"], "op": "replace", "old": "错别字", "new": "正确"}],
+    )
+    assert rejected == []
+    for old in closes:
+        new = next(b for b in out["blocks"] if b["id"] == old["id"])
+        assert "正确" in new["text"], f"{old['id']} 没跟着源块更新"
+        assert "错别字" not in new["text"]
+
+
+def test_retitle_rebuilds_spans_instead_of_overwriting_each(tmp_path: Path) -> None:
+    """标题被切成多段 span 时，retitle 不能把新标题写进每一段。
+
+    旧写法逐段赋值，一个两段的标题会变成「新标题新标题」。HTML 上看不出来是因为
+    titleHtml 只读 text；lines 一旦坏掉，后续 replace 就会匹配到重复文字。
+    """
+    book = _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [
+                _block(
+                    "title",
+                    0,
+                    [[_span("text", "第章 "), _span("text", "种群和群落")]],
+                    bbox=[60, 100, 400, 130],
+                    level=2,
+                ),
+            ],
+            "discarded_blocks": [],
+        }],
+    )
+    page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    title = next(b for b in page["blocks"] if b.get("type") == "title")
+    assert sum(1 for row in title["lines"] for s in row if s.get("t") == "text") >= 2, "原料不是多段"
+
+    out, rejected = ir_lib.apply_notes(
+        page,
+        [{"id": "n", "block": title["id"], "op": "retitle",
+          "old": title["text"], "new": "第1章 种群和群落"}],
+    )
+    assert rejected == []
+    for blk in out["blocks"]:
+        if blk.get("type") != "title":
+            continue
+        joined = "".join(s.get("c") or "" for row in blk["lines"] for s in row)
+        assert joined == "第1章 种群和群落", f"{blk['id']} 的 span 被写重了：{joined!r}"
+        assert blk["text"] == "第1章 种群和群落"
+
+
+def test_retitle_new_text_can_carry_subscript(tmp_path: Path) -> None:
+    """新标题里带下标标记时，按同一套切法切成 span。"""
+    book = _book(
+        tmp_path,
+        [{
+            "page_idx": 0,
+            "page_size": [600, 800],
+            "para_blocks": [
+                _block("title", 0, [[_span("text", "H2O")]], bbox=[60, 100, 300, 130], level=2),
+            ],
+            "discarded_blocks": [],
+        }],
+    )
+    page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    title = next(b for b in page["blocks"] if b.get("type") == "title")
+    out, rejected = ir_lib.apply_notes(
+        page,
+        [{"id": "n", "block": title["id"], "op": "retitle",
+          "old": "H2O", "new": "H<sub>2</sub>O"}],
+    )
+    assert rejected == []
+    blk = next(b for b in out["blocks"] if b["id"] == title["id"])
+    kinds = [(s.get("t"), s.get("c")) for row in blk["lines"] for s in row]
+    assert ("sub", "2") in kinds
 
 
 def test_apply_notes_rejects_unmatched_old(tmp_path: Path) -> None:

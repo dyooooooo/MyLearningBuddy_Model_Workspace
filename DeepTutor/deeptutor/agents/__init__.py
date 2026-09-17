@@ -20,7 +20,15 @@ Usage:
             ...
 """
 
-from .base_agent import BaseAgent
-from .chat import ChatAgent, SessionManager
+from importlib import import_module
 
-__all__ = ["BaseAgent", "ChatAgent", "SessionManager"]
+__all__ = ["BaseAgent"]
+
+
+def __getattr__(name: str):
+    if name == "BaseAgent":
+        value = import_module(f"{__name__}.base_agent").BaseAgent
+    else:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    globals()[name] = value
+    return value

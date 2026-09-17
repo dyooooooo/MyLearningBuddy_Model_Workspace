@@ -1,0 +1,14 @@
+{
+  "req_id": "3dd2a306a3784d0aa2fcd9304eafad3f",
+  "status": "pending",
+  "path": "surfaces/page-body/theme.css",
+  "scope": "surfaces",
+  "tool_name": "request_code_edit",
+  "job_id": "ec5b89ef-dd6b-44d3-bc68-07ada4ab6e30",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T03:38:03.150204+00:00",
+  "situation": "化学教材小节帽标已经贴在普通标题前，但读页仍按插图比例放大，比标题字还高一截。用户要求高度和标题字体对齐。",
+  "why": "官方 Markdown 不能写宽高。帽标在标题行里，应按字号收成一字高，不能沿用正文插图的满栏比例。高度只能画在读页 CSS 里，不要把手写 width 写进书页。",
+  "changes": "标题里的图改成行内、高度 1em、宽度随图，去掉大块边距和圆角。盖过插图测量留下的百分比宽度，避免帽标仍按原书框放大。不改围栏名字。",
+  "impact": "化学小节帽标会和标题字一样高。其他标题里若也有小图，同样收成一字高。正文大图和栏目小标不受影响。书页源文件不改。"
+}

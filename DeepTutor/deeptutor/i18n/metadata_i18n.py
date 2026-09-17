@@ -31,6 +31,10 @@ _CAPABILITY_DESCRIPTIONS: dict[str, dict[str, str]] = {
         "en": "Create visual explanations such as SVG, charts, Mermaid, HTML, or Manim.",
         "zh": "生成 SVG、图表、Mermaid、HTML 或 Manim 等可视化讲解。",
     },
+    "immersive_reading": {
+        "en": "Read a document with the assistant, cited page by page.",
+        "zh": "与助手一起阅读文档，逐页标明出处。",
+    },
 }
 
 _TOOL_DESCRIPTIONS: dict[str, dict[str, str]] = {
@@ -45,6 +49,10 @@ _TOOL_DESCRIPTIONS: dict[str, dict[str, str]] = {
     "exec": {
         "en": "Run shell commands inside an isolated sandbox workspace.",
         "zh": "在隔离沙箱工作区中运行 shell 命令。",
+    },
+    "kb_files": {
+        "en": "List the documents a knowledge base holds, with the total count.",
+        "zh": "列出知识库中的文档清单与总数。",
     },
     "paper_search": {
         "en": "Search arXiv preprints and return paper metadata.",

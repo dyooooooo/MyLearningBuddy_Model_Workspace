@@ -1,0 +1,17 @@
+{
+  "req_id": "4fb1452b2d7d44d4876f4fe61b3d9f8c",
+  "status": "granted",
+  "path": "surfaces/page-body",
+  "scope": "surfaces+tools",
+  "tool_name": "request_code_edit",
+  "job_id": "3125b917-a21b-4b3b-90db-d59866d13607",
+  "conversation_id": "cdaffa55-d5c0-4627-a400-42ae78d74002",
+  "requested_at": "2026-09-01T06:57:08.124573+00:00",
+  "situation": "高中语文第二单元是戏剧。《雷雨》原书把角色名挪在左侧约三四个字宽，台词从右侧起排，折行仍对齐台词而不是角色名；括号里的动作跟在名字后、台词前；开场说明左右都缩。现在中间文件只有普通段落或两列 HTML 表：普通段会段首缩进，角色和台词糊成一块；《哈姆莱特》第 45 页已被收成表格，长台词挤在格里，跨页还切坏了首行。kb-verse 会居中，kb-list-item 是题目缩进，都不是剧本。这是各册戏剧共有的形状，不是这一册特例。",
+  "why": "用户本轮明文要求给戏剧独立格式和独特标签，既不要表格，也不要当普通正文。角色与台词要一一对应，折行要对齐。新能力必须用新围栏加新工具，不能给 tag_chinese_layout 或 page-table 打补丁。画法只在读页时由 prepare 加 theme.css 生成，中间文件只写 ::: kb-* ，源页仍写「角色名 + 台词」官方 Markdown，不写 HTML。",
+  "changes": "改 surfaces/page-body：在 fences.mjs 登记 ::: kb-drama 与 ::: kb-stage。kb-drama 里每一行按全书形状拆成角色、可选（舞台说明）、台词；以（云/唱/科）开头的杂剧行、【曲牌】唱词也认，不写一书专名。theme.css 用悬挂排列：角色加粗左齐、说明略淡、台词折行与首行台词对齐；kb-stage 左右缩进、不段首缩。补 drama-fences 金样。新建 tools/tag_drama.py：把连续对白收进 kb-drama，开场说明收进 kb-stage，两列「角色/台词」HTML 表拆回围栏，经 write_mid 落盘；封面、目录、页注、学习提示不收。不改 tag_chinese_layout / page-table / build_toc。授权并上线画法之后，再对本册戏剧页跑工具。",
+  "impact": "授权后才改插槽和工具；金样全绿才 reload_surfaces。有围栏的戏剧页会按角色与台词分开显示，折行对齐；没套围栏的书不变。以后导入的语文戏剧会自动套同一套围栏。古文、诗行、真正的知识表、议论正文不会被收。《哈姆莱特》那页误收的表会拆回台词行。源页不写 class 和 HTML。用户点「其他想法」时按新意见重提申请，不当成已批准。",
+  "granted_at": "2026-09-01T07:00:03.953703+00:00",
+  "expires_at": "2026-09-01T07:15:03.953703+00:00",
+  "one_shot": true
+}

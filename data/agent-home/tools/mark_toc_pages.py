@@ -461,6 +461,13 @@ def _write_page(path: Path, lines: list[str], heading: str | None) -> None:
     body = [f"## {heading}", ""] if heading else []
     body.extend(lines)
     text = "\n".join(body).rstrip() + "\n"
+    try:
+        from source_text import write_source_atomic
+    except ImportError:
+        write_source_atomic = None
+    if write_source_atomic is not None:
+        write_source_atomic(path, text)
+        return
     tmp = path.with_suffix(".md.tmp")
     tmp.write_text(text, encoding="utf-8")
     tmp.replace(path)

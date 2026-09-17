@@ -29,19 +29,22 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable
 
-from deeptutor.core.agentic import (
+from deeptutor.core.context import UnifiedContext
+from deeptutor.core.trace import build_trace_metadata, merge_trace_metadata, new_call_id
+from deeptutor.runtime.agentic import (
     LLMClientConfig,
     build_completion_kwargs,
     build_openai_client,
     can_use_native_tool_calling,
     dispatch_tool_calls,
 )
-from deeptutor.core.context import UnifiedContext
-from deeptutor.core.stream_bus import StreamBus
-from deeptutor.core.trace import build_trace_metadata, merge_trace_metadata, new_call_id
+from deeptutor.runtime.agentic.messages import assistant_message_with_tool_calls
+from deeptutor.runtime.agentic.tool_call_stream import ToolCallAccumulator
 from deeptutor.runtime.registry.tool_registry import get_tool_registry
+from deeptutor.runtime.stream_bus import StreamBus
 from deeptutor.services.llm import clean_thinking_tags, get_llm_config, get_token_limit_kwargs
 from deeptutor.services.llm import stream as llm_stream
+from deeptutor.services.llm.capabilities import threads_session_id
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +74,7 @@ _KIND_BY_PREFIX: dict[str, tuple[str, str]] = {
     "hs-": ("Conversation transcript", "对话记录"),
     "nb-": ("Notebook record", "笔记本记录"),
     "bk-": ("Book excerpt", "书籍节选"),
+    "rd-": ("Reading excerpt", "阅读材料节选"),
     "qb-": ("Question-bank entry", "题库条目"),
     "at-": ("Document", "文档"),
 }
@@ -106,6 +110,8 @@ class ContextExplorer:
             api_version=self.api_version,
             extra_headers=self.extra_headers or None,
             reasoning_effort=self.reasoning_effort,
+            wire_api=getattr(cfg, "wire_api", None) or "auto",
+            api_format=getattr(cfg, "api_format", None) or "auto",
         )
 
     async def investigate(
@@ -207,13 +213,18 @@ class ContextExplorer:
                     messages.append({"role": "user", "content": self._forced_finish_instruction()})
                 total_in += sum(_content_chars(m) for m in messages)
                 result = await self._call_llm(
-                    client, messages, tool_schemas if not is_last else None, chunk_meta, stream
+                    client,
+                    messages,
+                    tool_schemas if not is_last else None,
+                    chunk_meta,
+                    stream,
+                    context.session_id,
                 )
                 total_out += result.output_chars
                 if not result.tool_calls:
                     investigation = result.text
                     break
-                messages.append(_assistant_with_tool_calls(result.text, result.tool_calls))
+                messages.append(assistant_message_with_tool_calls(result.text, result.tool_calls))
                 dispatch = await dispatch_tool_calls(
                     tool_calls=result.tool_calls,
                     context=context,
@@ -246,6 +257,7 @@ class ContextExplorer:
         tool_schemas: list[dict[str, Any]] | None,
         chunk_meta: dict[str, Any],
         stream: StreamBus,
+        session_id: str,
     ) -> _CallResult:
         """One streamed LLM call. All output streams to the *thinking* channel
         (never CONTENT — that is the answer loop's channel); the returned text
@@ -262,12 +274,14 @@ class ContextExplorer:
                 reasoning_effort=self.reasoning_effort,
             ),
         }
+        if threads_session_id(self.binding):
+            kwargs["deeptutor_session_id"] = f"{session_id}:explore"
         if tool_schemas:
             kwargs["tools"] = tool_schemas
             kwargs["tool_choice"] = "auto"
 
         text_parts: list[str] = []
-        tool_acc: dict[int, dict[str, str]] = {}
+        tool_acc = ToolCallAccumulator()
         output_chars = 0
         response_stream = await client.chat.completions.create(**kwargs)
         try:
@@ -294,37 +308,14 @@ class ContextExplorer:
                         content, source=EXPLORE_SOURCE, stage=EXPLORE_STAGE, metadata=chunk_meta
                     )
                 for tc in getattr(delta, "tool_calls", None) or []:
-                    index = int(getattr(tc, "index", 0) or 0)
-                    acc = tool_acc.setdefault(index, {"id": "", "name": "", "arguments": ""})
-                    tcid = getattr(tc, "id", None)
-                    if tcid:
-                        acc["id"] += str(tcid)
-                    fn = getattr(tc, "function", None)
-                    if fn is None:
-                        continue
-                    name = getattr(fn, "name", None)
-                    arguments = getattr(fn, "arguments", None)
-                    if name:
-                        acc["name"] += str(name)
-                        output_chars += len(str(name))
-                    if arguments:
-                        acc["arguments"] += str(arguments)
-                        output_chars += len(str(arguments))
+                    output_chars += tool_acc.feed(tc)
         finally:
             close = getattr(response_stream, "close", None)
             if callable(close):
                 with suppress(Exception):
                     await close()
 
-        tool_calls = [
-            {
-                "id": data.get("id") or f"call_{idx}",
-                "name": data.get("name", ""),
-                "arguments": data.get("arguments") or "{}",
-            }
-            for idx, data in sorted(tool_acc.items())
-            if data.get("name")
-        ]
+        tool_calls = tool_acc.collected()
         return _CallResult(
             text="".join(text_parts), tool_calls=tool_calls, output_chars=output_chars
         )
@@ -525,21 +516,6 @@ def _content_chars(message: dict[str, Any]) -> int:
     if isinstance(content, list):
         return sum(len(str(part.get("text") or "")) for part in content if isinstance(part, dict))
     return 0
-
-
-def _assistant_with_tool_calls(content: str, tool_calls: list[dict[str, Any]]) -> dict[str, Any]:
-    return {
-        "role": "assistant",
-        "content": content or None,
-        "tool_calls": [
-            {
-                "id": tc["id"],
-                "type": "function",
-                "function": {"name": tc["name"], "arguments": tc.get("arguments") or "{}"},
-            }
-            for tc in tool_calls
-        ],
-    }
 
 
 __all__ = ["ContextExplorer", "EXPLORE_STAGE"]

@@ -1,118 +1,182 @@
-import { kb, type IrTocEntry, type KbBook } from "./api";
+import { kb, type IrTocEntry, type KbBook, type KbTocEntry } from "./api";
+import { paintLibraryTree, paintNodeExpanded } from "./libraryTree";
+import { fillIrPage } from "./renderIr";
+import { fillShadow } from "./surfaces";
+import { applyTocExpanded, bindKbPageToc } from "./util/page-toc";
+import { renderTocHtml } from "./util/toc-html";
 import { el } from "./util/dom";
+import { mountKbViewport, type KbViewport } from "./viewport";
+import type { BookSortId } from "./bookSort";
 
 export type IrLibrary = {
   setBooks: (books: KbBook[]) => void;
   reset: () => void;
   openBook: (id: string) => Promise<void>;
+  forgetBook: (id: string) => void;
+  invalidateToc: (id: string) => void;
+  expandedBooks: Set<string>;
+  expandedToc: Map<string, Set<string>>;
 };
 
-/** 结构化库（IR 新线）：书列表 + IR 目录树 + IR 正文预览。
- *  UI 结构 copy 老库（caret/节点/预览三区），数据走 /v1/ir/*。 */
+type IrTocPaint = {
+  entries: KbTocEntry[];
+  printToPdf: Record<string, number>;
+};
+
+function toKbToc(raw: IrTocEntry[]): IrTocPaint {
+  const entries: KbTocEntry[] = raw.map((e) => ({
+    label: e.label || e.title,
+    print_page: e.print_page != null && String(e.print_page) !== "" ? Number(e.print_page) : null,
+    pdf_page: e.pdf_page ?? null,
+    is_chapter: e.is_chapter ?? e.level === 0,
+    level: e.level,
+  }));
+  const printToPdf: Record<string, number> = {};
+  for (const e of entries) {
+    if (e.print_page != null && Number.isFinite(e.print_page) && e.pdf_page) {
+      printToPdf[String(e.print_page)] = e.pdf_page;
+    }
+  }
+  return { entries, printToPdf };
+}
+
+/** 结构化库（中间表示线）：左栏与教材库同一套文件夹/书节点，数据走 /v1/ir/*。 */
 export function mountIrLibrary(opts: {
   treeHost: HTMLElement;
   previewHost: HTMLElement;
+  placeholder: HTMLElement;
+  getBooks: () => KbBook[];
+  getSort: () => BookSortId;
+  expandedGroups: Set<string>;
+  persist: () => void;
+  savedBooks?: string[];
+  savedToc?: Record<string, string[]>;
+  onMore?: (anchor: HTMLButtonElement, book: KbBook, node: HTMLElement) => void;
 }): IrLibrary {
-  let books: KbBook[] = [];
   let activeId = "";
-  const tocCache = new Map<string, IrTocEntry[]>();
-  const expanded = new Set<string>();
+  const tocCache = new Map<string, IrTocPaint>();
+  const expandedBooks = new Set<string>(opts.savedBooks || []);
+  const expandedToc = new Map<string, Set<string>>(
+    Object.entries(opts.savedToc || {}).map(([id, rows]) => [id, new Set(rows)]),
+  );
+  const tocMounts = new Map<string, { host: HTMLElement; unbind: () => void }>();
+  let viewport: KbViewport | null = null;
 
-  function placeholder(text: string): HTMLElement {
-    return el("p", "muted kb-preview-placeholder", text);
+  function setPlaceholder(on: boolean, text?: string): void {
+    if (text) opts.placeholder.textContent = text;
+    opts.placeholder.classList.toggle("hidden", !on);
   }
 
-  function renderTree(): void {
-    opts.treeHost.replaceChildren();
-    for (const b of books) {
-      const node = el("li", `kb-node${b.id === activeId ? " is-active" : ""}${expanded.has(b.id) ? " is-expanded" : ""}`);
-      node.dataset.bookId = b.id;
-      const head = el("div", "kb-node-head");
-      const caret = el("button", "kb-caret-btn") as HTMLButtonElement;
-      caret.type = "button";
-      caret.setAttribute("aria-label", expanded.has(b.id) ? "收起目录" : "展开目录");
-      caret.append(expanded.has(b.id) ? "▾" : "▸");
-      caret.onclick = (ev) => {
-        ev.stopPropagation();
-        if (expanded.has(b.id)) {
-          expanded.delete(b.id);
-          renderTree();
-        } else {
-          expanded.add(b.id);
-          renderTree();
-          void attachToc(b.id);
-        }
-      };
-      const name = el("button", "kb-item-open", b.label || b.filename) as HTMLButtonElement;
-      name.type = "button";
-      name.onclick = () => void openBook(b.id);
-      const chip = el("span", "kb-node-chip", "IR");
-      head.append(caret, name, chip);
-      node.append(head);
-      const tocHost = el("div", "kb-node-toc");
-      if (!expanded.has(b.id)) tocHost.classList.add("hidden");
-      node.append(tocHost);
-      opts.treeHost.append(node);
-    }
+  function persist(): void {
+    opts.persist();
   }
 
-  async function ensureToc(id: string): Promise<IrTocEntry[]> {
+  function detachToc(id: string): void {
+    const row = tocMounts.get(id);
+    if (!row) return;
+    row.unbind();
+    tocMounts.delete(id);
+  }
+
+  function clearTocMounts(): void {
+    for (const id of [...tocMounts.keys()]) detachToc(id);
+  }
+
+  async function ensureToc(id: string): Promise<IrTocPaint> {
     const hit = tocCache.get(id);
     if (hit) return hit;
     try {
       const toc = await kb.irToc(id);
-      const entries = toc.entries || [];
-      tocCache.set(id, entries);
-      return entries;
+      const painted = toKbToc(toc.entries || []);
+      tocCache.set(id, painted);
+      return painted;
     } catch {
-      return [];
+      const empty = { entries: [], printToPdf: {} };
+      tocCache.set(id, empty);
+      return empty;
     }
   }
 
-  async function attachToc(id: string): Promise<void> {
+  async function paintToc(host: HTMLElement, id: string): Promise<void> {
+    const toc = await ensureToc(id);
+    let html = "";
+    try {
+      const painted = await kb.surfacePaint("toc-tree", {
+        entries: toc.entries,
+        printToPdf: toc.printToPdf,
+      });
+      html = painted.html || "";
+    } catch {
+      html = "";
+    }
+    await fillShadow(host, "toc-tree", html || renderTocHtml(toc.entries, toc.printToPdf));
+    applyTocExpanded(host, expandedToc.get(id) || new Set());
+  }
+
+  async function attachToc(id: string, host: HTMLElement): Promise<void> {
+    detachToc(id);
+    await paintToc(host, id);
+    const unbind = bindKbPageToc(host, {
+      scrollToPage: async (n) => {
+        if (activeId !== id) await openBook(id);
+        await viewport?.scrollToPage(n);
+      },
+      getPrintToPdf: () => tocCache.get(id)?.printToPdf || {},
+      expandedIds: expandedToc.get(id) || new Set(),
+      onToggleBranch: (tocId, collapsed) => {
+        let ids = expandedToc.get(id);
+        if (!ids) {
+          ids = new Set();
+          expandedToc.set(id, ids);
+        }
+        if (collapsed) ids.delete(tocId);
+        else ids.add(tocId);
+        persist();
+      },
+    });
+    tocMounts.set(id, { host, unbind });
+  }
+
+  async function restoreExpandedTocs(): Promise<void> {
+    const jobs: Promise<void>[] = [];
+    for (const id of expandedBooks) {
+      const host = opts.treeHost.querySelector<HTMLElement>(`.kb-node[data-book-id="${CSS.escape(id)}"] .kb-node-toc`);
+      if (host) jobs.push(attachToc(id, host));
+    }
+    await Promise.all(jobs);
+  }
+
+  async function toggleBook(id: string, on: boolean): Promise<void> {
+    if (on) expandedBooks.add(id);
+    else expandedBooks.delete(id);
+    persist();
     const node = opts.treeHost.querySelector<HTMLElement>(`.kb-node[data-book-id="${CSS.escape(id)}"]`);
-    const host = node?.querySelector<HTMLElement>(".kb-node-toc");
-    if (!host) return;
-    host.replaceChildren(el("p", "muted", "加载目录…"));
-    const entries = await ensureToc(id);
-    host.replaceChildren(tocList(id, entries));
+    if (!node) return;
+    paintNodeExpanded(node, on);
+    const tocHost = node.querySelector<HTMLElement>(".kb-node-toc");
+    if (!tocHost) return;
+    if (on) await attachToc(id, tocHost);
+    else detachToc(id);
   }
 
-  function tocList(id: string, entries: IrTocEntry[]): HTMLElement {
-    const root = el("ul", "kb-ir-toc");
-    const stack: { level: number; ul: HTMLElement }[] = [{ level: -1, ul: root }];
-    for (const entry of entries) {
-      while (stack.length > 1 && entry.level <= stack[stack.length - 1].level) stack.pop();
-      const parent = stack[stack.length - 1].ul;
-      const li = el("li", `kb-ir-toc-item lv${entry.level}`);
-      const btn = el("button", "kb-ir-toc-link", entry.title) as HTMLButtonElement;
-      btn.type = "button";
-      btn.disabled = !entry.pdf_page;
-      btn.title = entry.pdf_page ? `第 ${entry.pdf_page} 页` : "页码未定位";
-      btn.onclick = () => {
-        if (entry.pdf_page) void openPage(id, entry.pdf_page!);
-      };
-      li.append(btn);
-      parent.append(li);
-      const child = el("ul", "kb-ir-toc");
-      li.append(child);
-      stack.push({ level: entry.level, ul: child });
-    }
-    // 清掉空子 ul
-    for (const ul of root.querySelectorAll("ul")) {
-      if (!ul.childElementCount) ul.remove();
-    }
-    return root;
-  }
-
-  async function openBook(id: string): Promise<void> {
-    expanded.add(id);
-    renderTree();
-    await attachToc(id);
-    const entries = await ensureToc(id);
-    const first = entries.find((e) => e.pdf_page);
-    if (first?.pdf_page) await openPage(id, first.pdf_page);
-    else showPlaceholder(id, "这本书的目录还没有定位到页码");
+  function renderTree(): void {
+    clearTocMounts();
+    paintLibraryTree(opts.treeHost, "kb-ir", opts.getBooks(), {
+      sort: opts.getSort(),
+      expandedGroups: opts.expandedGroups,
+      expandedBooks,
+      activeId,
+      onToggleGroup: (id) => {
+        if (opts.expandedGroups.has(id)) opts.expandedGroups.delete(id);
+        else opts.expandedGroups.add(id);
+        persist();
+        renderTree();
+        void restoreExpandedTocs();
+      },
+      onToggleBook: (id, on) => void toggleBook(id, on),
+      onOpenBook: (id) => void openBook(id),
+      onMore: opts.onMore,
+    });
   }
 
   function markActive(id: string): void {
@@ -124,44 +188,104 @@ export function mountIrLibrary(opts: {
       ?.classList.add("is-active");
   }
 
-  let openSeq = 0;
+  function ensureShell(pageNo: number): HTMLElement {
+    let wrap = opts.previewHost.querySelector<HTMLElement>(`.kb-page-block[data-page-no="${pageNo}"]`);
+    if (wrap) return wrap;
+    wrap = el("article", "kb-page-block");
+    wrap.dataset.pageNo = String(pageNo);
+    wrap.append(el("div", "kb-page-tag", `第 ${pageNo} 页`), el("div", "kb-page-body is-unloaded"));
+    const next = [...opts.previewHost.querySelectorAll<HTMLElement>(".kb-page-block")].find(
+      (node) => Number(node.dataset.pageNo) > pageNo,
+    );
+    if (next) opts.previewHost.insertBefore(wrap, next);
+    else opts.previewHost.appendChild(wrap);
+    return wrap;
+  }
 
-  async function openPage(id: string, pageNo: number): Promise<void> {
-    activeId = id;
-    const seq = ++openSeq;
-    // 只更新高亮：整树 renderTree 会把 attachToc 填充的目录抹成空 div
-    markActive(id);
-    showPlaceholder(id, `加载第 ${pageNo} 页…`);
+  async function loadPage(pageNo: number, shell: HTMLElement): Promise<void> {
+    if (!activeId) return;
+    const host = shell.querySelector<HTMLElement>(".kb-page-body");
+    if (!host) return;
+    if (!host.classList.contains("is-unloaded") && !host.classList.contains("is-error")) return;
     try {
-      const out = await kb.irPage(id, pageNo);
-      if (seq !== openSeq) return; // 已被更新的请求取代，丢弃旧响应
-      const block = el("div", "kb-page-block");
-      block.dataset.pageNo = String(pageNo);
-      const host = el("div", "kb-page-body");
-      block.append(host);
-      opts.previewHost.replaceChildren(block);
-      const { fillShadow } = await import("./surfaces");
-      await fillShadow(host, "page-body", out.prepared || out.markdown || "（本页无文本）");
-    } catch {
-      if (seq === openSeq) showPlaceholder(id, `第 ${pageNo} 页加载失败`);
+      const out = await kb.irBlocks(activeId, pageNo);
+      await fillIrPage(host, out.page || {}, activeId);
+      host.classList.remove("is-unloaded", "is-error");
+    } catch (e) {
+      host.classList.add("is-unloaded", "is-error");
+      host.textContent = `第 ${pageNo} 页加载失败：${(e as Error).message}`;
     }
   }
 
-  function showPlaceholder(_id: string, text: string): void {
-    opts.previewHost.replaceChildren(placeholder(text));
+  async function openBook(id: string): Promise<void> {
+    activeId = id;
+    markActive(id);
+    const tocJob = expandedBooks.has(id) && tocMounts.has(id) ? Promise.resolve() : toggleBook(id, true);
+    viewport?.destroy();
+    viewport = null;
+    opts.previewHost.replaceChildren();
+    setPlaceholder(false);
+    const book = await kb.get(id);
+    if (book.status === "failed") {
+      setPlaceholder(true, `识别失败：${book.error || "未知错误"}`);
+      void tocJob;
+      return;
+    }
+    if (book.status !== "ready") {
+      setPlaceholder(true, "MinerU 识别中，完成后自动打开…");
+      void tocJob;
+      return;
+    }
+    const tocReady = ensureToc(id);
+    const count = Math.max(0, Number(book.page_count) || 0);
+    if (!count) {
+      setPlaceholder(true, "这本书还没有页");
+      void tocJob;
+      return;
+    }
+    for (let p = 1; p <= count; p++) ensureShell(p);
+    viewport = mountKbViewport({
+      root: opts.previewHost,
+      pageCount: count,
+      ensureShell,
+      loadPage,
+    });
+    const first = (await tocReady).entries.find((e) => e.pdf_page);
+    if (first?.pdf_page) await viewport.scrollToPage(first.pdf_page);
+    void tocJob;
+  }
+
+  function resetPreview(): void {
+    activeId = "";
+    viewport?.destroy();
+    viewport = null;
+    opts.previewHost.replaceChildren();
+    setPlaceholder(true, "从左侧打开一本书（结构化库）");
   }
 
   return {
-    setBooks(list) {
-      books = list;
+    expandedBooks,
+    expandedToc,
+    setBooks() {
       renderTree();
+      void restoreExpandedTocs();
     },
     reset() {
-      activeId = "";
       tocCache.clear();
+      resetPreview();
       renderTree();
-      opts.previewHost.replaceChildren(placeholder("从左侧打开一本书"));
     },
     openBook,
+    forgetBook(id) {
+      expandedBooks.delete(id);
+      tocCache.delete(id);
+      expandedToc.delete(id);
+      detachToc(id);
+      persist();
+      if (activeId === id) resetPreview();
+    },
+    invalidateToc(id) {
+      tocCache.delete(id);
+    },
   };
 }

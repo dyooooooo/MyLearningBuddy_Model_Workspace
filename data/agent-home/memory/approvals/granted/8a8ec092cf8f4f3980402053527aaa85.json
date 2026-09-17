@@ -1,0 +1,17 @@
+{
+  "req_id": "8a8ec092cf8f4f3980402053527aaa85",
+  "status": "granted",
+  "path": "tools/tag_section_icons.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "034d3f5a-56fc-424e-a692-38b74aecd167",
+  "conversation_id": "59668091-3598-4313-8e7b-339a14c4ffb5",
+  "requested_at": "2026-09-01T02:40:49.084556+00:00",
+  "situation": "语文教材「学习提示」前有栏目圆标。导入后 tag_chinese_layout 会把这张小图包进 kb-center。本册十二处中间文件已手写成 kb-section-icon，画面也能画成同一行，但以后再导入语文教材不会自动做这一步。这是人教语文教材共有的栏目形状，不是这一册特例。",
+  "why": "新功能必须用新工具，不能给 tag_chinese_layout 打补丁。工具只改 mid 围栏，把「图标 + 栏目标题」收成 kb-section-icon；源页仍写官方 Markdown。任务在语文版式任务之后触发，且仅科目为语文、类型为教材时执行。",
+  "changes": "新建 tools/tag_section_icons.py 并登记到 manifest。认紧挨栏目标题（学习提示、单元学习任务、阅读指导等）之前的一张图（可带 kb-center），写成 ::: kb-section-icon 围栏。已是该围栏的跳过。封面、单元扉页、课文插图不收。科目不是 chinese 或类型不是 textbook 则整书跳过。不改 tag_chinese_layout / build_toc / improve_render / page-body。",
+  "impact": "授权后会写入工具、reload_config，并在导入末尾建任务（触发 task.chinese-textbook-layout.completed，条件：科目为语文且类型为教材）。以后导入的语文教材会自动收栏目图标。本册已经写好的十二处围栏不会被破坏。不改源页，不写 HTML。",
+  "granted_at": "2026-09-01T02:41:53.239119+00:00",
+  "expires_at": "2026-09-01T02:56:53.239119+00:00",
+  "one_shot": true
+}

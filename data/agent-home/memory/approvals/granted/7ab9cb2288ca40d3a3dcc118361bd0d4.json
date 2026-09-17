@@ -1,0 +1,17 @@
+{
+  "req_id": "7ab9cb2288ca40d3a3dcc118361bd0d4",
+  "status": "granted",
+  "path": "tools/tag_section_icons.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "3b7c2de8-c90b-4833-87c7-b18db61b4e84",
+  "conversation_id": "59668091-3598-4313-8e7b-339a14c4ffb5",
+  "requested_at": "2026-09-01T03:21:18.724294+00:00",
+  "situation": "tag_section_icons 只是直接改 mid/*.md，没有走 library.write_mid。书页闸门发现印章对不上，就按源页重贴围栏。tag_chinese_layout 会把每一张图标成 kb-center，所以「学习提示」前的栏目圆标又变回大方块。本册已经反复被冲掉，不是一书手误。",
+  "why": "工具必须和其他语文工具一样经闸门写中间文件，印章才会更新，围栏才不会在读页时被重贴。不能给 tag_chinese_layout 打补丁；导入任务仍放在语文版式之后。只改这个已有新工具的写回路径。",
+  "changes": "改 tools/tag_section_icons.py：读现有中间文件用 library.get_page_mid，写回用 library.write_mid。已是 kb-section-icon 的不改。仍只认栏目标题前的那张图，封面和单元扉页不收。不改 tag_chinese_layout / build_toc / page-body。",
+  "impact": "以后跑 tag_section_icons 会经闸门落盘，读页时不会再被收成 kb-center。本册十二处在闸门写回后应能保住。导入任务顺序不变。源页仍是官方 Markdown。",
+  "granted_at": "2026-09-01T03:22:19.072112+00:00",
+  "expires_at": "2026-09-01T03:37:19.072112+00:00",
+  "one_shot": true
+}

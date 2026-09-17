@@ -1,4 +1,5 @@
 import { getStudioToken, promptRelogin } from "./auth/studioToken";
+import type { IrPage } from "./renderIr";
 
 export type KbBook = {
   id: string;
@@ -29,8 +30,10 @@ export type KbTocEntry = {
 export type IrTocEntry = {
   level: number;
   title: string;
-  print_page: string;
+  label?: string;
+  print_page?: string | number | null;
   pdf_page?: number | null;
+  is_chapter?: boolean;
 };
 
 export type KbToc = {
@@ -175,7 +178,7 @@ export const kb = {
   pageMarkdown(
     id: string,
     pageNo: number,
-    src?: "old" | "v2md" | "official",
+    src?: "old",
   ): Promise<{
     markdown: string;
     prepared?: string;
@@ -199,8 +202,22 @@ export const kb = {
     page_count: number;
     notes?: number;
     rejected?: unknown[];
+    ok?: boolean;
+    reason?: string;
   }> {
     return json(`/api/v1/kb/proxy/ir/${encodeURIComponent(id)}/pages/${pageNo}/markdown`);
+  },
+  irBlocks(
+    id: string,
+    pageNo: number,
+  ): Promise<{
+    book_id: string;
+    page_no: number;
+    page: IrPage;
+    rejected?: unknown[];
+    page_count: number;
+  }> {
+    return json(`/api/v1/kb/proxy/ir/${encodeURIComponent(id)}/pages/${pageNo}/blocks`);
   },
   surfacePaint(slot: string, payload: Record<string, unknown>): Promise<{ html: string }> {
     return json(`/api/v1/kb/agent/surfaces/${encodeURIComponent(slot)}/paint`, {

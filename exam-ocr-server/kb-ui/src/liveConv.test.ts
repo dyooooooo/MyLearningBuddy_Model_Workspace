@@ -24,4 +24,17 @@ test("isImportChatJob matches builtin import task", () => {
   assert.equal(isImportChatJob({ kind: "chat", payload: { trigger: "task.import-page-refine.completed" } }), true);
   assert.equal(isImportChatJob({ kind: "chat", payload: { message: "随便问一句" } }), false);
   assert.equal(isImportChatJob({ kind: "grade", payload: { task_id: "import-page-refine" } }), false);
+  assert.equal(
+    isImportChatJob({
+      kind: "printed_toc",
+      payload: { task_id: "import-book-toc", conversation_id: "c2" },
+    }),
+    true,
+  );
+  assert.equal(isImportChatJob({ kind: "printed_toc", payload: { book_id: "b1" } }), false);
+  assert.equal(
+    isImportChatJob({ kind: "convert", payload: { conversation_id: "c3", message: "开始识别全书。" } }),
+    true,
+  );
+  assert.equal(isImportChatJob({ kind: "convert", payload: { book_id: "b1" } }), false);
 });

@@ -34,7 +34,7 @@ class PartnerSessionStore:
         self._write_lock = threading.Lock()
 
     def _path(self, session_key: str) -> Path:
-        return self._dir / f"{safe_filename(session_key) or 'default'}.jsonl"
+        return self._dir / f"{self._stem(session_key)}.jsonl"
 
     @staticmethod
     def is_archived_key(session_key: str) -> bool:
@@ -68,7 +68,18 @@ class PartnerSessionStore:
             )
 
     def _stem(self, session_key: str) -> str:
-        return safe_filename(session_key) or "default"
+        # Single source of truth for key → on-disk stem. ``safe_filename``
+        # neutralizes path separators (so a key can't escape the sessions dir);
+        # we additionally strip leading/trailing dots and fall back to
+        # ``default`` so a degenerate key (empty, ``.`` / ``..``) can't produce a
+        # hidden or dots-only file. NOTE: safe_filename is intentionally lossy —
+        # ``:`` and ``/`` both fold to ``_`` — so keys differing only in unsafe
+        # characters share a file. Callers build keys from safe components (uuid
+        # hex, slugged ascii ids), so that collision is unreachable in practice;
+        # making the mapping injective would rename every existing session file
+        # (``web:<id>`` → ``web_<id>.jsonl``) and orphan history, so it is left
+        # as-is deliberately.
+        return safe_filename(session_key).strip(".") or "default"
 
     def is_archived(self, session_key: str) -> bool:
         """Archived = soft flag in the index OR a legacy ``_archived_`` file."""
@@ -77,7 +88,9 @@ class PartnerSessionStore:
             return True
         return self.is_archived_key(session_key)
 
-    def set_archived(self, session_key: str, archived: bool) -> None:
+    def set_archived(self, session_key: str, archived: bool) -> bool:
+        if not self._path(session_key).exists():
+            return False
         stem = self._stem(session_key)
         index = self._load_index()
         entry = index.get(stem, {})
@@ -90,6 +103,7 @@ class PartnerSessionStore:
         else:
             index.pop(stem, None)
         self._save_index(index)
+        return True
 
     def delete_session(self, session_key: str) -> bool:
         """Remove a session's file and its index entry. Returns whether it existed."""
@@ -179,7 +193,7 @@ class PartnerSessionStore:
         if not records:
             return None
 
-        safe_key = safe_filename(session_key) or "default"
+        safe_key = self._stem(session_key)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         archive_key = f"{_ARCHIVE_PREFIX}{stamp}_{safe_key}"
         archive_path = self._path(archive_key)

@@ -5,7 +5,7 @@ import { AlertCircle, Bot, Check, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLingerExpand } from "@/hooks/use-linger-expand";
 import ProviderIcon from "@/components/common/ProviderIcon";
-import type { LLMSelection } from "@/lib/unified-ws";
+import type { LLMSelection } from "@/features/chat/model/protocol";
 import {
   llmSelectionKey,
   sameLLMSelection,
@@ -113,6 +113,7 @@ export default function ModelSelector({
   helperText,
   placement = "top",
   onChange,
+  onRefresh,
 }: {
   options: LLMOption[];
   activeDefault: LLMSelection | null;
@@ -125,6 +126,7 @@ export default function ModelSelector({
   helperText?: string;
   placement?: "top" | "bottom";
   onChange: (selection: LLMSelection | null) => void;
+  onRefresh?: () => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -158,12 +160,16 @@ export default function ModelSelector({
   const defaultLabel = systemDefaultLabel || t("System default");
   const defaultDetail =
     systemDefaultDetail || t("Use the active default model from Settings");
+  const canRefresh = error && Boolean(onRefresh);
   const disabled =
-    loading || error || (options.length === 0 && !allowSystemDefault);
+    loading ||
+    (!canRefresh && (error || (options.length === 0 && !allowSystemDefault)));
   const label = loading
     ? t("Loading models")
     : error
-      ? t("Models unavailable")
+      ? canRefresh
+        ? t("Refresh models")
+        : t("Models unavailable")
       : allowSystemDefault && !selectedSelection
         ? defaultLabel
         : // Official model ID, consistent with the dropdown rows.
@@ -182,8 +188,16 @@ export default function ModelSelector({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((current) => !current)}
-        aria-label={t("Select model")}
+        onClick={() => {
+          if (canRefresh) {
+            setOpen(false);
+            onRefresh?.();
+            return;
+          }
+          setOpen((current) => !current);
+        }}
+        aria-label={canRefresh ? t("Refresh models") : t("Select model")}
+        title={canRefresh ? t("Refresh models") : undefined}
         aria-expanded={open}
         {...lingerProps}
         className={`inline-flex h-8 shrink-0 items-center rounded-lg px-2 text-[14px] font-medium transition-[background-color,color,transform] duration-150 active:scale-[0.97] ${

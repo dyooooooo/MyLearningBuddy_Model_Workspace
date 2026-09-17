@@ -68,7 +68,7 @@ def test_run_command_json_mode(monkeypatch) -> None:
     assert captured_requests[0].tools == ["rag"]
     assert captured_requests[0].knowledge_bases == ["demo-kb"]
     assert captured_requests[0].history_references == ["session-old"]
-    assert captured_requests[0].notebook_references == [
+    assert [ref.model_dump() for ref in captured_requests[0].notebook_references] == [
         {"notebook_id": "nb1", "record_ids": ["rec1", "rec2"]}
     ]
     assert {request.capability for request in captured_requests} == set(capabilities)
@@ -78,6 +78,7 @@ def test_builtin_capability_aliases_resolve_to_canonical_names() -> None:
     runtime = DeepTutorApp()
 
     assert runtime.resolve_capability("solve") == "deep_solve"
+    assert runtime.resolve_capability("ask") == "ask_questions"
     assert runtime.resolve_capability("quiz") == "deep_question"
     assert runtime.resolve_capability("research") == "deep_research"
     assert runtime.resolve_capability("viz") == "visualize"
@@ -170,6 +171,28 @@ def test_chat_repl_backslash_continuation_sends_single_message(monkeypatch) -> N
     assert captured_requests[0].content == "Please review this code:\ndef fib(n): return n"
 
 
+def test_chat_repl_survives_invalid_utf8_input(monkeypatch) -> None:
+    inputs = iter(
+        [
+            UnicodeDecodeError("utf-8", b"\xe8\x83", 0, 2, "unexpected end of data"),
+            "/quit",
+        ]
+    )
+
+    def _read_input() -> str:
+        value = next(inputs)
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+    monkeypatch.setattr("deeptutor_cli.chat._read_repl_input", _read_input)
+
+    result = runner.invoke(app, ["chat"])
+
+    assert result.exit_code == 0, result.output
+    assert "Unable to decode terminal input" in result.output
+
+
 def test_plugin_info_includes_capability_aliases_and_availability() -> None:
     result = runner.invoke(app, ["plugin", "info", "deep_solve"])
 
@@ -204,12 +227,36 @@ def test_session_list_command_uses_shared_store(monkeypatch) -> None:
 def test_start_command_delegates_to_runtime_launcher(monkeypatch) -> None:
     calls: list[object] = []
 
-    def _fake_start(home=None):  # noqa: ANN001
-        calls.append(home)
+    def _fake_start(  # noqa: ANN001
+        home=None,
+        *,
+        dev=False,
+        detach=False,
+        open_browser=True,
+    ):
+        calls.append((home, dev, detach, open_browser))
 
     monkeypatch.setattr("deeptutor.runtime.launcher.start", _fake_start)
 
     result = runner.invoke(app, ["start"])
+
+    assert result.exit_code == 0, result.output
+    assert calls == [(None, False, False, True)]
+
+    result = runner.invoke(app, ["start", "--dev", "--detach", "--no-browser"])
+
+    assert result.exit_code == 0, result.output
+    assert calls[-1] == (None, True, True, False)
+
+
+def test_stop_command_delegates_to_detached_launcher(monkeypatch) -> None:
+    calls: list[object] = []
+    monkeypatch.setattr(
+        "deeptutor.runtime.launcher.stop",
+        lambda home=None: calls.append(home) or True,
+    )
+
+    result = runner.invoke(app, ["stop"])
 
     assert result.exit_code == 0, result.output
     assert calls == [None]

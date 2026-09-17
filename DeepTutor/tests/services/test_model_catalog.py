@@ -1,7 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 
-from deeptutor.services.config.model_catalog import ModelCatalogService
+from deeptutor.services.config.model_catalog import SERVICE_NAMES, ModelCatalogService
 
 
 def test_load_creates_empty_catalog_without_dotenv_hydration(tmp_path: Path):
@@ -104,18 +105,115 @@ def test_load_recovers_invalid_catalog_with_defaults(tmp_path: Path):
 
     catalog = ModelCatalogService(path=catalog_path).load()
 
-    expected_services = {
-        "llm",
-        "embedding",
-        "search",
-        "tts",
-        "stt",
-        "imagegen",
-        "videogen",
-    }
+    # Derived rather than re-listed: a new service should not need this test
+    # edited to keep passing, only the one that describes it.
+    expected_services = set(SERVICE_NAMES)
     assert set(catalog["services"]) == expected_services
     saved = json.loads(catalog_path.read_text(encoding="utf-8"))
     assert set(saved["services"]) == expected_services
+
+
+def test_load_normalizes_wire_api_to_supported_profile_backends(tmp_path: Path):
+    catalog_path = tmp_path / "model_catalog.json"
+    catalog_path.write_text(
+        json.dumps(
+            {
+                "services": {
+                    "llm": {
+                        "active_profile_id": "azure-profile",
+                        "active_model_id": "azure-model",
+                        "profiles": [
+                            {
+                                "id": "azure-profile",
+                                "name": "Azure",
+                                "binding": "azure_openai",
+                                "wire_api": "responses",
+                                "models": [
+                                    {
+                                        "id": "azure-model",
+                                        "name": "Deployment",
+                                        "model": "deployment-name",
+                                    }
+                                ],
+                            },
+                            {
+                                "id": "custom-profile",
+                                "name": "Custom",
+                                "binding": "custom",
+                                "wire_api": "unknown-protocol",
+                                "models": [],
+                            },
+                        ],
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = ModelCatalogService(path=catalog_path).load()
+    profiles = loaded["services"]["llm"]["profiles"]
+
+    assert profiles[0]["wire_api"] == "auto"
+    assert profiles[1]["wire_api"] == "auto"
+
+
+def _gemini_embedding_catalog(path: Path, model: str) -> Path:
+    path.write_text(
+        json.dumps(
+            {
+                "services": {
+                    "embedding": {
+                        "active_profile_id": "gemini-profile",
+                        "active_model_id": "gemini-model",
+                        "profiles": [
+                            {
+                                "id": "gemini-profile",
+                                "name": "Gemini",
+                                "binding": "gemini",
+                                "base_url": "",
+                                "api_key": "test-key",
+                                "models": [
+                                    {
+                                        "id": "gemini-model",
+                                        "name": model,
+                                        "model": model,
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_load_sets_gemini_native_endpoint_from_active_embedding_model(tmp_path: Path):
+    catalog_path = _gemini_embedding_catalog(tmp_path / "model_catalog.json", "gemini-embedding-2")
+
+    catalog = ModelCatalogService(path=catalog_path).load()
+
+    profile = catalog["services"]["embedding"]["profiles"][0]
+    assert profile["base_url"].endswith("/models/gemini-embedding-2:batchEmbedContents")
+
+
+def test_load_keeps_older_gemini_embedding_models_on_the_openai_path(tmp_path: Path):
+    """The native route sends a taskType and L2-normalizes, so moving an
+    existing gemini-embedding-001 profile there would change its document
+    vectors and invalidate the index built from them."""
+    catalog_path = _gemini_embedding_catalog(
+        tmp_path / "model_catalog.json", "gemini-embedding-001"
+    )
+
+    catalog = ModelCatalogService(path=catalog_path).load()
+
+    profile = catalog["services"]["embedding"]["profiles"][0]
+    assert profile["base_url"] == (
+        "https://generativelanguage.googleapis.com/v1beta/openai/embeddings"
+    )
 
 
 def test_load_persists_normalized_active_ids(tmp_path: Path):
@@ -158,3 +256,31 @@ def test_load_persists_normalized_active_ids(tmp_path: Path):
     assert llm["active_model_id"] == "llm-model-a"
     assert saved["services"]["embedding"]["profiles"] == []
     assert saved["services"]["search"]["profiles"] == []
+
+
+def test_update_serializes_concurrent_catalog_mutations(tmp_path: Path):
+    service = ModelCatalogService(path=tmp_path / "model_catalog.json")
+    initial = service.load()
+    initial["mutation_count"] = 0
+    service.save(initial)
+
+    def increment(_index: int) -> None:
+        def mutate(catalog: dict) -> None:
+            catalog["mutation_count"] = int(catalog.get("mutation_count", 0)) + 1
+
+        service.update(mutate)
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        list(executor.map(increment, range(40)))
+
+    assert service.load()["mutation_count"] == 40
+
+
+def test_atomic_save_leaves_no_temporary_file(tmp_path: Path):
+    catalog_path = tmp_path / "model_catalog.json"
+    service = ModelCatalogService(path=catalog_path)
+
+    service.save({"version": 1, "services": {}})
+
+    assert catalog_path.exists()
+    assert not list(tmp_path.glob(".model_catalog.json.*"))

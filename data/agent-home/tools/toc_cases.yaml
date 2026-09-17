@@ -1,0 +1,73 @@
+# Shape goldens for workspace TOC tools. No book_id, no one-book titles.
+classify:
+  - line: "绪 言 1"
+    id: intro
+    kind: chapter
+  - line: "引论 3"
+    id: intro
+    kind: chapter
+  - line: "本章复习 …… 34"
+    id: named_cn
+    kind: named
+  - line: "本章小结 88"
+    id: named_cn
+    kind: named
+  - line: "Ⅰ 某附录条 143"
+    id: appendix_roman
+    kind: named
+  - line: "4.4 某节标题 …… 133"
+    id: toc_section
+    kind: section
+  - line: "附 录"
+    id: appendix_head
+    kind: chapter
+  - line: "第1章 某章标题 5"
+    id: chapter_cn
+    kind: chapter
+
+reject:
+  - line: "20 世纪中期 109"
+  - line: "…… 143"
+
+leftover:
+  - line: "项目学习活动 某通栏标题 38"
+    kind: named
+
+continuation:
+  prev_toc: true
+  lines:
+    - "附 录"
+    - "4.4 某节标题 …… 133"
+    - "本章复习 …… 139"
+    - "…… 143"
+    - "Ⅰ 某附录条 …… 143"
+  expect_toc: true
+
+appendix_only_body:
+  prev_toc: true
+  lines:
+    - "附 录"
+    - "本附录列出部分数据。"
+  expect_toc: false
+
+split:
+  entries:
+    - {label: "绪言", print_page: 1}
+    - {label: "第1章 某章标题", print_page: 5}
+    - {label: "本章复习", print_page: 34}
+    - {label: "4.4 某节标题", print_page: 133}
+    - {label: "本章复习", print_page: 139}
+    - {label: "附录", print_page: null}
+  pages:
+    5: |
+      目录
+      绪言 1
+      第1章 某章标题 5
+      本章复习 34
+    6: |
+      附 录
+      4.4 某节标题 …… 133
+      本章复习 …… 139
+  expect_first_labels:
+    - "绪言"
+    - "4.4 某节标题"

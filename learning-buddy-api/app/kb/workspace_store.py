@@ -199,9 +199,12 @@ def delete_book_dir(book_id: str) -> bool:
 
 
 def write_page(book_id: str, page_no: int, markdown: str, image: bytes | None = None) -> None:
+    from app.kb.workspace_source import sanitize_source
+
+    markdown = sanitize_source(markdown or "")
     md = page_path(book_id, page_no)
     md.parent.mkdir(parents=True, exist_ok=True)
-    md.write_text(markdown or "", encoding="utf-8")
+    md.write_text(markdown, encoding="utf-8")
     if image is not None:
         img = image_path(book_id, page_no)
         img.parent.mkdir(parents=True, exist_ok=True)

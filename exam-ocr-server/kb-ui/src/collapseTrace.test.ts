@@ -98,3 +98,8 @@ test("createPlan is not a tool row", () => {
   assert.equal(tools.length, 1);
   assert.equal(toolLabel(tools[0]), "读取 第 8 页");
 });
+
+test("printed toc traces use Chinese labels", () => {
+  assert.equal(toolLabel({ name: "toc_read", status: "running", detail: "" }), "看印刷目录…");
+  assert.equal(toolLabel({ name: "toc_locate", status: "completed", detail: "" }), "定位目录页");
+});

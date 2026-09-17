@@ -18,8 +18,8 @@ from pydantic import Field
 from deeptutor.partners.bus.events import OutboundMessage
 from deeptutor.partners.bus.queue import MessageBus
 from deeptutor.partners.channels.base import BaseChannel
-from deeptutor.partners.config.paths import get_media_dir
 from deeptutor.partners.config.schema import DeliveryOverrides, StreamingSupport
+from deeptutor.partners.helpers import split_markdown_table_row
 
 FEISHU_AVAILABLE = importlib.util.find_spec("lark_oapi") is not None
 
@@ -241,6 +241,7 @@ class FeishuConfig(DeliveryOverrides, StreamingSupport):
     enabled: bool = False
     app_id: str = ""
     app_secret: str = ""
+    domain: Literal["feishu", "lark"] = "feishu"
     encrypt_key: str = ""
     verification_token: str = ""
     allow_from: list[str] = Field(default_factory=list)
@@ -311,22 +312,36 @@ class FeishuChannel(BaseChannel):
         """Start the Feishu bot with WebSocket long connection."""
         if not FEISHU_AVAILABLE:
             logger.error("Feishu SDK not installed. Run: pip install lark-oapi")
+            self.set_setup_state(
+                "unavailable",
+                message="Required channel dependency is not installed on this server.",
+            )
             return
 
         if not self.config.app_id or not self.config.app_secret:
             logger.error("Feishu app_id and app_secret not configured")
+            self.set_setup_state(
+                "action_required",
+                message=(
+                    "Required fields are missing. Complete the channel configuration "
+                    "and save again."
+                ),
+            )
             return
 
         import lark_oapi as lark
+        from lark_oapi.core.const import FEISHU_DOMAIN, LARK_DOMAIN
 
         self._running = True
         self._loop = asyncio.get_running_loop()
+        sdk_domain = LARK_DOMAIN if self.config.domain == "lark" else FEISHU_DOMAIN
 
         # Create Lark client for sending messages
         self._client = (
             lark.Client.builder()
             .app_id(self.config.app_id)
             .app_secret(self.config.app_secret)
+            .domain(sdk_domain)
             .log_level(lark.LogLevel.INFO)
             .build()
         )
@@ -353,6 +368,10 @@ class FeishuChannel(BaseChannel):
             self.config.app_secret,
             event_handler=event_handler,
             log_level=lark.LogLevel.INFO,
+            domain=sdk_domain,
+            # Without this tag Feishu uses the personal-client protocol and may
+            # omit group @mention events over WebSocket.
+            extra_ua_tags=["channel"],
         )
 
         # Start WebSocket client in a separate thread with reconnect loop.
@@ -372,9 +391,14 @@ class FeishuChannel(BaseChannel):
             try:
                 while self._running:
                     try:
+                        self.set_setup_state("connecting")
                         self._ws_client.start()
                     except Exception as e:
                         logger.warning("Feishu WebSocket error: {}", e)
+                        self.set_setup_state(
+                            "error",
+                            message="Channel connection failed; the listener will retry.",
+                        )
                     if self._running:
                         time.sleep(5)
             finally:
@@ -385,6 +409,7 @@ class FeishuChannel(BaseChannel):
 
         logger.info("Feishu bot started with WebSocket long connection")
         logger.info("No public IP required - using WebSocket to receive events")
+        self.set_setup_state("running")
 
         # Keep running until stopped
         while self._running:
@@ -484,11 +509,8 @@ class FeishuChannel(BaseChannel):
         if len(lines) < 3:
             return None
 
-        def split(_line: str) -> list[str]:
-            return [c.strip() for c in _line.strip("|").split("|")]
-
-        headers = split(lines[0])
-        rows = [split(_line) for _line in lines[2:]]
+        headers = split_markdown_table_row(lines[0])
+        rows = [split_markdown_table_row(_line) for _line in lines[2:]]
         columns = [
             {"tag": "column", "name": f"c{i}", "display_name": h, "width": "auto"}
             for i, h in enumerate(headers)
@@ -854,7 +876,7 @@ class FeishuChannel(BaseChannel):
             (file_path, content_text) - file_path is None if download failed
         """
         loop = asyncio.get_running_loop()
-        media_dir = get_media_dir("feishu")
+        media_dir = self.media_dir()
 
         data, filename = None, None
 

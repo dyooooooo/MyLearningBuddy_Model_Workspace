@@ -1,0 +1,25 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "blocks": [
+      {
+        "id": "a",
+        "type": "image",
+        "kind": "figure",
+        "asset": "a.jpg",
+        "row": 0,
+        "width_frac": 0.2,
+        "col": 0
+      },
+      {
+        "id": "b",
+        "type": "image",
+        "kind": "figure",
+        "asset": "b.jpg",
+        "row": 0,
+        "width_frac": 0.2,
+        "col": 0
+      }
+    ]
+  }
+}

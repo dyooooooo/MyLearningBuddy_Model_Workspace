@@ -1,0 +1,17 @@
+{
+  "req_id": "eedc68c214e44abd93b48f85853541e6",
+  "status": "granted",
+  "path": "tools/tag_chemistry.py",
+  "scope": "tools",
+  "tool_name": "request_code_edit",
+  "job_id": "bc5b3e93-440f-4800-83f3-8a314506c3bb",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-04T03:05:59.563042+00:00",
+  "situation": "化学教材资料库的标志是虚线框（C 型、U 型或倒 U），文本只在框里。现在 apply_databank 把资料库之后一直收到下一个节标题，主栏正文、图和想一想都被当成框内，虚线也落到页尾。",
+  "why": "下次导入或再跑 tag_chemistry 会按旧规则把刚裁好的页再胀回去。停栏要改成跟 MinerU 虚线框同一竖栏，遇另一栏目或纵向空隙就停，仍写进这一个化学工具，不另起栏名。",
+  "changes": "apply_databank 用栏名框判左栏或右栏，只把同栏、空隙不超过一行的短篇名、段落、表和框内公式收进资料库；中间文件在这段之后插 kb-dash。栏外正文和图留在虚线下面。栏目说明页仍不动。",
+  "impact": "化学教材导入后 tag_chemistry 不再把资料库后面的整页当成栏内。语文、物理和目录工具不改。本册已按虚线框手改的页不会被旧逻辑覆盖。",
+  "granted_at": "2026-09-04T03:06:35.951794+00:00",
+  "expires_at": "2026-09-04T03:21:35.951794+00:00",
+  "one_shot": true
+}

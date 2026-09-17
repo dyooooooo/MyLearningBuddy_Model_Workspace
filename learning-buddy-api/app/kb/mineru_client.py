@@ -21,8 +21,8 @@ from app.kb.settings import KbMineruRuntime, require_export_config
 logger = logging.getLogger(__name__)
 
 _SUBMIT_S = 60.0
-_UPLOAD_S = 300.0
-_DOWNLOAD_S = 300.0
+_UPLOAD_S = 600.0
+_DOWNLOAD_S = 900.0
 _POLL_S = 4.0
 _MAX_ZIP_BYTES = 500 * 1024 * 1024
 _MAX_ZIP_FILES = 5_000
@@ -49,11 +49,58 @@ _PERSIST_PATTERNS = (
 )
 
 
-def persist_workdir(workdir: Path, dest: Path) -> dict[str, str]:
-    """Copy MinerU Cloud JSON out of the temp zip into ``dest``.
+def persist_official_markdown(
+    workdir: Path,
+    dest: Path,
+    markdown: str = "",
+) -> str:
+    """Copy MinerU's official ``.md`` (prefer ``full.md``) into ``dest/full.md``."""
+    dest.mkdir(parents=True, exist_ok=True)
+    md_files = sorted(p for p in workdir.rglob("*.md") if p.is_file())
+    preferred = [p for p in md_files if p.name.lower() == "full.md"]
+    src = (preferred or md_files)[0] if (preferred or md_files) else None
+    target = dest / "full.md"
+    if src is not None:
+        if src.name.lower() != "full.md":
+            shutil.copy2(src, dest / src.name)
+        if src.resolve() != target.resolve():
+            shutil.copy2(src, target)
+        return "full.md"
+    text = markdown or ""
+    if text.strip():
+        target.write_text(text, encoding="utf-8")
+        return "full.md"
+    return ""
+
+
+def persist_official_images(workdir: Path, dest: Path) -> int:
+    """Copy MinerU zip ``images/`` next to official Markdown so relative paths resolve."""
+    images_dir = workdir / "images"
+    if not images_dir.is_dir():
+        nested = next((p for p in workdir.rglob("images") if p.is_dir()), None)
+        images_dir = nested or images_dir
+    if not images_dir.is_dir():
+        return 0
+    target = dest / "images"
+    target.mkdir(parents=True, exist_ok=True)
+    copied = 0
+    for src in sorted(images_dir.iterdir()):
+        if not src.is_file():
+            continue
+        dest_file = target / src.name
+        if src.resolve() == dest_file.resolve():
+            copied += 1
+            continue
+        shutil.copy2(src, dest_file)
+        copied += 1
+    return copied
+
+
+def persist_workdir(workdir: Path, dest: Path, markdown: str = "") -> dict[str, str]:
+    """Copy MinerU Cloud JSON and official Markdown out of the temp zip into ``dest``.
 
     Official zip (non-HTML): content_list / content_list_v2 / layout.json
-    (≈ middle.json) / model.json.
+    (≈ middle.json) / model.json / ``full.md`` or ``*.md`` / ``images/``.
     """
     dest.mkdir(parents=True, exist_ok=True)
     found: dict[str, str] = {}
@@ -68,6 +115,12 @@ def persist_workdir(workdir: Path, dest: Path) -> dict[str, str]:
         src = matches[0]
         shutil.copy2(src, dest / src.name)
         found[label] = src.name
+    md_name = persist_official_markdown(workdir, dest, markdown)
+    if md_name:
+        found["markdown"] = md_name
+    n_img = persist_official_images(workdir, dest)
+    if n_img:
+        found["images"] = str(n_img)
     return found
 
 
@@ -159,10 +212,9 @@ def parse_pdf(
         pdf_path.write_bytes(pdf_bytes)
         workdir = _run_cloud(pdf_path, tmp / "out", runtime, page_ranges=page_ranges)
         dest = Path(persist_dir) if persist_dir else None
-        if dest is not None:
-            persist_workdir(workdir, dest)
         markdown, blocks = _read_workdir(workdir)
         if dest is not None:
+            persist_workdir(workdir, dest, markdown=markdown)
             dest.mkdir(parents=True, exist_ok=True)
             (dest / "blocks.json").write_text(
                 json.dumps(blocks, ensure_ascii=False),

@@ -16,17 +16,25 @@ export function jobConversationId(job: {
   return raw;
 }
 
-/** Chat started by「导入教材完成后」task — should take the dock. */
+/** Import-chain job that should take the dock. */
 export function isImportChatJob(job: {
   kind?: string;
   payload?: Record<string, unknown> | null;
 }): boolean {
-  if (job.kind !== "chat") return false;
   const payload = job.payload && typeof job.payload === "object" ? job.payload : {};
+  const taskId = String(payload.task_id || "");
+  if (job.kind === "printed_toc") {
+    return taskId === "import-book-toc" || Boolean(jobConversationId(job));
+  }
+  if (job.kind === "convert") {
+    return Boolean(jobConversationId(job));
+  }
+  if (job.kind !== "chat") return false;
   const trigger = String(payload.trigger || "");
   if (trigger === "kb.import.completed") return true;
   if (trigger === "kb.import.dropped") return true;
   if (trigger === "task.import-page-refine.completed") return true;
-  if (String(payload.task_id || "") === "import-page-refine") return true;
+  if (trigger === "task.import-book-toc.completed") return true;
+  if (taskId === "import-page-refine" || taskId === "import-book-toc" || taskId === "write-toc-pages") return true;
   return String(payload.message || "").includes("教材已导入完成");
 }

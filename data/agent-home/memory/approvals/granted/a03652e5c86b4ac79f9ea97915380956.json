@@ -1,0 +1,17 @@
+{
+  "req_id": "a03652e5c86b4ac79f9ea97915380956",
+  "status": "granted",
+  "path": "tools/tag_chemistry.py",
+  "scope": "tag_chemistry 与 page-body 画面",
+  "tool_name": "request_code_edit",
+  "job_id": "1f6730e4-d3b4-4631-ab79-f22ba14cb740",
+  "conversation_id": "7873dc67-71c7-41f4-9702-8421995ac50d",
+  "requested_at": "2026-09-03T07:46:05.532689+00:00",
+  "situation": "化学必修第1册第17页的「资料库」是右侧虚线镶嵌框，现在被摊成通栏章节：栏内篇名「半透膜」升成了 ##，进了左栏目录；后面的「实验探究」也被拆散。用户要求改完后在整段资料库正文下面加一条虚线，把资料库和后面的实验探究隔开；并把这套改法写进已有的 tag_chemistry，不要另起栏名。书页画面还没有可画底部虚线的围栏；现有解析器遇到内层 ::: 会提前结束，不能把资料库整块套在 kb-section-icon 外面。",
+  "why": "虚线不是官方 Markdown 能写的样式，必须中间围栏加书页画面才能显出来。资料库的栏内篇名、正文收束和底部隔线是化学教材共性，不是这一册的特例；用户已规定化学专属版式都进 tag_chemistry 的 apply_chemistry_shapes，导入清洗完成后自动跑。画面只加一个通用的尾部虚线围栏，不写科目分支，化学工具负责在资料库正文后插入。不改 tag_section_icons、build_toc、improve_render。",
+  "changes": "工具 tools/tag_chemistry.py：在 apply_chemistry_shapes 里接上资料库形状。源页把紧接栏名的短篇名（如半透膜、硫）从 ## 降成加粗，不要当目录节；中间文件保留 kb-section-icon，在资料库正文结束后插入 ::: kb-dash，不包裹表或图。遇到实验探究、化学史话、拓展视野等下一栏或正文章节就收束。栏目说明页不动。第17页同时补回「实验探究」、剥掉页首误放的实验图标，丁达尔不要居中。更新 manifest 说明和技能 tag-chemistry。\n画面 page-body：围栏名表加 kb-dash，画成底部虚线；theme.css 写一条 dashed；补金样；保护选择器与 bare-math 同步。金样全绿再 reload_surfaces。不改解析器套娃规则。本书 toc.json 只删「半透膜」这一条，不改 build_toc。",
+  "impact": "只有科目是化学、类型是教材的书会被 tag_chemistry 改写资料库段。读页时资料库正文下面多一条虚线，和实验探究等正文栏拉开；栏内短篇名不再当左栏节。其他科目不跑这个工具，画面多一个通用围栏名，没有该围栏的页不变。不做真双栏浮动，不把资料库整框截图。若金样失败则不上线新画面。",
+  "granted_at": "2026-09-04T02:39:29.764943+00:00",
+  "expires_at": "2026-09-04T02:54:29.764943+00:00",
+  "one_shot": true
+}

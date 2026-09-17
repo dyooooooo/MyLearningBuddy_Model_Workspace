@@ -23,13 +23,16 @@ from datetime import datetime, timezone
 import json
 import logging
 from pathlib import Path
-import tempfile
 from typing import Any
+
+from deeptutor.services.file_io import atomic_write_json
 
 logger = logging.getLogger(__name__)
 
 META_FILENAME = "meta.json"
 PROVIDER = "lightrag"
+ADAPTER_SCHEMA = 2
+PUBLISHED_STATE = "published"
 
 # Glob patterns LightRAG writes once it has actually built chunk/vector data.
 # A graphml file alone is not enough: LightRAG creates an empty graph at startup
@@ -40,27 +43,31 @@ _SUCCESS_STATUSES = {"processed", "completed", "done", "success", "indexed"}
 _FAILED_STATUSES = {"failed", "error"}
 
 
-def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=str(path.parent), delete=False
-    ) as handle:
-        json.dump(payload, handle, indent=2, ensure_ascii=False)
-        handle.write("\n")
-        tmp_path = Path(handle.name)
-    tmp_path.replace(path)
-
-
 def working_dir(root_dir: Path) -> Path:
     """LightRAG's working dir == the version-N root."""
     return Path(root_dir)
+
+
+def _store_root(root_dir: Path) -> Path:
+    """Resolve native workspace storage while retaining legacy flat reads."""
+    root = Path(root_dir)
+    if (root / _DOC_STATUS_FILENAME).exists() or any(root.glob("vdb_*.json")):
+        return root
+    meta = _read_meta(root)
+    workspace = str((meta or {}).get("workspace") or "").strip()
+    if not workspace:
+        from .engine import workspace_for
+
+        workspace = workspace_for(root)
+    candidate = root / workspace
+    return candidate if candidate.is_dir() else root
 
 
 def has_output(root_dir: Path | None) -> bool:
     """True when LightRAG has at least one successfully indexed document."""
     if root_dir is None:
         return False
-    root = Path(root_dir)
+    root = _store_root(Path(root_dir))
     if not root.is_dir():
         return False
 
@@ -103,7 +110,7 @@ def failure_summary(root_dir: Path | None, *, limit: int = 3) -> str:
     """Return a short human-readable summary of failed LightRAG documents."""
     if root_dir is None:
         return ""
-    payload = _read_doc_status(Path(root_dir))
+    payload = _read_doc_status(_store_root(Path(root_dir)))
     if not payload:
         return ""
 
@@ -126,7 +133,7 @@ def document_error(root_dir: Path | None, doc_id: str) -> str:
     """Return the stored LightRAG error for one document, if present."""
     if root_dir is None or not doc_id:
         return ""
-    payload = _read_doc_status(Path(root_dir))
+    payload = _read_doc_status(_store_root(Path(root_dir)))
     if not payload:
         return ""
     item = payload.get(doc_id)
@@ -152,6 +159,58 @@ def _read_doc_status(root_dir: Path) -> dict[str, Any] | None:
         return None
 
 
+def has_any_doc_status(root_dir: Path | None) -> bool:
+    if root_dir is None:
+        return False
+    payload = _read_doc_status(_store_root(Path(root_dir)))
+    return bool(payload)
+
+
+def _read_meta(root_dir: Path) -> dict[str, Any] | None:
+    path = Path(root_dir) / META_FILENAME
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def meta_is_native_published(root_dir: Path | None) -> bool:
+    if root_dir is None:
+        return False
+    meta = _read_meta(Path(root_dir))
+    return bool(
+        meta
+        and meta.get("provider") == PROVIDER
+        and meta.get("signature") == PROVIDER
+        and meta.get("lightrag_adapter_schema") == ADAPTER_SCHEMA
+        and meta.get("parser_bridge_schema") == 1
+        and meta.get("state") == PUBLISHED_STATE
+        and has_output(Path(root_dir))
+    )
+
+
+def _parser_inputs(root_dir: Path) -> list[dict[str, str]]:
+    from .ingress import bundles_root, load_verified_bundle
+
+    records: set[tuple[str, str]] = set()
+    for bundle in sorted(bundles_root(root_dir).glob("*.bundle")):
+        canonical_name = bundle.name.removesuffix(".bundle")
+        manifest, _ = load_verified_bundle(root_dir, canonical_name)
+        parser = manifest.get("parser")
+        if not isinstance(parser, dict):
+            continue
+        records.add(
+            (
+                str(parser.get("engine") or ""),
+                str(parser.get("parser_signature") or ""),
+            )
+        )
+    return [
+        {"engine": engine, "parser_signature": signature} for engine, signature in sorted(records)
+    ]
+
+
 def write_meta(root_dir: Path) -> None:
     """Write a flat-layout ``meta.json`` so the version lists as ready.
 
@@ -163,16 +222,27 @@ def write_meta(root_dir: Path) -> None:
     """
     from deeptutor.services.rag.embedding_signature import embedding_meta_fields
 
+    from .engine import installed_version, workspace_for
+
     target = Path(root_dir)
+    previous = _read_meta(target) or {}
+    now = datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z"
     payload = {
         "version": target.name,
         "signature": PROVIDER,
         "provider": PROVIDER,
+        "state": PUBLISHED_STATE,
+        "lightrag_adapter_schema": ADAPTER_SCHEMA,
+        "lightrag_package_version": installed_version(),
+        "parser_bridge_schema": 1,
+        "parser_inputs": _parser_inputs(target),
+        "workspace": workspace_for(target),
         "layout": "flat",
-        "created_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
+        "created_at": str(previous.get("created_at") or now),
+        "updated_at": now,
         **embedding_meta_fields(),
     }
-    _atomic_write_json(target / META_FILENAME, payload)
+    atomic_write_json(target / META_FILENAME, payload)
 
 
 __all__ = [
@@ -180,7 +250,9 @@ __all__ = [
     "PROVIDER",
     "document_error",
     "failure_summary",
+    "has_any_doc_status",
     "working_dir",
     "has_output",
+    "meta_is_native_published",
     "write_meta",
 ]

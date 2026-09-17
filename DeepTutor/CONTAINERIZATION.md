@@ -90,6 +90,84 @@ Notes:
   the name. The `deeptutor-data` volume keeps your settings and workspace
   across restarts.
 
+### Temporary local Codex OAuth bridge
+
+OpenAI Codex redirects the browser to fixed loopback ports `1455` or `1457`.
+The default container network is separate from the host loopback, so publish
+both ports to the Web frontend only while signing in. Both host ports must be
+free before starting the temporary bridge.
+
+For `docker run`, stop the normal container and temporarily rerun the same
+image and data volume with two extra loopback-only mappings:
+
+```bash
+docker run --rm --name deeptutor \
+  -p 127.0.0.1:3782:3782 \
+  -p 127.0.0.1:1455:3782 \
+  -p 127.0.0.1:1457:3782 \
+  -v deeptutor-data:/app/data \
+  ghcr.io/hkuds/deeptutor:latest
+```
+
+For Compose, add the same temporary overlay to the base file you normally use:
+
+```bash
+# Source build with sidecars
+python scripts/docker_compose.py \
+  -f docker-compose.yml -f compose.codex-oauth.yaml \
+  up -d --force-recreate deeptutor
+
+# Pre-built GHCR image
+python scripts/docker_compose.py \
+  -f docker-compose.ghcr.yml -f compose.codex-oauth.yaml \
+  up -d --force-recreate deeptutor
+
+# Rootless Podman
+podman compose -f compose.yaml -f compose.codex-oauth.yaml \
+  up -d --force-recreate deeptutor
+```
+
+Complete **Settings → Models → OpenAI Codex → Sign in with Codex**. After the
+status changes to **Connected**, stop the temporary `docker run` container and
+return to the normal command above. For Compose, rerun the same base command
+without `compose.codex-oauth.yaml`; keep `--force-recreate deeptutor` so the
+temporary port bindings are removed.
+
+This releases host ports `1455` and `1457`; credentials remain in the persistent
+`/app/data/system` tree. Bind every callback mapping to `127.0.0.1` and never
+expose it on a LAN or public interface — the overlay publishes the **whole**
+frontend on those two ports, not just `/auth/callback`. For a manual
+`docker run` whose container-side frontend port is not `3782`, change the
+right-hand `3782` targets; `scripts/docker_compose.py` handles configured
+custom ports. For single-container installs, set `sandbox_allow_subprocess`
+to `false` if model-generated code must not share the container trust
+boundary with secrets.
+
+### One-time migration: `docker-compose.ghcr.yml` now mounts all of `./data`
+
+`docker-compose.ghcr.yml` used to bind-mount only three subtrees
+(`data/user`, `data/memory`, `data/knowledge_bases`), so everything else —
+`data/system` (the JWT signing secret, accounts, grants, audit log, per-owner
+Codex tokens), `data/users` (per-user workspaces), `data/partners`,
+`data/cli-apps` — lived in the container's writable layer and was discarded
+on every recreate. It now mounts the whole tree, matching
+`docker-compose.yml` and `compose.yaml`.
+
+**Before your first `up -d` after upgrading**, copy that state out of the
+running container, or the empty host directories shadow it and DeepTutor
+regenerates the auth secret (logging everyone out) and starts with no
+non-admin accounts:
+
+```bash
+for tree in system users partners cli-apps; do
+  docker cp "deeptutor:/app/data/$tree" "./data/$tree" 2>/dev/null || true
+done
+```
+
+Deployments using a named volume (`-v deeptutor-data:/app/data`) or the
+source-build Compose file were never affected — they already persisted the
+whole tree.
+
 ### Remote / reverse-proxy deployments
 
 For the common **single-container** case (this image), you do **not** need
@@ -238,19 +316,29 @@ podman run --rm -d --name deeptutor \
   ghcr.io/hkuds/deeptutor:latest
 ```
 
-After the container is up, the backend and frontend run as the non-root
-`deeptutor` user — `podman exec deeptutor ps -o user,pid,comm` shows
-`supervisord` as root (PID 1) with its `uvicorn`/`node` children as
-`deeptutor` (UID 1000).
+After the container is up, the backend and frontend always run as the
+non-root `deeptutor` user (UID 1000) — `podman exec deeptutor ps -o user,pid,comm`
+shows the `uvicorn`/`node` children as `deeptutor`. `supervisord` itself
+(PID 1) runs as whatever UID the runtime started it with: root under rootful
+Docker/Podman, or the host user under rootless podman + `userns_mode: keep-id`.
 
-### Known minor follow-up
+### Supervisord pidfile
 
-`supervisord` emits
-`CRIT could not write pidfile /var/run/supervisord.pid` on startup
-because `/var/run` tmpfs is `mode=0755` (owned by root) and the
-now-unprivileged PID 1 can't write there. Children still spawn fine and
-reach RUNNING state. The fix is `mode=1777` on `/var/run` (matching
-`/tmp`); deferred to keep this PR focused.
+The `[supervisord]` section carries **no `user=` directive**, so supervisord
+runs as PID 1's UID and never tries to drop its own privilege; only its child
+programs are dropped to `deeptutor` via the per-program `user=` directives.
+Pinning `user=root` here (an earlier design) broke rootless keep-id, where
+PID 1 is the non-root host user and lacks `CAP_SETUID`: supervisord refuses to
+drop privilege and exits at startup with `Can't drop privilege as nonroot
+user` (see supervisord's `options.py`).
+
+The pidfile is written to **`/tmp/supervisord.pid`**. `/tmp` is `mode=1777`
+(world-writable) in every run configuration above, so the pidfile is writable
+whether PID 1 is root or the host UID, and regardless of who owns `/var/run`.
+An earlier build pointed the pidfile at the root-owned `/var/run/supervisord.pid`;
+under rootless keep-id the non-root PID 1 couldn't write it and logged a
+cosmetic `CRIT could not write pidfile` on every start. Putting it in `/tmp`
+removes that dependency on the `/var/run` owner and mode entirely.
 
 ---
 
@@ -317,11 +405,11 @@ you've wired up an external user store.
 
 ## Troubleshooting
 
-**`/var/run/supervisord.pid: Permission denied` on container start.**
-Expected with `read_only: true` and `/var/run` tmpfs at `mode=0755`. The
-supervised children still come up; only the `supervisord` master logs
-this. Fix: change the tmpfs mode to `1777` (match `/tmp`) — see the
-known follow-up note above.
+**`CRIT could not write pidfile /var/run/supervisord.pid` on container start.**
+Only on images built before the pidfile moved to `/tmp/supervisord.pid`
+(`mode=1777`, always writable); current images don't emit it. The supervised
+children come up either way — the line was always cosmetic. Fix: pull a
+current image (or, on an old one, set the `/var/run` tmpfs to `mode=1777`).
 
 **Page loads but Settings says "Backend unreachable".** The UI reaches the
 backend through the in-container proxy, not a host port, so this is almost

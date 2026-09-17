@@ -11,11 +11,13 @@ import {
   convertSequenceFenceToMermaid,
   processMarkdownContent,
 } from "@/lib/latex";
+import { findCitationAnchor } from "@/lib/markdown-anchors";
 import {
   citationAnchorIdFor,
   escapeUnknownHtmlTagsForDisplay,
   markdownUrlTransform,
   normalizeMarkdownForDisplay,
+  safeDecodeURIComponent,
 } from "@/lib/markdown-display";
 import {
   InlineFileCard,
@@ -23,7 +25,14 @@ import {
   parseAttachmentHref,
   useInlineFileCardContext,
 } from "@/components/common/InlineFileCard";
-import type { MarkdownRendererProps } from "./MarkdownRenderer";
+import type { MarkdownRendererProps } from "./markdown-renderer-types";
+import {
+  extractMarkdownText as extractText,
+  hasRenderableDetailsBody,
+  hasRenderableMarkdownChildren as hasRenderableChildren,
+  markdownHeadingId as headingId,
+  stripLeadingMarkdownHashes as stripLeadingHashes,
+} from "./markdown-renderer-core";
 
 function MermaidLoading() {
   const { t } = useTranslation();
@@ -54,63 +63,6 @@ type PluginBundle = {
   rehypeKatex?: unknown;
   rehypeRaw?: unknown;
 };
-
-function extractText(children: React.ReactNode): string {
-  return React.Children.toArray(children)
-    .map((child) => {
-      if (typeof child === "string" || typeof child === "number") {
-        return String(child);
-      }
-
-      if (React.isValidElement<{ children?: React.ReactNode }>(child)) {
-        return extractText(child.props.children);
-      }
-
-      return "";
-    })
-    .join("");
-}
-
-function headingId(children: React.ReactNode): string | undefined {
-  const text = extractText(children)
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
-  return text || undefined;
-}
-
-function hasRenderableChildren(children: React.ReactNode): boolean {
-  return (
-    extractText(children).replace(/[\s\u200B-\u200D\uFEFF]/g, "").length > 0
-  );
-}
-
-function hasRenderableDetailsBody(children: React.ReactNode): boolean {
-  return React.Children.toArray(children).some((child) => {
-    if (typeof child === "string" || typeof child === "number") {
-      return String(child).replace(/[\s\u200B-\u200D\uFEFF]/g, "").length > 0;
-    }
-
-    if (!React.isValidElement(child)) return false;
-    if (
-      typeof child.type === "string" &&
-      child.type.toLowerCase() === "summary"
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
-function stripLeadingHashes(children: React.ReactNode): React.ReactNode {
-  const arr = React.Children.toArray(children);
-  if (arr.length > 0 && typeof arr[0] === "string") {
-    const cleaned = arr[0].replace(/^#{1,6}\s+/, "");
-    if (cleaned !== arr[0]) return [cleaned, ...arr.slice(1)];
-  }
-  return children;
-}
 
 function sourceLineAttr(node: any): { "data-source-line"?: number } {
   const line = node?.position?.start?.line;
@@ -156,6 +108,7 @@ export default function RichMarkdownRenderer({
   enableMath = false,
   enableCode = false,
   enableMermaid = false,
+  enableImages = true,
   allowHtml = false,
   trackSourceLines = false,
 }: MarkdownRendererProps) {
@@ -542,6 +495,9 @@ export default function RichMarkdownRenderer({
       }
 
       if (isMultiline) {
+        // Code-block appearance settings apply only when rich code rendering is enabled.
+        // This static fallback keeps disabled-code surfaces readable without
+        // silently applying syntax theme, line-number, or wrapping preferences.
         return (
           <div
             className={`md-code-block ${gap} overflow-hidden rounded-xl border border-[var(--border)] bg-[#1f2937]`}
@@ -580,19 +536,7 @@ export default function RichMarkdownRenderer({
         const ids = label.split(/\s*,\s*/);
         const scrollToRef = (event: React.MouseEvent, id?: string) => {
           event.preventDefault();
-          const hashTarget =
-            id && citationAnchorIdFor(id)
-              ? citationAnchorIdFor(id)
-              : href?.startsWith("#")
-                ? decodeURIComponent(href.slice(1))
-                : "references";
-          const target =
-            document.getElementById(hashTarget || "") ??
-            document.getElementById("references");
-          const parentDetails = target?.closest("details");
-          if (parentDetails instanceof HTMLDetailsElement) {
-            parentDetails.open = true;
-          }
+          const target = findCitationAnchor(href, id);
           if (target) scrollAnchorIntoView(target);
         };
         return (
@@ -644,7 +588,7 @@ export default function RichMarkdownRenderer({
             if (!isHashLink || !href) return;
 
             event.preventDefault();
-            const targetId = decodeURIComponent(href.slice(1));
+            const targetId = safeDecodeURIComponent(href.slice(1));
             const target = document.getElementById(targetId);
             if (target) scrollAnchorIntoView(target);
           }}
@@ -655,16 +599,17 @@ export default function RichMarkdownRenderer({
         </a>
       );
     },
-    img: ({ node, src, alt, ...props }: any) => (
-      <img
-        src={src}
-        alt={alt || ""}
-        loading="lazy"
-        className={`${gap} inline-block max-w-full rounded-lg border border-[var(--border)]`}
-        {...lineAttr(node)}
-        {...props}
-      />
-    ),
+    img: ({ node, src, alt, ...props }: any) =>
+      enableImages ? (
+        <img
+          src={src}
+          alt={alt || ""}
+          loading="lazy"
+          className={`${gap} inline-block max-w-full rounded-lg border border-[var(--border)]`}
+          {...lineAttr(node)}
+          {...props}
+        />
+      ) : null,
     blockquote: ({ node, ...props }: any) => (
       <blockquote
         className={`${gap} border-l-[3px] border-[var(--muted-foreground)] pl-4 italic text-[var(--muted-foreground)] [&>p]:mb-1`}
@@ -718,7 +663,14 @@ export default function RichMarkdownRenderer({
   const components = useMemo(
     () => (isTrace ? traceComponents : normalComponents),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- components only change with variant/feature flags
-    [isTrace, variant, enableMermaid, enableCode, trackSourceLines],
+    [
+      isTrace,
+      variant,
+      enableMermaid,
+      enableCode,
+      enableImages,
+      trackSourceLines,
+    ],
   );
 
   const rootClasses = isTrace

@@ -17,6 +17,7 @@ from .config import (
     RetrievalConfig,
     retrieval_config_from_settings,
 )
+from .rerank import rerank_nodes
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,25 @@ def _set_similarity_top_k(retriever: Any, top_k: int) -> Any:
     return retriever
 
 
+def _corpus_size(index: Any) -> int | None:
+    """Best-effort count of indexed nodes (the BM25 corpus size)."""
+    docstore = getattr(index, "docstore", None)
+    docs = getattr(docstore, "docs", None)
+    if isinstance(docs, dict):
+        return len(docs)
+    return None
+
+
 def build_bm25_retriever(index: Any, storage_dir: Path, *, top_k: int) -> Any | None:
     """Build or load LlamaIndex's official BM25 retriever if available."""
     top_k = max(1, int(top_k))
+    # BM25 raises ("k of N is larger than the number of available scores") when
+    # similarity_top_k exceeds the corpus size — so a small knowledge base (e.g. a
+    # single short document) would crash hybrid retrieval at query time. Clamp to
+    # the node count so it returns what it has instead of erroring.
+    corpus_size = _corpus_size(index)
+    if corpus_size:
+        top_k = min(top_k, corpus_size)
     bm25_cls = _import_bm25_retriever()
     if bm25_cls is None:
         logger.info(
@@ -135,9 +152,38 @@ def build_retriever(
     return index.as_retriever(similarity_top_k=top_k)
 
 
+def retrieve_nodes(
+    index: Any,
+    storage_dir: Path,
+    query: str,
+    *,
+    top_k: int = 5,
+) -> list[Any]:
+    """Run first-stage retrieval and the optional cross-encoder reranker."""
+    config = retrieval_config_from_settings()
+    candidate_top_k = config.rerank_candidate_top_k(top_k)
+    retriever = build_retriever(
+        index,
+        storage_dir,
+        top_k=candidate_top_k,
+        config=config,
+    )
+    candidates = retriever.retrieve(query)
+    if not config.reranker_model:
+        return candidates[: max(1, int(top_k))]
+
+    return rerank_nodes(
+        query,
+        candidates,
+        top_k=top_k,
+        model_name=config.reranker_model,
+    )
+
+
 __all__ = [
     "BM25_PERSIST_DIRNAME",
     "build_bm25_retriever",
     "build_retriever",
     "persist_bm25_retriever",
+    "retrieve_nodes",
 ]

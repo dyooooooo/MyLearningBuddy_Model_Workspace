@@ -3,10 +3,12 @@
 import React, { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { findCitationAnchor } from "@/lib/markdown-anchors";
 import {
   citationAnchorIdFor,
   markdownUrlTransform,
   normalizeMarkdownForDisplay,
+  safeDecodeURIComponent,
 } from "@/lib/markdown-display";
 import {
   InlineFileCard,
@@ -14,64 +16,14 @@ import {
   parseAttachmentHref,
   useInlineFileCardContext,
 } from "@/components/common/InlineFileCard";
-import type { MarkdownRendererProps } from "./MarkdownRenderer";
-
-function extractText(children: React.ReactNode): string {
-  return React.Children.toArray(children)
-    .map((child) => {
-      if (typeof child === "string" || typeof child === "number") {
-        return String(child);
-      }
-
-      if (React.isValidElement<{ children?: React.ReactNode }>(child)) {
-        return extractText(child.props.children);
-      }
-
-      return "";
-    })
-    .join("");
-}
-
-function headingId(children: React.ReactNode): string | undefined {
-  const text = extractText(children)
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-");
-  return text || undefined;
-}
-
-function hasRenderableChildren(children: React.ReactNode): boolean {
-  return (
-    extractText(children).replace(/[\s\u200B-\u200D\uFEFF]/g, "").length > 0
-  );
-}
-
-function hasRenderableDetailsBody(children: React.ReactNode): boolean {
-  return React.Children.toArray(children).some((child) => {
-    if (typeof child === "string" || typeof child === "number") {
-      return String(child).replace(/[\s\u200B-\u200D\uFEFF]/g, "").length > 0;
-    }
-
-    if (!React.isValidElement(child)) return false;
-    if (
-      typeof child.type === "string" &&
-      child.type.toLowerCase() === "summary"
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
-function stripLeadingHashes(children: React.ReactNode): React.ReactNode {
-  const arr = React.Children.toArray(children);
-  if (arr.length > 0 && typeof arr[0] === "string") {
-    const cleaned = arr[0].replace(/^#{1,6}\s+/, "");
-    if (cleaned !== arr[0]) return [cleaned, ...arr.slice(1)];
-  }
-  return children;
-}
+import type { MarkdownRendererProps } from "./markdown-renderer-types";
+import {
+  extractMarkdownText as extractText,
+  hasRenderableDetailsBody,
+  hasRenderableMarkdownChildren as hasRenderableChildren,
+  markdownHeadingId as headingId,
+  stripLeadingMarkdownHashes as stripLeadingHashes,
+} from "./markdown-renderer-core";
 
 export default function SimpleMarkdownRenderer({
   content,
@@ -320,10 +272,10 @@ export default function SimpleMarkdownRenderer({
       const raw = String(children).replace(/\n$/, "");
 
       if (raw.includes("\n")) {
-        // Use the same #1f2937 / #e5e7eb palette as RichMarkdownRenderer and
-        // RichCodeBlock so any stream-time fallback from Rich → Simple (or
-        // first-paint via Simple before the rich lock engages) looks visually
-        // identical to its rich counterpart.
+        // Compatibility fallback: keep multiline code readable when rich
+        // rendering is unavailable. This intentionally does not consume the
+        // code-block theme registry or line-number/wrapping settings; those
+        // apply only through RichCodeBlock when rich code rendering is enabled.
         return (
           <div
             className={`md-code-block ${gap} overflow-hidden rounded-xl border border-[var(--border)] bg-[#1f2937]`}
@@ -361,19 +313,7 @@ export default function SimpleMarkdownRenderer({
         const ids = label.split(/\s*,\s*/);
         const scrollToRef = (event: React.MouseEvent, id?: string) => {
           event.preventDefault();
-          const hashTarget =
-            id && citationAnchorIdFor(id)
-              ? citationAnchorIdFor(id)
-              : href?.startsWith("#")
-                ? decodeURIComponent(href.slice(1))
-                : "references";
-          const target =
-            document.getElementById(hashTarget || "") ??
-            document.getElementById("references");
-          const parentDetails = target?.closest("details");
-          if (parentDetails instanceof HTMLDetailsElement) {
-            parentDetails.open = true;
-          }
+          const target = findCitationAnchor(href, id);
           target?.scrollIntoView({ block: "start", behavior: "smooth" });
         };
         return (
@@ -425,7 +365,7 @@ export default function SimpleMarkdownRenderer({
             if (!isHashLink || !href) return;
 
             event.preventDefault();
-            const targetId = decodeURIComponent(href.slice(1));
+            const targetId = safeDecodeURIComponent(href.slice(1));
             const target = document.getElementById(targetId);
             target?.scrollIntoView({ block: "start", behavior: "smooth" });
           }}

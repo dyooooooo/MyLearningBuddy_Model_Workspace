@@ -2,30 +2,38 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from pathlib import Path
 from statistics import median
+from typing import Any
 
 CN_NUM_TOKEN = r"\d+|[一二三四五六七八九十两零百]+"
-CHAPTER_LINE = re.compile(rf"^第\s*({CN_NUM_TOKEN})\s*章\s+(.+)$")
-PART_LINE = re.compile(rf"^第\s*({CN_NUM_TOKEN})\s*部分(?:\s+(.+))?$")
+CHAPTER_LINE = re.compile(rf"^第\s*({CN_NUM_TOKEN})\s*章[\s·．.、]*(.+)$")
+PART_LINE = re.compile(rf"^第\s*({CN_NUM_TOKEN})\s*部分(?:[\s·．.、]+(.+))?$")
+SECTION_JIE_LINE = re.compile(rf"^第\s*({CN_NUM_TOKEN})\s*节[\s·．.、]*(.+)$")
+PAGE_SLASH = re.compile(r"\s*/\s*(\d{1,4})$")
+PAGE_SPACE = re.compile(r"\s+(\d{1,4})$")
+PAGE_TAIL = re.compile(r"[ .\u3000．…·•、]+$")
 TOC_DOT3 = re.compile(r"^(\*?)(\d+\.\d+\.\d+)(?!\.\d)\s+(.+?)\s+(\d+)\s*$")
 TOC_SECTION = re.compile(r"^(\*?)(\d+\.\d+)(?!\.\d)\s+(.+?)\s+(\d+)\s*$")
 TOC_NAMED = re.compile(r"^(内容提要|复习题)\s+(\d+)\s*$")
-TOC_SIMPLE_SUB = re.compile(r"^(\*?)([1-9]\d{0,1})\s+(.+?)\s+(\d+)\s*$")
-INTRO_LINE = re.compile(r"^引\s*论(?:\s+(\d+))?$")
-APPENDIX_HEAD = re.compile(r"^附\s*录$")
+TOC_SIMPLE_SUB = re.compile(r"^(\*?)([1-9]\d{0,1})\s+(?!(?:世纪|年代))(.+?)\s+(\d+)\s*$")
+INTRO_LINE = re.compile(r"^(?:引\s*论|绪\s*言)(?:\s+(\d+))?$")
+APPENDIX_HEAD = re.compile(r"^附\s*录$", re.I)
 APPENDIX_ITEM = re.compile(r"^附录\s*(\d+)\s+(.+?)\s+(\d+)\s*$")
 BODY_DOT3 = re.compile(r"^(\*?)(\d+\.\d+\.\d+)(?!\.\d)\s+(.+?)$")
 BODY_SECTION = re.compile(r"^(\*?)(\d+\.\d+)(?!\.\d)(?:\s+(.+))?$")
 SUBSECTION = re.compile(
-    r"^(\*?)([1-9]\d{0,1})\s+([一-鿿]"
+    r"^(\*?)([1-9]\d{0,1})\s+(?!(?:世纪|年代))([一-鿿]"
     r"[一-鿿A-Za-z0-9、与及的之至和（）()·—－\-《》]{0,40})$"
 )
 UNNUMBERED = re.compile(
     r"^([一-鿿][一-鿿、与及的之至和（）() ]{2,36})$"
 )
 SENTENCE_PUNCT = re.compile(r"[。．.!?！？：:;；，,]")
-NAMED_HEADING = re.compile(r"^(前言|后记|目录|目 录|内容提要|复习题|引论|附录)$")
+NAMED_HEADING = re.compile(
+    r"^(前言|后记|目录|目 录|内容提要|复习题|引论|绪言|附录|本章复习|本章小结)$"
+)
 FRONT = re.compile(r"^前\s*言$")
 BACK = re.compile(r"^后\s*记$")
 LATIN_UNIT_LINE = re.compile(r"^(\d+)\s+([A-Z][A-Za-z][A-Za-z0-9’' \-]*)$")
@@ -80,7 +88,10 @@ SKIP_UNNUMBERED = {
     "前言",
     "后记",
     "引论",
+    "绪言",
     "附录",
+    "本章复习",
+    "本章小结",
     "目录",
     "目 录",
     "上海教育出版社",
@@ -91,6 +102,81 @@ SKIP_UNNUMBERED = {
     "定理",
 }
 SKIP_PREFIXES = ("证明", "定理", "例", "练习", "解")
+
+
+def _lexicon() -> Any:
+    """Shared lexicon module (same directory). None when it cannot be loaded.
+
+    buddy-api 也会按路径加载本文件，那边 `tools/` 未必在 `sys.path` 上，
+    所以先试普通 import，再按同目录路径加载。
+    """
+    global _LEXICON
+    if _LEXICON is not None:
+        return _LEXICON or None
+    try:
+        import toc_lexicon as lex  # type: ignore[import-not-found]
+    except Exception:
+        lex = None
+    if lex is None:
+        import importlib.util
+
+        path = Path(__file__).resolve().parent / "toc_lexicon.py"
+        if path.is_file():
+            spec = importlib.util.spec_from_file_location("toc_lexicon", path)
+            if spec is not None and spec.loader is not None:
+                module = importlib.util.module_from_spec(spec)
+                sys.modules.setdefault("toc_lexicon", module)
+                try:
+                    spec.loader.exec_module(module)
+                    lex = module
+                except Exception:
+                    sys.modules.pop("toc_lexicon", None)
+                    lex = None
+    _LEXICON = lex if lex is not None else False
+    return _LEXICON or None
+
+
+_LEXICON: Any = None
+
+
+def _bind_lexicon() -> None:
+    """Prefer the shared lexicon over the built-in fallback regexes."""
+    global CHAPTER_LINE, PART_LINE, SECTION_JIE_LINE
+    lex = _lexicon()
+    if lex is None:
+        return
+    chapter = lex.compiled("chapter_cn")
+    part = lex.compiled("part_cn")
+    jie = lex.compiled("section_cn_jie")
+    if chapter is not None:
+        CHAPTER_LINE = chapter
+    if part is not None:
+        PART_LINE = part
+    if jie is not None:
+        SECTION_JIE_LINE = jie
+
+
+_bind_lexicon()
+
+
+def _strip_page(text: str) -> tuple[str, int | None]:
+    lex = _lexicon()
+    if lex is not None:
+        try:
+            return lex.strip_page(text)
+        except Exception:
+            pass
+    raw = (text or "").strip()
+    if not raw:
+        return "", None
+    for regex in (PAGE_SLASH, PAGE_SPACE):
+        match = regex.search(raw)
+        if not match:
+            continue
+        label = PAGE_TAIL.sub("", raw[: match.start()]).strip()
+        if label:
+            return label, int(match.group(1))
+    return raw, None
 
 
 def _pdf_from_name(path: Path) -> int:
@@ -134,17 +220,32 @@ def _num_key(num: str) -> tuple[int, ...]:
     return tuple(int(part) for part in (num or "").split(".") if part.isdigit())
 
 
+def _atx_depth(raw: str) -> tuple[str, int]:
+    text = (raw or "").strip()
+    hashes = 0
+    while hashes < len(text) and hashes < 6 and text[hashes] == "#":
+        hashes += 1
+    if hashes and (hashes == len(text) or text[hashes].isspace()):
+        return text[hashes:].strip(), hashes
+    return ATX.sub("", text).strip(), 0
+
+
 def _clean_lines(text: str) -> list[str]:
-    lines: list[str] = []
+    return [line for line, _depth in _clean_lines_marked(text)]
+
+
+def _clean_lines_marked(text: str) -> list[tuple[str, int]]:
+    """Flatten markup but keep ATX heading depth (0 if the line is not a heading)."""
+    lines: list[tuple[str, int]] = []
     for raw in _flatten_markup(text).splitlines():
-        line = ATX.sub("", raw.strip()).strip()
+        line, depth = _atx_depth(raw)
         line = re.sub(r"^\$\$\s+", "", line)
         line = GLUED_MATH.sub(r"\1 ", line)
         if not line:
             continue
         if line.startswith("![") or line.startswith("{'type'") or line.startswith("*{'type'"):
             continue
-        lines.append(re.sub(r"\s+", " ", line))
+        lines.append((re.sub(r"\s+", " ", line), depth))
     return lines
 
 
@@ -176,6 +277,86 @@ def _is_latin_unit_line(line: str) -> bool:
     return bool(LATIN_UNIT_LINE.match(text) or _is_latin_group_bare(text))
 
 
+def _trim_leader(text: str) -> str:
+    return PAGE_TAIL.sub("", (text or "").strip()).strip()
+
+
+def _catalog_probe(line: str) -> str:
+    label, _page = _strip_page(line)
+    return label or (line or "").strip()
+
+
+def _lex_hit(line: str) -> Any:
+    lex = _lexicon()
+    if lex is None:
+        return None
+    probe = _catalog_probe(line)
+    if not probe:
+        return None
+    try:
+        return lex.match_line(probe)
+    except Exception:
+        return None
+
+
+def _rejected_title(label: str) -> bool:
+    lex = _lexicon()
+    if lex is not None:
+        try:
+            return bool(lex.rejected_title(label))
+        except Exception:
+            pass
+    return bool(re.match(r"^\d+\s*(世纪|年代)", (label or "").strip()))
+
+
+def _is_column_title(label: str) -> bool:
+    lex = _lexicon()
+    if lex is None:
+        return False
+    try:
+        return bool(lex.is_column_label(label))
+    except Exception:
+        return False
+
+
+def _printed_intro_label(line: str) -> str:
+    compact = _norm_title(_catalog_probe(line) or line)
+    if "绪言" in compact:
+        return "绪言"
+    return "引论"
+
+
+def _is_cn_catalog_line(line: str) -> bool:
+    probe = _catalog_probe(line)
+    if not probe:
+        return False
+    lex = _lexicon()
+    if lex is not None:
+        try:
+            if lex.has_skip_prefix(probe) or lex.rejected_title(probe):
+                return False
+            if lex.match_line(probe) is not None:
+                return True
+        except Exception:
+            pass
+    return bool(
+        CHAPTER_LINE.match(probe)
+        or CHAPTER_LINE.match(line)
+        or PART_LINE.match(probe)
+        or PART_LINE.match(line)
+        or SECTION_JIE_LINE.match(probe)
+        or SECTION_JIE_LINE.match(line)
+        or TOC_DOT3.match(line)
+        or TOC_SECTION.match(line)
+        or TOC_NAMED.match(line)
+        or INTRO_LINE.match(line)
+        or INTRO_LINE.match(probe)
+        or APPENDIX_HEAD.match(probe)
+        or APPENDIX_HEAD.match(line)
+        or APPENDIX_ITEM.match(line)
+    )
+
+
 def _is_toc_page(lines: list[str]) -> bool:
     if not lines:
         return False
@@ -184,16 +365,7 @@ def _is_toc_page(lines: list[str]) -> bool:
     hits = 0
     en_hits = 0
     for line in lines:
-        if (
-            CHAPTER_LINE.match(line)
-            or PART_LINE.match(line)
-            or TOC_DOT3.match(line)
-            or TOC_SECTION.match(line)
-            or TOC_NAMED.match(line)
-            or INTRO_LINE.match(line)
-            or APPENDIX_HEAD.match(line)
-            or APPENDIX_ITEM.match(line)
-        ):
+        if _is_cn_catalog_line(line):
             hits += 1
         if (
             _is_latin_unit_line(line)
@@ -207,8 +379,50 @@ def _is_toc_page(lines: list[str]) -> bool:
     return hits >= 3 and hits * 2 >= len(lines)
 
 
+def _has_section_print(lines: list[str]) -> bool:
+    for line in lines:
+        label, page = _strip_page(line)
+        if page is None:
+            continue
+        probe = label or line
+        hit = _lex_hit(line)
+        if hit is not None and hit.id in {"toc_section", "toc_dot3"}:
+            return True
+        if TOC_SECTION.match(line) or re.match(r"^(\*?)\d+\.\d+(?!\.\d)\s+", probe or ""):
+            return True
+    return False
+
+
+def _is_toc_continuation(lines: list[str], prev_was_toc: bool) -> bool:
+    """Previous printed-catalog page plus X.Y+page or at least two catalog hits.
+
+    An appendix-head-only body page must not qualify.
+    """
+    if not prev_was_toc or not lines:
+        return False
+    if _is_toc_page(lines):
+        return True
+    if _has_section_print(lines):
+        return True
+    hits = sum(1 for line in lines if _is_cn_catalog_line(line))
+    return hits >= 2
+
+
 def _norm_title(text: str) -> str:
     return re.sub(r"\s+", "", text or "")
+
+
+def _chapter_key(label: str) -> str:
+    text = (label or "").strip()
+    match = CHAPTER_LINE.match(text) or re.match(
+        rf"^第\s*({CN_NUM_TOKEN})\s*章[\s·．.、]*(.*)$", text
+    )
+    if match:
+        num = _as_int(match.group(1))
+        rest = _norm_title(match.group(2) if match.lastindex and match.lastindex >= 2 else "")
+        if num is not None:
+            return f"第{num}章{rest}"
+    return _norm_title(text)
 
 
 def _as_int(token: str) -> int | None:
@@ -254,12 +468,25 @@ def _fix_group_title(title: str) -> str:
 
 
 def _is_intro_heading(line: str) -> bool:
-    return _norm_title(line) == "引论" or bool(INTRO_LINE.match(line or ""))
+    probe = _catalog_probe(line)
+    compact = _norm_title(probe or line)
+    if compact in {"引论", "绪言"}:
+        return True
+    hit = _lex_hit(line)
+    if hit is not None and hit.id == "intro":
+        return True
+    return bool(INTRO_LINE.match(probe or line or ""))
 
 
 def _is_appendix_heading(line: str) -> bool:
-    compact = _norm_title(line)
-    return compact == "附录" or compact.lower() == "appendices" or bool(APPENDIX_HEAD.match(line or ""))
+    probe = _catalog_probe(line)
+    compact = _norm_title(probe or line)
+    if compact == "附录" or compact.lower() == "appendices":
+        return True
+    hit = _lex_hit(line)
+    if hit is not None and hit.id == "appendix_head":
+        return True
+    return bool(APPENDIX_HEAD.match(probe or line or ""))
 
 
 def _is_front_heading(line: str) -> bool:
@@ -288,14 +515,30 @@ def _parent_of_dot3(num: str) -> str:
     return ".".join(parts[:2])
 
 
-def _entry(label: str, print_page: int | None, level: int, pdf_page: int, is_chapter: bool = False) -> dict:
-    return {
+def _entry(
+    label: str,
+    print_page: int | None,
+    level: int,
+    pdf_page: int,
+    is_chapter: bool = False,
+    from_body: bool = False,
+) -> dict:
+    """One toc.json row.
+
+    `from_body=True` 表示这条不是从书里印的目录页读来的，而是 `toc_extract` 去正文里
+    扒的小节标题。两者的 `print_page` 都是有值的（正文那批按 offset 反推），所以光看
+    有没有页码分不出来源 —— `write_toc_pages` 靠这个标记决定哪些不该印回目录页。
+    """
+    row = {
         "label": label,
         "print_page": print_page,
         "is_chapter": is_chapter,
         "level": 0 if is_chapter else level,
         "pdf_page": pdf_page,
     }
+    if from_body:
+        row["from_body"] = True
+    return row
 
 
 def _agent_home(root: str) -> Path:
@@ -335,14 +578,120 @@ def _pick_book(base: Path, book_id: str) -> Path | None:
     return chosen[0] if chosen else None
 
 
+def _mineru_block_text(block: dict) -> str:
+    content = block.get("content")
+    if isinstance(content, dict):
+        chunks: list[str] = []
+        for key in ("paragraph_content", "title_content", "text"):
+            raw = content.get(key)
+            if isinstance(raw, list):
+                for item in raw:
+                    if isinstance(item, dict):
+                        piece = str(item.get("content") or "").strip()
+                        if piece:
+                            chunks.append(piece)
+                    elif str(raw).strip():
+                        chunks.append(str(item))
+            elif isinstance(raw, str) and raw.strip():
+                chunks.append(raw.strip())
+        if chunks:
+            return "\n".join(chunks)
+    text = block.get("text")
+    return str(text).strip() if isinstance(text, str) else ""
+
+
+def _mineru_page_texts(book: Path) -> dict[int, str]:
+    path = book / "mineru" / "blocks.json"
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(data, list):
+        return {}
+    pages: dict[int, list[str]] = {}
+    for block in data:
+        if not isinstance(block, dict):
+            continue
+        try:
+            pdf_page = int(block.get("page_idx") or -1) + 1
+        except (TypeError, ValueError):
+            continue
+        if pdf_page <= 0:
+            continue
+        text = _mineru_block_text(block)
+        if text:
+            pages.setdefault(pdf_page, []).append(text)
+    return {page: "\n".join(parts) for page, parts in pages.items()}
+
+
+def _prepare_lines(lines: list[str]) -> list[str]:
+    lex = _lexicon()
+    prepare = getattr(lex, "prepare_catalog_lines", None) if lex is not None else None
+    if callable(prepare):
+        try:
+            return list(prepare(lines))
+        except Exception:
+            return list(lines)
+    return list(lines)
+
+
+def _catalog_score(lines: list[str]) -> int:
+    return sum(1 for line in lines if _is_cn_catalog_line(line))
+
+
+def _pdf_layout_line_sets(book: Path, pdf_page: int) -> list[list[str]]:
+    pdf_path = book / "book.pdf"
+    if not pdf_path.is_file():
+        return []
+    try:
+        from toc_pdf import page_layout_candidates
+    except Exception:
+        return []
+    out: list[list[str]] = []
+    for blob in page_layout_candidates(pdf_path, pdf_page):
+        lines = _clean_lines(blob)
+        if lines:
+            out.append(lines)
+    return out
+
+
 def _load_pages(book: Path) -> list[tuple[int, Path, list[str]]]:
+    mineru_texts = _mineru_page_texts(book)
     pages: list[tuple[int, Path, list[str]]] = []
+    prev_was_toc = False
     for path in sorted((book / "pages").glob("*.md")):
         pdf_page = _pdf_from_name(path)
         if pdf_page <= 0:
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
-        pages.append((pdf_page, path, _clean_lines(text)))
+        md_lines = _clean_lines(text)
+        mu_lines = _clean_lines(mineru_texts.get(pdf_page, "")) if mineru_texts.get(pdf_page) else []
+        md_hits = _catalog_score(md_lines)
+        mu_hits = _catalog_score(mu_lines)
+        body_lines = mu_lines if mu_hits > md_hits else md_lines
+        probe = pdf_page <= 16 or _is_toc_page(md_lines) or _is_toc_page(mu_lines) or prev_was_toc
+        pdf_preps = [_prepare_lines(rows) for rows in _pdf_layout_line_sets(book, pdf_page)] if probe else []
+        best_pdf = max(pdf_preps, key=_catalog_score) if pdf_preps else []
+        # Prefer the original PDF layout on catalog pages. pages/*.md may already
+        # be a write_toc_pages reprint and must not outrank the printed sheet.
+        if best_pdf and _catalog_score(best_pdf) >= 3:
+            pages.append((pdf_page, path, best_pdf))
+            prev_was_toc = True
+            continue
+        prepared = [_prepare_lines(rows) for rows in (md_lines, mu_lines) if rows]
+        if not prepared:
+            pages.append((pdf_page, path, body_lines))
+            prev_was_toc = False
+            continue
+        best = max(prepared, key=lambda rows: (_catalog_score(rows), len(rows)))
+        if _is_toc_page(best) or _is_toc_continuation(best, prev_was_toc):
+            pages.append((pdf_page, path, best))
+            prev_was_toc = True
+        else:
+            pages.append((pdf_page, path, body_lines))
+            prev_was_toc = False
     return pages
 
 
@@ -472,6 +821,7 @@ def _scan_group_heads(
 ) -> list[dict]:
     """从正文回补印刷目录漏掉的引论 / 第N部分 / 附录。"""
     intro_pdf = 0
+    intro_label = ""
     appendix_pdf = 0
     part_first: dict[int, int] = {}
     part_title: dict[int, str] = {}
@@ -482,6 +832,7 @@ def _scan_group_heads(
             continue
         if _is_intro_heading(lines[0]):
             intro_pdf = intro_pdf or pdf_page
+            intro_label = intro_label or _printed_intro_label(lines[0])
         if _is_appendix_heading(lines[0]):
             appendix_pdf = appendix_pdf or pdf_page
         for line in lines[:4]:
@@ -515,7 +866,12 @@ def _scan_group_heads(
     recovered: list[dict] = []
     if intro_pdf:
         recovered.append(
-            {"kind": "chapter", "label": "引论", "print_page": None, "pdf_page": intro_pdf}
+            {
+                "kind": "chapter",
+                "label": intro_label or "引论",
+                "print_page": None,
+                "pdf_page": intro_pdf,
+            }
         )
     for num in sorted(part_first):
         recovered.append(
@@ -535,6 +891,11 @@ def _scan_group_heads(
 
 def _has_group_head(skeleton: list[dict], head: dict) -> bool:
     label = str(head.get("label") or "")
+    if _is_intro_heading(label):
+        return any(
+            item.get("kind") == "chapter" and _is_intro_heading(str(item.get("label") or ""))
+            for item in skeleton
+        )
     want = _norm_title(label)
     want_part = _part_num_from_label(label)
     for item in skeleton:
@@ -566,7 +927,7 @@ def _merge_group_heads(skeleton: list[dict], recovered: list[dict], offset: int)
                     item["label"] = head["label"]
             continue
         label = str(head.get("label") or "")
-        if _norm_title(label) == "引论" and offset and head.get("pdf_page"):
+        if _is_intro_heading(label) and offset and head.get("pdf_page"):
             guessed = int(head["pdf_page"]) - int(offset)
             if guessed > 0 and head.get("print_page") is None:
                 head["print_page"] = guessed
@@ -594,7 +955,7 @@ def _merge_group_heads(skeleton: list[dict], recovered: list[dict], offset: int)
 
 
 def _line_identity(line: str) -> tuple | None:
-    text = ATX.sub("", (line or "").strip()).strip()
+    text, _page = _strip_page(ATX.sub("", (line or "").strip()).strip())
     if not text:
         return None
     if _is_contents_title(text):
@@ -626,6 +987,9 @@ def _line_identity(line: str) -> tuple | None:
     chapter = CHAPTER_LINE.match(text)
     if chapter:
         return ("chapter", _as_int(chapter.group(1)))
+    jie = SECTION_JIE_LINE.match(text)
+    if jie:
+        return ("jie", _as_int(jie.group(1)), _norm_title(jie.group(2)))
     section = TOC_SECTION.match(text)
     if section:
         return ("section", section.group(2))
@@ -642,7 +1006,7 @@ def _item_identity(item: dict) -> tuple | None:
     kind = item.get("kind")
     label = str(item.get("label") or "")
     if kind == "chapter":
-        if _norm_title(label) == "引论":
+        if _is_intro_heading(label):
             return ("intro",)
         if _norm_title(label) in {"附录", "appendices"}:
             return ("appendix",)
@@ -748,9 +1112,9 @@ def _patch_printed_toc(book: Path, toc_pages: list[int], skeleton: list[dict]) -
         present.add(ident)
         dirty.add(target)
         inserted.append(str(item.get("label") or new_line))
-    for page_idx in dirty:
-        _pdf, path, lines = loaded[page_idx]
-        path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+    # Directory pages are written only by write_toc_pages (stamp + gate).
+    # Keep inserted labels for the return value; do not touch pages/ here.
+    _ = dirty
     return inserted
 
 
@@ -782,6 +1146,216 @@ def _load_agent_toc(book: Path) -> dict:
     return _read_sidecar(book / "toc_agent.json")
 
 
+def _load_printed_toc(book: Path) -> dict:
+    """Agent 看图核对后的印刷目录侧车。文件在就当权威，不再词法重读目录页。"""
+    data = _read_sidecar(book / "toc_printed.json")
+    if not data:
+        return {"present": False, "toc_pages": [], "entries": []}
+    pages: list[int] = []
+    for raw in data.get("toc_pages") or []:
+        try:
+            page = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if page > 0:
+            pages.append(page)
+    entries = [
+        row
+        for row in (data.get("entries") or [])
+        if isinstance(row, dict) and str(row.get("label") or "").strip()
+    ]
+    return {
+        "present": True,
+        "ok": bool(data.get("ok", True)),
+        "toc_pages": sorted(set(pages)),
+        "entries": entries,
+        "winner": str(data.get("winner") or ""),
+    }
+
+
+def _printed_print_page(row: dict) -> int | None:
+    raw = row.get("print_page")
+    if raw is None or raw == "":
+        return None
+    try:
+        page = int(raw)
+    except (TypeError, ValueError):
+        return None
+    return page if page > 0 else None
+
+
+def _skeleton_from_printed(entries: list[dict]) -> list[dict]:
+    """把 toc_printed.json 的条目收成内部骨架。只靠标题形状，不读目录页文本。"""
+    skeleton: list[dict] = []
+    current_chapter = ""
+    last_section = ""
+    for row in entries:
+        label = str(row.get("label") or "").strip()
+        if not label:
+            continue
+        print_page = _printed_print_page(row)
+        try:
+            level = int(row.get("level") or (0 if row.get("is_chapter") else 1))
+        except (TypeError, ValueError):
+            level = 1
+        is_chapter = bool(row.get("is_chapter")) or level <= 0
+        probe = label
+
+        latin_line = _strip_unit_tail(label)
+        latin_unit = LATIN_UNIT_LINE.match(latin_line)
+        if latin_unit or _is_latin_group_bare(latin_line):
+            last_section = ""
+            if latin_unit:
+                current_chapter = latin_unit.group(1)
+                item_label = f"{latin_unit.group(1)} {latin_unit.group(2).strip()}"
+            else:
+                current_chapter = latin_line
+                item_label = latin_line
+            skeleton.append({"kind": "chapter", "label": item_label, "print_page": print_page})
+            continue
+
+        letter_body = LETTER_BODY_SECTION.match(label)
+        if letter_body:
+            letter, title = letter_body.groups()
+            last_section = f"{current_chapter}.{letter}" if current_chapter else letter
+            skeleton.append(
+                {
+                    "kind": "section",
+                    "label": f"{letter} {title.strip()}",
+                    "num": last_section,
+                    "print_page": print_page,
+                }
+            )
+            continue
+
+        if SELF_ASSESS.match(label) or _norm_title(label) == "selfassessment":
+            last_section = ""
+            skeleton.append({"kind": "named", "label": "Self-assessment", "print_page": print_page})
+            continue
+
+        chapter = CHAPTER_LINE.match(probe)
+        if chapter:
+            last_section = ""
+            ch_num = _as_int(chapter.group(1))
+            ch_token = str(ch_num) if ch_num is not None else chapter.group(1)
+            current_chapter = ch_token
+            skeleton.append(
+                {
+                    "kind": "chapter",
+                    "label": f"第{ch_token}章 {chapter.group(2).strip()}",
+                    "print_page": print_page,
+                }
+            )
+            continue
+
+        part = PART_LINE.match(probe)
+        if part:
+            last_section = ""
+            part_num = _as_int(part.group(1))
+            title = _fix_group_title(part.group(2) or "")
+            if part_num is not None:
+                item_label = _part_label(part_num, title)
+            else:
+                item_label = f"第{part.group(1)}部分 {title}".strip()
+            current_chapter = f"bu{part_num if part_num is not None else part.group(1)}"
+            skeleton.append({"kind": "chapter", "label": item_label, "print_page": print_page})
+            continue
+
+        jie = SECTION_JIE_LINE.match(probe)
+        if jie:
+            last_section = f"jie:{current_chapter or 0}:{_as_int(jie.group(1))}"
+            skeleton.append(
+                {
+                    "kind": "section",
+                    "label": probe,
+                    "num": last_section,
+                    "print_page": print_page,
+                    "level": 1,
+                }
+            )
+            continue
+
+        if _is_intro_heading(probe):
+            last_section = ""
+            current_chapter = "yinlun"
+            skeleton.append(
+                {
+                    "kind": "chapter",
+                    "label": _printed_intro_label(probe),
+                    "print_page": print_page,
+                }
+            )
+            continue
+
+        if _is_appendix_heading(probe):
+            last_section = ""
+            current_chapter = "fulu"
+            skeleton.append({"kind": "chapter", "label": "附录", "print_page": print_page})
+            continue
+
+        app_bare = re.match(r"^附录\s*(\d+)\s+(.+)$", probe)
+        if app_bare:
+            last_section = ""
+            skeleton.append(
+                {
+                    "kind": "named",
+                    "label": f"附录{app_bare.group(1)} {app_bare.group(2).strip()}",
+                    "num": f"附录{app_bare.group(1)}",
+                    "print_page": print_page,
+                }
+            )
+            continue
+
+        if BODY_DOT3.match(probe) or TOC_DOT3.match(label):
+            continue
+
+        bare_sec = re.match(r"^(\*?)(\d+\.\d+)(?!\.\d)\s+(.+)$", probe)
+        if bare_sec:
+            star, num, title = bare_sec.groups()
+            last_section = num
+            skeleton.append(
+                {
+                    "kind": "section",
+                    "label": f"{star}{num} {_trim_leader(title)}",
+                    "num": num,
+                    "print_page": print_page,
+                }
+            )
+            continue
+
+        if probe in {"内容提要", "复习题"} or TOC_NAMED.match(probe):
+            last_section = ""
+            named = TOC_NAMED.match(probe)
+            skeleton.append(
+                {
+                    "kind": "named",
+                    "label": named.group(1) if named else probe,
+                    "print_page": print_page,
+                }
+            )
+            continue
+
+        if _is_back_heading(probe) or _is_front_heading(probe):
+            last_section = ""
+            skeleton.append(
+                {
+                    "kind": "chapter",
+                    "label": "后记" if _is_back_heading(probe) else "前言",
+                    "print_page": print_page,
+                }
+            )
+            continue
+
+        if is_chapter:
+            last_section = ""
+            skeleton.append({"kind": "chapter", "label": label, "print_page": print_page})
+            continue
+
+        last_section = ""
+        skeleton.append({"kind": "named", "label": label, "print_page": print_page, "level": 1})
+    return _dedupe_catalog_rows(skeleton)
+
+
 def _parse_catalog(
     pages: list[tuple[int, Path, list[str]]],
     known_toc_pages: list[int] | None = None,
@@ -791,17 +1365,26 @@ def _parse_catalog(
     catalog_subs: list[dict] = []
     last_section = ""
     current_unit = ""
+    # 「第N节」的节号每章都从 1 重新起算，所以 num 必须带上章号，否则第 2 章的
+    # 「第一节」会在 body_sections 里覆盖第 1 章的「第一节」，全书节页码塌成最后一章。
+    current_chapter = ""
     known = {int(p) for p in (known_toc_pages or []) if int(p) > 0}
+    prev_was_toc = False
     for _pdf_page, _path, lines in pages:
         if known:
             if _pdf_page not in known:
+                prev_was_toc = False
                 continue
-        elif not _is_toc_page(lines):
+        elif not (_is_toc_page(lines) or _is_toc_continuation(lines, prev_was_toc)):
+            prev_was_toc = False
             continue
         toc_pages.append(_pdf_page)
-        for line in lines:
+        prev_was_toc = True
+        for line in _prepare_lines(lines):
             if _is_contents_title(line):
                 continue
+            stripped_label, stripped_page = _strip_page(line)
+            probe = stripped_label or line
             latin_line = _strip_unit_tail(line)
             latin_unit = LATIN_UNIT_LINE.match(latin_line)
             if latin_unit or _is_latin_group_bare(latin_line):
@@ -813,6 +1396,7 @@ def _parse_catalog(
                     title = latin_line
                     current_unit = title
                     label = title
+                current_chapter = current_unit
                 skeleton.append({"kind": "chapter", "label": label, "print_page": None})
                 continue
             letter_sec = LETTER_SECTION.match(line)
@@ -851,20 +1435,21 @@ def _parse_catalog(
                     }
                 )
                 continue
-            chapter = CHAPTER_LINE.match(line)
+            chapter = CHAPTER_LINE.match(probe) or CHAPTER_LINE.match(line)
             if chapter:
                 last_section = ""
                 ch_num = _as_int(chapter.group(1))
                 ch_token = str(ch_num) if ch_num is not None else chapter.group(1)
+                current_chapter = ch_token
                 skeleton.append(
                     {
                         "kind": "chapter",
                         "label": f"第{ch_token}章 {chapter.group(2).strip()}",
-                        "print_page": None,
+                        "print_page": stripped_page,
                     }
                 )
                 continue
-            part = PART_LINE.match(line)
+            part = PART_LINE.match(probe) or PART_LINE.match(line)
             if part:
                 last_section = ""
                 part_num = _as_int(part.group(1))
@@ -873,22 +1458,37 @@ def _parse_catalog(
                     label = _part_label(part_num, title)
                 else:
                     label = f"第{part.group(1)}部分 {title}".strip()
-                skeleton.append({"kind": "chapter", "label": label, "print_page": None})
+                current_chapter = f"bu{part_num if part_num is not None else part.group(1)}"
+                skeleton.append({"kind": "chapter", "label": label, "print_page": stripped_page})
                 continue
-            if _is_intro_heading(line):
-                last_section = ""
-                intro = INTRO_LINE.match(line)
+            jie = SECTION_JIE_LINE.match(probe) or SECTION_JIE_LINE.match(line)
+            if jie:
+                last_section = f"jie:{current_chapter or 0}:{_as_int(jie.group(1))}"
                 skeleton.append(
                     {
-                        "kind": "chapter",
-                        "label": "引论",
-                        "print_page": int(intro.group(1)) if intro and intro.group(1) else None,
+                        "kind": "section",
+                        "label": probe,
+                        "num": last_section,
+                        "print_page": stripped_page,
+                        "level": 1,
                     }
                 )
                 continue
-            if _is_appendix_heading(line):
+            if _is_intro_heading(line) or _is_intro_heading(probe):
                 last_section = ""
-                skeleton.append({"kind": "chapter", "label": "附录", "print_page": None})
+                current_chapter = "yinlun"
+                skeleton.append(
+                    {
+                        "kind": "chapter",
+                        "label": _printed_intro_label(probe or line),
+                        "print_page": stripped_page,
+                    }
+                )
+                continue
+            if _is_appendix_heading(line) or _is_appendix_heading(probe):
+                last_section = ""
+                current_chapter = "fulu"
+                skeleton.append({"kind": "chapter", "label": "附录", "print_page": stripped_page})
                 continue
             appendix_item = APPENDIX_ITEM.match(line)
             if appendix_item:
@@ -908,7 +1508,7 @@ def _parse_catalog(
                 catalog_subs.append(
                     {
                         "kind": "dotted",
-                        "label": f"{star}{num} {title.strip()}",
+                        "label": f"{star}{num} {_trim_leader(title)}",
                         "num": num,
                         "parent": _parent_of_dot3(num),
                         "print_page": int(print_page),
@@ -916,15 +1516,24 @@ def _parse_catalog(
                 )
                 continue
             section = TOC_SECTION.match(line)
+            if not section:
+                bare = re.match(r"^(\*?)(\d+\.\d+)(?!\.\d)\s+(.+)$", probe)
+                if bare and stripped_page is not None:
+                    section = bare
             if section:
-                star, num, title, print_page = section.groups()
+                if len(section.groups()) == 4:
+                    star, num, title, print_page = section.groups()
+                    print_page = int(print_page)
+                else:
+                    star, num, title = section.groups()
+                    print_page = stripped_page
                 last_section = num
                 skeleton.append(
                     {
                         "kind": "section",
-                        "label": f"{star}{num} {title.strip()}",
+                        "label": f"{star}{num} {_trim_leader(title)}",
                         "num": num,
-                        "print_page": int(print_page),
+                        "print_page": print_page,
                     }
                 )
                 continue
@@ -939,14 +1548,36 @@ def _parse_catalog(
                     }
                 )
                 continue
+            hit = _lex_hit(line)
+            if hit is not None and hit.id == "named_cn" and not _rejected_title(probe):
+                last_section = ""
+                skeleton.append(
+                    {
+                        "kind": "named",
+                        "label": probe,
+                        "print_page": stripped_page,
+                    }
+                )
+                continue
+            if hit is not None and hit.id == "appendix_roman" and not _rejected_title(probe):
+                last_section = ""
+                skeleton.append(
+                    {
+                        "kind": "named",
+                        "label": probe,
+                        "print_page": stripped_page,
+                        "num": f"附录{probe[:1]}",
+                    }
+                )
+                continue
             simple = TOC_SIMPLE_SUB.match(line)
-            if simple:
+            if simple and not _rejected_title(f"{simple.group(2)} {simple.group(3)}"):
                 star, num, title, print_page = simple.groups()
                 if last_section and "." in str(last_section):
                     catalog_subs.append(
                         {
                             "kind": "simple",
-                            "label": f"{star}{num} {title.strip()}",
+                            "label": f"{star}{num} {_trim_leader(title)}",
                             "num": int(num),
                             "parent": last_section,
                             "print_page": int(print_page),
@@ -957,21 +1588,86 @@ def _parse_catalog(
                     skeleton.append(
                         {
                             "kind": "section",
-                            "label": f"{star}{num} {title.strip()}",
+                            "label": f"{star}{num} {_trim_leader(title)}",
                             "num": num,
                             "print_page": int(print_page),
                         }
                     )
-    return toc_pages, skeleton, catalog_subs
+                continue
+            skip_prefix = False
+            lex = _lexicon()
+            if lex is not None:
+                try:
+                    skip_prefix = bool(lex.has_skip_prefix(probe))
+                except Exception:
+                    skip_prefix = False
+            if (
+                stripped_page is not None
+                and probe
+                and not _is_contents_title(probe)
+                and not _rejected_title(probe)
+                and not _is_column_title(probe)
+                and not skip_prefix
+            ):
+                last_section = ""
+                skeleton.append(
+                    {
+                        "kind": "named",
+                        "label": probe,
+                        "print_page": stripped_page,
+                    }
+                )
+    return toc_pages, _dedupe_catalog_rows(skeleton), _dedupe_catalog_rows(catalog_subs)
+
+
+def _dedupe_catalog_rows(rows: list[dict]) -> list[dict]:
+    seen: set[tuple] = set()
+    out: list[dict] = []
+    for row in rows:
+        key = (_norm_title(str(row.get("label") or "")), row.get("print_page"), str(row.get("kind") or ""))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+    return out
 
 
 def _looks_like_chapter_title(line: str, titles: set[str]) -> bool:
     compact = _norm_title(line)
-    return compact in titles or line in titles
+    return compact in titles or line in titles or _chapter_key(line) in titles
 
 
 def _title_core(label: str) -> str:
     return _norm_title(re.sub(r"^\*?\d+(?:\.\d+)*\s*", "", label or ""))
+
+
+_JIE_HEAD = re.compile(rf"^第\s*({CN_NUM_TOKEN})\s*节\s*")
+
+
+def _jie_title_core(label: str) -> str:
+    return _norm_title(_JIE_HEAD.sub("", label or ""))
+
+
+def _assign_jie_by_title(jie_rows: list[dict], body_jie: list[tuple[int, str]]) -> None:
+    """Pair catalog 「第N节」 to body headings by title, not by zip order.
+
+    Every chapter restarts at 第1节. Zipping the two lists in reading order
+    jumps as soon as the body scan picks up one extra heading.
+    """
+    unused = list(enumerate(body_jie))
+    for item in jie_rows:
+        want = _jie_title_core(str(item.get("label") or ""))
+        if not want:
+            continue
+        hit_i = None
+        for pos, (index, (pdf_page, title)) in enumerate(unused):
+            got = _norm_title(title)
+            if got == want or (len(want) >= 6 and (want in got or got in want)):
+                item["pdf_page"] = pdf_page
+                hit_i = pos
+                break
+        if hit_i is not None:
+            unused.pop(hit_i)
 
 
 def _skip_heading(title: str, chapter_titles: set[str]) -> bool:
@@ -1159,6 +1855,10 @@ def _agent_kids_for_section(
             if num is None:
                 match = re.match(r"^\*?(\d+)\b", text)
                 num = int(match.group(1)) if match else None
+            try:
+                kid_level = int(kid.get("level") or 2)
+            except (TypeError, ValueError):
+                kid_level = 2
             out.append(
                 {
                     "kind": "simple",
@@ -1166,6 +1866,9 @@ def _agent_kids_for_section(
                     "num": num,
                     "pdf_page": pdf_page,
                     "print_page": print_page,
+                    "level": kid_level,
+                    # 来自 toc_agent.json = toc_extract 从正文扒的，不是书里印的目录
+                    "from_body": True,
                 }
             )
     return out
@@ -1329,6 +2032,23 @@ def _assign_lettered_body_pages(
                 item["pdf_page"] = pdf_page
 
 
+def _toc_diff_summary(prev: list, nxt: list) -> dict:
+    old_map = {
+        (str(item.get("label") or ""), item.get("print_page")): item.get("level")
+        for item in prev
+        if isinstance(item, dict)
+    }
+    new_map = {
+        (str(item.get("label") or ""), item.get("print_page")): item.get("level")
+        for item in nxt
+        if isinstance(item, dict)
+    }
+    added = [k for k in new_map if k not in old_map]
+    removed = [k for k in old_map if k not in new_map]
+    changed = [k for k in new_map if k in old_map and old_map[k] != new_map[k]]
+    return {"added": len(added), "removed": len(removed), "level_changed": len(changed)}
+
+
 def build_toc(root: str, book_id: str = "") -> dict:
     """从书页抽出章/节/小节，写入该教材的 toc.json。"""
     base = _agent_home(root)
@@ -1342,10 +2062,16 @@ def build_toc(root: str, book_id: str = "") -> dict:
 
     mineru = _load_mineru_toc(book)
     agent = _load_agent_toc(book)
-    known_pages = list(mineru.get("toc_pages") or [])
-    toc_pages, skeleton, catalog_subs = _parse_catalog(pages, known_toc_pages=known_pages or None)
-    if known_pages and not skeleton:
-        toc_pages, skeleton, catalog_subs = _parse_catalog(pages, known_toc_pages=None)
+    printed = _load_printed_toc(book)
+    catalog_subs: list[dict] = []
+    if printed.get("present"):
+        toc_pages = list(printed.get("toc_pages") or [])
+        skeleton = _skeleton_from_printed(list(printed.get("entries") or []))
+    else:
+        known_pages = list(mineru.get("toc_pages") or [])
+        toc_pages, skeleton, catalog_subs = _parse_catalog(pages, known_toc_pages=known_pages or None)
+        if known_pages and not skeleton:
+            toc_pages, skeleton, catalog_subs = _parse_catalog(pages, known_toc_pages=None)
     skeleton = _reorder_catalog_skeleton(skeleton)
     toc_set = set(toc_pages)
     _assign_lettered_body_pages(skeleton, pages, toc_set)
@@ -1355,6 +2081,7 @@ def build_toc(root: str, book_id: str = "") -> dict:
             continue
         label = str(item["label"] or "")
         chapter_titles.add(_norm_title(label))
+        chapter_titles.add(_chapter_key(label))
         chapter_titles.add(_norm_title(re.sub(r"^第\d+(?:章|部分)\s*", "", label)))
         part = PART_LINE.match(label)
         if part:
@@ -1373,6 +2100,7 @@ def build_toc(root: str, book_id: str = "") -> dict:
     body_sections: dict[str, int] = {}
     body_section_titles: dict[str, str] = {}
     body_dot3: dict[str, int] = {}
+    body_jie: list[tuple[int, str]] = []
     front_pdf = 0
     back_pdf = 0
     chapter_openers: dict[str, int] = {}
@@ -1388,7 +2116,10 @@ def build_toc(root: str, book_id: str = "") -> dict:
         if any(_norm_title(line) == "致谢" for line in lines[:6]):
             chapter_openers.setdefault("致谢", pdf_page)
         if lines and _is_intro_heading(lines[0]):
+            printed = _printed_intro_label(lines[0])
+            chapter_openers.setdefault(printed, pdf_page)
             chapter_openers.setdefault("引论", pdf_page)
+            chapter_openers.setdefault("绪言", pdf_page)
         if lines and _is_appendix_heading(lines[0]):
             chapter_openers.setdefault("附录", pdf_page)
         for line in lines:
@@ -1404,21 +2135,35 @@ def build_toc(root: str, book_id: str = "") -> dict:
                 title = (section.group(3) or "").strip()
                 if title:
                     body_section_titles.setdefault(num, title)
+            jie_line = line
+            lex = _lexicon()
+            repair = getattr(lex, "repair_jie_heading", None) if lex is not None else None
+            if callable(repair):
+                try:
+                    jie_line = repair(line)
+                except Exception:
+                    jie_line = line
+            jie = SECTION_JIE_LINE.match(jie_line)
+            if jie:
+                body_jie.append((pdf_page, jie.group(2).strip() or jie_line))
             part = PART_LINE.match(line)
             if part:
                 part_num = _as_int(part.group(1))
                 if part_num is not None:
                     chapter_openers.setdefault(_norm_title(_part_label(part_num)), pdf_page)
             if _looks_like_chapter_title(line, chapter_titles):
+                chapter_openers.setdefault(_chapter_key(line), pdf_page)
                 chapter_openers.setdefault(_norm_title(line), pdf_page)
 
         for line in lines:
-            if BODY_DOT3.match(line) or BODY_SECTION.match(line):
+            if BODY_DOT3.match(line) or BODY_SECTION.match(line) or SECTION_JIE_LINE.match(line):
                 continue
             sub = SUBSECTION.match(line)
             if not sub:
                 continue
             _star, num, title = sub.groups()
+            if _rejected_title(f"{num} {title}") or _rejected_title(title):
+                continue
             if str(num) in plain_section_nums:
                 body_sections.setdefault(str(num), pdf_page)
                 if title:
@@ -1435,11 +2180,20 @@ def build_toc(root: str, book_id: str = "") -> dict:
                 }
             )
 
+    jie_rows = [
+        item
+        for item in skeleton
+        if item.get("kind") == "section" and str(item.get("num") or "").startswith("jie:")
+    ]
+    _assign_jie_by_title(jie_rows, body_jie)
+    # 不写回 body_sections：它按 num 索引 `1.1` 这类小数节号，`第N节` 的正文页码
+    # 已经落在 item["pdf_page"] 上，再进这个字典只会多一次跨章覆盖的机会。
+
     offsets: list[int] = []
     for item in skeleton:
         if item["kind"] not in {"section", "named"}:
             continue
-        pdf_page = body_sections.get(str(item.get("num") or ""), 0) or int(item.get("pdf_page") or 0)
+        pdf_page = int(item.get("pdf_page") or 0) or body_sections.get(str(item.get("num") or ""), 0)
         if pdf_page and item.get("print_page"):
             offsets.append(pdf_page - int(item["print_page"]))
     offset = int(median(offsets)) if offsets else 0
@@ -1458,8 +2212,12 @@ def build_toc(root: str, book_id: str = "") -> dict:
     used_agent_skeleton = False
     agent_skeleton = agent.get("skeleton_entries") if isinstance(agent.get("skeleton_entries"), list) else []
     backbone: list[dict] = []
-    if front_pdf:
+    if front_pdf and not any(_norm_title(str(item.get("label") or "")) == "前言" for item in skeleton):
         backbone.append(_entry("前言", None, 0, front_pdf, is_chapter=True))
+
+    def _has_backbone_label(label: str) -> bool:
+        want = _norm_title(label)
+        return any(_norm_title(str(item.get("label") or "")) == want for item in backbone)
 
     last_pdf = 0
     if not skeleton and agent_skeleton:
@@ -1470,6 +2228,7 @@ def build_toc(root: str, book_id: str = "") -> dict:
     for index, item in enumerate(skeleton):
         if item["kind"] == "chapter":
             keys = [
+                _chapter_key(item["label"]),
                 _norm_title(item["label"]),
                 _norm_title(re.sub(r"^第\d+(?:章|部分)\s*", "", item["label"])),
             ]
@@ -1495,9 +2254,11 @@ def build_toc(root: str, book_id: str = "") -> dict:
             continue
 
         if item["kind"] == "section":
+            # item["pdf_page"] 优先：`第N节` 的正文页在上面按阅读顺序逐个配过，
+            # 而 body_sections 只按小数节号索引，跨章会串。
             pdf_page = (
-                body_sections.get(item["num"], 0)
-                or int(item.get("pdf_page") or 0)
+                int(item.get("pdf_page") or 0)
+                or body_sections.get(item["num"], 0)
                 or print_to_pdf(item["print_page"])
             )
             last_pdf = pdf_page
@@ -1508,10 +2269,10 @@ def build_toc(root: str, book_id: str = "") -> dict:
         last_pdf = pdf_page
         backbone.append(_entry(item["label"], item["print_page"], 1, pdf_page))
 
-    if back_pdf:
+    if back_pdf and not _has_backbone_label("后记"):
         backbone.append(_entry("后记", None, 0, back_pdf, is_chapter=True))
     thanks_pdf = int(chapter_openers.get("致谢") or 0)
-    if thanks_pdf:
+    if thanks_pdf and not _has_backbone_label("致谢"):
         backbone.append(_entry("致谢", None, 0, thanks_pdf, is_chapter=True))
 
     placed: set[int] = set()
@@ -1588,7 +2349,20 @@ def build_toc(root: str, book_id: str = "") -> dict:
             if not pdf_page:
                 pdf_page = print_to_pdf(sub.get("print_page"), start_pdf)
             print_page = _guess_print(pdf_page, item, offset, sub.get("print_page"))
-            entries.append(_entry(sub["label"], print_page, 2, pdf_page))
+            kid_level = 2
+            try:
+                kid_level = int(sub.get("level") or 2)
+            except (TypeError, ValueError):
+                kid_level = 2
+            entries.append(
+                _entry(
+                    sub["label"],
+                    print_page,
+                    kid_level,
+                    pdf_page,
+                    from_body=bool(sub.get("from_body")),
+                )
+            )
 
     print_to_pdf_map: dict[str, int] = {}
     for item in entries:
@@ -1613,13 +2387,20 @@ def build_toc(root: str, book_id: str = "") -> dict:
         "source": source,
     }
     dest = book / "toc.json"
+    prev_entries: list = []
+    if dest.is_file():
+        try:
+            prev = json.loads(dest.read_text(encoding="utf-8"))
+            if isinstance(prev, dict) and isinstance(prev.get("entries"), list):
+                prev_entries = prev["entries"]
+        except (OSError, json.JSONDecodeError):
+            prev_entries = []
     dest.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    levels = {"0": 0, "1": 0, "2": 0}
+    levels: dict[str, int] = {}
     for item in entries:
-        key = str(item["level"])
-        if key in levels:
-            levels[key] += 1
+        key = str(item.get("level"))
+        levels[key] = levels.get(key, 0) + 1
 
     return {
         "ok": True,
@@ -1627,11 +2408,13 @@ def build_toc(root: str, book_id: str = "") -> dict:
         "path": str(dest),
         "entries": len(entries),
         "levels": levels,
+        "toc_diff": _toc_diff_summary(prev_entries, entries),
         "offset": offset,
         "toc_pages": toc_pages,
+        "toc_pages_dirty": list(toc_pages),
         "recovered_heads": added_heads,
         "patched_toc": patched_toc,
-        "note": "已按书页抽出章、节、小节和印张页，写入 toc.json。印刷目录漏掉的引论/第N部分/附录从正文回补并写回目录页。导入写完书页后会调用本工具。",
+        "note": "已按书页抽出章、节、小节和印张页，写入 toc.json。目录页由 write_toc_pages 落盘。",
     }
 
 

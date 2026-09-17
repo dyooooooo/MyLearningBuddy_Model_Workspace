@@ -1,0 +1,31 @@
+:host {
+  display: block;
+  box-sizing: border-box;
+  line-height: 1.65;
+  font-size: 15px;
+  color: #1b2230;
+}
+:host *, :host *::before, :host *::after { box-sizing: border-box; }
+p { margin: 0.4rem 0; text-indent: 2em; }
+h1, h2, h3, h4, h5, h6 {
+  color: #1b2230;
+  margin: 0.85rem 0 0.4rem;
+}
+h1, h2 { font-size: 1.15rem; font-weight: 700; }
+h3 { font-size: 1.08rem; font-weight: 700; }
+h4, h5, h6 { font-size: 1rem; font-weight: 600; }
+img {
+  display: block;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  margin: 1.2rem auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+em, i {
+  color: #667085; font-size: 0.88rem; font-style: normal;
+}
+table { border-collapse: collapse; margin: 0.8rem 0; width: 100%; font-size: 13px; }
+th, td { border: 1px solid #d0d7e2; padding: 0.25rem 0.45rem; }
+mjx-container { text-indent: 0; }

@@ -1,5 +1,7 @@
 "use client";
 
+import { browserStorage } from "@/shared/storage";
+
 /**
  * SessionViewerPanel — full right-side sidebar with browser-style tabs that
  * can hold (a) attachment previews and (b) embedded web pages clicked from
@@ -34,8 +36,10 @@ import {
   ExternalLink,
   FileUp,
   Globe,
+  GraduationCap,
   Loader2,
   MessageSquarePlus,
+  NotebookPen,
   Paperclip,
   X,
 } from "lucide-react";
@@ -54,8 +58,13 @@ import SubagentTabBody from "@/components/chat/home/SubagentTabBody";
 import type { QuizFollowupTabContext } from "@/context/QuizFollowupContext";
 import type { GeogebraTabPayload } from "@/context/GeogebraTabContext";
 import { apiUrl } from "@/lib/api";
-import type { MessageAttachment } from "@/context/UnifiedChatContext";
-import type { StreamEvent } from "@/lib/unified-ws";
+import type { MessageAttachment } from "@/features/chat/ChatStateAdapter";
+import type { StreamEvent } from "@/features/chat/model/protocol";
+import {
+  normalizeSelectedText,
+  selectionTutorKey,
+  type SelectionTutorContext,
+} from "@/lib/selection-tutor";
 
 const PdfPreview = dynamic(
   () => import("@/components/chat/preview/previewers/PdfPreview"),
@@ -83,6 +92,10 @@ const OfficeTextPreview = dynamic(
 );
 const FallbackPreview = dynamic(
   () => import("@/components/chat/preview/previewers/FallbackPreview"),
+);
+const ChatMarkdownNoteTabBody = dynamic(
+  () => import("@/components/chat/home/ChatMarkdownNoteTab"),
+  { ssr: false },
 );
 const Geogebra = dynamic(() => import("@/components/Geogebra"), {
   ssr: false,
@@ -115,7 +128,7 @@ function clampViewerWidth(px: number): number {
 
 function readStoredViewerWidth(): number {
   if (typeof window === "undefined") return VIEWER_WIDTH_DEFAULT;
-  const raw = window.localStorage.getItem(VIEWER_WIDTH_KEY);
+  const raw = browserStorage.readRaw("local", VIEWER_WIDTH_KEY);
   const parsed = raw ? Number(raw) : NaN;
   return Number.isFinite(parsed)
     ? clampViewerWidth(parsed)
@@ -129,8 +142,15 @@ function readStoredViewerWidth(): number {
 type ViewerTab =
   | { kind: "file"; id: string; label: string; source: FilePreviewSource }
   | { kind: "web"; id: string; label: string; url: string }
+  | { kind: "markdown-note"; id: string; label: string }
   | {
       kind: "quiz-followup";
+      id: string;
+      label: string;
+      context: QuizFollowupTabContext;
+    }
+  | {
+      kind: "selection-tutor";
       id: string;
       label: string;
       context: QuizFollowupTabContext;
@@ -152,8 +172,15 @@ type ViewerTab =
 export interface SessionViewerPanelHandle {
   openFileTab(a: MessageAttachment): void;
   openWebTab(url: string): void;
+  /** Opens the session-scoped inline Markdown editor tab. */
+  openMarkdownNoteTab(): void;
   /** Opens (or focuses) the follow-up chat tab for a quiz question. */
   openQuizFollowupTab(context: QuizFollowupTabContext): void;
+  /** Opens an independent Little Tutor thread grounded in selected chat text. */
+  openSelectionTutorTab(
+    selection: SelectionTutorContext,
+    language: string,
+  ): void;
   /** Opens (or focuses) an interactive GeoGebra applet tab. */
   openGeogebraTab(payload: GeogebraTabPayload): void;
   /** Opens (first time) or live-updates a connected subagent's run tab. */
@@ -182,8 +209,14 @@ function webTabIdFor(url: string): string {
   return `web:${url}`;
 }
 
+const markdownNoteTabId = "markdown-note";
+
 function quizFollowupTabIdFor(questionKey: string): string {
   return `quiz-followup:${questionKey}`;
+}
+
+function selectionTutorTabIdFor(questionKey: string): string {
+  return `selection-tutor:${questionKey}`;
 }
 
 function geogebraTabIdFor(payloadId: string): string {
@@ -277,7 +310,11 @@ function SessionViewerPanelInner(
       document.body.style.cursor = "";
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
-      window.localStorage.setItem(VIEWER_WIDTH_KEY, String(widthRef.current));
+      browserStorage.writeRaw(
+        "local",
+        VIEWER_WIDTH_KEY,
+        String(widthRef.current),
+      );
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -341,6 +378,24 @@ function SessionViewerPanelInner(
     [onAutoOpen],
   );
 
+  const openMarkdownNoteTab = useCallback(() => {
+    setTabs((prev) => {
+      const existingIdx = prev.findIndex((tab) => tab.id === markdownNoteTabId);
+      if (existingIdx >= 0) {
+        setActiveTabId(markdownNoteTabId);
+        return prev;
+      }
+      const next: ViewerTab = {
+        kind: "markdown-note",
+        id: markdownNoteTabId,
+        label: t("Markdown note"),
+      };
+      setActiveTabId(markdownNoteTabId);
+      return [...prev, next];
+    });
+    onAutoOpen();
+  }, [onAutoOpen, t]);
+
   const openQuizFollowupTab = useCallback(
     (context: QuizFollowupTabContext) => {
       setTabs((prev) => {
@@ -373,6 +428,65 @@ function SessionViewerPanelInner(
       onAutoOpen();
     },
     [onAutoOpen],
+  );
+
+  const openSelectionTutorTab = useCallback(
+    (selection: SelectionTutorContext, language: string) => {
+      const selectedText = normalizeSelectedText(selection.selectedText);
+      if (!selectedText) return;
+      const questionKey = selectionTutorKey(
+        selectedText,
+        sessionId,
+        selection.sourceMessageId,
+      );
+      const id = selectionTutorTabIdFor(questionKey);
+      const context: QuizFollowupTabContext = {
+        questionKey,
+        question: {
+          question_id: questionKey,
+          question: selectedText,
+          question_type: "concept",
+          correct_answer: "",
+          explanation: "",
+        },
+        userAnswer: "",
+        isCorrect: null,
+        answerImages: [],
+        aiJudgment: "",
+        parentQuizSessionId: null,
+        notebookEntryId: null,
+        followupSessionId: null,
+        language,
+        tabLabel: t("Little Tutor"),
+        tutorSelection: {
+          selectedText,
+          parentSessionId: sessionId,
+          sourceMessageId: selection.sourceMessageId,
+          sourceMessageText: selection.sourceMessageText,
+          sourceMessageRole: selection.sourceMessageRole,
+        },
+      };
+
+      setTabs((prev) => {
+        const existingIdx = prev.findIndex((tab) => tab.id === id);
+        const tab: ViewerTab = {
+          kind: "selection-tutor",
+          id,
+          label: t("Little Tutor"),
+          context,
+        };
+        if (existingIdx >= 0) {
+          const next = [...prev];
+          next[existingIdx] = tab;
+          setActiveTabId(id);
+          return next;
+        }
+        setActiveTabId(id);
+        return [...prev, tab];
+      });
+      onAutoOpen();
+    },
+    [onAutoOpen, sessionId, t],
   );
 
   const openGeogebraTab = useCallback(
@@ -447,7 +561,9 @@ function SessionViewerPanelInner(
     () => ({
       openFileTab,
       openWebTab,
+      openMarkdownNoteTab,
       openQuizFollowupTab,
+      openSelectionTutorTab,
       openGeogebraTab,
       openSubagentTab,
       focusActivityHome,
@@ -455,7 +571,9 @@ function SessionViewerPanelInner(
     [
       openFileTab,
       openWebTab,
+      openMarkdownNoteTab,
       openQuizFollowupTab,
+      openSelectionTutorTab,
       openGeogebraTab,
       openSubagentTab,
       focusActivityHome,
@@ -515,11 +633,17 @@ function SessionViewerPanelInner(
     [openFileTab],
   );
 
+  /* Below the drawer breakpoint the panel is a full-screen sheet, not a side
+     panel: there is no chat column left to sit beside, and VIEWER_WIDTH_MIN is
+     wider than the phone it would overlay. That override lives in CSS
+     (`max-md:!w-full`) rather than `useDevice()` so it is right on the first
+     paint and follows an orientation change for free — the var-driven width
+     and its drag handle stay desktop-only machinery. */
   return (
     <div
       role="dialog"
       aria-hidden={!visible}
-      className={`fixed right-0 top-0 z-[30] flex h-full max-w-[92vw] flex-col border-l border-[var(--border)] bg-[var(--card)] transition-transform ease-out ${
+      className={`fixed right-0 top-0 z-[30] flex h-dvh flex-col border-l border-[var(--border)] bg-[var(--card)] transition-transform ease-out max-md:!w-full md:max-w-[92vw] ${
         // shadow-2xl only while visible — when closed, translate-x-full moves
         // the box off-screen but its blurred shadow still bleeds ~38px back
         // onto the viewport's right edge. Dropping the shadow off-screen kills
@@ -542,7 +666,7 @@ function SessionViewerPanelInner(
         role="separator"
         aria-orientation="vertical"
         aria-label={t("Resize viewer")}
-        className="group/resize absolute left-0 top-0 z-10 h-full w-2 -translate-x-1/2 cursor-col-resize"
+        className="group/resize absolute left-0 top-0 z-10 h-full w-2 -translate-x-1/2 cursor-col-resize max-md:hidden"
       >
         <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover/resize:bg-[var(--primary)]/40" />
       </div>
@@ -560,7 +684,17 @@ function SessionViewerPanelInner(
           <FileTabBody source={activeTab.source} />
         ) : activeTab?.kind === "web" ? (
           <WebTabBody key={activeTab.url} url={activeTab.url} />
+        ) : activeTab?.kind === "markdown-note" ? (
+          <ChatMarkdownNoteTabBody
+            key={`${activeTab.id}:${sessionId ?? "pending"}`}
+            sessionId={sessionId}
+          />
         ) : activeTab?.kind === "quiz-followup" ? (
+          <QuizFollowupTabBody
+            key={activeTab.context.questionKey}
+            context={activeTab.context}
+          />
+        ) : activeTab?.kind === "selection-tutor" ? (
           <QuizFollowupTabBody
             key={activeTab.context.questionKey}
             context={activeTab.context}
@@ -644,11 +778,15 @@ function TabBar({
           const Icon =
             tab.kind === "web"
               ? Globe
-              : tab.kind === "quiz-followup"
-                ? MessageSquarePlus
-                : tab.kind === "geogebra"
-                  ? Compass
-                  : Paperclip;
+              : tab.kind === "markdown-note"
+                ? NotebookPen
+                : tab.kind === "selection-tutor"
+                  ? GraduationCap
+                  : tab.kind === "quiz-followup"
+                    ? MessageSquarePlus
+                    : tab.kind === "geogebra"
+                      ? Compass
+                      : Paperclip;
           return (
             <div
               key={tab.id}

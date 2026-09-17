@@ -11,10 +11,22 @@ page's "sync" button just re-reads it:
 * **Claude Code** has no model-list CLI; its ``--model`` takes stable aliases
   (opus / sonnet / haiku) plus any full name, and ``--effort`` a fixed set — so
   we offer those as suggestions and the UI also allows a free-text model.
+* **Kimi CLI** has no model-list surface — free text only.
+* **opencode / MiMo Code** enumerate ``provider/model`` slugs via their own
+  ``<cli> models`` command (models.dev catalog); syncing re-runs it with
+  ``--refresh``. Reasoning effort is their ``--variant`` scale.
+* **Hermes Agent / OpenClaw / DeepSeek Harness** accept free-text model ids.
+  Their official reasoning surfaces are exposed as curated suggestions while
+  still allowing the underlying config to carry newer values.
+
+Each backend kind maps to one options provider in ``_PROVIDERS`` — adding a
+backend means adding a provider here, nothing else changes.
 """
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 import json
 import logging
@@ -23,7 +35,11 @@ from pathlib import Path
 import re
 from typing import Any
 
-from deeptutor.services.subagent.process import probe_version
+from deeptutor.services.subagent.process import (
+    not_found_detail,
+    probe_version,
+    resolve_cli_command,
+)
 from deeptutor.services.subagent.registry import get_backend
 
 logger = logging.getLogger(__name__)
@@ -38,6 +54,34 @@ _CLAUDE_MODELS = (
     ("haiku", "Haiku 4.5"),
 )
 _CLAUDE_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+
+# Antigravity CLI: ``--effort`` accepts exactly these three.
+_ANTIGRAVITY_EFFORTS = ("low", "medium", "high")
+
+# opencode family: ``--variant`` — provider-relative reasoning effort.
+_OPENCODE_EFFORTS = ("minimal", "high", "max")
+
+_HERMES_EFFORTS = (
+    "none",
+    "minimal",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max",
+    "ultra",
+)
+_OPENCLAW_EFFORTS = ("off", "minimal", "low", "medium", "high", "xhigh")
+_DEEPSEEK_HARNESS_EFFORTS = (
+    "none",
+    "minimal",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max",
+    "ultra",
+)
 
 
 @dataclass(slots=True)
@@ -178,9 +222,162 @@ async def _codex_options() -> BackendOptions:
     )
 
 
+async def _probe(kind: str) -> tuple[bool, str]:
+    backend = get_backend(kind)
+    if backend is None:
+        return False, ""
+    return await probe_version([backend.cli_command, "--version"])
+
+
+async def _antigravity_options() -> BackendOptions:
+    from deeptutor.services.subagent.antigravity import (
+        _NOT_FOUND_DETAIL as _ANTIGRAVITY_NOT_FOUND,
+    )
+
+    ok, version = await _probe("antigravity")
+    return BackendOptions(
+        kind="antigravity",
+        display_name="Antigravity CLI",
+        available=ok,
+        version=version if ok else "",
+        # `agy models` prints the live list, and the slugs move with the Gemini
+        # releases behind them; naming a stale set here would be worse than
+        # letting the operator paste the one they ran.
+        models=[],
+        efforts=list(_ANTIGRAVITY_EFFORTS),
+        allow_custom_model=True,
+        detail="" if ok else not_found_detail(version, _ANTIGRAVITY_NOT_FOUND),
+    )
+
+
+async def _kimi_options() -> BackendOptions:
+    ok, version = await _probe("kimi")
+    return BackendOptions(
+        kind="kimi",
+        display_name="Kimi CLI",
+        available=ok,
+        version=version if ok else "",
+        models=[],  # no model-list surface; free text only
+        efforts=[],
+        allow_custom_model=True,
+        detail="" if ok else (version or "kimi CLI not found on PATH"),
+    )
+
+
+async def _list_cli_models(cli_command: str, *, refresh: bool = False) -> list[ModelOption]:
+    """Parse ``<cli> models`` output — one ``provider/model`` slug per line."""
+    cmd = [cli_command, "models"]
+    if refresh:
+        cmd.append("--refresh")
+    cmd = resolve_cli_command(cmd)
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        out, _ = await asyncio.wait_for(process.communicate(), timeout=60.0 if refresh else 20.0)
+    except FileNotFoundError:
+        return []
+    except (TimeoutError, asyncio.TimeoutError):
+        return []
+    except Exception:  # pragma: no cover - defensive
+        logger.warning("failed to enumerate %s models", cli_command, exc_info=True)
+        return []
+    models: list[ModelOption] = []
+    for raw in (out or b"").decode("utf-8", "replace").splitlines():
+        slug = raw.strip()
+        # Slugs are provider/model tokens; anything with spaces is decoration.
+        if not slug or "/" not in slug or " " in slug:
+            continue
+        models.append(ModelOption(slug=slug, display_name=slug, efforts=list(_OPENCODE_EFFORTS)))
+    return models
+
+
+async def _opencode_family_options(
+    kind: str, display_name: str, *, refresh: bool = False
+) -> BackendOptions:
+    backend = get_backend(kind)
+    cli = backend.cli_command if backend else kind
+    ok, version = await _probe(kind)
+    models = await _list_cli_models(cli, refresh=refresh) if ok else []
+    return BackendOptions(
+        kind=kind,
+        display_name=display_name,
+        available=ok,
+        version=version if ok else "",
+        models=models,
+        efforts=list(_OPENCODE_EFFORTS),
+        allow_custom_model=True,
+        detail="" if ok else (version or f"{cli} CLI not found on PATH"),
+    )
+
+
+async def _opencode_options(*, refresh: bool = False) -> BackendOptions:
+    return await _opencode_family_options("opencode", "opencode", refresh=refresh)
+
+
+async def _mimo_options(*, refresh: bool = False) -> BackendOptions:
+    return await _opencode_family_options("mimo", "MiMo Code", refresh=refresh)
+
+
+async def _free_text_options(
+    kind: str, display_name: str, efforts: tuple[str, ...]
+) -> BackendOptions:
+    backend = get_backend(kind)
+    ok, version = await _probe(kind)
+    sdk_available = False
+    if kind == "deepseek_harness" and not ok:
+        from deeptutor.services.subagent.deepseek_harness import _sdk_available
+
+        sdk_available = _sdk_available()
+    available = ok or sdk_available
+    cli = backend.cli_command if backend else kind
+    return BackendOptions(
+        kind=kind,
+        display_name=display_name,
+        available=available,
+        version=version if ok else ("Python SDK" if sdk_available else ""),
+        models=[],
+        efforts=list(efforts),
+        allow_custom_model=True,
+        detail="" if available else not_found_detail(version, f"{cli} CLI not found on PATH"),
+    )
+
+
+async def _hermes_options() -> BackendOptions:
+    return await _free_text_options("hermes", "Hermes Agent", _HERMES_EFFORTS)
+
+
+async def _openclaw_options() -> BackendOptions:
+    return await _free_text_options("openclaw", "OpenClaw", _OPENCLAW_EFFORTS)
+
+
+async def _deepseek_harness_options() -> BackendOptions:
+    return await _free_text_options(
+        "deepseek_harness", "DeepSeek Harness", _DEEPSEEK_HARNESS_EFFORTS
+    )
+
+
+# One provider per backend kind — the discovery order is the settings order.
+_PROVIDERS: dict[str, Callable[..., Awaitable[BackendOptions]]] = {
+    "claude_code": _claude_options,
+    "codex": _codex_options,
+    "antigravity": _antigravity_options,
+    "kimi": _kimi_options,
+    "opencode": _opencode_options,
+    "mimo": _mimo_options,
+    "hermes": _hermes_options,
+    "openclaw": _openclaw_options,
+    "deepseek_harness": _deepseek_harness_options,
+}
+
+
 async def list_backend_options() -> list[BackendOptions]:
     """Synced model/effort options for every backend (the /settings sync source)."""
-    return [await _claude_options(), await _codex_options()]
+    results = await asyncio.gather(*(provider() for provider in _PROVIDERS.values()))
+    return list(results)
 
 
 async def sync_backend_options(kind: str) -> BackendOptions:
@@ -188,14 +385,18 @@ async def sync_backend_options(kind: str) -> BackendOptions:
 
     Claude Code has no machine-readable catalog, so we actively scrape its
     ``/model`` TUI and cache the result. Codex's cache is maintained by its own
-    CLI, so syncing is just a fresh read.
+    CLI (a fresh read suffices), and the opencode family re-runs ``models
+    --refresh``. The rest have nothing external to refresh.
     """
     if kind == "claude_code":
         from deeptutor.services.subagent.claude_models import sync_claude_models
 
         await sync_claude_models()  # writes the cache that _claude_options reads
         return await _claude_options()
-    return await _codex_options()
+    if kind in ("opencode", "mimo"):
+        return await _PROVIDERS[kind](refresh=True)
+    provider = _PROVIDERS.get(kind, _codex_options)
+    return await provider()
 
 
 __all__ = [

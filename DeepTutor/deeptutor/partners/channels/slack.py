@@ -16,6 +16,7 @@ from deeptutor.partners.bus.events import OutboundMessage
 from deeptutor.partners.bus.queue import MessageBus
 from deeptutor.partners.channels.base import BaseChannel
 from deeptutor.partners.config.schema import Base, DeliveryOverrides
+from deeptutor.partners.helpers import convert_markdown_table_to_labeled_rows
 
 # Slack's WSS endpoint can be blocked while HTTPS still works (auth_test
 # succeeds, Socket Mode hangs) — bound the handshake so the failure is loud.
@@ -70,9 +71,20 @@ class SlackChannel(BaseChannel):
         """Start the Slack Socket Mode client."""
         if not self.config.bot_token or not self.config.app_token:
             logger.error("Slack bot/app token not configured")
+            self.set_setup_state(
+                "action_required",
+                message=(
+                    "Required fields are missing. Complete the channel configuration "
+                    "and save again."
+                ),
+            )
             return
         if self.config.mode != "socket":
             logger.error("Unsupported Slack mode: {}", self.config.mode)
+            self.set_setup_state(
+                "action_required",
+                message="Unsupported channel mode. Check the selected mode.",
+            )
             return
 
         self._running = True
@@ -111,6 +123,7 @@ class SlackChannel(BaseChannel):
             raise RuntimeError("Slack Socket Mode WebSocket connect timed out") from None
 
         logger.info("Slack Socket Mode WebSocket connected (events enabled)")
+        self.set_setup_state("connected")
 
         while self._running:
             await asyncio.sleep(1)
@@ -317,16 +330,4 @@ class SlackChannel(BaseChannel):
     @staticmethod
     def _convert_table(match: re.Match) -> str:
         """Convert a Markdown table to a Slack-readable list."""
-        lines = [ln.strip() for ln in match.group(0).strip().splitlines() if ln.strip()]
-        if len(lines) < 2:
-            return match.group(0)
-        headers = [h.strip() for h in lines[0].strip("|").split("|")]
-        start = 2 if re.fullmatch(r"[|\s:\-]+", lines[1]) else 1
-        rows: list[str] = []
-        for line in lines[start:]:
-            cells = [c.strip() for c in line.strip("|").split("|")]
-            cells = (cells + [""] * len(headers))[: len(headers)]
-            parts = [f"**{headers[i]}**: {cells[i]}" for i in range(len(headers)) if cells[i]]
-            if parts:
-                rows.append(" · ".join(parts))
-        return "\n".join(rows)
+        return convert_markdown_table_to_labeled_rows(match.group(0))

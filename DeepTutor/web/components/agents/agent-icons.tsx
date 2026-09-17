@@ -72,6 +72,117 @@ export function CodexGlyph({ size = 16, ...props }: GlyphProps) {
   );
 }
 
+// Gemini's four-point spark, in the brand blue→violet gradient.
+export function GeminiGlyph({ size = 16, ...props }: GlyphProps) {
+  const gradientId = useId();
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      {...props}
+    >
+      <path
+        d="M12 24A14.3 14.3 0 0 0 0 12 14.3 14.3 0 0 0 12 0a14.3 14.3 0 0 0 12 12 14.3 14.3 0 0 0-12 12z"
+        fill={`url(#${gradientId})`}
+      />
+      <defs>
+        <linearGradient
+          gradientUnits="userSpaceOnUse"
+          id={gradientId}
+          x1="0"
+          x2="24"
+          y1="24"
+          y2="0"
+        >
+          <stop stopColor="#217BFE" />
+          <stop offset="1" stopColor="#AC87EB" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+// Exact upstream brand assets, kept as local files so agent menus also work
+// offline. Sources are documented in public/agent-icons/README.md.
+export function KimiGlyph({ size = 16, ...props }: GlyphProps) {
+  return (
+    <OfficialAssetGlyph src="/agent-icons/kimi.svg" size={size} {...props} />
+  );
+}
+
+export function OpencodeGlyph({ size = 16, ...props }: GlyphProps) {
+  return (
+    <OfficialAssetGlyph
+      src="/agent-icons/opencode.svg"
+      size={size}
+      {...props}
+    />
+  );
+}
+
+export function MimoGlyph({ size = 16, ...props }: GlyphProps) {
+  return (
+    <OfficialAssetGlyph
+      src="/agent-icons/mimo-code.svg"
+      size={size}
+      {...props}
+    />
+  );
+}
+
+function OfficialAssetGlyph({
+  src,
+  size = 16,
+  ...props
+}: GlyphProps & { src: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      {...props}
+    >
+      <image
+        href={src}
+        width="24"
+        height="24"
+        preserveAspectRatio="xMidYMid meet"
+      />
+    </svg>
+  );
+}
+
+export function HermesGlyph({ size = 16, ...props }: GlyphProps) {
+  return (
+    <OfficialAssetGlyph src="/agent-icons/hermes.svg" size={size} {...props} />
+  );
+}
+
+export function OpenClawGlyph({ size = 16, ...props }: GlyphProps) {
+  return (
+    <OfficialAssetGlyph
+      src="/agent-icons/openclaw.svg"
+      size={size}
+      {...props}
+    />
+  );
+}
+
+export function DeepSeekGlyph({ size = 16, ...props }: GlyphProps) {
+  return (
+    <OfficialAssetGlyph
+      src="/agent-icons/deepseek-harness.svg"
+      size={size}
+      {...props}
+    />
+  );
+}
+
 // A connected partner: a filled heart in the Partners accent, so a consulted
 // partner reads as a companion (not a CLI) everywhere a connected agent appears.
 export function PartnerGlyph({ size = 16, ...props }: GlyphProps) {
@@ -94,6 +205,14 @@ export type AgentGlyph = ComponentType<GlyphProps>;
 export function agentGlyph(kind: string | undefined): AgentGlyph | null {
   if (kind === "claude_code") return ClaudeGlyph;
   if (kind === "codex") return CodexGlyph;
+  // Antigravity uses Google's Gemini mark, but Gemini CLI itself is retired.
+  if (kind === "antigravity") return GeminiGlyph;
+  if (kind === "kimi") return KimiGlyph;
+  if (kind === "opencode") return OpencodeGlyph;
+  if (kind === "mimo") return MimoGlyph;
+  if (kind === "hermes") return HermesGlyph;
+  if (kind === "openclaw") return OpenClawGlyph;
+  if (kind === "deepseek_harness") return DeepSeekGlyph;
   if (kind === "partner") return PartnerGlyph;
   return null;
 }

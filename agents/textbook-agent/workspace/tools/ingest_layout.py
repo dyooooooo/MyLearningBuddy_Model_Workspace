@@ -1,8 +1,10 @@
 """Ingest MinerU artifacts into the canonical IR (writes ``textbooks/<id>/ir/``).
 
-Tool entry. ``apply=scan`` reports without writing; ``apply=fix`` writes
-``ir/pages/NNNN.json`` and, when re-ingestion changes block ids,
-``ir/remap.json``. Never touches ``pages/`` / ``mid/`` / ``v2md/``.
+Tool entry. ``apply=scan`` reports without writing; ``apply=fix`` deletes the
+page JSON it is about to replace, then writes new ``ir/pages/NNNN.json``.
+Full-book success also drops leftover page files. When re-ingestion changes
+block ids it writes ``ir/remap.json``. Never touches ``pages/`` / ``mid/`` /
+``v2md/`` / ``ir/notes``.
 """
 from __future__ import annotations
 
@@ -22,6 +24,27 @@ def _atomic_write(path: Path, text: str) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(text, encoding="utf-8")
     tmp.replace(path)
+
+
+def _clear_ir_pages(pages_dir: Path, page_nos: set[int] | None) -> int:
+    """Delete existing IR page JSON. ``page_nos=None`` means every ``*.json``.
+
+    Only ``ir/pages/*.json``. Never ``ir/notes``.
+    """
+    if not pages_dir.is_dir():
+        return 0
+    n = 0
+    for path in list(pages_dir.glob("*.json")):
+        if page_nos is not None:
+            try:
+                num = int(path.stem)
+            except ValueError:
+                continue
+            if num not in page_nos:
+                continue
+        path.unlink()
+        n += 1
+    return n
 
 
 def _page_count(book: Path) -> int:
@@ -152,7 +175,25 @@ def ingest_layout(book_id: str, page_no: int = 0, root: str = "",
     if int(page_no or 0) > 0:
         review = merge_review(book, review, set(new_pages))
 
-    if mode == "fix":
+    cleared = 0
+    if mode == "fix" and new_pages:
+        # 先读过 old_ids，再删盘上的页文件，再写新的。
+        # 单页只清这一页；全书清成功页 + 不在 wanted 里的残页；失败页的旧文件留下。
+        if int(page_no or 0) > 0:
+            to_clear = set(new_pages)
+        else:
+            wanted_set = set(wanted)
+            leftovers: set[int] = set()
+            if pages_dir.is_dir():
+                for path in pages_dir.glob("*.json"):
+                    try:
+                        num = int(path.stem)
+                    except ValueError:
+                        continue
+                    if num not in wanted_set:
+                        leftovers.add(num)
+            to_clear = set(new_pages) | leftovers
+        cleared = _clear_ir_pages(pages_dir, to_clear)
         for n, page in new_pages.items():
             _atomic_write(
                 pages_dir / f"{n:04d}.json",
@@ -171,6 +212,7 @@ def ingest_layout(book_id: str, page_no: int = 0, root: str = "",
         "ok": not errors,
         "book_id": sid,
         "apply": mode,
+        "cleared": cleared,
         "pages": stats["pages"],
         "total_pages": total,
         "blocks": stats["blocks"],
