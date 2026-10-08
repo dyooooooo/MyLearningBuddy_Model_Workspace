@@ -182,7 +182,10 @@ services:
       start_period: 15s
     restart: unless-stopped
 
+  # Legacy vLLM service — kept as fallback, not started by default.
+  # To use: docker compose --profile legacy up -d vllm
   vllm:
+    profiles: ["legacy"]
     container_name: vllm-qwen36-35b
     image: ghcr.io/spark-arena/dgx-vllm-eugr-nightly:latest
     entrypoint: ["vllm"]
@@ -199,6 +202,7 @@ services:
     environment:
       HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
       VLLM_USE_FLASHINFER_MOE_FP4: ${VLLM_USE_FLASHINFER_MOE_FP4:-0}
+      VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "0"
       VLLM_NVFP4_GEMM_BACKEND: ${VLLM_NVFP4_GEMM_BACKEND:-marlin}
       VLLM_MARLIN_USE_ATOMIC_ADD: ${VLLM_MARLIN_USE_ATOMIC_ADD:-1}
       VLLM_TEST_FORCE_FP8_MARLIN: ${VLLM_TEST_FORCE_FP8_MARLIN:-0}
@@ -211,13 +215,9 @@ services:
       - --port
       - "8088"
       - --model
-      - /models/Qwen3.6-35B-A3B-NVFP4
+      - /models/Qwen3.8-27B-NVFP4
       - --served-model-name
-      - qwen36-35b-nvfp4
-      - --quantization
-      - modelopt
-      - --moe-backend
-      - marlin
+      - qwen38-27b-nvfp4
       - --kv-cache-dtype
       - fp8
       - --attention-backend
@@ -229,10 +229,10 @@ services:
       - --max-num-batched-tokens
       - "8192"
       - --gpu-memory-utilization
-      - "0.5"
+      - "0.45"
       - --enable-prefix-caching
       - --speculative-config
-      - '{"method":"mtp","num_speculative_tokens":3,"moe_backend":"triton"}'
+      - '{"method":"mtp","num_speculative_tokens":3}'
       - --load-format
       - fastsafetensors
       - --trust-remote-code
@@ -243,6 +243,43 @@ services:
       timeout: 10s
       retries: 10
       start_period: 600s
+
+  # ── llama.cpp dual-model services (host processes, port 8081/8082) ──
+  # These are health-check stubs — the actual llama-server processes run on the
+  # host (started by ~/llama-cpp/start-dual.sh).  Docker containers reach them
+  # via host.docker.internal.  The stubs keep depends_on/healthcheck working.
+
+  llama-35b:
+    image: alpine/curl:latest
+    container_name: lb-llama-35b
+    networks:
+      - learning_buddy_c2
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["sh", "-c", "while true; do curl -sf --max-time 5 http://host.docker.internal:8081/v1/models || exit 1; sleep 15; done"]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "--max-time", "5", "http://host.docker.internal:8081/v1/models"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  llama-27b:
+    image: alpine/curl:latest
+    container_name: lb-llama-27b
+    networks:
+      - learning_buddy_c2
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: ["sh", "-c", "while true; do curl -sf --max-time 5 http://host.docker.internal:8082/v1/models || exit 1; sleep 15; done"]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "--max-time", "5", "http://host.docker.internal:8082/v1/models"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
   mfr:
     container_name: lb-mfr
@@ -388,7 +425,7 @@ services:
       ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-admin}
       API_TOKEN: ${API_TOKEN:-change-me-api}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://vllm-qwen36-35b:8088/v1}
-      VLLM_MODEL: ${VLLM_MODEL:-qwen36-35b-nvfp4}
+      VLLM_MODEL: ${VLLM_MODEL:-qwen38-27b-nvfp4}
       VLLM_MAX_CONCURRENT: ${VLLM_MAX_CONCURRENT:-2}
       VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
       MFR_ENABLED: ${MFR_ENABLED:-true}
@@ -480,7 +517,7 @@ services:
       RAG_RERANK_TOP_K: ${RAG_RERANK_TOP_K:-5}
       GRAPH_ENABLED: ${GRAPH_ENABLED:-true}
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://vllm-qwen36-35b:8088/v1}
-      VLLM_MODEL: ${VLLM_MODEL:-qwen36-35b-nvfp4}
+      VLLM_MODEL: ${VLLM_MODEL:-qwen38-27b-nvfp4}
       VLLM_MAX_CONCURRENT: ${VLLM_MAX_CONCURRENT:-2}
       VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
       EVAL_FALLBACK_RULES: ${EVAL_FALLBACK_RULES:-true}
@@ -514,7 +551,7 @@ services:
     networks:
       - learning_buddy_c2
     depends_on:
-      vllm:
+      llama-35b:
         condition: service_started
       buddy-api:
         condition: service_started
@@ -530,7 +567,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       VLLM_BASE_URL: ${VLLM_BASE_URL:-http://vllm-qwen36-35b:8088/v1}
-      VLLM_MODEL: ${VLLM_MODEL:-qwen36-35b-nvfp4}
+      VLLM_MODEL: ${VLLM_MODEL:-qwen38-27b-nvfp4}
       VLLM_MAX_CONCURRENT: ${VLLM_MAX_CONCURRENT:-2}
       VLLM_TEMPERATURE: ${VLLM_TEMPERATURE:-0}
       VLLM_LAN_PROXY_ENABLED: ${VLLM_LAN_PROXY_ENABLED:-true}
