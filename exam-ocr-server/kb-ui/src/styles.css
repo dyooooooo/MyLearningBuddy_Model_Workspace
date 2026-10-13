@@ -426,6 +426,17 @@ select.kb-agent-input option, .kb-settings select option, .kb-import select opti
 .kb-pop-item:disabled { opacity: 0.45; cursor: default; }
 .kb-node-toc { margin: 0.4rem 0 0 0.7rem; padding: 0.25rem 0 0.1rem 0.55rem; border-left: 1px solid var(--border); min-height: 1.2rem; }
 .kb-tree-empty { padding: 0.35rem 0.4rem 0.5rem 1.75rem; font-size: 12px; }
+/* 结构化库书节点里的待审短列表（读 ir/review.json，点一行跳到那页） */
+.kb-ir-review { margin: 0.35rem 0 0 0.7rem; padding: 0.3rem 0 0.2rem 0.55rem; border-left: 1px solid var(--border); }
+.kb-ir-review-h { margin: 0 0 0.2rem; font-size: 11px; }
+.kb-ir-review-row {
+  display: flex; gap: 0.4rem; align-items: baseline; width: 100%;
+  background: none; border: 0; padding: 0.12rem 0.2rem; border-radius: 4px;
+  color: var(--text); cursor: pointer; font-size: 12px; text-align: left;
+}
+.kb-ir-review-row:hover { background: rgba(127, 156, 245, 0.14); }
+.kb-ir-review-page { white-space: nowrap; }
+.kb-ir-review-why { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 .kb-main {
   flex: 1; min-width: 0; min-height: 0; height: 100%;
   display: flex; flex-direction: column; overflow: hidden;

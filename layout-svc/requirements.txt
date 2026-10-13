@@ -1,0 +1,5 @@
+# buddy-api image already has torch / transformers / pillow / fastapi / uvicorn.
+# torchvision must match that torch (buddy-api currently ships 2.13.0+cu130).
+# Installed with --no-deps so pip does not float torch.
+torchvision==0.27.1
+opencv-python-headless==5.0.0.93

@@ -1,0 +1,79 @@
+{
+  "exclude": [
+    "DeepTutor/**",
+    "data/**",
+    ".pageaudit/**",
+    "webtraingingrecord/**",
+    "buddy-copilot/logs/**",
+    "buddy-copilot/data/**",
+    "**/goldens/**",
+    "**/*.out.html",
+    "**/.gitkeep",
+    "**/configs/editions/**/versions/**",
+    "**/node_modules/**",
+    "**/.venv/**",
+    "**/.venv-*/**",
+    "**/__pycache__/**",
+    "**/.pytest_cache/**",
+    "**/package-lock.json",
+    "**/pnpm-lock.yaml"
+  ],
+  "rules": [
+    {
+      "path": "learning-buddy-api/app/import_35b/**",
+      "rule": "这是 35B 视觉蓝图导入线，必须与 MinerU 全书导入端到端隔离。禁止建议复用或改写另一条线的 Redis 队列、MinIO 前缀、Gateway 路由、前端 client/面板或跨线 import。不要把 layout_rules.yaml、overrides/pages、症状词表或 rebuild-ir 接到这条线。只报有把握的缺陷；安全与正确性可阻断，风格不阻断。"
+    },
+    {
+      "path": "learning-buddy-api/app/services/ir/**",
+      "rule": "这是中间表示（IR, Intermediate Representation）的版式判定。geometry/features 只描述几何，规则写在 layout_rules.yaml 或 overrides/pages/NNNN.yaml。禁止把订正写回老线 pages/ 或 mid/。改 ir/pages 会被重新摄取覆盖，人工订正只写 ir/notes。侧栏禁止 absolute 定位。policy.entries 对本线无效。只报有把握的缺陷。"
+    },
+    {
+      "path": "**/import_ir_pipeline.py",
+      "rule": "这是 MinerU 全书导入链入口。不要引入 35B refine、大模型排版或 policy.entries。不要写老线 pages/ mid/。检测与写盘必须分开。只报有把握的缺陷。"
+    },
+    {
+      "path": "learning-buddy-api/configs/checks/**",
+      "rule": "跨书症状词表。L0 事实字段和 L1 算子在 corpus_symptoms.py，几乎不该改。L2 配置词必须有中文 doc 与正反例。中文例外只进 lexicons.yaml。vocab_ext/*.py 会在 buddy-worker 里执行，须走 vocab.request_plugin_edit；未审草稿只放 vocab_ext/proposals/。禁止在检测器或配置词表达式里写死中文正文。只报有把握的缺陷。"
+    },
+    {
+      "path": "learning-buddy-api/configs/editions/**",
+      "rule": "教材方案（Edition Bundle）。版式规则只放 layout_rules.yaml 或 overrides/pages/NNNN.yaml（挂载，rebuild-ir 即生效）。geometry、patterns、features 在 config.json，必须 publish 才落盘。不要把版式写进 policy.entries（那只喂 35B 的 b35.vision_layout）。只报有把握的缺陷。"
+    },
+    {
+      "path": "exam-ocr-server/**",
+      "rule": "只允许 C2 教学工具能力（光学字符识别、切题、语音、搜题、网关代理）。禁止引入诊断、规划、多 Agent 治理、A+ 个性化库或 LangGraph。不要把高频 OCR 融合做成 Agent 会话。不提交真实密钥。只报有把握的缺陷。"
+    },
+    {
+      "path": "learning-buddy-c2/**",
+      "rule": "Compose 编排。buddy-api / buddy-worker 的 app 代码打进镜像，改完必须重建这两个服务，不要只改宿主机。configs/ 是挂载，改完即可用。不要提交真实 ADMIN_TOKEN、API_TOKEN、VLLM_LAN_TOKEN。只报有把握的缺陷。"
+    },
+    {
+      "path": "agents/textbook-agent/**",
+      "rule": "教材 Agent。读页只剩老线（冻结参照）和中间表示。改哪条线只动哪条线的目录、工具、surface，禁止串线。不要改 pages/、mid/、page_sync。中间表示订正只写 ir/notes。不要把 v2md_generate 或 official_slice 再接到 library 读页。受管面改 Python 工具须先走授权卡。只报有把握的缺陷。"
+    },
+    {
+      "path": "buddy-copilot/app/**",
+      "rule": "伴学 Copilot。遵守隔离与宿主机-容器同步。不要让导入建议走 35B 线。不要写真实密钥。文件系统工具必须守住工作区边界。只报有把握的缺陷。"
+    },
+    {
+      "path": "mfr-service/**",
+      "rule": "公式识别侧车，保持小而稳。不要把教材导入或 Agent 编排塞进来。只报有把握的缺陷。"
+    },
+    {
+      "path": "vllm-tune/**",
+      "rule": "vLLM 内核调参。不要手改预置 config JSON 文件名；配置靠再跑调参生成。只报有把握的缺陷。"
+    },
+    {
+      "path": "**/*.{py,pyi}",
+      "rule": "Python：只报有把握的缺陷。安全与正确性可阻断，风格不阻断。不提交密钥。不要把 MinerU 线与 35B 线的队列、前缀、路由、表或前端串在一起。exam-ocr-server 保持 C2，不要把 A+ 或 LangGraph 放进去。"
+    },
+    {
+      "path": "**/*.{ts,tsx,js,jsx,mjs,cjs}",
+      "rule": "前端/脚本：只报有把握的缺陷。35B 与 MinerU 的 client 和面板不要混用。不要把密钥写进源码。"
+    },
+    {
+      "path": "**/*.{yaml,yml}",
+      "rule": "YAML：先核对键名与分层是否放对（版式规则、症状词、Compose、技能）。不要把中文正文写进检测器表达式。不要提交真实密钥。只报有把握的缺陷。"
+    }
+  ]
+}

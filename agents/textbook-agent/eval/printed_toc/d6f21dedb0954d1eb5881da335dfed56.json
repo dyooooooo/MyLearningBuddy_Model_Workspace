@@ -1,0 +1,182 @@
+{
+  "book_id": "d6f21dedb0954d1eb5881da335dfed56",
+  "source": "human from printed TOC page images 2026-10-08",
+  "note": "对照 images/d6f21ded_p0007.jpg 至 p0009.jpg。不收录页眉「目录」、书名横条。括号用书上的全角。",
+  "toc_pages": [
+    7,
+    8,
+    9
+  ],
+  "entries": [
+    {
+      "label": "一、课程性质与基本理念",
+      "level": 0,
+      "print_page": 1
+    },
+    {
+      "label": "（一）课程性质",
+      "level": 1,
+      "print_page": 1
+    },
+    {
+      "label": "（二）基本理念",
+      "level": 1,
+      "print_page": 2
+    },
+    {
+      "label": "二、学科核心素养与课程目标",
+      "level": 0,
+      "print_page": 4
+    },
+    {
+      "label": "（一）学科核心素养",
+      "level": 1,
+      "print_page": 4
+    },
+    {
+      "label": "（二）课程目标",
+      "level": 1,
+      "print_page": 6
+    },
+    {
+      "label": "三、课程结构",
+      "level": 0,
+      "print_page": 7
+    },
+    {
+      "label": "（一）设计依据",
+      "level": 1,
+      "print_page": 7
+    },
+    {
+      "label": "（二）结构",
+      "level": 1,
+      "print_page": 8
+    },
+    {
+      "label": "（三）学分与选课",
+      "level": 1,
+      "print_page": 9
+    },
+    {
+      "label": "四、课程内容",
+      "level": 0,
+      "print_page": 11
+    },
+    {
+      "label": "（一）必修课程",
+      "level": 1,
+      "print_page": 11
+    },
+    {
+      "label": "模块 1 分子与细胞",
+      "level": 2,
+      "print_page": 11
+    },
+    {
+      "label": "模块 2 遗传与进化",
+      "level": 2,
+      "print_page": 15
+    },
+    {
+      "label": "（二）选择性必修课程",
+      "level": 1,
+      "print_page": 19
+    },
+    {
+      "label": "模块 1 稳态与调节",
+      "level": 2,
+      "print_page": 19
+    },
+    {
+      "label": "模块 2 生物与环境",
+      "level": 2,
+      "print_page": 23
+    },
+    {
+      "label": "模块 3 生物技术与工程",
+      "level": 2,
+      "print_page": 27
+    },
+    {
+      "label": "（三）选修课程",
+      "level": 1,
+      "print_page": 31
+    },
+    {
+      "label": "现实生活应用",
+      "level": 2,
+      "print_page": 32
+    },
+    {
+      "label": "职业规划前瞻",
+      "level": 2,
+      "print_page": 37
+    },
+    {
+      "label": "学业发展基础",
+      "level": 2,
+      "print_page": 44
+    },
+    {
+      "label": "五、学业质量",
+      "level": 0,
+      "print_page": 51
+    },
+    {
+      "label": "（一）学业质量内涵",
+      "level": 1,
+      "print_page": 51
+    },
+    {
+      "label": "（二）学业质量水平",
+      "level": 1,
+      "print_page": 51
+    },
+    {
+      "label": "（三）学业质量水平与考试评价的关系",
+      "level": 1,
+      "print_page": 54
+    },
+    {
+      "label": "六、实施建议",
+      "level": 0,
+      "print_page": 56
+    },
+    {
+      "label": "（一）教学与评价建议",
+      "level": 1,
+      "print_page": 56
+    },
+    {
+      "label": "（二）学业水平考试与命题建议",
+      "level": 1,
+      "print_page": 63
+    },
+    {
+      "label": "（三）教材编写建议",
+      "level": 1,
+      "print_page": 64
+    },
+    {
+      "label": "（四）地方和学校实施本课程的建议",
+      "level": 1,
+      "print_page": 68
+    },
+    {
+      "label": "附录",
+      "level": 0,
+      "print_page": 74
+    },
+    {
+      "label": "附录1 学科核心素养水平划分",
+      "level": 1,
+      "print_page": 74
+    },
+    {
+      "label": "附录2 教学与评价案例",
+      "level": 1,
+      "print_page": 77
+    }
+  ]
+}

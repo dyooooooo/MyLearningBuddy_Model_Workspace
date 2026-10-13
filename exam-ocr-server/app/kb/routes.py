@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from typing import Any
+from urllib.parse import unquote
 
 import httpx
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
@@ -12,6 +14,65 @@ from fastapi.responses import Response, StreamingResponse
 
 from app.buddy_client import corpus_admin_request
 from app.config import settings
+
+# 书号与教材 Agent 的 safe_book_id 同一套：字母数字、连字符、下划线。
+_SAFE_BOOK = re.compile(r"^[A-Za-z0-9_-]+$")
+# 编码穿越：Starlette 会把 %2e%2e%2f 解成 ../，但原始 URL 里还留着编码。
+_ENCODED_TRAVERSAL = re.compile(r"%2e|%2f|%5c", re.I)
+_IR_LEAVES = frozenset({"toc", "review"})
+_IR_PAGE_LEAVES = frozenset({"markdown", "blocks"})
+# /agent/* 是配置台正路，只放行教材 Agent 已有顶栏，禁止任意 path。
+_AGENT_ROOTS = frozenset({
+    "ir", "library", "books", "surfaces", "config", "events",
+    "conversations", "jobs", "tasks", "approvals", "checkpoints",
+    "models", "inbox", "chat", "grade", "cursor",
+})
+# /proxy/* 只许中间表示、书目、页图资产，其余走 buddy 的也要先过这一关。
+_KB_PROXY_ROOTS = frozenset({"ir", "books", "asset"})
+
+
+def _agent_path_ok(path: str) -> bool:
+    """教材 Agent 代理路径：禁止跳出 /v1/，禁止编码穿越，顶栏必须在表里。"""
+    raw = (path or "").strip()
+    if not raw or raw.startswith("/") or "\\" in raw:
+        return False
+    if _ENCODED_TRAVERSAL.search(raw):
+        return False
+    decoded = unquote(raw)
+    if decoded != raw and (
+        _ENCODED_TRAVERSAL.search(decoded) or "\\" in decoded or decoded.startswith("/")
+    ):
+        return False
+    parts = decoded.split("/")
+    if not parts or any(part in ("", ".", "..") for part in parts):
+        return False
+    return parts[0] in _AGENT_ROOTS
+
+
+def _ir_proxy_ok(path: str) -> bool:
+    """中间表示只放行 toc / review / pages/<n>/markdown|blocks。"""
+    if not _agent_path_ok(path):
+        return False
+    parts = unquote(path).split("/")
+    if parts[0] != "ir" or len(parts) < 3:
+        return False
+    if not _SAFE_BOOK.match(parts[1]):
+        return False
+    if len(parts) == 3:
+        return parts[2] in _IR_LEAVES
+    return (
+        len(parts) == 5
+        and parts[2] == "pages"
+        and parts[3].isdigit()
+        and int(parts[3]) > 0
+        and parts[4] in _IR_PAGE_LEAVES
+    )
+
+
+def _raw_url_ok(request: Request) -> bool:
+    url = getattr(request, "url", None)
+    path = getattr(url, "path", "") if url is not None else ""
+    return not _ENCODED_TRAVERSAL.search(path or "")
 
 logger = logging.getLogger(__name__)
 
@@ -267,6 +328,8 @@ async def _agent_patch_book(
 @router.api_route("/agent/{path:path}", methods=["GET", "PUT", "POST", "DELETE", "PATCH"])
 async def proxy_agent(path: str, request: Request) -> Response:
     """Thin proxy to textbook-agent. No Cursor SDK in this process."""
+    if not _agent_path_ok(path) or not _raw_url_ok(request):
+        raise HTTPException(status_code=400, detail="非法代理路径")
     base = _agent_base()
     if not base:
         raise HTTPException(status_code=503, detail="教材 Agent 未配置")
@@ -280,7 +343,7 @@ async def proxy_agent(path: str, request: Request) -> Response:
         headers["content-type"] = ctype
     body = await request.body()
     params = dict(request.query_params) if request.query_params else None
-    stream = path == "events" or path.startswith("events?")
+    stream = path == "events"
     try:
         if stream:
             client = httpx.AsyncClient(timeout=None)
@@ -324,10 +387,15 @@ async def proxy_agent(path: str, request: Request) -> Response:
 
 @router.api_route("/proxy/{path:path}", methods=["GET", "PUT", "POST", "DELETE", "PATCH"])
 async def proxy_kb(path: str, request: Request) -> Response:
-    if path == "ir" or path.startswith("ir/") or path.startswith("ir?"):
-        # IR 新线：agent 的 /v1/ir/* 原样转发（toc / pages markdown / blocks）
+    root = (path or "").split("/", 1)[0]
+    if root not in _KB_PROXY_ROOTS or not _raw_url_ok(request):
+        raise HTTPException(status_code=400, detail="非法代理路径")
+    if path == "ir" or path.startswith("ir/"):
+        # 中间表示只放行 toc / review / 页正文与块，编码穿越在这里拦下。
+        if not _ir_proxy_ok(path) or not _raw_url_ok(request):
+            raise HTTPException(status_code=400, detail="非法中间表示路径")
         return await proxy_agent(path, request)
-    if path == "books" or path.startswith("books/") or path.startswith("books?"):
+    if path == "books" or path.startswith("books/"):
         rest = path[5:].lstrip("/")
         agent_path = f"library/{rest}" if rest else "library"
         book_id = rest.split("/")[0] if rest else ""

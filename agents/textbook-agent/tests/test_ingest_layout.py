@@ -7,6 +7,7 @@ from pathlib import Path
 _TOOLS = Path(__file__).resolve().parents[1] / "workspace" / "tools"
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
+import ir_bands  # noqa: E402
 import ir_lib  # noqa: E402
 from app.workspace import ensure_workspace  # noqa: E402
 from ingest_layout import ingest_layout  # noqa: E402
@@ -70,7 +71,8 @@ def test_page_ingest_full_shape(tmp_path: Path) -> None:
                    bbox=[100, 200, 500, 260]),
             _block("image", 3, [[_span("text", "", image="f1.jpg")]],
                    bbox=[60, 300, 300, 500],
-                   children=[_block("image_caption", 0, [[_span("text", "图1　能级图")]])]),
+                   children=[_block("image_caption", 0, [[_span("text", "图1　能级图")]],
+                                   bbox=[80, 505, 220, 522])]),
         ],
         "discarded_blocks": [
             _block("page_header", 0, [[_span("text", "第1章")]]),
@@ -99,17 +101,233 @@ def test_page_ingest_full_shape(tmp_path: Path) -> None:
 
     fig = by_type["image"]
     assert fig["caption"] == "图1　能级图"
+    assert fig["captions"] == [{
+        "type": "image_caption",
+        "text": "图1　能级图",
+        "bbox": [80.0, 505.0, 220.0, 522.0],
+    }]
     assert fig["kind"] == "figure"
 
     assert out["chrome"]["headers"] == ["第1章"]
     assert out["chrome"]["footnotes"] == [{"order": 9, "text": "① 页注原文"}]
 
 
+def test_child_footnote_and_two_captions_keep_boxes(tmp_path: Path) -> None:
+    page = {
+        "page_idx": 0,
+        "page_size": [595, 841],
+        "para_blocks": [
+            _block(
+                "image", 0, [[_span("text", "", image="cantor.jpg")]],
+                bbox=[95, 253, 155, 346],
+                children=[
+                    _block("image_body", 0, [[_span("text", "")]], bbox=[95, 253, 155, 346]),
+                    _block("image_footnote", 1, [[_span("text", "康托脚注")]],
+                           bbox=[67, 349, 183, 397]),
+                ],
+            ),
+            _block(
+                "image", 1, [[_span("text", "", image="pair.jpg")]],
+                bbox=[247, 476, 351, 507],
+                children=[
+                    _block("image_caption", 0, [[_span("text", "(a,b)")]],
+                           bbox=[282, 513, 315, 526]),
+                    _block("image_caption", 1, [[_span("text", "图1-1-1")]],
+                           bbox=[199, 531, 241, 544]),
+                ],
+            ),
+        ],
+        "discarded_blocks": [],
+    }
+    out = ir_lib.ingest_page(_book(tmp_path, [page]), 1, box_prefixes=[])
+    by_asset = {b["asset"]: b for b in out["blocks"] if b.get("asset")}
+    cantor = by_asset["cantor.jpg"]
+    assert cantor["caption"] == "康托脚注"
+    assert cantor["captions"] == [{
+        "type": "image_footnote",
+        "text": "康托脚注",
+        "bbox": [67.0, 349.0, 183.0, 397.0],
+    }]
+    pair = by_asset["pair.jpg"]
+    assert pair["caption"] == "(a,b)\n图1-1-1"
+    assert [c["text"] for c in pair["captions"]] == ["(a,b)", "图1-1-1"]
+    assert pair["captions"][1]["bbox"] == [199.0, 531.0, 241.0, 544.0]
+
+
 def test_cjk_spans_join_without_spaces_in_ir() -> None:
     lines = [[_span("text", "处于"), _span("inline_equation", "2p"), _span("text", "轨道上")]]
     structured, text = ir_lib.render_lines([{"spans": spans} for spans in lines])
     assert text == "处于$2p$轨道上"
-    assert structured[0][1] == {"t": "eq", "c": "2p"}
+    assert structured[0]["spans"][1]["t"] == "eq"
+    assert structured[0]["spans"][1]["c"] == "2p"
+
+
+def test_render_lines_keeps_line_and_span_bbox() -> None:
+    structured, text = ir_lib.render_lines([{
+        "bbox": [10, 20, 80, 36],
+        "spans": [{
+            "type": "text",
+            "content": "主编",
+            "bbox": [12, 20, 60, 36],
+            "cross_page": True,
+        }],
+    }])
+    assert text == "主编"
+    assert structured[0]["bbox"] == [10.0, 20.0, 80.0, 36.0]
+    assert structured[0]["spans"][0]["bbox"] == [12.0, 20.0, 60.0, 36.0]
+    assert structured[0]["spans"][0]["cross_page"] is True
+
+
+def test_ingest_moves_cross_page_line_to_next_page(tmp_path: Path) -> None:
+    """MinerU 把下一页的字拼进上一页：摄取时字和框都回到下一页空块。"""
+    keep = "那是1961年7月的一天，采用常规法培育"
+    moved = "出来的早稻常规品种正在勾头散籽，激动得几乎要喊出声来！"
+    next_box = [63.0, 320.0, 441.0, 399.0]
+    prev_box = [153.0, 667.0, 530.0, 704.0]
+    page1 = {
+        "page_idx": 0,
+        "page_size": [595, 841],
+        "para_blocks": [{
+            "type": "text",
+            "index": 0,
+            "bbox": prev_box,
+            "lines": [
+                {
+                    "bbox": prev_box,
+                    "spans": [{"type": "text", "content": keep, "bbox": prev_box}],
+                },
+                {
+                    "bbox": next_box,
+                    "spans": [{
+                        "type": "text",
+                        "content": moved,
+                        "bbox": next_box,
+                        "cross_page": True,
+                    }],
+                },
+            ],
+        }],
+        "discarded_blocks": [],
+    }
+    page2 = {
+        "page_idx": 1,
+        "page_size": [595, 841],
+        "para_blocks": [
+            {
+                "type": "text",
+                "index": 0,
+                "bbox": next_box,
+                "lines": [],
+                "lines_deleted": True,
+            },
+            _block("text", 1, [[_span("text", "这是一株奇特的稻禾")]],
+                   bbox=[63.0, 404.0, 441.0, 525.0]),
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page1, page2])
+    a = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    b = ir_lib.ingest_page(book, 2, box_prefixes=[])
+    last = a["blocks"][-1]
+    assert last["text"] == keep
+    assert last["bbox"] == prev_box
+    assert last.get("cross_page") is None
+    assert moved not in last["text"]
+    assert all(
+        not (span.get("bbox") == next_box)
+        for row in last.get("lines") or []
+        for span in (row.get("spans") or [])
+    )
+    filled = b["blocks"][0]
+    assert filled["text"] == moved
+    assert filled["bbox"] == next_box
+    assert filled.get("lines_deleted") is None
+    assert filled.get("cross_page") is None
+    assert "这是一株奇特的稻禾" in b["blocks"][1]["text"]
+
+
+def test_line_sticking_out_of_block_stays_on_this_page(tmp_path: Path) -> None:
+    """行框比块框大出一圈、没有 cross_page 标记：字留在本页，不贴到下一页。"""
+    page1 = {
+        "page_idx": 0,
+        "page_size": [595, 841],
+        "para_blocks": [{
+            "type": "title",
+            "index": 0,
+            "bbox": [389, 84, 523, 140],
+            "lines": [{
+                "bbox": [380, 78, 531, 146],
+                "spans": [{
+                    "type": "text",
+                    "content": "第 1 章",
+                    "bbox": [380, 78, 531, 146],
+                }],
+            }],
+        }],
+        "discarded_blocks": [],
+    }
+    page2 = {
+        "page_idx": 1,
+        "page_size": [595, 841],
+        "para_blocks": [
+            _block("title", 0, [[_span("text", "物质的分类")]],
+                   bbox=[79.0, 121.0, 262.0, 197.0]),
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page1, page2])
+    a = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    b = ir_lib.ingest_page(book, 2, box_prefixes=[])
+    assert a["blocks"][0]["text"] == "第 1 章"
+    assert all("第 1 章" not in str(blk.get("text") or "") for blk in b["blocks"])
+
+
+def test_ingest_creates_block_when_next_page_has_no_shell(tmp_path: Path) -> None:
+    keep = "本页最后一行"
+    moved = "下一页开头那截"
+    next_box = [60.0, 58.0, 440.0, 95.0]
+    prev_box = [150.0, 680.0, 530.0, 710.0]
+    page1 = {
+        "page_idx": 0,
+        "page_size": [595, 841],
+        "para_blocks": [{
+            "type": "text",
+            "index": 0,
+            "bbox": prev_box,
+            "lines": [
+                {
+                    "bbox": prev_box,
+                    "spans": [{"type": "text", "content": keep, "bbox": prev_box}],
+                },
+                {
+                    "bbox": next_box,
+                    "spans": [{
+                        "type": "text",
+                        "content": moved,
+                        "bbox": next_box,
+                        "cross_page": True,
+                    }],
+                },
+            ],
+        }],
+        "discarded_blocks": [],
+    }
+    page2 = {
+        "page_idx": 1,
+        "page_size": [595, 841],
+        "para_blocks": [
+            _block("text", 0, [[_span("text", "另一段正文")]],
+                   bbox=[60.0, 100.0, 440.0, 160.0]),
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page1, page2])
+    a = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    b = ir_lib.ingest_page(book, 2, box_prefixes=[])
+    assert a["blocks"][0]["text"] == keep
+    extras = [blk for blk in b["blocks"] if moved in str(blk.get("text") or "")]
+    assert len(extras) == 1
+    assert extras[0]["bbox"] == next_box
 
 
 def test_inline_image_and_box_and_row(tmp_path: Path) -> None:
@@ -140,6 +358,33 @@ def test_inline_image_and_box_and_row(tmp_path: Path) -> None:
     assert len(box) == 1 and box[0]["box_kind"] == "拓展延伸"
 
 
+def test_numbered_exercise_title_is_not_box(tmp_path: Path) -> None:
+    """「习题3.1」只是栏目名加编号，不能因为以「习题」开头就标成侧栏。"""
+    page = {
+        "page_idx": 0,
+        "page_size": [595, 841],
+        "para_blocks": [
+            _block("title", 0, [[_span("text", "习题3.1")]],
+                   bbox=[113, 384, 177, 403], level=2),
+            _block("title", 1, [[_span("text", "思考与讨论：")]],
+                   bbox=[60, 500, 160, 520], level=2),
+            _block("title", 2, [[_span("text", "拓展延伸")]],
+                   bbox=[60, 600, 130, 620], level=2),
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page])
+    out = ir_lib.ingest_page(
+        book, 1, box_prefixes=["习题", "思考与讨论", "拓展延伸"],
+    )
+    by_text = {b["text"]: b for b in out["blocks"]}
+    assert by_text["习题3.1"]["kind"] != "box"
+    assert by_text["习题3.1"]["type"] == "title"
+    assert by_text["思考与讨论："]["kind"] == "box"
+    assert by_text["思考与讨论："]["box_kind"] == "思考与讨论"
+    assert by_text["拓展延伸"]["kind"] == "box"
+
+
 def test_v1_caption_and_table_fallback(tmp_path: Path) -> None:
     book = _book(
         tmp_path,
@@ -165,6 +410,7 @@ def test_v1_caption_and_table_fallback(tmp_path: Path) -> None:
     out = ir_lib.ingest_page(book, 1, box_prefixes=[])
     fig = out["blocks"][0]
     assert fig["caption"] == "图X　来自v1的题注"
+    assert "captions" not in fig
     assert out["blocks"][1]["table_html"] == "<table><tr><td>1</td></tr></table>"
 
 
@@ -243,6 +489,7 @@ def test_ingest_layout_tool_scan_then_fix(tmp_path: Path) -> None:
     written = tmp_path / "irbook" / "ir" / "pages" / "0001.json"
     data = json.loads(written.read_text(encoding="utf-8"))
     assert data["blocks"][0]["text"] == "工具出稿"
+    assert not (tmp_path / "irbook" / "ir" / "fonts.json").exists()
     # pages/ 与 mid/ 不被创建
     assert not (tmp_path / "irbook" / "pages").exists()
     assert not (tmp_path / "irbook" / "mid").exists()
@@ -371,7 +618,7 @@ def test_span_level_latex_join(tmp_path: Path) -> None:
         json.dumps(model, ensure_ascii=False), encoding="utf-8"
     )
     out = ir_lib.ingest_page(book, 1, box_prefixes=[])
-    spans = [s for row in out["blocks"][0]["lines"] for s in row]
+    spans = ir_lib.ir_spans(out["blocks"][0]["lines"])
     eq = [s for s in spans if s.get("t") == "eq"][0]
     assert eq["latex"] == "2\\mathrm{p}"
 
@@ -435,13 +682,9 @@ def test_ir_toc_parse_and_page_map(tmp_path: Path) -> None:
 
     toc = build_toc(book)
     assert toc["toc_pages"] == [2]
-    titles = [(e["level"], e["title"], e["print_page"], e["pdf_page"]) for e in toc["entries"]]
-    assert titles == [
-        (0, "绪言", "1", 3),
-        (0, "第1章 化学研究的天地", "5", 4),
-        (1, "1.1 物质的分类", "7", None),
-        (2, "1.1.1 交叉分类法", "8", None),
-    ]
+    titles = [(e["level"], e["title"], e["pdf_page"]) for e in toc["entries"]]
+    assert titles == [(1, "第1章 化学研究的天地", 4)]
+    assert toc["entries"][0]["label"] == "第1章 化学研究的天地"
 
 
 def test_ir_toc_slash_and_chapter_glue(tmp_path: Path) -> None:
@@ -458,27 +701,33 @@ def test_ir_toc_slash_and_chapter_glue(tmp_path: Path) -> None:
              "discarded_blocks": [_block("page_number", 9, [[_span("text", "1")]])]},
         ],
     )
-    page = {
+    ir_dir = book / "ir" / "pages"
+    ir_dir.mkdir(parents=True)
+    (ir_dir / "0002.json").write_text(json.dumps({
         "page": 2,
         "blocks": [
             {"type": "title", "kind": "body", "text": "目录"},
             {"type": "title", "kind": "body", "text": "第 章 1"},
-            {"type": "title", "kind": "body", "text": "发酵工程1"},
-            {"type": "text", "kind": "body",
-             "text": "第 1 节 获得纯种微生物是发酵工程的基础 / 2\n探究·实验 1-1 酵母浸粉胨葡萄糖培养基的配制 / 6"},
+            {"type": "text", "kind": "body", "text": "第 1 节 获得纯种微生物是发酵工程的基础 / 2"},
         ],
         "chrome": {"page_numbers": ["iv"]},
-    }
-    ir_dir = book / "ir" / "pages"
-    ir_dir.mkdir(parents=True)
-    (ir_dir / "0002.json").write_text(json.dumps(page, ensure_ascii=False), encoding="utf-8")
+    }, ensure_ascii=False), encoding="utf-8")
+    (ir_dir / "0003.json").write_text(json.dumps({
+        "page": 3,
+        "blocks": [
+            {"type": "title", "kind": "body", "level": 1, "text": "第1章 发酵工程"},
+            {"type": "title", "kind": "body", "level": 2, "text": "第 1 节 获得纯种微生物是发酵工程的基础"},
+        ],
+        "chrome": {"page_numbers": [{"text": "1"}]},
+    }, ensure_ascii=False), encoding="utf-8")
     from ir_toc import build_toc, ir_toc
 
     toc = build_toc(book)
     titles = [(e["level"], e["title"], e["print_page"], e["pdf_page"]) for e in toc["entries"]]
-    assert titles[0] == (0, "第1章 发酵工程", "1", 3)
-    assert titles[1][1] == "第 1 节 获得纯种微生物是发酵工程的基础"
-    assert titles[1][2] == "2"
+    assert titles == [
+        (1, "第1章 发酵工程", "1", 3),
+        (2, "第 1 节 获得纯种微生物是发酵工程的基础", "1", 3),
+    ]
     assert all(e.get("label") == e["title"] for e in toc["entries"])
     assert (book / "toc.json").exists() is False
     ir_toc("irbook", root=str(tmp_path), apply="fix")
@@ -491,13 +740,231 @@ def test_ir_toc_tool_scan_and_fix(tmp_path: Path) -> None:
     from ir_toc import ir_toc
 
     scan = ir_toc("irbook", root=str(tmp_path), apply="scan")
-    assert scan["ok"] and scan["entries"] == 4 and scan["reference"] == "missing"
+    assert scan["ok"] and scan["entries"] == 1 and scan["reference"] == "missing"
     assert not (tmp_path / "irbook" / "ir" / "toc.json").exists()
 
     fix = ir_toc("irbook", root=str(tmp_path), apply="fix")
-    assert fix["entries"] == 4
+    assert fix["entries"] == 1
     data = json.loads((tmp_path / "irbook" / "ir" / "toc.json").read_text(encoding="utf-8"))
-    assert data["entries"][0]["title"] == "绪言"
+    assert data["entries"][0]["title"] == "第1章 化学研究的天地"
+    assert data["reviewed"] is False
+
+
+def _blank_pages(count: int) -> list[dict]:
+    return [
+        {"page_idx": i, "page_size": [600, 800],
+         "para_blocks": [_block("text", 0, [[_span("text", "正文")]])],
+         "discarded_blocks": []}
+        for i in range(count)
+    ]
+
+
+def _write_ir_page(book: Path, page_no: int, blocks: list[dict], chrome: dict | None = None) -> None:
+    folder = book / "ir" / "pages"
+    folder.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "page": page_no,
+        "blocks": blocks,
+        "chrome": chrome or {"headers": [], "footers": [], "page_numbers": []},
+    }
+    (folder / f"{page_no:04d}.json").write_text(
+        json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+    )
+
+
+def _txt(text: str, kind: str = "text", block_id: str = "") -> dict:
+    row = {"type": kind, "kind": "body", "text": text}
+    if block_id:
+        row["id"] = block_id
+    return row
+
+
+def test_ir_toc_copyright_page_does_not_start_scan(tmp_path: Path) -> None:
+    """版权页「开 本 890×1240 1/16」曾被斜杠规则当成目录，真目录再也扫不到。"""
+    book = _book(tmp_path, _blank_pages(10))
+    _write_ir_page(book, 3, [
+        _txt("主 编 李大潜 王建磐"),
+        _txt("开 本 890×1240 1/16"),
+        _txt("印 张 6/16"),
+    ])
+    _write_ir_page(book, 6, [
+        _txt("目录", kind="title"),
+        _txt("第1章 集合与逻辑\n1.1 集合初步 2\n1.2 常用逻辑用语 13\n内容提要 20"),
+    ])
+    _write_ir_page(book, 9, [_txt("1.1 集合初步", kind="title")], chrome={"page_numbers": [{"text": "2"}]})
+    from ir_toc import build_toc
+
+    toc = build_toc(book)
+    assert toc["toc_pages"] == [6]
+    rows = [(e["title"], e["print_page"], e["pdf_page"]) for e in toc["entries"]]
+    assert rows == [("1.1 集合初步", "2", 9)]
+    assert not any("开" in title for title, _p, _pdf in rows)
+
+
+def test_ir_toc_space_form_needs_entry_shape(tmp_path: Path) -> None:
+    """目录页上的正文行不进目录。正文页的标题块要进，句子形状留给审核删。"""
+    book = _book(tmp_path, _blank_pages(8))
+    _write_ir_page(book, 4, [
+        _txt("目录", kind="title"),
+        _txt("1.1 集合初步 2\n复习题 20\n这一段话恰好结尾是 7\n实验室里有 3"),
+    ])
+    _write_ir_page(book, 8, [
+        _txt("1.1 集合初步", kind="title"),
+        _txt("实验室里有 3", kind="title"),
+    ])
+    from ir_toc import build_toc
+
+    titles = [e["title"] for e in build_toc(book)["entries"]]
+    assert titles == ["1.1 集合初步", "实验室里有 3"]
+    assert "这一段话恰好结尾是" not in titles
+
+
+def test_ir_toc_skips_derived_close_blocks(tmp_path: Path) -> None:
+    """分栏收口块（kb-close-*）与原块同文，一起数会让每条目录出现两遍。"""
+    book = _book(tmp_path, _blank_pages(8))
+    _write_ir_page(book, 8, [
+        _txt("1.1 集合初步", kind="title", block_id="kb-2"),
+        _txt("1.1 集合初步", kind="title", block_id="kb-close-0-1"),
+        _txt("1.2 常用逻辑用语", kind="title", block_id="kb-3"),
+    ])
+    from ir_toc import build_toc
+
+    titles = [e["title"] for e in build_toc(book)["entries"]]
+    assert titles == ["1.1 集合初步", "1.2 常用逻辑用语"]
+
+
+def test_ir_toc_keeps_every_body_title(tmp_path: Path) -> None:
+    """正文标题块全部留下，包括长练习指令。删练习是审核的事。"""
+    book = _book(tmp_path, _blank_pages(8))
+    _write_ir_page(book, 3, [_txt("开 本 890×1240 1/16")])
+    _write_ir_page(book, 6, [_txt("1 No limits", kind="title")])
+    _write_ir_page(book, 7, [
+        _txt("1 Look at the photos on pages 6 and 7 and answer", kind="title"),
+    ])
+    _write_ir_page(book, 8, [_txt("2 Roads to education", kind="title")])
+    from ir_toc import build_toc
+
+    toc = build_toc(book)
+    assert toc["toc_pages"] == []
+    rows = [(e["title"], e["pdf_page"]) for e in toc["entries"]]
+    assert ("1 No limits", 6) in rows
+    assert ("2 Roads to education", 8) in rows
+    assert ("1 Look at the photos on pages 6 and 7 and answer", 7) in rows
+
+
+def test_ir_toc_title_sits_on_its_own_page(tmp_path: Path) -> None:
+    """标题块在哪一页，目录就链到哪一页。不从目录行上的印刷页码去换算。"""
+    book = _book(tmp_path, _blank_pages(14))
+    _write_ir_page(book, 6, [
+        _txt("目录", kind="title"),
+        _txt("第一章 运动的描述 1\n第一节 质点 物理模型 2"),
+    ])
+    _write_ir_page(book, 9, [_txt("第一节 质点 物理模型", kind="title")])
+    _write_ir_page(book, 12, [_txt("第二节 位置的变化 位移", kind="title")])
+    from ir_toc import build_toc
+
+    toc = build_toc(book)
+    by_title = {e["title"]: e["pdf_page"] for e in toc["entries"]}
+    assert by_title["第一节 质点 物理模型"] == 9
+    assert by_title["第二节 位置的变化 位移"] == 12
+
+
+def test_apply_polish_decisions_copies_title_and_page() -> None:
+    from ir_toc import apply_polish_decisions
+
+    items = [
+        {"id": 0, "level": 1, "title": "第1章 集合与逻辑", "pdf_page": 8},
+        {"id": 1, "level": 2, "title": "练习1.1(1)", "pdf_page": 10},
+        {"id": 2, "level": 1, "title": "1.1 集合初步", "pdf_page": 9},
+    ]
+    kept = apply_polish_decisions(
+        items,
+        [
+            {"id": 0, "action": "keep", "level": 0, "title": "集合与逻辑", "pdf_page": 1},
+            {"id": 2, "action": "keep", "level": 9},
+            {"id": 99, "action": "drop"},
+        ],
+    )
+    assert [row["title"] for row in kept] == ["第1章 集合与逻辑", "1.1 集合初步"]
+    assert kept[0]["pdf_page"] == 8
+    assert kept[0]["level"] == 0
+    assert kept[1]["level"] == 1
+    assert kept[1]["pdf_page"] == 9
+
+
+def test_ir_toc_apply_review_keeps_chapter_level_zero() -> None:
+    from ir_toc import _apply_review_edits
+
+    kept = _apply_review_edits(
+        [{"title": "第1章 集合与逻辑", "label": "第1章 集合与逻辑", "level": 0, "pdf_page": 8, "is_chapter": True}],
+        [
+            {
+                "pdf_page": 8,
+                "title": "第1章 集合与逻辑",
+                "action": "rename",
+                "label": "第1章 集合与逻辑",
+                "level": 0,
+            }
+        ],
+    )
+    assert kept[0]["level"] == 0
+    assert kept[0]["is_chapter"] is True
+
+
+def test_apply_layout_toc_file_preserves_level_zero(tmp_path: Path) -> None:
+    from ir_toc import apply_layout_toc_file
+
+    book = _toc_book(tmp_path)
+    export = tmp_path / "layout-toc.json"
+    export.write_text(
+        json.dumps(
+            {
+                "entries": [
+                    {"level": 0, "title": "第1章 集合与逻辑", "pdf_page": 8},
+                    {"level": 1, "title": "1.1 集合初步", "pdf_page": 9},
+                ]
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    out = apply_layout_toc_file("irbook", export, root=str(tmp_path), source="test_layout")
+    assert out["entries"] == 2
+    toc = json.loads((book / "ir" / "toc.json").read_text(encoding="utf-8"))
+    assert toc["entries"][0]["level"] == 0
+    assert toc["entries"][0]["is_chapter"] is True
+    assert toc["entries"][1]["level"] == 1
+
+
+def test_ir_toc_reviewed_file_is_kept(tmp_path: Path) -> None:
+    from ir_toc import _apply_review_edits, ir_toc
+
+    kept = _apply_review_edits(
+        [
+            {"title": "1 集合", "label": "1 集合", "level": 2, "pdf_page": 9, "is_chapter": False},
+            {"title": "练习1.1(1)", "label": "练习1.1(1)", "level": 2, "pdf_page": 10, "is_chapter": False},
+        ],
+        [
+            {"pdf_page": 9, "title": "1 集合", "action": "keep"},
+            {"pdf_page": 10, "title": "练习1.1(1)", "action": "drop"},
+        ],
+    )
+    assert [row["title"] for row in kept] == ["1 集合"]
+
+    book = _toc_book(tmp_path)
+    ir_toc("irbook", root=str(tmp_path), apply="fix")
+    path = book / "ir" / "toc.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["reviewed"] = True
+    data["entries"] = [{"title": "已审", "label": "已审", "level": 0, "pdf_page": 4}]
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    again = ir_toc("irbook", root=str(tmp_path), apply="fix")
+    assert again["skipped"] is True
+    assert json.loads(path.read_text(encoding="utf-8"))["entries"][0]["title"] == "已审"
+    ir_toc("irbook", root=str(tmp_path), apply="fix", force=True)
+    rewritten = json.loads(path.read_text(encoding="utf-8"))
+    assert rewritten["reviewed"] is False
+    assert rewritten["entries"][0]["title"] == "第1章 化学研究的天地"
 
 
 def _notes_book(tmp_path: Path) -> Path:
@@ -549,25 +1016,39 @@ def test_apply_notes_with_no_notes_is_a_no_op(tmp_path: Path) -> None:
     assert rejected == []
     assert out["blocks"] == page["blocks"]
     assert out.get("layout") == page.get("layout")
+    assert "layout" not in page
+    assert page["source"]["schema"] == ir_lib.IR_SCHEMA
 
 
-def test_apply_notes_still_rebuilds_close_blocks_it_touches(tmp_path: Path) -> None:
-    """按需重生成不能变成不重生成：改到的源块，它的收口块要跟着变。"""
+def test_apply_notes_still_rebuilds_legacy_close_blocks(tmp_path: Path) -> None:
+    """老页上的收口块还得跟着源块走。
+
+    新摄取已经不再合并原始块，磁盘上却还躺着几十本没重摄的书，它们的 kb-close-*
+    仍会被读页拿去渲染。源块改了字而收口块不跟，接口上那一段就还是错字。
+    """
     book = _notes_book(tmp_path)
     page = ir_lib.ingest_page(book, 1, box_prefixes=[])
+    assert not any(ir_lib.is_close_block(b) for b in page["blocks"]), "新摄取不该再造收口块"
+
     src = next(b for b in page["blocks"] if b.get("text") == "原文有错别字的段落")
-    closes = [b for b in page["blocks"] if ir_lib.is_close_block(b) and src["id"] in (b.get("source_ids") or [])]
-    assert closes, "这页没有引用该源块的收口块，换个原料"
+    legacy = {
+        "id": "kb-close-0-0",
+        "type": "text",
+        "kind": "body",
+        "text": src["text"],
+        "source_ids": [src["id"]],
+        "lines": [[dict(s, b=src["id"]) for s in ir_bands.spans_from_block(src)]],
+    }
+    page = {**page, "blocks": [*page["blocks"], legacy]}
 
     out, rejected = ir_lib.apply_notes(
         page,
         [{"id": "n", "block": src["id"], "op": "replace", "old": "错别字", "new": "正确"}],
     )
     assert rejected == []
-    for old in closes:
-        new = next(b for b in out["blocks"] if b["id"] == old["id"])
-        assert "正确" in new["text"], f"{old['id']} 没跟着源块更新"
-        assert "错别字" not in new["text"]
+    new = next(b for b in out["blocks"] if b["id"] == "kb-close-0-0")
+    assert "正确" in new["text"], "收口块没跟着源块更新"
+    assert "错别字" not in new["text"]
 
 
 def test_retitle_rebuilds_spans_instead_of_overwriting_each(tmp_path: Path) -> None:
@@ -595,7 +1076,7 @@ def test_retitle_rebuilds_spans_instead_of_overwriting_each(tmp_path: Path) -> N
     )
     page = ir_lib.ingest_page(book, 1, box_prefixes=[])
     title = next(b for b in page["blocks"] if b.get("type") == "title")
-    assert sum(1 for row in title["lines"] for s in row if s.get("t") == "text") >= 2, "原料不是多段"
+    assert sum(1 for s in ir_lib.ir_spans(title["lines"]) if s.get("t") == "text") >= 2, "原料不是多段"
 
     out, rejected = ir_lib.apply_notes(
         page,
@@ -606,7 +1087,7 @@ def test_retitle_rebuilds_spans_instead_of_overwriting_each(tmp_path: Path) -> N
     for blk in out["blocks"]:
         if blk.get("type") != "title":
             continue
-        joined = "".join(s.get("c") or "" for row in blk["lines"] for s in row)
+        joined = "".join(s.get("c") or "" for s in ir_lib.ir_spans(blk["lines"]))
         assert joined == "第1章 种群和群落", f"{blk['id']} 的 span 被写重了：{joined!r}"
         assert blk["text"] == "第1章 种群和群落"
 
@@ -633,7 +1114,7 @@ def test_retitle_new_text_can_carry_subscript(tmp_path: Path) -> None:
     )
     assert rejected == []
     blk = next(b for b in out["blocks"] if b["id"] == title["id"])
-    kinds = [(s.get("t"), s.get("c")) for row in blk["lines"] for s in row]
+    kinds = [(s.get("t"), s.get("c")) for s in ir_lib.ir_spans(blk["lines"])]
     assert ("sub", "2") in kinds
 
 
@@ -702,7 +1183,7 @@ def test_eq_span_latex_not_shifted_by_image_only_equation(tmp_path: Path) -> Non
         json.dumps(model, ensure_ascii=False), encoding="utf-8"
     )
     out = ir_lib.ingest_page(book, 1, box_prefixes=[])
-    spans = [s for row in out["blocks"][0]["lines"] for s in row]
+    spans = ir_lib.ir_spans(out["blocks"][0]["lines"])
     eq = [s for s in spans if s.get("t") == "eq"]
     assert len(eq) == 1
     assert eq[0]["latex"] == "x^{2}"
@@ -926,6 +1407,9 @@ def test_ir_routes_out_of_range_page_is_404(tmp_path, monkeypatch) -> None:
     (book / "meta.json").write_text(
         json.dumps({"id": "irb", "status": "ready", "page_count": 1}), encoding="utf-8"
     )
+    from app.workspace_module import load
+
+    load("ingest_layout").ingest_layout("irb", root=str(tmp_path / "home"), apply="fix")
     client = TestClient(app)
     headers = {"Authorization": "Bearer test-token"}
     assert client.get("/v1/ir/irb/pages/1/markdown", headers=headers).status_code == 200
@@ -1033,3 +1517,70 @@ def test_load_or_ingest_rewrites_old_schema(tmp_path: Path) -> None:
     again, wrote2 = ir_lib.load_or_ingest_page(book, 1)
     assert wrote2 is True
     assert again["source"]["schema"] == ir_lib.IR_SCHEMA
+
+
+def test_attach_ocr_lines_preface_indent_and_height() -> None:
+    """前言那种：段框 52，光学首行 85、后行 57 → first_indent≈28，行高取中位。"""
+    page_size = [595.0, 841.0]
+    bb = [52.0, 216.0, 530.0, 386.0]
+    structured = [{
+        "bbox": [52.0, 216.0, 530.0, 386.0],
+        "spans": [{"t": "text", "c": "数学应该是绝大多数人一生中学得最多的一门功课。"}],
+    }]
+    model_page = [
+        {"type": "ocr_text", "bbox": [85.1 / 595, 218.7 / 841, 526.6 / 595, 230.4 / 841], "score": 1.0},
+        {"type": "ocr_text", "bbox": [57.7 / 595, 239.7 / 841, 525.4 / 595, 251.5 / 841], "score": 1.0},
+        {"type": "ocr_text", "bbox": [57.1 / 595, 262.4 / 841, 526.6 / 595, 274.2 / 841], "score": 1.0},
+    ]
+    lines, indent, lh = ir_lib.attach_ocr_lines(structured, model_page, bb, page_size)
+    assert len(lines) == 3
+    assert lines[0]["spans"][0]["c"].startswith("数学应该是")
+    assert lines[1]["spans"] == [] and lines[2]["spans"] == []
+    assert indent is not None and 26 <= indent <= 30
+    assert lh is not None and 11 <= lh <= 13
+
+
+def test_attach_ocr_lines_same_row_formula_is_one_line() -> None:
+    """同一视觉行上的题干和公式收成一簇，写不出假缩进。"""
+    page_size = [595.0, 841.0]
+    bb = [221.0, 327.0, 351.0, 343.0]
+    structured = [{"bbox": bb, "spans": [{"t": "text", "c": "(4) 不等式"}]}]
+    model_page = [
+        {"type": "ocr_text", "bbox": [223.1 / 595, 328 / 841, 280 / 595, 342 / 841], "score": 1.0},
+        {"type": "ocr_text", "bbox": [339.1 / 595, 328 / 841, 350 / 595, 342 / 841], "score": 1.0},
+    ]
+    lines, indent, lh = ir_lib.attach_ocr_lines(structured, model_page, bb, page_size)
+    assert len(lines) == 1
+    assert indent is None
+    assert lh is not None
+    assert lines[0]["bbox"][0] < 230
+
+
+def test_ingest_page_writes_first_indent(tmp_path: Path) -> None:
+    page = {
+        "page_idx": 0,
+        "page_size": [595, 841],
+        "para_blocks": [
+            _block("title", 0, [[_span("text", "前言")]], bbox=[242, 134, 341, 161], level=1),
+            _block(
+                "text",
+                1,
+                [[_span("text", "数学应该是绝大多数人一生中学得最多的一门功课。")]],
+                bbox=[52, 216, 530, 386],
+            ),
+        ],
+        "discarded_blocks": [],
+    }
+    book = _book(tmp_path, [page])
+    model = [[
+        {"type": "ocr_text", "bbox": [0.143, 0.260, 0.885, 0.274], "score": 1.0},
+        {"type": "ocr_text", "bbox": [0.097, 0.285, 0.883, 0.299], "score": 1.0},
+        {"type": "ocr_text", "bbox": [0.097, 0.312, 0.885, 0.326], "score": 1.0},
+    ]]
+    out = ir_lib.ingest_page(book, 1, model=model)
+    body = [b for b in out["blocks"] if b["type"] == "text"][0]
+    assert len(body["lines"]) == 3
+    assert body.get("first_indent", 0) >= 20
+    assert body.get("line_height", 0) > 8
+    title = [b for b in out["blocks"] if b["type"] == "title"][0]
+    assert title.get("first_indent") is None

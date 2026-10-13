@@ -1,0 +1,366 @@
+{
+  "book_id": "42041c67e0c54196ae6082406f8b083e",
+  "source": "human from printed TOC page images 2026-10-08",
+  "note": "对照 images/42041c67_p0005.jpg、p0006.jpg。整页是图。四个单元都是0级。文学阅读条与自评同级。附录单独0级。",
+  "toc_pages": [
+    5,
+    6
+  ],
+  "entries": [
+    {
+      "label": "1 Across the globe",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 6
+    },
+    {
+      "label": "Reading: Making school meaningful",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Improving the school curriculum",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Expressions with nouns + prepositions; hyphenated words",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 12
+    },
+    {
+      "label": "The future in different forms",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 14
+    },
+    {
+      "label": "Listening: Deciding on a new school club",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Choosing what new club to start",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 16
+    },
+    {
+      "label": "Writing a description of a place",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 18
+    },
+    {
+      "label": "Reading: Songlines",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Reindeer girls",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 22
+    },
+    {
+      "label": "Exploring literature 1: Two poems",
+      "level": 1,
+      "print_page": 23
+    },
+    {
+      "label": "2 Things that matter",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 30
+    },
+    {
+      "label": "Reading: The stuff in our lives",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Promoting rubbish classification",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Synonyms; phrasal verbs with out",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 36
+    },
+    {
+      "label": "The subject clause",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 38
+    },
+    {
+      "label": "Listening: Creating an exhibit",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Selecting exhibits to display at a museum",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 40
+    },
+    {
+      "label": "Writing a story for a storytelling competition",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 42
+    },
+    {
+      "label": "Reading: Saved or stolen?",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Museums",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 46
+    },
+    {
+      "label": "3 Mind and body",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 48
+    },
+    {
+      "label": "Reading: Searching for balance in life",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Looking for a perfect match",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Pairs of adjectives or nouns used for emphasis or clarification; figurative language",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 54
+    },
+    {
+      "label": "The verb-ed form as predicative",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 56
+    },
+    {
+      "label": "Listening: Plastic surgery",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Presenting one's views on body image and self-esteem",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 58
+    },
+    {
+      "label": "Writing a letter to a newspaper about teenagers' concerns about body image",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 60
+    },
+    {
+      "label": "Reading: Frankenstein",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Great British writers",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 64
+    },
+    {
+      "label": "Exploring literature 2: \"After Twenty Years\"",
+      "level": 1,
+      "print_page": 65
+    },
+    {
+      "label": "4 Words",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 72
+    },
+    {
+      "label": "Reading: Words, words, words",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Introducing rules of forming words in Chinese",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Phrasal verbs with on; prefixes: en-, em-",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 78
+    },
+    {
+      "label": "Modal verbs referring to the past",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 80
+    },
+    {
+      "label": "Listening: The future of public libraries",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Doing a survey on the services of a new public library",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 82
+    },
+    {
+      "label": "Writing a review of a fiction book",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 84
+    },
+    {
+      "label": "Reading: A writer for all time",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Look it up!",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 88
+    },
+    {
+      "label": "Appendices",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "Vocabulary",
+      "level": 1,
+      "print_page": 89
+    },
+    {
+      "label": "Proper nouns",
+      "level": 1,
+      "print_page": 98
+    },
+    {
+      "label": "Glossary",
+      "level": 1,
+      "print_page": 99
+    },
+    {
+      "label": "Grammar reference",
+      "level": 1,
+      "print_page": 100
+    }
+  ]
+}

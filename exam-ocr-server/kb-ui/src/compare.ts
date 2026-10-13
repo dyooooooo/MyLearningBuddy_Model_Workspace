@@ -1,4 +1,5 @@
 import { kb } from "./api";
+import { applyInkDebug, inkDebugOn, setInkDebug, syncInkDebugButton } from "./inkDebug";
 import { applyDocumentTheme, loadSurface } from "./surfaces";
 import { el } from "./util/dom";
 import { sanitizeHtml } from "./util/html-sanitize";
@@ -49,6 +50,8 @@ export type KbCompare = {
   isEnabled: () => boolean;
   bindBook: (bookId: string | null) => void;
   wrapIfNeeded: (pageNo: number) => void;
+  /** 页壳刚建好、还没开始填内容时调一次：整本先套进对照格子。 */
+  wrapAllIfEnabled: () => void;
   getMode: () => CompareMode;
   rightHost: (pageNo: number) => HTMLElement | null;
   toolbar: HTMLElement;
@@ -59,14 +62,21 @@ export function mountKbCompare(opts: {
   previewPages: HTMLElement;
   imageSrc: (bookId: string, pageNo: number) => string;
   getActivePage: () => number;
+  /** 开关对照后把视口滚回原来那页；书还没打开时可以什么都不做。 */
+  scrollToPage?: (pageNo: number) => Promise<void>;
   onRefreshPage: (pageNo: number) => Promise<void>;
+  /** 压过 surface 配置里的 `default_mode`：结构化库要 `ir-image`，教材库要 `old-ir`。 */
+  defaultMode?: string;
+  /** 打开第一本书时就把对照摆出来；用户手动关过之后不再自动开。 */
+  defaultEnabled?: boolean;
 }): KbCompare {
   let enabled = false;
   let bookId: string | null = null;
   let imageSide = "right";
   let imageTagTmpl = "第 {page} 页 · 原图";
   let modes = DEFAULT_MODES;
-  let modeId = "old-ir";
+  let modeId = opts.defaultMode || "old-ir";
+  let userToggled = false;
 
   const toolbar = el("div", "kb-preview-head");
   const toggle = el("button", "btn btn-secondary", "对照原图") as HTMLButtonElement;
@@ -76,16 +86,23 @@ export function mountKbCompare(opts: {
   modeSelect.hidden = true;
   const refresh = el("button", "btn btn-secondary", "刷新当前页") as HTMLButtonElement;
   refresh.type = "button";
+  const inkBoxes = el("button", "btn btn-secondary kb-ink-debug", "块框") as HTMLButtonElement;
+  inkBoxes.type = "button";
+  syncInkDebugButton(inkBoxes);
   const hint = el("span", "muted kb-preview-hint", "");
-  toolbar.append(toggle, modeSelect, refresh, hint);
+  toolbar.append(toggle, modeSelect, refresh, inkBoxes, hint);
   opts.previewWrap.insertBefore(toolbar, opts.previewPages);
-
-  const legend = el("div", "kb-compare-legend");
-  legend.append(el("div", "kb-compare-legend-cell", "MinerU 文本"), el("div", "kb-compare-legend-cell", "原始页图"));
 
   function currentMode(): CompareMode {
     return modes.find((row) => row.id === modeId) || modes[0] || DEFAULT_MODES[0];
   }
+
+  // 图注一开始就按默认模式写，不再先闪一下「MinerU 文本 / 原始页图」。
+  const legend = el("div", "kb-compare-legend");
+  legend.append(
+    el("div", "kb-compare-legend-cell", currentMode().left_label),
+    el("div", "kb-compare-legend-cell", currentMode().right_label),
+  );
 
   function fillModeSelect(): void {
     modeSelect.replaceChildren();
@@ -122,7 +139,7 @@ export function mountKbCompare(opts: {
         imageTagTmpl = slot.profile.image_tag;
       }
       modes = parseModes(slot.profile.modes);
-      const def = String(slot.profile.default_mode || "old-image");
+      const def = String(opts.defaultMode || slot.profile.default_mode || "old-ir");
       if (modes.some((row) => row.id === def)) modeId = def;
       fillModeSelect();
       await paintLegend();
@@ -133,13 +150,26 @@ export function mountKbCompare(opts: {
 
   function updateHint(): void {
     refresh.disabled = !bookId;
+    inkBoxes.disabled = !bookId;
     toggle.disabled = !bookId;
     toggle.textContent = enabled ? "退出对照" : "对照原图";
     toggle.classList.toggle("is-active", enabled);
     modeSelect.hidden = !enabled;
-    if (!bookId) hint.textContent = "从左侧打开一本书";
-    else if (enabled) hint.textContent = `同页左右并排 · ${currentMode().label}`;
-    else hint.textContent = "可对照原图，或刷新当前页";
+    const mode = currentMode();
+    if (!bookId) {
+      hint.textContent = "从左侧打开一本书";
+      return;
+    }
+    if (!enabled) {
+      hint.textContent = "可对照原图，或刷新当前页";
+      return;
+    }
+    // 老线那一格容易被当成「书上原文」：它是 page_sync 对齐过的冻结参照稿，
+    // 正文来自 pages/NNNN.md，插图与图注来自 mid/，不是 pages/ 裸文件。
+    const oldNote = mode.left === "old" || mode.right === "old"
+      ? " · 旧稿是老线对齐稿（pages/ 正文 + mid/ 插图图注），已冻结不改"
+      : "";
+    hint.textContent = `同页左右并排 · ${mode.label}${oldNote}`;
   }
 
   function imageCell(pageNo: number): HTMLElement {
@@ -241,19 +271,34 @@ export function mountKbCompare(opts: {
     updateHint();
   }
 
+  /**
+   * 开关对照、换对照模式都会把每页换成新节点、整本页高重算，原先在看的那页
+   * 会被顶走。换完之后滚回同一页。
+   */
+  async function keepPage(change: () => void): Promise<void> {
+    const before = opts.getActivePage();
+    change();
+    if (before > 0) await opts.scrollToPage?.(before);
+  }
+
   toggle.onclick = () => {
-    if (enabled) disable();
-    else enable();
+    userToggled = true;
+    void keepPage(() => (enabled ? disable() : enable()));
   };
   modeSelect.onchange = () => {
-    modeId = modeSelect.value || "old-image";
+    modeId = modeSelect.value || opts.defaultMode || "old-ir";
     void paintLegend();
-    if (enabled) {
+    if (!enabled) return;
+    void keepPage(() => {
       unwrapAll();
       wrapAll();
       updateHint();
       void refillLoaded();
-    }
+    });
+  };
+  inkBoxes.onclick = () => {
+    setInkDebug(!inkDebugOn());
+    applyInkDebug();
   };
   refresh.onclick = async () => {
     const pageNo = opts.getActivePage();
@@ -284,8 +329,13 @@ export function mountKbCompare(opts: {
         unwrapAll();
         if (bookId) wrapAll();
         else disable();
+      } else if (bookId && opts.defaultEnabled && !userToggled) {
+        enable();
       }
       updateHint();
+    },
+    wrapAllIfEnabled: () => {
+      if (enabled && bookId) wrapAll();
     },
     wrapIfNeeded: (pageNo) => {
       if (!enabled || pageNo <= 0) return;

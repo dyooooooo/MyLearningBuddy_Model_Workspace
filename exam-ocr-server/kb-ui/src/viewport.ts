@@ -15,6 +15,20 @@ export type KbViewport = {
   refresh: () => void;
 };
 
+/**
+ * 滚到目标页，并在版面落定后再校一次。
+ *
+ * 目标页滚过去之后，邻页才开始填内容、对照格子才换上原图，页高一变目标页
+ * 就被顶走（打开书会看着像「又回到第 1 页」）。等一帧、再等一小会各校一次。
+ */
+export async function settleScroll(view: KbViewport, pageNo: number): Promise<void> {
+  await view.scrollToPage(pageNo);
+  await new Promise<void>((done) => window.requestAnimationFrame(() => done()));
+  if (view.getActivePage() !== pageNo) await view.scrollToPage(pageNo);
+  await new Promise<void>((done) => window.setTimeout(done, 180));
+  if (view.getActivePage() !== pageNo) await view.scrollToPage(pageNo);
+}
+
 export function mountKbViewport(opts: KbViewportOpts): KbViewport {
   const loaded = new Set<number>();
   const loading = new Set<number>();

@@ -856,7 +856,13 @@ def _import_conversation_id(book_id: str, extra_cid: str = "") -> str:
     cid = (extra_cid or "").strip()
     if cid and cid not in ("none", "local"):
         return cid
-    meta = library.get_book(book_id) or {}
+    sid = (book_id or "").strip()
+    if not sid:
+        return ""
+    try:
+        meta = library.get_book(sid) or {}
+    except library.InvalidBookId:
+        return ""
     cid = str(meta.get("conversation_id") or "").strip()
     if cid in ("none", "local"):
         return ""
@@ -870,7 +876,10 @@ def _remember_conversation(book_id: str, conversation_id: str) -> None:
     sid = (book_id or "").strip()
     if not sid or not cid:
         return
-    meta = library.get_book(sid) or {}
+    try:
+        meta = library.get_book(sid) or {}
+    except library.InvalidBookId:
+        return
     if str(meta.get("conversation_id") or "").strip() == cid:
         return
     library.patch_book(sid, conversation_id=cid)
@@ -879,7 +888,12 @@ def _remember_conversation(book_id: str, conversation_id: str) -> None:
 def _count_page_files(book_id: str) -> int:
     from app import library
 
-    folder = library.book_dir(book_id) / "pages"
+    if not (book_id or "").strip():
+        return 0
+    try:
+        folder = library.book_dir(book_id) / "pages"
+    except library.InvalidBookId:
+        return 0
     if not folder.is_dir():
         return 0
     return len(list(folder.glob("*.md")))

@@ -1,0 +1,257 @@
+{
+  "book_id": "5ad5b2b8265c429292d63b0d88defb43",
+  "source": "human from printed TOC page images 2026-10-08",
+  "note": "对照 images/5ad5b2b8_p0004.jpg 至 p0006.jpg。不收录「目录」和页脚自读课文说明。第四单元、第七单元标题印成两行，各合成一条。星号紧贴篇名。",
+  "toc_pages": [
+    4,
+    5,
+    6
+  ],
+  "entries": [
+    {
+      "label": "第一单元",
+      "level": 0,
+      "print_page": 1
+    },
+    {
+      "label": "1 子路、曾皙、冉有、公西华侍坐/《论语》",
+      "level": 1,
+      "print_page": 2
+    },
+    {
+      "label": "*齐桓晋文之事/《孟子》",
+      "level": 1,
+      "print_page": 4
+    },
+    {
+      "label": "庖丁解牛/《庄子》",
+      "level": 1,
+      "print_page": 8
+    },
+    {
+      "label": "2 烛之武退秦师/《左传》",
+      "level": 1,
+      "print_page": 10
+    },
+    {
+      "label": "3 *鸿门宴/司马迁",
+      "level": 1,
+      "print_page": 13
+    },
+    {
+      "label": "单元学习任务",
+      "level": 1,
+      "print_page": 18
+    },
+    {
+      "label": "第二单元",
+      "level": 0,
+      "print_page": 21
+    },
+    {
+      "label": "4 窦娥冤（节选）/关汉卿",
+      "level": 1,
+      "print_page": 22
+    },
+    {
+      "label": "5 雷雨（节选）/曹禺",
+      "level": 1,
+      "print_page": 26
+    },
+    {
+      "label": "6 *哈姆莱特（节选）/莎士比亚",
+      "level": 1,
+      "print_page": 37
+    },
+    {
+      "label": "单元学习任务",
+      "level": 1,
+      "print_page": 43
+    },
+    {
+      "label": "第三单元",
+      "level": 0,
+      "print_page": 45
+    },
+    {
+      "label": "7 青蒿素：人类征服疾病的一小步/屠呦呦",
+      "level": 1,
+      "print_page": 46
+    },
+    {
+      "label": "*一名物理学家的教育历程/加来道雄",
+      "level": 1,
+      "print_page": 50
+    },
+    {
+      "label": "8 *中国建筑的特征/梁思成",
+      "level": 1,
+      "print_page": 55
+    },
+    {
+      "label": "9 说“木叶”/林庚",
+      "level": 1,
+      "print_page": 61
+    },
+    {
+      "label": "单元学习任务",
+      "level": 1,
+      "print_page": 67
+    },
+    {
+      "label": "第四单元 信息时代的语文生活",
+      "level": 0,
+      "print_page": 69
+    },
+    {
+      "label": "学习活动",
+      "level": 1,
+      "print_page": null
+    },
+    {
+      "label": "一 认识多媒介",
+      "level": 2,
+      "print_page": 70
+    },
+    {
+      "label": "二 善用多媒介",
+      "level": 2,
+      "print_page": 70
+    },
+    {
+      "label": "三 辨识媒介信息",
+      "level": 2,
+      "print_page": 71
+    },
+    {
+      "label": "第五单元",
+      "level": 0,
+      "print_page": 79
+    },
+    {
+      "label": "10 在《人民报》创刊纪念会上的演说/马克思",
+      "level": 1,
+      "print_page": 80
+    },
+    {
+      "label": "在马克思墓前的讲话/恩格斯",
+      "level": 1,
+      "print_page": 82
+    },
+    {
+      "label": "11 谏逐客书/李斯",
+      "level": 1,
+      "print_page": 85
+    },
+    {
+      "label": "*与妻书/林觉民",
+      "level": 1,
+      "print_page": 87
+    },
+    {
+      "label": "单元学习任务",
+      "level": 1,
+      "print_page": 91
+    },
+    {
+      "label": "第六单元",
+      "level": 0,
+      "print_page": 93
+    },
+    {
+      "label": "12 祝福/鲁迅",
+      "level": 1,
+      "print_page": 94
+    },
+    {
+      "label": "13 林教头风雪山神庙/施耐庵",
+      "level": 1,
+      "print_page": 107
+    },
+    {
+      "label": "*装在套子里的人/契诃夫",
+      "level": 1,
+      "print_page": 113
+    },
+    {
+      "label": "14 促织/蒲松龄",
+      "level": 1,
+      "print_page": 119
+    },
+    {
+      "label": "*变形记（节选）/卡夫卡",
+      "level": 1,
+      "print_page": 123
+    },
+    {
+      "label": "单元学习任务",
+      "level": 1,
+      "print_page": 135
+    },
+    {
+      "label": "第七单元 整本书阅读",
+      "level": 0,
+      "print_page": 137
+    },
+    {
+      "label": "《红楼梦》",
+      "level": 1,
+      "print_page": 138
+    },
+    {
+      "label": "第八单元",
+      "level": 0,
+      "print_page": 143
+    },
+    {
+      "label": "15 谏太宗十思疏/魏征",
+      "level": 1,
+      "print_page": 144
+    },
+    {
+      "label": "*答司马谏议书/王安石",
+      "level": 1,
+      "print_page": 146
+    },
+    {
+      "label": "16 阿房宫赋/杜牧",
+      "level": 1,
+      "print_page": 148
+    },
+    {
+      "label": "*六国论/苏洵",
+      "level": 1,
+      "print_page": 150
+    },
+    {
+      "label": "单元学习任务",
+      "level": 1,
+      "print_page": 152
+    },
+    {
+      "label": "古诗词诵读",
+      "level": 0,
+      "print_page": 155
+    },
+    {
+      "label": "登岳阳楼/杜甫",
+      "level": 1,
+      "print_page": 155
+    },
+    {
+      "label": "桂枝香·金陵怀古/王安石",
+      "level": 1,
+      "print_page": 156
+    },
+    {
+      "label": "念奴娇·过洞庭/张孝祥",
+      "level": 1,
+      "print_page": 157
+    },
+    {
+      "label": "游园（【皂罗袍】）/汤显祖",
+      "level": 1,
+      "print_page": 158
+    }
+  ]
+}

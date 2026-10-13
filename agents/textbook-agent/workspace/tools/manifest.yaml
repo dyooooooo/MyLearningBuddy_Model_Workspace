@@ -119,10 +119,13 @@ tools:
   description: 五源摄取（layout 主源 + model/v1/v2 辅源）：写 textbooks/<书>/ir/pages/NNNN.json 与 remap.json。book_id=* 或空=全部有 layout 的书。不写 pages/、mid/、v2md/。apply=scan 只统计。
 - id: ir_toc
   path: ir_toc.py
-  description: 从中间页标题块收到最小一级，写 ir/toc.json。apply=review 交给知识库 Agent 逐条核对后写回。已审过的默认不覆盖。不写人工 toc.json。
+  description: 写 ir/toc.json（结构化库左栏）。toc.print 找到印刷目录时照老线做法：印刷目录每行当骨架，正文标题块只用来定页（比到原字的页 → 印刷页+偏移 → 没印刷页的看前后行），再把本行到下一行之间没进骨架的正文标题挂在下面（from_body）；没找到印刷目录才从中间页标题块收到最小一级。apply=review 交给知识库 Agent 逐条核对后写回。已审过的默认不覆盖，除非审的不是当前这份 toc.print；换来源前旧文件备份到 logs/toc-backup-书号.json。不写人工 toc.json。
 - id: printed_toc_agent
   path: printed_toc_agent.py
-  description: 通用印刷目录小 Agent。有文字的目录用共享词表直接抽；整页是图才叫本地 35B 看图。写 textbooks/<书>/toc.print。不改聊天会话，不写 pages/ 与 ir/toc.json。
+  description: 通用印刷目录。先读 PDF 文字层，找页用四样信号计分（MinerU index、行尾页码、版面服务、35B 缩略图）；只有缩略图一票的页再整页复核一次。默认 arch=v2：每页模型逐行判断、Python 查事实、有分歧放大重问；arch=v1 为旧的草稿加终审。写 textbooks/<书>/toc.print，随后调 ir_print_toc 和 ir_toc（fix，左栏跟着新目录走）。不改聊天会话，不写 pages/。
+- id: ir_print_toc
+  path: ir_print_toc.py
+  description: 中间表示线编译：读 toc.print 和目录页的 ir/pages 标题块，写 ir/print_toc.json（按目录页分组的行：标题、层级、是不是章、印刷页、跳转页=印刷页+偏移、待人工看），page-ir 插槽据此把目录页画成目录列表。toc.print 没找到目录就删掉旧文件。book_id=* 或空=全部。不写 toc.print、ir/pages、ir/notes、ir/toc.json。
 - id: ir_note
   path: ir_notes.py
   description: 注解叠加：读 ir/notes/NNNN.yaml（replace/retitle/delete，old 不匹配拒绝），渲染页 IR+注解。不写源。

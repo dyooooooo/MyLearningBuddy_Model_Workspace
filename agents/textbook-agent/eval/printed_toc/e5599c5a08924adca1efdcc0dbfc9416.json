@@ -1,0 +1,356 @@
+{
+  "book_id": "e5599c5a08924adca1efdcc0dbfc9416",
+  "source": "human from printed TOC page images 2026-10-08",
+  "note": "对照 images/e5599c5a_p0005.jpg、p0006.jpg。整页是图，无文字层。第4单元彩色条印张页60/66/68/70/72/76。附录单独0级。",
+  "toc_pages": [
+    5,
+    6
+  ],
+  "entries": [
+    {
+      "label": "1 Decisions",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 6
+    },
+    {
+      "label": "Reading: Finding one's true vocation",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Doing an interview",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Idiomatic phrases",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 12
+    },
+    {
+      "label": "The to-infinitive as the subject or predicative",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 14
+    },
+    {
+      "label": "Listening: Regrets in life",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Talking about decisions, regrets and things that could be different",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 16
+    },
+    {
+      "label": "Writing a covering letter to apply for a job",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 18
+    },
+    {
+      "label": "Reading: A bus ride to freedom",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Making decisions",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 22
+    },
+    {
+      "label": "2 Digital humans",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 24
+    },
+    {
+      "label": "Reading: A day in the life of a digital human",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Dos and don'ts for social media",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Phrasal verbs for relationships; words in different parts of speech",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 30
+    },
+    {
+      "label": "The non-defining relative clause",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 32
+    },
+    {
+      "label": "Listening: Favourite gadgets",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Describing gadgets",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 34
+    },
+    {
+      "label": "Writing a for and against essay about modern technology",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 36
+    },
+    {
+      "label": "Reading: \"Touchscreen\"",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Alpine app",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 40
+    },
+    {
+      "label": "3 Creativity",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 42
+    },
+    {
+      "label": "Reading: The stories behind the names",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Factors for success",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Abstract nouns; fixed expressions with and",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 48
+    },
+    {
+      "label": "The verb-ing form as the subject, object or predicative",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 50
+    },
+    {
+      "label": "Listening: Doodles and personality",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Discussing the role of art in the school curriculum",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 52
+    },
+    {
+      "label": "Writing a review of a school event",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 54
+    },
+    {
+      "label": "Reading: The return of Kun opera",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Inventors",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 58
+    },
+    {
+      "label": "4 Inspiration",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 60
+    },
+    {
+      "label": "Reading: \"The Last Leaf\"",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Characterization",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Adverbs of manner",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 66
+    },
+    {
+      "label": "The present perfect continuous",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 68
+    },
+    {
+      "label": "Listening: What makes a hero?",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Discussing the qualities of a hero",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 70
+    },
+    {
+      "label": "Writing an essay about a teen role model",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 72
+    },
+    {
+      "label": "Reading: From Robben Island: the dark years",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: 16-year-old boss",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 76
+    },
+    {
+      "label": "Appendices",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "Vocabulary",
+      "level": 1,
+      "print_page": 77
+    },
+    {
+      "label": "Proper nouns",
+      "level": 1,
+      "print_page": 86
+    },
+    {
+      "label": "Glossary",
+      "level": 1,
+      "print_page": 87
+    },
+    {
+      "label": "Grammar reference",
+      "level": 1,
+      "print_page": 88
+    }
+  ]
+}

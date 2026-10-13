@@ -3,7 +3,7 @@
 set -euo pipefail
 
 COMPOSE_DIR="${COMPOSE_DIR:-$HOME/MyLearningBuddy_Model_Workspace/learning-buddy-c2}"
-MODEL_DIR="${MODELS_HOST_PATH:-$HOME/opt/models}/Qwen3.6-35B-A3B-NVFP4"
+MODEL_DIR="${MODELS_HOST_PATH:-$HOME/opt/models}/Qwen3.8-27B-NVFP4"
 VENV_PY="${MODEL_VENV_PY:-$HOME/opt/models/.venv/bin/python}"
 DOWNLOAD_LOG="${MODEL_DOWNLOAD_LOG:-$HOME/opt/models/download.log}"
 PULL_LOG="${VLLM_PULL_LOG:-$HOME/opt/models/vllm-pull.log}"
@@ -43,7 +43,7 @@ vllm_image_ready() {
 
 download_pids() {
   # Match venv python workers downloading this model (per-shard or snapshot).
-  pgrep -f "${VENV_PY}.*(snapshot_download|hf_hub_download).*Qwen3.6-35B-A3B-NVFP4" 2>/dev/null || true
+  pgrep -f "${VENV_PY}.*(snapshot_download|hf_hub_download).*Qwen3.8-27B-NVFP4" 2>/dev/null || true
 }
 
 pull_pids() {
@@ -99,7 +99,7 @@ for name in shards:
         continue
     print(f'downloading {name}...')
     hf_hub_download(
-        repo_id='nvidia/Qwen3.6-35B-A3B-NVFP4',
+        repo_id='nvidia/Qwen3.8-27B-NVFP4',
         filename=name,
         local_dir=model_dir,
     )

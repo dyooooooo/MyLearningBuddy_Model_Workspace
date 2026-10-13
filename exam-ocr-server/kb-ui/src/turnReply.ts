@@ -3,7 +3,8 @@
 export type ReplyJob = {
   status?: string;
   payload?: Record<string, unknown>;
-  result?: Record<string, unknown>;
+  // 任务还没跑完时服务端给的是 null，不是缺字段。
+  result?: Record<string, unknown> | null;
 };
 
 export function replyText(job: ReplyJob, draft = ""): string {

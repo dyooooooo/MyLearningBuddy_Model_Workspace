@@ -25,3 +25,5 @@ description: 改书页、左侧目录树、对照视图的渲染方法，并用�
 未写完的草稿放 `surfaces/<slot>/proposals/`，加载器不执行。
 
 不要写 `/app`、不要提 `agentDock` / `kb-ui`。
+
+字号、字体、行距、折行只改 `page-ir` 的 JavaScript。Python 工具只生成中间文件，见 `content-vs-paint`。

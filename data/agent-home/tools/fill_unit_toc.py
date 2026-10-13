@@ -6,6 +6,17 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
+try:
+    from ir_lib import FRONT_PAGES
+except ImportError:
+    FRONT_PAGES = 24
+
+_BODY_SHAPE = re.compile(
+    r"^第[0-9０-９一二三四五六七八九十百]+[章单元课篇节讲]"
+    r"|^[0-9０-９]+\.[0-9０-９]+"
+    r"|^(内容提要|复习题|习题|练习|附录|前言|绪言|序言|后记|本章小结|单元学习任务|学习目标)"
+)
+
 _SAFE_ID = re.compile(r"^[A-Za-z0-9_-]+$")
 ATX = re.compile(r"^#{1,6}\s+")
 UNIT_LINE = re.compile(
@@ -66,11 +77,12 @@ def fill_unit_toc(book_id: str, root: str = "") -> dict[str, Any]:
             "entries": 0,
         }
 
+    page_count = max(texts) if texts else 0
     toc_pages = _toc_page_nos(book, texts)
     existing = existing_early or _load_existing_unit_toc(book)
     parsed_pages: list[list[dict[str, Any]]] = []
     for n in toc_pages:
-        parsed_pages.append(_parse_toc_page(texts.get(n, "")))
+        parsed_pages.append(_parse_toc_page(texts.get(n, ""), page_count))
     parsed_entries = [e for chunk in parsed_pages for e in chunk]
     if existing:
         entries = existing
@@ -141,7 +153,7 @@ def _toc_page_nos(book: Path, texts: dict[int, str]) -> list[int]:
     found = [
         n
         for n, text in texts.items()
-        if n <= 12
+        if n <= FRONT_PAGES
         and (
             "kb-page-toc" in text
             or re.search(r"^#{0,6}\s*目\s*录\s*$", text, re.M)
@@ -152,13 +164,14 @@ def _toc_page_nos(book: Path, texts: dict[int, str]) -> list[int]:
     return pages or [n for n in sorted(texts)[:6] if _has_unit_shape(texts[n])]
 
 
-def _strip_trail_page(line: str) -> tuple[str, int | None]:
+def _strip_trail_page(line: str, max_page: int = 0) -> tuple[str, int | None]:
     m = TRAIL_PAGE.match(line.strip())
     if not m:
         return line.strip(), None
     title, page_s = m.group(1).strip(), m.group(2)
     page = int(page_s)
-    if page < 1 or page > 400:
+    cap = int(max_page or 0)
+    if page < 1 or (cap > 0 and page > cap):
         return line.strip(), None
     if title.endswith("/") or not title:
         return line.strip(), None
@@ -171,7 +184,7 @@ def _norm_title(title: str) -> str:
     return out
 
 
-def _parse_toc_page(text: str) -> list[dict[str, Any]]:
+def _parse_toc_page(text: str, max_page: int = 0) -> list[dict[str, Any]]:
     rows: list[tuple[str, int | None]] = []
     blocks = HTML_NAV.findall(text) or HTML_OL.findall(text)
     for block in blocks:
@@ -182,6 +195,8 @@ def _parse_toc_page(text: str) -> list[dict[str, Any]]:
             title = _norm_title(tm.group(1))
             pm = HTML_PAGE.search(li) or HTML_GOTO.search(li)
             page = int(pm.group(1)) if pm else None
+            if page is not None and max_page > 0 and page > max_page:
+                page = None
             if title:
                 rows.append((title, page))
     if not rows:
@@ -193,7 +208,7 @@ def _parse_toc_page(text: str) -> list[dict[str, Any]]:
             line = re.sub(r"^[-*·]\s*", "", line)
             if not line or line in {"目录", "目 录", "Contents"} or line.startswith(":::"):
                 continue
-            title, page = _strip_trail_page(line)
+            title, page = _strip_trail_page(line, max_page)
             title = _norm_title(title)
             if title:
                 rows.append((title, page))
@@ -346,6 +361,8 @@ def _first_body_page(key: str, texts: dict[int, str], skip: set[int]) -> int | N
         key = key.split("/", 1)[0].strip()
     key = re.sub(r"[（(][^）)]*[）)]", "", key).strip()
     if len(key) < 2:
+        return None
+    if len(key) < 4 and not _BODY_SHAPE.match(key):
         return None
     for n in sorted(texts):
         if n in skip:

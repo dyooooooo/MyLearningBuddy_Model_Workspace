@@ -43,6 +43,36 @@ SPECS = [
         "page": 11,
         "page_idx": 10,
     },
+    {
+        "stem": "math-0008",
+        "book": "66fdd0558d97406bac2b7840c9547165",
+        "page": 8,
+        "page_idx": 7,
+    },
+    {
+        "stem": "math-0012",
+        "book": "66fdd0558d97406bac2b7840c9547165",
+        "page": 12,
+        "page_idx": 11,
+    },
+    {
+        "stem": "math-0014",
+        "book": "66fdd0558d97406bac2b7840c9547165",
+        "page": 14,
+        "page_idx": 13,
+    },
+    {
+        "stem": "math-0015",
+        "book": "66fdd0558d97406bac2b7840c9547165",
+        "page": 15,
+        "page_idx": 14,
+    },
+    {
+        "stem": "math-0016",
+        "book": "66fdd0558d97406bac2b7840c9547165",
+        "page": 16,
+        "page_idx": 15,
+    },
 ]
 TRACK_TOL = 1.0
 
@@ -86,7 +116,7 @@ def track_delta(a: list | None, b: list | None) -> float | None:
 
 def test_four_page_goldens() -> None:
     gold_dir = _GOLDENS
-    assert gold_dir.is_dir(), f"四页金样丢了：{gold_dir}"
+    assert gold_dir.is_dir(), f"金样目录丢了：{gold_dir}"
     checked = 0
     for spec in SPECS:
         gold_path = gold_dir / f"{spec['stem']}.json"
@@ -111,10 +141,162 @@ def test_four_page_goldens() -> None:
         for grow, arow in zip(grows, arows):
             assert grow.get("kind") == arow.get("kind")
         assert slot_map(algo) == slot_map(gold)
-        a_types = [u.get("type") for u in algo.get("units") or []]
-        g_types = [u.get("type") for u in gold.get("units") or []]
-        assert a_types == g_types, spec["stem"]
+        assert "units" not in algo, f"{spec['stem']}：排版不再合并原始块，不该还有收口单元"
     assert checked == len(SPECS), f"只比了 {checked}/{len(SPECS)} 页，缺书的 layout.json"
+
+
+def _sig_col(
+    x0: float, x1: float, members: list | None = None, blank: bool = False
+) -> dict:
+    return {
+        "members": members or [],
+        "x0": x0,
+        "x1": x1,
+        "y0": 0.0,
+        "y1": 10.0,
+        "blank": blank,
+    }
+
+
+def test_text_blank_same_ratio_can_merge() -> None:
+    """上行正文|空白、下行也是正文|空白，宽度差在 10% 页宽内，可以往下长。"""
+    page_w = 595.0
+    upper = [_sig_col(52, 400, [{"id": 1}]), _sig_col(400, 543, blank=True)]
+    lower = [_sig_col(52, 410, [{"id": 2}]), _sig_col(410, 543, blank=True)]
+    assert ir_bands._same_band_sig(upper, lower, page_w)
+    merged = ir_bands._merge_aligned_bands(upper, lower, 100.0, 220.0)
+    assert [c["blank"] for c in merged] == [False, True]
+    assert [m["id"] for m in merged[0]["members"]] == [1, 2]
+    assert merged[1]["members"] == []
+    assert merged[0]["x1"] <= merged[1]["x0"] + ir_bands.SNAP
+
+
+def test_merged_blank_yields_to_wider_text() -> None:
+    """上行字窄、下行字宽，合并后右空白让开，两栏不能叠在一起。"""
+    upper = [_sig_col(77, 279, [{"id": 1}]), _sig_col(279, 595, blank=True)]
+    lower = [_sig_col(77, 320, [{"id": 2}]), _sig_col(320, 595, blank=True)]
+    merged = ir_bands._merge_aligned_bands(upper, lower, 84.0, 121.0)
+    assert not merged[0]["blank"] and merged[1]["blank"]
+    assert merged[0]["x1"] == 320.0
+    assert merged[1]["x0"] == 320.0
+
+
+def test_blank_text_versus_text_blank_cannot_merge() -> None:
+    """上行空|字、下行字|空，结构不同，不能往下长。"""
+    page_w = 595.0
+    upper = [_sig_col(52, 200, blank=True), _sig_col(200, 543, [{"id": 1}])]
+    lower = [_sig_col(52, 400, [{"id": 2}]), _sig_col(400, 543, blank=True)]
+    assert not ir_bands._same_band_sig(upper, lower, page_w)
+
+
+def test_wide_plus_sliver_versus_half_cannot_merge() -> None:
+    """上行很宽的字加一条窄空，下行各占一半，比例差超过 10% 页宽，不能并。"""
+    page_w = 595.0
+    upper = [_sig_col(0, 506, [{"id": 1}]), _sig_col(506, 595, blank=True)]
+    lower = [_sig_col(0, 297, [{"id": 2}]), _sig_col(297, 595, blank=True)]
+    assert not ir_bands._same_band_sig(upper, lower, page_w)
+
+
+def test_pad_to_page_keeps_narrow_gap_as_blank() -> None:
+    """栏缝再窄也不并进字栏，空白一直留在大块里。"""
+    cols = [
+        {"members": [{"id": 1, "bbox": [52, 0, 400, 10]}], "x0": 52.0, "x1": 400.0},
+        {"members": [{"id": 2, "bbox": [408, 0, 500, 10]}], "x0": 408.0, "x1": 500.0},
+    ]
+    out = ir_bands._pad_to_page(cols, [0.0, 595.0], 0.0, 10.0)
+    blanks = [c for c in out if c.get("blank")]
+    contents = [c for c in out if not c.get("blank")]
+    assert contents[0]["x1"] == 400.0
+    assert any(abs(c["x0"] - 400.0) <= 0.1 and abs(c["x1"] - 408.0) <= 0.1 for c in blanks)
+    assert out[-1].get("blank") and out[-1]["x1"] == 595.0
+
+
+def test_grow_text_region_keeps_mismatched_rows_apart() -> None:
+    """标题行是字|空，下一行是字|问号框，不能并成一块，问号不会跑到标题旁边。"""
+    title = {
+        "id": 1,
+        "type": "title",
+        "bbox": [52.0, 100.0, 250.0, 130.0],
+        "text": "1.1 标题",
+    }
+    body = {
+        "id": 2,
+        "type": "text",
+        "bbox": [52.0, 140.0, 400.0, 220.0],
+        "text": "一段正文",
+    }
+    qbox = {
+        "id": 3,
+        "type": "text",
+        "bbox": [430.0, 140.0, 520.0, 200.0],
+        "text": "？",
+    }
+    with ir_bands.band_rules_applied():
+        grown = ir_bands._grow_text_region(
+            [title, body, qbox], 80.0, 300.0, [0.0, 595.0], [52.0, 540.0], 595.0
+        )
+    content = [sl for sl in grown if not sl.get("gap_blank")]
+    assert len(content) >= 2
+    q_rows = [
+        sl
+        for sl in content
+        if any(m.get("id") == 3 for col in sl["cols"] for m in (col.get("members") or []))
+    ]
+    title_rows = [
+        sl
+        for sl in content
+        if any(m.get("id") == 1 for col in sl["cols"] for m in (col.get("members") or []))
+    ]
+    assert q_rows and title_rows
+    assert q_rows[0] is not title_rows[0]
+
+
+def test_body_cell_keeps_the_blank_it_grew_into() -> None:
+    """格子为铺满版面长高之后，多出来的空白要留成空白段，不能凭空没掉。
+
+    以前 nest_body 只按成员出段，格子比字高多少都看不出来，排出来的页面
+    上下挤在一起，跟原书对不上。
+    """
+    cell = {"slot": "main", "bbox": [52.0, 80.0, 400.0, 300.0], "blank": False, "members": [0]}
+    member = {
+        "id": 0,
+        "src_i": 0,
+        "type": "text",
+        "bbox": [52.0, 140.0, 400.0, 170.0],
+        "text": "一段正文",
+    }
+    parts = ir_bands.nest_body(cell, [member], [], 12.0).get("parts") or []
+    roles = [p.get("role") for p in parts]
+    assert roles == ["blank", "text", "blank"], roles
+    assert parts[0]["bbox"][1] == 80.0 and parts[0]["bbox"][3] == 140.0
+    assert parts[2]["bbox"][1] == 170.0 and parts[2]["bbox"][3] == 300.0
+
+
+def test_prose_is_not_swallowed_as_a_figure_caption() -> None:
+    """整句正文不是题注。图只吃矮、窄、压在图宽里、又不成句的那几行。"""
+    fig = {"bbox": [100.0, 100.0, 300.0, 200.0]}
+    caption = {
+        "id": 1,
+        "type": "text",
+        "bbox": [110.0, 202.0, 290.0, 218.0],
+        "text": "图1.2-3 函数的图象",
+    }
+    prose = {
+        "id": 2,
+        "type": "text",
+        "bbox": [110.0, 202.0, 290.0, 218.0],
+        "text": "由图可知，函数在该区间上单调递增。",
+    }
+    wide = {
+        "id": 3,
+        "type": "text",
+        "bbox": [52.0, 202.0, 543.0, 218.0],
+        "text": "旁边一整行",
+    }
+    assert ir_bands._is_caption_like(caption)
+    assert not ir_bands._is_caption_like(prose)
+    assert ir_bands._caption_fits_figure(fig["bbox"], caption)
+    assert not ir_bands._caption_fits_figure(fig["bbox"], wide)
 
 
 def test_no_rule_key_is_a_frozen_default() -> None:
@@ -197,7 +379,7 @@ def test_previously_frozen_keys_now_take_effect() -> None:
         "TIGHT_PACK": 300.0,
         "PAIR_GAP": 0.0,
         "FIG_NEAR_X": 9999.0,
-        "CONTAIN_FRAC": 0.05,
+        "CONTAIN_FRAC": 0.99,
     }
     for key, val in probes.items():
         moved = any(
@@ -286,7 +468,7 @@ def test_split_marks_sub_and_plain() -> None:
     assert ir_bands.split_marks("普通字") == [{"t": "text", "c": "普通字"}]
 
 
-def test_ingest_writes_tree(tmp_path: Path) -> None:
+def test_ingest_writes_slots_not_tree(tmp_path: Path) -> None:
     book = tmp_path / "bandbook"
     mineru = book / "mineru"
     mineru.mkdir(parents=True)
@@ -317,11 +499,104 @@ def test_ingest_writes_tree(tmp_path: Path) -> None:
     (mineru / "demo_model.json").write_text("[]", encoding="utf-8")
     (mineru / "demo_content_list.json").write_text("[]", encoding="utf-8")
     out = ingest_page(book, 1)
-    tree = out["layout"]["tree"]
-    assert tree["kind"] == "rows"
-    assert tree.get("children")
-    assert "bands" not in out["layout"]
-    assert "column_count" not in out["layout"]
-    assert out["blocks"][0].get("zone") is None
-    assert out["layout"].get("folio") == "recto"
-    assert any(str(b.get("id") or "").startswith("kb-close-") for b in out["blocks"])
+    assert "layout" not in out
+    assert out.get("folio") == "recto"
+    assert out["source"]["schema"] == 9
+    blk = out["blocks"][0]
+    assert blk.get("zone") is None
+    assert blk.get("slot") in {"main", "span"}
+    assert blk.get("align") is None
+    assert blk.get("indent") is None
+    assert blk.get("indented") is None
+    assert not any(str(b.get("id") or "").startswith("kb-close-") for b in out["blocks"])
+
+
+def test_attach_slots_aside_main_span() -> None:
+    assembled = {
+        "tracks": {
+            "frame": [0.0, 595.0],
+            "main": [52.0, 397.0],
+            "aside": [423.0, 535.0],
+            "aside_side": "right",
+        }
+    }
+    blocks = [
+        {
+            "id": "q",
+            "type": "text",
+            "kind": "body",
+            "bbox": [423.0, 491.0, 514.0, 516.0],
+            "text": "此处为什么有两种情况？",
+        },
+        {
+            "id": "body",
+            "type": "text",
+            "kind": "body",
+            "bbox": [52.0, 84.0, 396.0, 118.0],
+            "text": "正文",
+        },
+        {
+            "id": "wide",
+            "type": "text",
+            "kind": "body",
+            "bbox": [10.0, 200.0, 580.0, 230.0],
+            "text": "通栏",
+        },
+    ]
+    ir_bands.attach_slots(assembled, blocks)
+    assert blocks[0]["slot"] == "aside"
+    assert blocks[1]["slot"] == "main"
+    assert blocks[2]["slot"] == "span"
+
+
+def test_math_page14_question_is_aside() -> None:
+    book_id = "66fdd0558d97406bac2b7840c9547165"
+    book = BOOKS / book_id
+    if not (book / "mineru" / "layout.json").is_file():
+        pytest.skip("原料不在这台机器上")
+    out = ingest_page(book, 14)
+    assert "layout" not in out
+    assert out["source"]["schema"] == 9
+    hit = next(
+        (
+            blk
+            for blk in out["blocks"]
+            if "此处为什么有两种情况" in str(blk.get("text") or "")
+        ),
+        None,
+    )
+    assert hit is not None
+    assert hit["type"] == "text"
+    assert hit["kind"] == "body"
+    assert hit["slot"] == "aside"
+
+
+def test_review_skips_tree_reasons() -> None:
+    from ir_review import _page_hits
+
+    page = {
+        "page": 14,
+        "folio": "recto",
+        "page_size": [595, 841],
+        "chrome": {"page_numbers": [{"text": "9", "bbox": [520, 800, 540, 820]}]},
+        "blocks": [
+            {"id": "f1", "type": "image", "kind": "figure", "text": "", "slot": "main"},
+            {"id": "f2", "type": "image", "kind": "figure", "text": "", "slot": "main"},
+            {"id": "f3", "type": "image", "kind": "figure", "text": "", "slot": "aside"},
+            {
+                "id": "q",
+                "type": "text",
+                "kind": "body",
+                "slot": "aside",
+                "text": "此处为什么有两种情况？",
+            },
+        ],
+    }
+    hit = _page_hits(page)
+    assert hit is not None
+    assert "caption_loose" in hit["reasons"]
+    assert "too_many_bands" not in hit["reasons"]
+    assert "tree_depth" not in hit["reasons"]
+    assert "track_missing" not in hit["reasons"]
+    assert hit["aside_blocks"] == 2
+    assert hit.get("folio") == "recto"

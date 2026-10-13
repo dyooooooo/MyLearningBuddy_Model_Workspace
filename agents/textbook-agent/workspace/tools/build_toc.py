@@ -1,11 +1,23 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
 from statistics import median
 from typing import Any
+
+try:
+    from ir_lib import FRONT_PAGES, safe_book_id
+except ImportError:
+    FRONT_PAGES = 24
+
+    def safe_book_id(book_id: str) -> str:
+        sid = (book_id or "").strip()
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", sid):
+            raise ValueError("book_id required")
+        return sid
 
 CN_NUM_TOKEN = r"\d+|[一二三四五六七八九十两零百]+"
 CHAPTER_LINE = re.compile(rf"^第\s*({CN_NUM_TOKEN})\s*章[\s·．.、]*(.+)$")
@@ -556,26 +568,9 @@ def _pick_book(base: Path, book_id: str) -> Path | None:
     textbooks = base / "textbooks"
     if not textbooks.is_dir():
         return None
-    if book_id:
-        direct = textbooks / book_id
-        return direct if direct.is_dir() else None
-    defaults: list[Path] = []
-    others: list[Path] = []
-    for folder in sorted(p for p in textbooks.iterdir() if p.is_dir()):
-        if not (folder / "pages").is_dir():
-            continue
-        meta_path = folder / "meta.json"
-        if meta_path.is_file():
-            try:
-                meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError:
-                meta = {}
-            if meta.get("is_default"):
-                defaults.append(folder)
-                continue
-        others.append(folder)
-    chosen = defaults or others
-    return chosen[0] if chosen else None
+    sid = safe_book_id(book_id)
+    direct = textbooks / sid
+    return direct if direct.is_dir() else None
 
 
 def _mineru_block_text(block: dict) -> str:
@@ -671,7 +666,7 @@ def _load_pages(book: Path) -> list[tuple[int, Path, list[str]]]:
         md_hits = _catalog_score(md_lines)
         mu_hits = _catalog_score(mu_lines)
         body_lines = mu_lines if mu_hits > md_hits else md_lines
-        probe = pdf_page <= 16 or _is_toc_page(md_lines) or _is_toc_page(mu_lines) or prev_was_toc
+        probe = pdf_page <= FRONT_PAGES or _is_toc_page(md_lines) or _is_toc_page(mu_lines) or prev_was_toc
         pdf_preps = [_prepare_lines(rows) for rows in _pdf_layout_line_sets(book, pdf_page)] if probe else []
         best_pdf = max(pdf_preps, key=_catalog_score) if pdf_preps else []
         # Prefer the original PDF layout on catalog pages. pages/*.md may already
@@ -2395,7 +2390,9 @@ def build_toc(root: str, book_id: str = "") -> dict:
                 prev_entries = prev["entries"]
         except (OSError, json.JSONDecodeError):
             prev_entries = []
-    dest.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp = dest.with_name(f"{dest.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(dest)
 
     levels: dict[str, int] = {}
     for item in entries:
@@ -2423,6 +2420,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Build textbooks/<id>/toc.json")
     parser.add_argument("--root", default="")
-    parser.add_argument("--book-id", default="")
+    parser.add_argument("--book-id", required=True)
     args = parser.parse_args()
     print(json.dumps(build_toc(args.root or str(Path.cwd()), args.book_id), ensure_ascii=False))

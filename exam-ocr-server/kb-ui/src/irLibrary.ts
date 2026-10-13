@@ -1,19 +1,31 @@
 import { kb, type IrTocEntry, type KbBook, type KbTocEntry } from "./api";
+import { epochAlive } from "./epoch";
+import type { KbCompare } from "./compare";
 import { paintLibraryTree, paintNodeExpanded } from "./libraryTree";
-import { fillIrPage } from "./renderIr";
+import { fillPagePane } from "./pagePane";
 import { fillShadow } from "./surfaces";
 import { applyTocExpanded, bindKbPageToc } from "./util/page-toc";
 import { renderTocHtml } from "./util/toc-html";
+import { landingPage } from "./tocLanding";
 import { el } from "./util/dom";
-import { mountKbViewport, type KbViewport } from "./viewport";
+import { mountKbViewport, settleScroll, type KbViewport } from "./viewport";
 import type { BookSortId } from "./bookSort";
+
+export { epochAlive } from "./epoch";
 
 export type IrLibrary = {
   setBooks: (books: KbBook[]) => void;
   reset: () => void;
-  openBook: (id: string) => Promise<void>;
+  /** `page` 由切库交接传入：停在教材库那边看的同一页，而不是重新落地。 */
+  openBook: (id: string, page?: number) => Promise<void>;
   forgetBook: (id: string) => void;
   invalidateToc: (id: string) => void;
+  getActiveId: () => string;
+  getActivePage: () => number;
+  /** 开关对照后滚回原来那页。 */
+  scrollToPage: (pageNo: number) => Promise<void>;
+  /** 对照工具条的「刷新当前页」走这里：强制重画，连带右格。 */
+  refreshPage: (pageNo: number) => Promise<void>;
   expandedBooks: Set<string>;
   expandedToc: Map<string, Set<string>>;
 };
@@ -52,8 +64,11 @@ export function mountIrLibrary(opts: {
   savedBooks?: string[];
   savedToc?: Record<string, string[]>;
   onMore?: (anchor: HTMLButtonElement, book: KbBook, node: HTMLElement) => void;
+  /** 结构化库自己的对照工具条（默认 IR|原图），与教材库那一份各自独立。 */
+  compare?: KbCompare;
 }): IrLibrary {
   let activeId = "";
+  let epoch = 0;
   const tocCache = new Map<string, IrTocPaint>();
   const expandedBooks = new Set<string>(opts.savedBooks || []);
   const expandedToc = new Map<string, Set<string>>(
@@ -61,6 +76,13 @@ export function mountIrLibrary(opts: {
   );
   const tocMounts = new Map<string, { host: HTMLElement; unbind: () => void }>();
   let viewport: KbViewport | null = null;
+  // 正文里 page-ir 画的印刷目录页：行带 data-goto-page，点行跳页。
+  bindKbPageToc(opts.previewHost, {
+    scrollToPage: async (n) => {
+      if (viewport) await settleScroll(viewport, n);
+    },
+    getPrintToPdf: () => tocCache.get(activeId)?.printToPdf || {},
+  });
 
   function setPlaceholder(on: boolean, text?: string): void {
     if (text) opts.placeholder.textContent = text;
@@ -140,8 +162,10 @@ export function mountIrLibrary(opts: {
   async function restoreExpandedTocs(): Promise<void> {
     const jobs: Promise<void>[] = [];
     for (const id of expandedBooks) {
-      const host = opts.treeHost.querySelector<HTMLElement>(`.kb-node[data-book-id="${CSS.escape(id)}"] .kb-node-toc`);
+      const node = opts.treeHost.querySelector<HTMLElement>(`.kb-node[data-book-id="${CSS.escape(id)}"]`);
+      const host = node?.querySelector<HTMLElement>(".kb-node-toc");
       if (host) jobs.push(attachToc(id, host));
+      node?.querySelector(":scope > .kb-ir-review")?.remove();
     }
     await Promise.all(jobs);
   }
@@ -153,6 +177,7 @@ export function mountIrLibrary(opts: {
     const node = opts.treeHost.querySelector<HTMLElement>(`.kb-node[data-book-id="${CSS.escape(id)}"]`);
     if (!node) return;
     paintNodeExpanded(node, on);
+    node.querySelector(":scope > .kb-ir-review")?.remove();
     const tocHost = node.querySelector<HTMLElement>(".kb-node-toc");
     if (!tocHost) return;
     if (on) await attachToc(id, tocHost);
@@ -202,30 +227,36 @@ export function mountIrLibrary(opts: {
     return wrap;
   }
 
-  async function loadPage(pageNo: number, shell: HTMLElement): Promise<void> {
-    if (!activeId) return;
+  async function loadPage(pageNo: number, shell: HTMLElement, force = false): Promise<void> {
+    const bookId = activeId;
+    if (!bookId) return;
     const host = shell.querySelector<HTMLElement>(".kb-page-body");
     if (!host) return;
-    if (!host.classList.contains("is-unloaded") && !host.classList.contains("is-error")) return;
-    try {
-      const out = await kb.irBlocks(activeId, pageNo);
-      await fillIrPage(host, out.page || {}, activeId);
-      host.classList.remove("is-unloaded", "is-error");
-    } catch (e) {
-      host.classList.add("is-unloaded", "is-error");
-      host.textContent = `第 ${pageNo} 页加载失败：${(e as Error).message}`;
+    const stale = host.classList.contains("is-unloaded") || host.classList.contains("is-error");
+    if (!force && !stale) return;
+    const compare = opts.compare;
+    const mode = compare?.isEnabled() ? compare.getMode() : null;
+    // 对照关着时结构化库只画中间表示；开着时左格按模式来（旧|IR 会在这一格读老线）。
+    await fillPagePane(host, bookId, pageNo, mode && mode.left !== "image" ? mode.left : "ir");
+    compare?.wrapIfNeeded(pageNo);
+    if (mode && mode.right !== "image") {
+      const right = compare?.rightHost(pageNo);
+      if (right) await fillPagePane(right, bookId, pageNo, mode.right);
     }
   }
 
-  async function openBook(id: string): Promise<void> {
+  async function openBook(id: string, page = 0): Promise<void> {
+    const token = ++epoch;
     activeId = id;
     markActive(id);
+    opts.compare?.bindBook(id);
     const tocJob = expandedBooks.has(id) && tocMounts.has(id) ? Promise.resolve() : toggleBook(id, true);
     viewport?.destroy();
     viewport = null;
     opts.previewHost.replaceChildren();
     setPlaceholder(false);
     const book = await kb.get(id);
+    if (!epochAlive(epoch, token)) return;
     if (book.status === "failed") {
       setPlaceholder(true, `识别失败：${book.error || "未知错误"}`);
       void tocJob;
@@ -244,19 +275,25 @@ export function mountIrLibrary(opts: {
       return;
     }
     for (let p = 1; p <= count; p++) ensureShell(p);
-    viewport = mountKbViewport({
+    opts.compare?.wrapAllIfEnabled();
+    const view = mountKbViewport({
       root: opts.previewHost,
       pageCount: count,
       ensureShell,
       loadPage,
     });
-    const first = (await tocReady).entries.find((e) => e.pdf_page);
-    if (first?.pdf_page) await viewport.scrollToPage(first.pdf_page);
+    viewport = view;
+    const painted = await tocReady;
+    if (!epochAlive(epoch, token)) return;
+    const target = page > 0 ? Math.min(page, count) : landingPage(painted.entries);
+    if (target > 1) await settleScroll(view, target);
+    if (!epochAlive(epoch, token)) return;
     void tocJob;
   }
 
   function resetPreview(): void {
     activeId = "";
+    opts.compare?.bindBook(null);
     viewport?.destroy();
     viewport = null;
     opts.previewHost.replaceChildren();
@@ -276,6 +313,18 @@ export function mountIrLibrary(opts: {
       renderTree();
     },
     openBook,
+    getActiveId: () => activeId,
+    getActivePage: () => viewport?.getActivePage() || 0,
+    async scrollToPage(pageNo) {
+      const view = viewport;
+      if (view && pageNo > 0) await settleScroll(view, pageNo);
+    },
+    async refreshPage(pageNo) {
+      const shell = opts.previewHost.querySelector<HTMLElement>(
+        `.kb-page-block[data-page-no="${pageNo}"], .kb-compare-row[data-compare-page="${pageNo}"] .kb-page-block`,
+      );
+      if (shell) await loadPage(pageNo, shell, true);
+    },
     forgetBook(id) {
       expandedBooks.delete(id);
       tocCache.delete(id);

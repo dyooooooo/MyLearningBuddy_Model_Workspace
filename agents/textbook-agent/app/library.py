@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import uuid
 from datetime import datetime, timezone
@@ -12,16 +13,22 @@ from app.config import settings
 from app.paths import PathJailError, resolve_in_home
 from app.workspace import ensure_workspace
 
+_SAFE_ID = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+class InvalidBookId(ValueError):
+    """书号不合 [A-Za-z0-9_-]，路由映射成 HTTP 400，不再坍成另一本。"""
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
 def _safe_id(value: str) -> str:
-    cleaned = "".join(ch for ch in (value or "").strip() if ch.isalnum() or ch in "-_")
-    if not cleaned:
-        raise ValueError("id required")
-    return cleaned
+    sid = (value or "").strip()
+    if not _SAFE_ID.match(sid):
+        raise InvalidBookId("invalid book id")
+    return sid
 
 
 def textbooks_root() -> Path:
@@ -227,9 +234,10 @@ def list_books() -> list[dict[str, Any]]:
 
 
 def get_book(book_id: str) -> dict[str, Any] | None:
+    sid = _safe_id(book_id)
     try:
-        meta = read_meta(_safe_id(book_id))
-    except (ValueError, PathJailError):
+        meta = read_meta(sid)
+    except PathJailError:
         return None
     return book_to_dict(meta) if meta else None
 

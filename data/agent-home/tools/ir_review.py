@@ -14,8 +14,6 @@ from ir_lib import book_dir, load_page_json, safe_book_id
 
 SCORE_FLOOR = 0.85
 _REVIEW_NAME = "review.json"
-_MAX_DEPTH = 8
-_MAX_BANDS = 16
 
 
 def _atomic_write(path: Path, text: str) -> None:
@@ -23,16 +21,6 @@ def _atomic_write(path: Path, text: str) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(text, encoding="utf-8")
     tmp.replace(path)
-
-
-def _walk_tree(node: dict[str, Any], depth: int = 0) -> list[dict[str, Any]]:
-    if not isinstance(node, dict):
-        return []
-    rows = [{"node": node, "depth": depth}]
-    for child in node.get("children") or []:
-        if isinstance(child, dict):
-            rows.extend(_walk_tree(child, depth + 1))
-    return rows
 
 
 def _page_hits(page: dict[str, Any]) -> dict[str, Any] | None:
@@ -65,34 +53,10 @@ def _page_hits(page: dict[str, Any]) -> dict[str, Any] | None:
             }
         )
 
-    tree = layout.get("tree") if isinstance(layout.get("tree"), dict) else {}
-    walked = _walk_tree(tree) if tree else []
-    bands = [row for row in walked if row["depth"] == 1]
-    if len(bands) >= _MAX_BANDS:
-        reasons.append("too_many_bands")
-    if any(row["depth"] >= _MAX_DEPTH for row in walked):
-        reasons.append("tree_depth")
-
-    tracks = layout.get("tracks") if isinstance(layout.get("tracks"), dict) else {}
-    if not tracks.get("main") and tree:
-        reasons.append("track_missing")
-    aside = tracks.get("aside")
-    if aside and not tracks.get("aside_side"):
-        reasons.append("track_side")
-
-    members_by_band: dict[int, set[int]] = {}
-    for i, row in enumerate(assembled_rows(layout, tree)):
-        for idx in row:
-            members_by_band.setdefault(i, set()).add(idx)
     close_cross = 0
     for blk in blocks:
         if not str(blk.get("id") or "").startswith("kb-close-"):
             continue
-        bands_hit = {bi for bi, ids in members_by_band.items() if any(
-            0 <= int(src) < len(blocks) and blocks[int(src)].get("id") == blk.get("id")
-            for src in ids
-        )}
-        # 收口块自己的 bbox 跨过图带：看 close 行是否同时出现在多个 band 槽
         slots = blk.get("source_ids") or []
         if len(slots) >= 4:
             close_cross += 1
@@ -116,7 +80,7 @@ def _page_hits(page: dict[str, Any]) -> dict[str, Any] | None:
                 }
             )
 
-    folio = str(layout.get("folio") or "")
+    folio = str(page.get("folio") or layout.get("folio") or "")
     chrome = page.get("chrome") if isinstance(page.get("chrome"), dict) else {}
     page_size = page.get("page_size") or []
     try:
@@ -141,30 +105,14 @@ def _page_hits(page: dict[str, Any]) -> dict[str, Any] | None:
         return None
     if not reasons and flagged and all(f["why"] == ["unscored"] for f in flagged):
         return None
+    aside_n = sum(1 for blk in blocks if blk.get("slot") == "aside")
     return {
         "page": int(page.get("page") or 0),
         "reasons": reasons or ["low_score"],
-        "tracks": 2 if tracks.get("aside") else 1,
-        "bands": len(bands),
-        "depth": max((row["depth"] for row in walked), default=0),
+        "aside_blocks": aside_n,
+        "folio": folio,
         "blocks": flagged[:40],
     }
-
-
-def assembled_rows(layout: dict[str, Any], tree: dict[str, Any]) -> list[list[int]]:
-    if tree.get("kind") == "rows":
-        kids = tree.get("children") or []
-    elif tree:
-        kids = [tree]
-    else:
-        kids = []
-    out: list[list[int]] = []
-    for kid in kids:
-        if not isinstance(kid, dict):
-            continue
-        mems = [int(i) for i in (kid.get("members") or []) if i is not None]
-        out.append(mems)
-    return out
 
 
 def review_from_pages(book_id: str, pages: dict[int, dict[str, Any]]) -> dict[str, Any]:

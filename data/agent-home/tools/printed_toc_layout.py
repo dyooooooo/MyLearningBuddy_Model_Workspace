@@ -29,6 +29,7 @@ PREFIX_SCALE = 1.3
 _CN_NUM = "一二三四五六七八九十百零〇"
 _BOLD_FONT = re.compile(r"bold|semibold|heavy|black|demi", re.I)
 _TOC_WORD = re.compile(r"^(目录|目|录|contents)$", re.I)
+_GLYPH_LATIN = str.maketrans({"\u7283": "A", "\u7285": "B"})
 _NOTE = re.compile(r"^注[:：]")
 _PAGE_ONLY = re.compile(
     r"^(?:/\s*)?(?:\(\s*p\.?\s*(?P<p1>[\d ]*)\)|(?P<p2>\d(?:\s?\d){0,3}))$", re.I
@@ -47,7 +48,7 @@ _LEAD_MARKS = set("0123456789.*")
 
 
 def tidy(text: str) -> str:
-    text = unicodedata.normalize("NFKC", text or "")
+    text = unicodedata.normalize("NFKC", text or "").translate(_GLYPH_LATIN)
     text = re.sub(r"\s+", " ", text).strip()
     return _SPACED_NUMBER.sub(r"第\1\2", text)
 
@@ -67,6 +68,11 @@ def _digits(raw: str | None) -> int | None:
 
 def header_key(text: str) -> str:
     return re.sub(r"[\d\s]", "", text)
+
+
+def page_tail_count(lines: list[dict[str, Any]]) -> int:
+    """How many lines end with a printed page number."""
+    return sum(1 for ln in lines if _PAGE_TAIL.match(str(ln.get("text") or "")))
 
 
 def text_layer_lines(page: Any, edge: float = EDGE_BAND) -> list[dict[str, Any]]:
@@ -127,9 +133,11 @@ def model_lines(rows: list[dict[str, Any]], width: float, height: float) -> list
         middle = (y0 + y1) / 2
         if y1 - y0 < 1 or middle < height * EDGE_BAND or middle > height * (1 - EDGE_BAND):
             continue
+        given = row.get("page")
         out.append({
             "chars": None, "text": text, "x0": x0, "x1": x1, "y0": y0, "y1": y1,
             "size": round((y1 - y0) * 0.8, 1), "bold": False, "color": row.get("color", 0),
+            "given_page": _digits(str(given)) if given is not None and given != "" else None,
         })
     return out
 
@@ -166,8 +174,14 @@ def _chars_text(chars: list[dict[str, Any]]) -> str:
 # ---------------------------------------------------------------- one page
 
 
-def page_rows(lines: list[dict[str, Any]], pdf_page: int) -> list[dict[str, Any]]:
-    """Lines of one catalog page -> rows in reading order (column, then top to bottom)."""
+def page_rows(
+    lines: list[dict[str, Any]], pdf_page: int, model_wraps: bool = True
+) -> list[dict[str, Any]]:
+    """Lines of one catalog page -> rows in reading order (column, then top to bottom).
+
+    model_wraps=False leaves rows without real letter sizes unjoined; their sizes
+    are guessed from box height, so the vision model judges those wraps instead.
+    """
     lines = [ln for ln in lines if ln["text"]]
     for ln in lines:
         ln["token"] = _PAGE_ONLY.match(ln["text"])
@@ -180,7 +194,7 @@ def page_rows(lines: list[dict[str, Any]], pdf_page: int) -> list[dict[str, Any]
         lo = cuts[col - 1] if col else float("-inf")
         hi = cuts[col] if col < len(cuts) else float("inf")
         mine = [ln for ln in lines if lo <= ln["x0"] < hi]
-        rows.extend(_frame_rows(mine, pdf_page, col))
+        rows.extend(_frame_rows(mine, pdf_page, col, model_wraps))
     return rows
 
 
@@ -220,7 +234,9 @@ def _overlap(a: dict[str, Any], b: dict[str, Any]) -> float:
     return shared / least
 
 
-def _frame_rows(lines: list[dict[str, Any]], pdf_page: int, col: int) -> list[dict[str, Any]]:
+def _frame_rows(
+    lines: list[dict[str, Any]], pdf_page: int, col: int, model_wraps: bool = True
+) -> list[dict[str, Any]]:
     titles = sorted((ln for ln in lines if not ln["token"]), key=lambda ln: ln["y0"])
     groups: list[list[dict[str, Any]]] = []
     for ln in titles:
@@ -233,16 +249,19 @@ def _frame_rows(lines: list[dict[str, Any]], pdf_page: int, col: int) -> list[di
     rows = [_row(group, pdf_page, col) for group in groups]
     for row in rows:
         _inline_page(row)
+        if row["print_page"] is None and row.get("given_page") is not None:
+            row["print_page"] = row["given_page"]
     for ln in lines:
         if ln["token"]:
             _attach_token(rows, ln)
-    rows = _merge_wrapped(rows)
+    rows = _merge_wrapped(rows, model_wraps)
     rows = _merge_split_units(rows)
     return [row for row in rows if _keep(row)]
 
 
 def _row(group: list[dict[str, Any]], pdf_page: int, col: int) -> dict[str, Any]:
-    if all(ln["chars"] is not None for ln in group):
+    real_size = all(ln["chars"] is not None for ln in group)
+    if real_size:
         chars = [c for ln in group for c in ln["chars"]]
         text = _chars_text(chars)
         ink = sorted((c for c in chars if c["c"].strip()), key=lambda c: c["x0"])
@@ -268,8 +287,10 @@ def _row(group: list[dict[str, Any]], pdf_page: int, col: int) -> dict[str, Any]
         "x_text": x_text,
         "size": round(float(size), 1),
         "bold": bool(bold),
+        "real_size": real_size,
         "color": color,
         "print_page": None,
+        "given_page": next((ln.get("given_page") for ln in group if ln.get("given_page") is not None), None),
         "hole": None,
         "hole_box": None,
     }
@@ -356,14 +377,16 @@ def _absorb(row: dict[str, Any], nxt: dict[str, Any], sep_text: str) -> dict[str
     merged["hole"] = nxt["hole"]
     merged["hole_box"] = nxt["hole_box"]
     merged["merged"] = row.get("merged", 1) + nxt.get("merged", 1)
+    merged["real_size"] = bool(row.get("real_size", True) and nxt.get("real_size", True))
     return merged
 
 
-def _merge_wrapped(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _merge_wrapped(rows: list[dict[str, Any]], model_wraps: bool = True) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for row in rows:
         prev = out[-1] if out else None
-        if prev is not None and _wraps(prev, row):
+        measured = model_wraps or (prev is not None and prev.get("real_size") and row.get("real_size"))
+        if prev is not None and measured and _wraps(prev, row):
             out[-1] = _absorb(prev, row, _join(prev["text"], row["text"]))
         else:
             out.append(row)
@@ -410,7 +433,7 @@ def _merge_split_units(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _keep(row: dict[str, Any]) -> bool:
     text = row["text"]
-    plain = re.sub(r"\s", "", text)
+    plain = re.sub(r"[\s|│丨]", "", text)
     if not plain or _TOC_WORD.match(plain):
         return False
     if _NOTE.match(plain) and row["print_page"] is None:
@@ -464,6 +487,30 @@ def _stronger(a: tuple[float, bool, float], b: tuple[float, bool, float]) -> boo
     return a[2] < b[2] - max(INDENT_TOL, INDENT_EM * min(a[0], b[0]))
 
 
+_TOP_TITLE = re.compile(r"^(附录|Appendices)$")
+
+
+def _lift_top_titles(rows: list[dict[str, Any]]) -> None:
+    """附录 beside 第N部分 shares that level. Its indented children move up with it."""
+    for index, row in enumerate(rows):
+        if not _TOP_TITLE.match(str(row.get("text") or "")):
+            continue
+        indent = float(row.get("indent") or 0)
+        peer = any(
+            other.get("level") == 0 and abs(float(other.get("indent") or 0) - indent) <= INDENT_TOL
+            for other in rows
+        )
+        old = int(row["level"])
+        if not peer or old == 0:
+            continue
+        row["level"] = 0
+        for nxt in rows[index + 1:]:
+            nxt_indent = float(nxt.get("indent") or 0)
+            if int(nxt["level"]) <= old and nxt_indent <= indent + INDENT_TOL:
+                break
+            nxt["level"] = max(0, int(nxt["level"]) - old)
+
+
 def assign_levels(rows: list[dict[str, Any]]) -> None:
     offsets = _frame_offsets(rows)
     stack: list[tuple[float, bool, float]] = []
@@ -475,3 +522,4 @@ def assign_levels(rows: list[dict[str, Any]]) -> None:
         row["level"] = len(stack)
         row["indent"] = round(indent, 1)
         stack.append(rank)
+    _lift_top_titles(rows)

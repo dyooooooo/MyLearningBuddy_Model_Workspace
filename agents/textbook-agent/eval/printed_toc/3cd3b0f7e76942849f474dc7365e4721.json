@@ -1,0 +1,356 @@
+{
+  "book_id": "3cd3b0f7e76942849f474dc7365e4721",
+  "source": "human from printed TOC page images 2026-10-08",
+  "note": "对照 images/3cd3b0f7_p0006.jpg、p0007.jpg。折行合成一条。附录单独0级。",
+  "toc_pages": [
+    6,
+    7
+  ],
+  "entries": [
+    {
+      "label": "1 No limits",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 6
+    },
+    {
+      "label": "Reading: Blame your brain",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Conducting a survey about risk-taking",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Pronoun referencing; adjectives ending in -ing or -ed",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 12
+    },
+    {
+      "label": "Ellipsis",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 14
+    },
+    {
+      "label": "Listening: The fear factor",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Talking about common and uncommon fears",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 16
+    },
+    {
+      "label": "Writing an article to describe a person you admire",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 18
+    },
+    {
+      "label": "Reading: Eyewitness account: Scott’s Hut",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Extreme sports in Queenstown",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 22
+    },
+    {
+      "label": "2 Roads to education",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 24
+    },
+    {
+      "label": "Reading: An experiment in education",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Proposing the best way of studying",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Phrasal verbs with prepositions",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 30
+    },
+    {
+      "label": "The verb-ing and verb-ed forms as the attributive",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 32
+    },
+    {
+      "label": "Listening: Playing games",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Conducting a survey about play",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 34
+    },
+    {
+      "label": "Writing a for and against essay on how long an English class should be",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 36
+    },
+    {
+      "label": "Reading: “The Geography Lesson”",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: An American high school",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 40
+    },
+    {
+      "label": "3 Progress?",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 42
+    },
+    {
+      "label": "Reading: Going global",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Conducting an interview about globalization",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Verbs of statistics",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 48
+    },
+    {
+      "label": "The verb-ing form as the adverbial",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 50
+    },
+    {
+      "label": "Listening: Selling dreamcatchers",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Discussing a business idea",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 52
+    },
+    {
+      "label": "Writing a formal email to make enquiries about an English course in the UK",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 54
+    },
+    {
+      "label": "Reading: All you need to know about English",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: World English",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 58
+    },
+    {
+      "label": "4 Achievements",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "A Reading and interaction",
+      "level": 1,
+      "print_page": 60
+    },
+    {
+      "label": "Reading: An excerpt from The Old Man and the Sea",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Mini-project: Having a class discussion about challenges in life and how to deal with them",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Focus on language: Nouns and adjectives with the same root",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "B Grammar activity",
+      "level": 1,
+      "print_page": 66
+    },
+    {
+      "label": "The to-infinitive as the adverbial",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "C Listening and speaking",
+      "level": 1,
+      "print_page": 68
+    },
+    {
+      "label": "Listening: What’s the greatest achievement in human history?",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Speaking: Talking about the achievements of successful people",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "D Writing",
+      "level": 1,
+      "print_page": 70
+    },
+    {
+      "label": "Writing an opinion essay on PE classes",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "E Cultural focus",
+      "level": 1,
+      "print_page": 72
+    },
+    {
+      "label": "Reading: A false start",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Video: Top spin",
+      "level": 2,
+      "print_page": null
+    },
+    {
+      "label": "Self-assessment",
+      "level": 1,
+      "print_page": 76
+    },
+    {
+      "label": "Appendices",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "Vocabulary",
+      "level": 1,
+      "print_page": 77
+    },
+    {
+      "label": "Proper nouns",
+      "level": 1,
+      "print_page": 85
+    },
+    {
+      "label": "Glossary",
+      "level": 1,
+      "print_page": 86
+    },
+    {
+      "label": "Grammar reference",
+      "level": 1,
+      "print_page": 87
+    }
+  ]
+}

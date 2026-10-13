@@ -1,0 +1,105 @@
+{
+  "book_id": "13036f17d454435888c0f499e9773b82",
+  "source": "human from printed TOC page images 2026-10-08",
+  "note": "对照 images/13036f17_p0006.jpg。第2、3部分印的是拉丁字母 A、B，不是 PDF 私有区乱码。附录与各部分同级，无印张页。",
+  "toc_pages": [
+    6
+  ],
+  "entries": [
+    {
+      "label": "引论",
+      "level": 0,
+      "print_page": 1
+    },
+    {
+      "label": "第1部分 数学建模活动案例",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "1 红绿灯管理",
+      "level": 1,
+      "print_page": 6
+    },
+    {
+      "label": "2 “诱人”的优惠券",
+      "level": 1,
+      "print_page": 9
+    },
+    {
+      "label": "3 车辆转弯时的安全隐患",
+      "level": 1,
+      "print_page": 13
+    },
+    {
+      "label": "4 雨中行",
+      "level": 1,
+      "print_page": 20
+    },
+    {
+      "label": "第2部分 数学建模活动A",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "5 出租车运价",
+      "level": 1,
+      "print_page": 28
+    },
+    {
+      "label": "6 家具搬运",
+      "level": 1,
+      "print_page": 30
+    },
+    {
+      "label": "7 登山行程设计",
+      "level": 1,
+      "print_page": 32
+    },
+    {
+      "label": "第3部分 数学建模活动B",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "8 包装彩带",
+      "level": 1,
+      "print_page": 36
+    },
+    {
+      "label": "9 削菠萝",
+      "level": 1,
+      "print_page": 37
+    },
+    {
+      "label": "10 高度测量",
+      "level": 1,
+      "print_page": 38
+    },
+    {
+      "label": "11 外卖与环保",
+      "level": 1,
+      "print_page": 40
+    },
+    {
+      "label": "附录",
+      "level": 0,
+      "print_page": null
+    },
+    {
+      "label": "附录1 数学建模活动报告的写作",
+      "level": 1,
+      "print_page": 41
+    },
+    {
+      "label": "附录2 数学建模活动报告样例",
+      "level": 1,
+      "print_page": 42
+    },
+    {
+      "label": "附录3 有关数学建模活动中数学内容的说明",
+      "level": 1,
+      "print_page": 45
+    }
+  ]
+}

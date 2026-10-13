@@ -43,6 +43,24 @@ export type KbToc = {
   toc_pages: number[];
 };
 
+export type KbIrReviewPage = {
+  page: number;
+  /** 复查给出的理由名，如 `too_many_bands`（横带太多）、`caption_loose`（图注没贴住图）。 */
+  reasons: string[];
+  bands: number;
+  depth: number;
+  tracks: number;
+  blocks: number;
+};
+
+export type KbIrReview = {
+  book_id: string;
+  pages: KbIrReviewPage[];
+  page_count: number;
+  block_count: number;
+  instruction?: string;
+};
+
 export type KbMineruOut = {
   settings: {
     api_base_url: string;
@@ -192,6 +210,10 @@ export const kb = {
   },
   irToc(id: string): Promise<{ entries: IrTocEntry[]; toc_pages?: number[]; source?: string }> {
     return json(`/api/v1/kb/proxy/ir/${encodeURIComponent(id)}/toc`);
+  },
+  /** 待审页（`ir/review.json`）：没复查过的书返回空列表。 */
+  irReview(id: string): Promise<KbIrReview> {
+    return json(`/api/v1/kb/proxy/ir/${encodeURIComponent(id)}/review`);
   },
   irPage(
     id: string,

@@ -1,0 +1,26 @@
+{
+  "book_id": "book-a",
+  "page": {
+    "page": 4,
+    "page_size": [595, 841],
+    "blocks": [
+      { "id": "b0", "type": "title", "text": "目录", "bbox": [115, 62, 172, 89] },
+      { "id": "b1", "type": "title", "text": "第 章 1", "bbox": [102, 142, 174, 164] }
+    ]
+  },
+  "print_toc": {
+    "schema": 1,
+    "page_offset": 5,
+    "pages": {
+      "4": {
+        "heading": "目录",
+        "rows": [
+          { "label": "第1章 发酵工程", "level": 0, "chapter": true, "print_page": 1, "goto_page": 6, "needs_review": false },
+          { "label": "第1节 获得纯种微生物是发酵工程的基础", "level": 1, "chapter": false, "print_page": 2, "goto_page": 7, "needs_review": false },
+          { "label": "探究· 实验1-1 <配制>", "level": 2, "chapter": false, "print_page": 6, "goto_page": null, "needs_review": true },
+          { "label": "Exploring literature", "level": 1, "chapter": false, "print_page": null, "goto_page": null, "needs_review": false }
+        ]
+      }
+    }
+  }
+}

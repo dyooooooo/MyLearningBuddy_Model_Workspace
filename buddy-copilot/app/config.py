@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # 本地 vLLM（三角裁决 35B 主力；宿主机直连）
     vllm_base_url: str = "http://127.0.0.1:8088/v1"
-    vllm_model: str = "qwen36-35b-nvfp4"
+    vllm_model: str = "qwen38-27b-nvfp4"
     vllm_api_token: str = ""
 
     # MinerU 辅助锚点

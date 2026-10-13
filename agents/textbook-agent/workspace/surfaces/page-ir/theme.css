@@ -4,11 +4,15 @@
   line-height: 1.65;
   font-size: 15px;
   color: #1b2230;
+  /* 影子根不继承页面字体，不写就吃系统默认，简体正文会渲成繁体字形。 */
+  font-family: "Noto Sans SC", "Source Han Sans SC", "Source Han Sans CN",
+    "PingFang SC", "Microsoft YaHei", "WenQuanYi Micro Hei", system-ui,
+    -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 :host *, :host *::before, :host *::after { box-sizing: border-box; }
 p { margin: 0.4rem 0; text-indent: 2em; }
 .kb-ir-tab { display: inline-block; min-width: 2.2em; }
-/* 行间公式收在收口行里，仍要独占一行居中；排版由 kb-ui 扫 [data-latex] 完成 */
+/* 行间公式收在收口行里，仍要独占一行居中；公式在 paint 里一次画完 */
 .math--display { display: block; text-align: center; margin: 0.45rem 0; text-indent: 0; }
 h1, h2, h3, h4, h5, h6 {
   color: #1b2230;
@@ -65,10 +69,314 @@ em, i {
 table { border-collapse: collapse; margin: 0.8rem 0; width: 100%; font-size: 13px; }
 th, td { border: 1px solid #d0d7e2; padding: 0.25rem 0.45rem; }
 mjx-container { text-indent: 0; }
+.kb-ir-ink mjx-container {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+}
+/* MathJax 行间公式默认上下各 1em；墨水框只有一行高，不盖掉这条就会整行被裁光。 */
+.kb-ir-ink mjx-container[jax="CHTML"][display="true"] {
+  display: inline-block;
+  margin: 0;
+  font-size: inherit;
+  text-align: left;
+}
+.kb-ir-ink mjx-container[jax="CHTML"]:not([display="true"]) {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+}
+.kb-ir-ink .math--display {
+  display: inline-block;
+  margin: 0;
+  text-align: left;
+}
+.kb-ir-ink .math-inline {
+  font-size: inherit;
+}
+/* 墨水框开了任意位置折行；公式内部一折，字就碎成看不懂的碎片。 */
+.kb-ir-ink mjx-container,
+.kb-ir-ink mjx-container *,
+.kb-ir-ink .math-typeset,
+.kb-ir-ink .math-inline {
+  word-break: normal;
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
 
 .kb-ir-page {
   container-type: inline-size;
   container-name: kb-ir-page;
+}
+/* 印刷目录页：照老线 page-body/theme.css 的 kb-page-toc 一套，只换类名。 */
+.kb-ir-toc-heading { font-weight: 700; margin: 0 0 0.4rem; }
+.kb-ir-toc {
+  width: 100%; max-width: 100%;
+  padding-right: 1rem; overflow: hidden;
+}
+.kb-ir-toc-list { list-style: none; margin: 0.4rem 0 0.8rem; padding: 0; }
+.kb-ir-toc-row {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0.75rem, 1fr) max-content;
+  align-items: baseline; column-gap: 0.45rem;
+  width: 100%; max-width: 100%; min-width: 0;
+  padding: 0.3rem 0; margin: 0; list-style: none;
+}
+.kb-ir-toc-row--lv0 { padding-left: 0; }
+.kb-ir-toc-row--lv1 { padding-left: 1.4em; }
+.kb-ir-toc-row--lv2 { padding-left: 2.6em; }
+.kb-ir-toc-row--lv3 { padding-left: 3.8em; }
+.kb-ir-toc-row--lv4 { padding-left: 5em; }
+.kb-ir-toc-row--chapter { margin-top: 0.55rem; font-weight: 700; }
+.kb-ir-toc-row--link { cursor: pointer; border-radius: 4px; }
+.kb-ir-toc-row--link:hover { background: rgba(37, 99, 235, 0.08); }
+.kb-ir-toc-title {
+  min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kb-ir-toc-leader {
+  align-self: end; min-width: 0; height: 0;
+  margin: 0 0 0.32rem; border-bottom: 1px dotted #9aa4b2;
+}
+.kb-ir-toc-page {
+  min-width: 3ch; text-align: right;
+  color: #667085; font-variant-numeric: tabular-nums;
+}
+.kb-ir-sheet {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--kb-pw) / var(--kb-ph);
+  overflow: hidden;
+  container-type: inline-size;
+  background: #fff;
+}
+.kb-ir-ink {
+  position: absolute;
+  overflow: visible;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  text-indent: 0;
+  line-height: calc(var(--kb-lh, calc(var(--kb-fs, 11) * 1.15)) / var(--kb-pw) * 100cqi);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-size: calc(var(--kb-fs, 11) / var(--kb-pw) * 100cqi);
+  outline: 1px dashed #c45c26;
+  outline-offset: -1px;
+}
+/* 对照条「块框」关掉时：虚框和底色都去掉，字和图还在。 */
+:host(.is-ink-plain) .kb-ir-ink {
+  outline: none;
+  background: transparent;
+}
+/* 行数来自 model.json。字号不缩小。多出来的字从这一行右边冒出去，不许再折一行。 */
+.kb-ir-ink[data-kb-lines] {
+  overflow: visible;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.kb-ir-ink[data-kb-lines="1"],
+.kb-ir-ink[data-kb-lines="1"] p,
+.kb-ir-ink[data-kb-lines="1"] h1,
+.kb-ir-ink[data-kb-lines="1"] h2,
+.kb-ir-ink[data-kb-lines="1"] h3,
+.kb-ir-ink[data-kb-lines="1"] h4,
+.kb-ir-ink[data-kb-lines="1"] h5,
+.kb-ir-ink[data-kb-lines="1"] h6,
+.kb-ir-ink[data-kb-lines="1"] .kb-ir-ink-chrome {
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+.kb-ir-ink[data-kb-lines] p,
+.kb-ir-ink[data-kb-lines] h1,
+.kb-ir-ink[data-kb-lines] h2,
+.kb-ir-ink[data-kb-lines] h3,
+.kb-ir-ink[data-kb-lines] h4,
+.kb-ir-ink[data-kb-lines] h5,
+.kb-ir-ink[data-kb-lines] h6 {
+  text-indent: 0;
+}
+.kb-ir-ink[data-kb-lines] .kb-ir-line {
+  display: block;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  text-indent: 0;
+}
+.kb-ir-ink[data-kb-lines] .kb-ir-line:first-child {
+  text-indent: calc(var(--kb-ind, 0) / var(--kb-pw) * 100cqi);
+}
+/* 底色与 canvases/ink-block-tint.canvas.tsx 的 TINTS 一致。正文白底。 */
+.kb-ir-ink[data-kb-ink="title-1"],
+.kb-ir-ink[data-kb-ink="title-2"],
+.kb-ir-ink[data-kb-ink="title-3"],
+.kb-ir-ink[data-kb-ink="title-4"],
+.kb-ir-ink[data-kb-ink="title-5"],
+.kb-ir-ink[data-kb-ink="title-6"] {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.kb-ir-ink[data-kb-ink="title-1"] > *,
+.kb-ir-ink[data-kb-ink="title-2"] > *,
+.kb-ir-ink[data-kb-ink="title-3"] > *,
+.kb-ir-ink[data-kb-ink="title-4"] > *,
+.kb-ir-ink[data-kb-ink="title-5"] > *,
+.kb-ir-ink[data-kb-ink="title-6"] > * {
+  min-width: 0;
+  width: 100%;
+}
+.kb-ir-ink[data-kb-ink="title-1"] {
+  background: #fff3c4;
+  outline-color: #d4a017;
+}
+.kb-ir-ink[data-kb-ink="title-2"] {
+  background: #ffe4c4;
+  outline-color: #d4894a;
+}
+.kb-ir-ink[data-kb-ink="title-3"],
+.kb-ir-ink[data-kb-ink="title-4"],
+.kb-ir-ink[data-kb-ink="title-5"],
+.kb-ir-ink[data-kb-ink="title-6"] {
+  background: #ffecd9;
+  outline-color: #c9a06a;
+}
+.kb-ir-ink[data-kb-ink="figure"] {
+  background: #dceeff;
+  outline-color: #5b8fce;
+}
+.kb-ir-ink[data-kb-ink="eq"] {
+  background: #d9f4ef;
+  outline-color: #3d9b8f;
+  text-align: center;
+}
+.kb-ir-ink[data-kb-ink="table"] {
+  background: #e2f6dc;
+  outline-color: #5a9a4a;
+}
+.kb-ir-ink[data-kb-ink="caption"],
+.kb-ir-ink[data-kb-ink="caption-fig"] {
+  background: #e8f3ff;
+  outline-color: #7aa3c9;
+}
+.kb-ir-ink[data-kb-ink="caption-fig-note"] {
+  background: #e4eef8;
+  outline-color: #6b90b4;
+}
+.kb-ir-ink[data-kb-ink="caption-table"] {
+  background: #e6f4ea;
+  outline-color: #6a9a78;
+}
+.kb-ir-ink .math-inline:not(.math--display) {
+  display: inline;
+  font-size: inherit;
+}
+.kb-ir-ink[data-kb-ink="example"] {
+  background: #ede7ff;
+  outline-color: #8b6fc0;
+}
+.kb-ir-ink[data-kb-ink="box"] {
+  background: #ffe0e8;
+  outline-color: #c75b78;
+}
+.kb-ir-ink[data-kb-ink="aside"] {
+  background: #f4ebff;
+  outline-color: #a78bbe;
+}
+.kb-ir-ink[data-kb-ink="header"],
+.kb-ir-ink[data-kb-ink="mark"] {
+  background: #f3e6f0;
+  outline-color: #b57a9e;
+}
+.kb-ir-ink[data-kb-ink="footer"] {
+  background: #e4eaf2;
+  outline-color: #7a8aa3;
+}
+.kb-ir-ink[data-kb-ink="folio"] {
+  background: #e8e0f4;
+  outline-color: #8a78b0;
+}
+.kb-ir-ink[data-kb-ink="note"] {
+  background: #eee8e0;
+  outline-color: #a09078;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.kb-ir-ink p,
+.kb-ir-ink h1,
+.kb-ir-ink h2,
+.kb-ir-ink h3,
+.kb-ir-ink h4,
+.kb-ir-ink h5,
+.kb-ir-ink h6,
+.kb-ir-ink aside,
+.kb-ir-ink figure,
+.kb-ir-ink .kb-ir-eq {
+  margin: 0;
+  padding: 0;
+  text-indent: calc(var(--kb-ind, 0) / var(--kb-pw) * 100cqi);
+  font-size: inherit;
+  line-height: inherit;
+}
+.kb-ir-ink img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  margin: 0;
+  object-fit: contain;
+}
+.kb-ir-ink .kb-ir-indent {
+  text-indent: calc(var(--kb-ind, 0) / var(--kb-pw) * 100cqi) !important;
+}
+.kb-ir-ink[data-kb-ink="table"] {
+  overflow: hidden;
+}
+.kb-ir-ink[data-kb-ink="table"] .kb-ir-table {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+.kb-ir-ink table {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  table-layout: fixed;
+  font-size: inherit;
+  line-height: inherit;
+}
+.kb-ir-ink[data-kb-ink="table"] tr {
+  height: auto;
+}
+.kb-ir-ink[data-kb-ink="table"] table.kb-ir-has-img tr.kb-ir-img-row {
+  height: auto;
+}
+.kb-ir-ink th,
+.kb-ir-ink td {
+  padding: 0.12em 0.4em;
+  font-size: inherit;
+  line-height: calc(var(--kb-fs, 11) * 1.15 / var(--kb-pw) * 100cqi);
+  vertical-align: middle;
+  overflow: hidden;
+  max-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.kb-ir-ink td .math-inline,
+.kb-ir-ink th .math-inline,
+.kb-ir-ink td mjx-container,
+.kb-ir-ink th mjx-container {
+  max-width: 100%;
+}
+.kb-ir-ink--chrome,
+.kb-ir-ink-chrome {
+  color: #8a93a3;
+  font-size: inherit;
 }
 .kb-ir-fig,
 .kb-ir-figcell,
@@ -84,6 +392,16 @@ mjx-container { text-indent: 0; }
   height: auto;
   margin: 0 auto 0.35rem;
 }
+.kb-ir-ink[data-kb-ink="table"] td img,
+.kb-ir-ink[data-kb-ink="table"] th img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
 .kb-ir-fig figcaption,
 .kb-ir-figcell figcaption,
 .kb-ir-table figcaption {
@@ -98,11 +416,6 @@ mjx-container { text-indent: 0; }
     width: calc(var(--kb-wf) * 100cqi);
     max-width: 100%;
   }
-}
-.kb-ir-band-col--plate > .kb-ir-fig,
-.kb-ir-band-col--plate > .kb-ir-table {
-  width: 100%;
-  max-width: 100%;
 }
 .kb-ir-inline {
   display: inline;
@@ -135,34 +448,6 @@ mjx-container { text-indent: 0; }
   font-size: 0.92rem;
   text-indent: 0;
 }
-.kb-ir-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 28%);
-  gap: 1.1rem;
-  align-items: start;
-}
-.kb-ir-cols--l {
-  grid-template-columns: minmax(0, 26%) minmax(0, 1fr);
-}
-.kb-ir-cols--lr {
-  grid-template-columns: minmax(0, 22%) minmax(0, 1fr) minmax(0, 26%);
-}
-.kb-ir-cols--dual {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-@container kb-ir-page (max-width: 520px) {
-  .kb-ir-cols {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.25rem;
-  }
-}
-.kb-ir-main, .kb-ir-rail { min-width: 0; }
-.kb-ir-rail {
-  font-size: 0.92rem;
-}
-.kb-ir-rail-left { font-size: 0.92rem; }
-.kb-ir-rail p,
-.kb-ir-rail-left p { text-indent: 0; }
 .kb-ir-chrome {
   color: #8a93a3;
   font-size: 0.78rem;
@@ -191,19 +476,10 @@ mjx-container { text-indent: 0; }
 }
 .kb-ir-chrome-meta--left { text-align: left; }
 .kb-ir-chrome-meta--right { text-align: right; }
-.kb-ir-band { margin: 0 0 0.65rem; }
-.kb-ir-stack {
-  display: grid;
-  grid-template-columns: var(--kb-page-cols, minmax(0, 1fr) minmax(0, 1fr));
-  align-items: stretch;
-  column-gap: 0.85rem;
-  row-gap: 0.45rem;
-  margin: 0 0 0.65rem;
-}
 .kb-ir-region {
   display: grid;
   grid-template-columns: var(--kb-page-cols, minmax(0, 1fr) minmax(0, 1fr));
-  align-items: start;
+  align-items: stretch;
   column-gap: 0.85rem;
   margin: 0 0 0.65rem;
 }
@@ -222,102 +498,23 @@ mjx-container { text-indent: 0; }
 .kb-ir-col--empty {
   background: rgba(46, 108, 176, 0.11);
   border-radius: 3px;
+  align-self: stretch;
+  min-height: 100%;
+}
+/* 为铺满版面留下的空白段：高度按原书折成字高，浅底色标出它是一块而不是漏掉了 */
+.kb-ir-blank {
+  background: rgba(46, 108, 176, 0.06);
+  border-radius: 3px;
+  min-width: 0;
 }
 .kb-ir-col--plate > .kb-ir-fig,
 .kb-ir-col--plate > .kb-ir-table {
   margin: 0;
 }
-.kb-ir-cell {
-  min-width: 0;
-  min-height: 1.15rem;
-  background: rgba(46, 108, 176, 0.06);
-  border-radius: 3px;
-  padding: 0.15rem 0.25rem;
-}
-.kb-ir-cell--empty {
-  background: rgba(46, 108, 176, 0.11);
-}
-.kb-ir-cell--plate > .kb-ir-fig,
-.kb-ir-cell--plate > .kb-ir-table {
-  margin: 0;
-}
-.kb-ir-band--page,
-.kb-ir-cols--page {
-  gap: 0;
-  grid-template-columns: var(--kb-cols);
-}
-.kb-ir-band-gap { min-width: 0; }
-.kb-ir-band--eq2,
-.kb-ir-band--eq3,
-.kb-ir-band--eq4,
-.kb-ir-band--eq5,
-.kb-ir-band--eq6,
-.kb-ir-band--fig2,
-.kb-ir-band--fig3,
-.kb-ir-band--fig4,
-.kb-ir-band--fig5,
-.kb-ir-band--fig6,
-.kb-ir-band--wrap,
-.kb-ir-band--grid,
-.kb-ir-band--grid2,
-.kb-ir-band--grid3,
-.kb-ir-band--grid4,
-.kb-ir-band--grid5,
-.kb-ir-band--grid6 {
-  display: grid;
-  gap: 0.85rem;
-  align-items: start;
-  grid-template-columns: var(--kb-cols, minmax(0, 1fr) minmax(0, 1fr));
-}
-.kb-ir-band--eq2, .kb-ir-band--fig2, .kb-ir-band--grid2 { --kb-cols: minmax(0, 1fr) minmax(0, 1fr); }
-.kb-ir-band--eq3, .kb-ir-band--fig3, .kb-ir-band--grid3 { --kb-cols: repeat(3, minmax(0, 1fr)); }
-.kb-ir-band--eq4, .kb-ir-band--fig4, .kb-ir-band--grid4 { --kb-cols: repeat(4, minmax(0, 1fr)); }
-.kb-ir-band--eq5, .kb-ir-band--fig5, .kb-ir-band--grid5 { --kb-cols: repeat(5, minmax(0, 1fr)); }
-.kb-ir-band--eq6, .kb-ir-band--fig6, .kb-ir-band--grid6 { --kb-cols: repeat(6, minmax(0, 1fr)); }
-.kb-ir-band--wrap { --kb-cols: minmax(0, 1.15fr) minmax(0, 0.85fr); }
-.kb-ir-band-col { min-width: 0; }
-.kb-ir-band-col p { text-indent: 0; }
-.kb-ir-band--center {
-  max-width: 36em;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: center;
-}
-.kb-ir-band--center p { text-indent: 0; text-align: center; }
-.kb-ir-band--opener { text-align: center; }
-.kb-ir-band--opener h1,
-.kb-ir-band--opener h2 { font-size: 1.85em; text-indent: 0; }
-.kb-ir-band--opener p { text-indent: 0; }
-.kb-ir-band--table p { text-indent: 0; }
-@container kb-ir-page (max-width: 520px) {
-  .kb-ir-band--eq2,
-  .kb-ir-band--eq3,
-  .kb-ir-band--eq4,
-  .kb-ir-band--eq5,
-  .kb-ir-band--eq6,
-  .kb-ir-band--fig2,
-  .kb-ir-band--fig3,
-  .kb-ir-band--fig4,
-  .kb-ir-band--fig5,
-  .kb-ir-band--fig6,
-  .kb-ir-band--wrap,
-  .kb-ir-band--grid,
-  .kb-ir-band--grid2,
-  .kb-ir-band--grid3,
-  .kb-ir-band--grid4,
-  .kb-ir-band--grid5,
-  .kb-ir-band--grid6,
-  .kb-ir-cols--page {
-    --kb-cols: minmax(0, 1fr);
-  }
-  .kb-ir-band--page,
-  .kb-ir-cols--page,
-  .kb-ir-stack,
+@container kb-ir-page (max-width: 240px) {
   .kb-ir-region {
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 1.25rem;
   }
-  .kb-ir-band-gap { display: none; }
-  .kb-ir-cell--empty,
   .kb-ir-col--empty { display: none; }
 }

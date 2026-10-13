@@ -143,6 +143,7 @@ class VllmVisionClient:
         self.model = settings.vllm_model
         self.timeout = settings.request_timeout_s
         self._client: httpx.AsyncClient | None = None
+        self._media_marker: str | None = None
 
     def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -178,6 +179,24 @@ class VllmVisionClient:
         except httpx.HTTPError:
             return False
 
+    def _origin(self) -> str:
+        base = self.base_url.rstrip("/")
+        if base.endswith("/v1"):
+            return base[: -len("/v1")]
+        return base
+
+    async def _marker(self) -> str:
+        if self._media_marker:
+            return self._media_marker
+        client = self._get_client()
+        resp = await client.get(f"{self._origin()}/props", timeout=10.0)
+        resp.raise_for_status()
+        marker = str(resp.json().get("media_marker") or "")
+        if not marker:
+            raise RuntimeError("llama-server props has no media_marker")
+        self._media_marker = marker
+        return marker
+
     async def _vision_completion(
         self,
         image_bytes: bytes,
@@ -185,31 +204,25 @@ class VllmVisionClient:
         mime: str = "image/jpeg",
         max_tokens: int = 4096,
     ) -> str:
+        del mime
         b64 = base64.b64encode(image_bytes).decode("ascii")
+        marker = await self._marker()
+        spelled = (
+            "<|im_start|>user\n"
+            f"{marker}\n"
+            f"{prompt}<|im_end|>\n"
+            "<|im_start|>assistant\n"
+        )
         payload = {
-            "model": self.model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:{mime};base64,{b64}"},
-                        },
-                    ],
-                }
-            ],
-            "max_tokens": max_tokens,
+            "prompt": {"prompt_string": spelled, "multimodal_data": [b64]},
             "temperature": settings.vllm_temperature,
-            "chat_template_kwargs": {"enable_thinking": False},
+            "n_predict": max_tokens,
         }
         client = self._get_client()
         async with self._limited():
-            resp = await client.post(f"{self.base_url}/chat/completions", json=payload)
+            resp = await client.post(f"{self._origin()}/completions", json=payload)
         resp.raise_for_status()
-        data = resp.json()
-        return data["choices"][0]["message"]["content"]
+        return str(resp.json().get("content") or "")
 
     async def analyze_page(
         self,

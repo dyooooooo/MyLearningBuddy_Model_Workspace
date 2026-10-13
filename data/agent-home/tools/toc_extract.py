@@ -483,7 +483,11 @@ def locate_toc_pages(book_id: str, page_count: int) -> list[int]:
         is_toc = None
         clean = lambda text: [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
         norm = lambda text: re.sub(r"\s+", "", text or "")
-    limit = min(max(int(page_count or 0), 0), 16)
+    try:
+        from ir_lib import FRONT_PAGES
+    except ImportError:
+        FRONT_PAGES = 24
+    limit = min(max(int(page_count or 0), 0), FRONT_PAGES)
     detected: list[int] = []
     for page_no in range(1, limit + 1):
         text = extract_pdf_page(book_id, page_no)

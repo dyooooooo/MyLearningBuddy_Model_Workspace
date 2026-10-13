@@ -3,26 +3,21 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-MODEL_DIR="${MODELS_HOST_PATH:-$HOME/opt/models}/Qwen3.6-35B-A3B-NVFP4"
+MODEL_DIR="${MODELS_HOST_PATH:-$HOME/opt/models}/Qwen3.8-27B-NVFP4"
 DOWNLOAD_LOG="${MODEL_DOWNLOAD_LOG:-$HOME/opt/models/download.log}"
-SHARD_1="$MODEL_DIR/model-00001-of-00003.safetensors"
-SHARD_2="$MODEL_DIR/model-00002-of-00003.safetensors"
-SHARD_3="$MODEL_DIR/model-00003-of-00003.safetensors"
+WEIGHTS="$MODEL_DIR/model.safetensors"
 
 model_ready() {
-  if [[ -f "$DOWNLOAD_LOG" ]] && grep -q 'DOWNLOAD_COMPLETE' "$DOWNLOAD_LOG"; then
-    return 0
-  fi
-  [[ -f "$SHARD_1" && -f "$SHARD_2" && -f "$SHARD_3" ]]
+  [[ -f "$MODEL_DIR/.download-complete" ]]
 }
 
-echo "Waiting for model (3 safetensors shards or DOWNLOAD_COMPLETE) at $MODEL_DIR ..."
+echo "Waiting for model (.download-complete) at $MODEL_DIR ..."
 while ! model_ready; do
-  present=0
-  [[ -f "$SHARD_1" ]] && ((present++)) || true
-  [[ -f "$SHARD_2" ]] && ((present++)) || true
-  [[ -f "$SHARD_3" ]] && ((present++)) || true
-  echo "  progress: ${present}/3 shards present"
+  if [[ -f "$WEIGHTS" ]]; then
+    echo "  weights file present, waiting for .download-complete"
+  else
+    echo "  weights file not present yet"
+  fi
   sleep 60
 done
 echo "Model ready"

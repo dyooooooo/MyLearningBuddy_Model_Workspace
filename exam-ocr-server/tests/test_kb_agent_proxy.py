@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi import HTTPException
 
-from app.kb.routes import proxy_agent
+from app.kb.routes import _agent_path_ok, _ir_proxy_ok, proxy_agent, proxy_kb
 
 
 class _Req:
@@ -115,6 +115,74 @@ def test_import_pdf_reuses_draft_book(monkeypatch):
     convert.assert_awaited()
     assert convert.await_args.args[0] == "POST"
     assert convert.await_args.args[1] == "/api/v1/admin/kb/convert/draft1"
+
+
+def test_agent_path_ok_rejects_traversal():
+    assert _agent_path_ok("config")
+    assert _agent_path_ok("library/b1")
+    assert _agent_path_ok("ir/book1/toc")
+    assert not _agent_path_ok("secret")
+    assert not _agent_path_ok("../secret")
+    assert not _agent_path_ok("ir/../../secret")
+    assert not _agent_path_ok("ir/%2e%2e/%2e%2e/secret")
+    assert not _agent_path_ok("/secret")
+    assert not _agent_path_ok("ir\\..\\secret")
+    assert not _agent_path_ok("ir//toc")
+
+
+def test_ir_proxy_ok_whitelist():
+    assert _ir_proxy_ok("ir/book1/toc")
+    assert _ir_proxy_ok("ir/book1/review")
+    assert _ir_proxy_ok("ir/book1/pages/1/markdown")
+    assert _ir_proxy_ok("ir/book1/pages/12/blocks")
+    assert not _ir_proxy_ok("ir")
+    assert not _ir_proxy_ok("ir/book1")
+    assert not _ir_proxy_ok("ir/book1/pages/1/image")
+    assert not _ir_proxy_ok("ir/../../secret")
+    assert not _ir_proxy_ok("ir/book 1/toc")
+    assert not _ir_proxy_ok("ir/book1/pages/0/markdown")
+
+
+def test_proxy_agent_rejects_traversal(monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "textbook_agent_url", "http://textbook-agent:8200")
+    monkeypatch.setattr(settings, "textbook_agent_token", "agent-tok")
+    try:
+        asyncio.run(proxy_agent("ir/../../secret", _Req()))
+        raise AssertionError("expected 400")
+    except HTTPException as exc:
+        assert exc.status_code == 400
+
+
+def test_proxy_kb_rejects_ir_traversal():
+    try:
+        asyncio.run(proxy_kb("ir/../../secret", _Req()))
+        raise AssertionError("expected 400")
+    except HTTPException as exc:
+        assert exc.status_code == 400
+
+
+def test_proxy_kb_rejects_unknown_root():
+    try:
+        asyncio.run(proxy_kb("admin/secret", _Req()))
+        raise AssertionError("expected 400")
+    except HTTPException as exc:
+        assert exc.status_code == 400
+
+
+def test_proxy_agent_traversal_does_not_call_httpx(monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "textbook_agent_url", "http://textbook-agent:8200")
+    monkeypatch.setattr(settings, "textbook_agent_token", "agent-tok")
+    with patch("app.kb.routes.httpx.AsyncClient") as client_cls:
+        try:
+            asyncio.run(proxy_agent("ir/%2e%2e/%2e%2e/config", _Req()))
+            raise AssertionError("expected 400")
+        except HTTPException as exc:
+            assert exc.status_code == 400
+        client_cls.assert_not_called()
 
 
 def test_identify_preview_posts_buddy(monkeypatch):

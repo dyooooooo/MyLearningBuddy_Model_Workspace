@@ -29,8 +29,8 @@ PROPOSALS = "proposals"
 LAST_GOOD = ".last-good"
 SEED = Path(__file__).resolve().parent.parent / "workspace" / "surfaces"
 RUNNER = Path(__file__).resolve().parent / "surface_runner.mjs"
-NODE_TIMEOUT_S = 8.0
-CSS_MAX_CHARS = 200_000
+NODE_TIMEOUT_S = 20.0
+CSS_MAX_CHARS = 500_000
 
 _IMPORT_RE = re.compile(r"@import\b[^;]*;", re.I)
 _BAD_URL_RE = re.compile(
@@ -169,7 +169,11 @@ def _read_css(folder: Path, slot: str = "") -> str:
                 candidates.append(extra)
     for path in candidates:
         if path.is_file():
-            return sanitize_css(path.read_text(encoding="utf-8"))
+            css = path.read_text(encoding="utf-8")
+            extra = path.parent / "lib" / "mathjax-chtml.css"
+            if extra.is_file():
+                css = f"{css}\n{extra.read_text(encoding='utf-8')}"
+            return sanitize_css(css)
     return ""
 
 
@@ -189,6 +193,7 @@ def _run_js(folder: Path, op: str, *, markdown: str = "", payload: Any = None, c
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": str(folder),
+        "AGENT_HOME": str(settings.home),
         "NODE_OPTIONS": "--no-warnings",
         "LANG": "C.UTF-8",
     }
@@ -422,6 +427,22 @@ def get_slot(slot: str) -> dict[str, Any]:
 
 def theme_css(slot: str) -> str:
     return _ensure_slot(slot).css
+
+
+_FONT_NAME = re.compile(r"^[A-Za-z0-9_.-]+\.woff$")
+
+
+def slot_font(slot: str, name: str) -> Path:
+    """CommonHTML 字体：只许 fonts/ 下的 woff，先 last-good 再 workspace。"""
+    sid = _safe_slot(slot)
+    if not _FONT_NAME.fullmatch(name or ""):
+        raise ValueError("bad font name")
+    for folder in (last_good_slot(sid), workspace_slot(sid)):
+        root = (folder / "fonts").resolve()
+        path = (root / name).resolve()
+        if path.is_file() and (path == root or root in path.parents):
+            return path
+    raise FileNotFoundError(name)
 
 
 def tag_page(

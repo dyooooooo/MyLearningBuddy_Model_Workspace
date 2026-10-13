@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -116,7 +117,9 @@ def write_printed(book_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     body = dict(payload)
     body["book_id"] = book_id
     body["updated_at"] = _now()
-    path.write_text(json.dumps(body, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
+    tmp.write_text(json.dumps(body, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
     return body
 
 
@@ -421,31 +424,9 @@ def run_book(book_id: str, job_id: str = "") -> dict[str, Any]:
         passes = ["locate", "read"]
         entries = agent_entries
         verdicts: list[dict[str, Any]] = []
-        payload = write_printed_ok(
-            sid,
-            toc_pages=toc_pages,
-            entries=entries,
-            quality=quality,
-            mineru_entries=mineru_entries,
-            agent_entries=agent_entries,
-            winner=winner,
-            verdicts=verdicts,
-            passes=passes,
-        )
         if quality == "strong" and trees_match(agent_entries, mineru_entries):
             winner = "mineru"
             entries = mineru_entries
-            payload = write_printed_ok(
-                sid,
-                toc_pages=toc_pages,
-                entries=entries,
-                quality=quality,
-                mineru_entries=mineru_entries,
-                agent_entries=agent_entries,
-                winner=winner,
-                verdicts=verdicts,
-                passes=passes,
-            )
         elif quality == "strong" and mineru_entries:
             try:
                 checked = reconcile_pages(sid, toc_pages, mineru_entries, job_id)
@@ -462,18 +443,17 @@ def run_book(book_id: str, job_id: str = "") -> dict[str, Any]:
                 _trace(job_id, "toc_reconcile", str(exc))
                 winner = "agent"
                 entries = agent_entries
-            payload = write_printed_ok(
-                sid,
-                toc_pages=toc_pages,
-                entries=entries,
-                quality=quality,
-                mineru_entries=mineru_entries,
-                agent_entries=agent_entries,
-                winner=winner,
-                verdicts=verdicts,
-                passes=passes,
-            )
-        return payload
+        return write_printed_ok(
+            sid,
+            toc_pages=toc_pages,
+            entries=entries,
+            quality=quality,
+            mineru_entries=mineru_entries,
+            agent_entries=agent_entries,
+            winner=winner,
+            verdicts=verdicts,
+            passes=passes,
+        )
     except Exception as exc:
         payload = write_printed(
             sid,

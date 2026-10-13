@@ -3,7 +3,7 @@ import { mountAgentDock } from "./agentDock";
 import { kb, type KbBook, type KbToc } from "./api";
 import { mountKbCompare } from "./compare";
 import { mountKbImport } from "./import";
-import { mountIrLibrary } from "./irLibrary";
+import { mountIrLibrary, type IrLibrary } from "./irLibrary";
 import {
   CATEGORY_LABEL,
   groupOf,
@@ -22,12 +22,13 @@ import {
   parseBookSort,
   type BookSortId,
 } from "./bookSort";
-import { fillIrPage } from "./renderIr";
+import { fillPagePane, panePageNo, type PaneSrc } from "./pagePane";
+import { landingPage } from "./tocLanding";
 import { el, renderMarkdown } from "./util/dom";
 import { chevron, closePopover, openPopover } from "./popover";
 import { applyTocExpanded, bindKbPageToc } from "./util/page-toc";
 import { renderTocHtml } from "./util/toc-html";
-import { mountKbViewport, type KbViewport } from "./viewport";
+import { mountKbViewport, settleScroll, type KbViewport } from "./viewport";
 
 export function mountApp(root: HTMLElement): void {
   root.className = "kb-app";
@@ -142,6 +143,21 @@ export function mountApp(root: HTMLElement): void {
     Object.entries(saved.kbExpandedToc || {}).map(([id, rows]) => [id, new Set(rows)]),
   );
   let bookSort: BookSortId = parseBookSort(saved.kbBookSort);
+  // 结构化库自己的对照工具条：默认「中间表示 | 原图」。两库各挂一份，互不影响。
+  let irLibRef: IrLibrary | null = null;
+  const irCompare = mountKbCompare({
+    previewWrap: irPreviewWrap,
+    previewPages: irPreviewPages,
+    imageSrc: (bookId, pageNo) => kb.pageImageSrc(bookId, pageNo),
+    getActivePage: () => irLibRef?.getActivePage() || 0,
+    scrollToPage: async (pageNo) => {
+      await irLibRef?.scrollToPage(pageNo);
+    },
+    onRefreshPage: async (pageNo) => {
+      await irLibRef?.refreshPage(pageNo);
+    },
+    defaultMode: "ir-image",
+  });
   const irLib = mountIrLibrary({
     treeHost: irTree,
     previewHost: irPreviewPages,
@@ -153,7 +169,9 @@ export function mountApp(root: HTMLElement): void {
     savedBooks: saved.kbIrExpandedBooks,
     savedToc: saved.kbIrExpandedToc,
     onMore: (anchor, book, node) => openBookMenu(anchor, book, node),
+    compare: irCompare,
   });
+  irLibRef = irLib;
   irLib.reset();
 
   // 两个库的左树/右预览可见性只在这里算，showTab 和 setLibMode 都走它，
@@ -167,35 +185,51 @@ export function mountApp(root: HTMLElement): void {
 
   function setLibMode(mode: "old" | "ir"): void {
     if (libMode === mode) return;
+    // 切库要接着看同一本书的同一页：两库是同一批 PDF 的两种读法，
+    // 不接交接的话每次切换都退回封面，对照着看就断了。
+    const handoff = mode === "ir"
+      ? { id: activeId, page: viewport?.getActivePage() || 0 }
+      : { id: irLib.getActiveId(), page: irLib.getActivePage() };
     libMode = mode;
     libBtnOld.classList.toggle("is-active", mode === "old");
     libBtnIr.classList.toggle("is-active", mode === "ir");
     root.classList.toggle("is-irlib", mode === "ir");
     syncLibraryPanes(true);
-    if (mode === "ir") irLib.setBooks(books);
-    else {
+    if (mode === "ir") {
+      irLib.setBooks(books);
+      if (handoff.id) void irLib.openBook(handoff.id, handoff.page);
+    } else {
       renderTree();
       void restoreExpandedTocs();
       markActiveNode(activeId);
+      if (handoff.id) void openBook(handoff.id, handoff.page);
     }
   }
   libBtnOld.onclick = () => setLibMode("old");
   libBtnIr.onclick = () => setLibMode("ir");
   let pollTimer: number | null = null;
   let viewport: KbViewport | null = null;
+  setLibMode("ir");
   let lastToc: KbToc | null = null;
   let unbindPageToc: (() => void) | null = null;
   const tocCache = new Map<string, KbToc>();
   const tocMounts = new Map<string, { host: HTMLElement; unbind: () => void }>();
 
+  // 教材库默认就把「旧稿 | 中间表示」摆出来：对照关着时看不到中间表示，
+  // 两条线的差异就无从下手。用户手动关掉之后不再自动打开。
   const compare = mountKbCompare({
     previewWrap,
     previewPages,
     imageSrc: (bookId, pageNo) => kb.pageImageSrc(bookId, pageNo),
     getActivePage: () => viewport?.getActivePage() || 0,
+    scrollToPage: async (pageNo) => {
+      if (viewport) await settleScroll(viewport, pageNo);
+    },
     onRefreshPage: async (pageNo) => {
       await fillPage(pageNo, true);
     },
+    defaultMode: "old-ir",
+    defaultEnabled: true,
   });
 
   previewPages.addEventListener("dblclick", (ev) => {
@@ -529,37 +563,9 @@ export function mountApp(root: HTMLElement): void {
     }
   }
 
-  async function fillMarkdownPane(
-    host: HTMLElement,
-    src: "old" | "ir",
-  ): Promise<void> {
+  async function fillMarkdownPane(host: HTMLElement, src: PaneSrc): Promise<void> {
     if (!activeId) return;
-    const pageNo = Number(host.closest("[data-page-no]")?.getAttribute("data-page-no") || host.dataset.pageNo || 0);
-    setShadowText(host, "加载中…");
-    try {
-      if (src === "ir") {
-        const out = await kb.irBlocks(activeId, pageNo);
-        await fillIrPage(host, out.page || {}, activeId);
-        host.classList.remove("is-unloaded", "is-error");
-        return;
-      }
-      const out = await kb.pageMarkdown(activeId, pageNo);
-      if ("ok" in out && out.ok === false) {
-        setShadowText(host, ("reason" in out && out.reason) || "本页读不开");
-        host.classList.remove("is-unloaded");
-        host.classList.add("is-error");
-        return;
-      }
-      const html = renderMarkdown(out.prepared || out.markdown || "（本页无文本）");
-      await fillShadow(host, "page-body", html);
-      const inner = host.shadowRoot?.querySelector(".kb-surface-inner");
-      if (inner) stampBlocks(inner);
-      host.classList.remove("is-unloaded", "is-error");
-    } catch (e) {
-      const fallback = src === "ir" ? "中间表示未生成" : "加载失败";
-      setShadowText(host, `${fallback}：${(e as Error).message}`);
-      host.classList.add("is-unloaded", "is-error");
-    }
+    await fillPagePane(host, activeId, panePageNo(host), src);
   }
 
   async function fillPage(pageNo: number, force = false): Promise<void> {
@@ -594,7 +600,7 @@ export function mountApp(root: HTMLElement): void {
     return wrap;
   }
 
-  async function openBook(id: string): Promise<void> {
+  async function openBook(id: string, page = 0): Promise<void> {
     activeId = id;
     persistTreeState();
     markActiveNode(id);
@@ -623,8 +629,11 @@ export function mountApp(root: HTMLElement): void {
       lastToc = toc;
     });
     for (let p = 1; p <= book.page_count; p++) ensureShell(p);
+    // 先整本套进对照格子再滚：逐页 wrap 会把页壳换成新节点、页高跟着变，
+    // 滚到章节页之后又被下面几页的重排顶回顶部。
+    compare.wrapAllIfEnabled();
     unbindPageToc?.();
-    viewport = mountKbViewport({
+    const vp = mountKbViewport({
       root: previewPages,
       pageCount: book.page_count,
       ensureShell,
@@ -632,12 +641,19 @@ export function mountApp(root: HTMLElement): void {
         await fillPage(pageNo);
       },
     });
+    viewport = vp;
     const tocBind = {
       scrollToPage: (n: number) => viewport?.scrollToPage(n),
       getPrintToPdf: () => lastToc?.print_to_pdf || tocCache.get(id)?.print_to_pdf || {},
     };
     unbindPageToc = bindKbPageToc(previewPages, tocBind);
     void Promise.all([tocJob, tocReady]);
+    // 两库共用同一套落地规则：目录第一条有文件页的条目。切库交接时 page 已给定，直接停那页。
+    await tocReady;
+    const target = page > 0
+      ? Math.min(page, book.page_count)
+      : landingPage(lastToc?.entries || []);
+    if (target > 1) await settleScroll(vp, target);
   }
 
   function startPoll(): void {
@@ -649,6 +665,15 @@ export function mountApp(root: HTMLElement): void {
         if (!busy && pollTimer != null) {
           window.clearInterval(pollTimer);
           pollTimer = null;
+        }
+        if (libMode === "ir") {
+          const id = irLib.getActiveId();
+          if (!id) return;
+          const cur = books.find((b) => b.id === id);
+          if (cur && cur.status === "ready" && irPreviewPages.childElementCount === 0) {
+            await irLib.openBook(id);
+          }
+          return;
         }
         if (!activeId) return;
         const cur = books.find((b) => b.id === activeId);
@@ -670,6 +695,12 @@ export function mountApp(root: HTMLElement): void {
       void refreshList();
       const bookId = String(ev.book_id || "");
       const n = Number(ev.page_no || 0);
+      if (libMode === "ir") {
+        if (bookId && bookId === irLib.getActiveId() && n > 0) {
+          void irLib.refreshPage(n);
+        }
+        return;
+      }
       if (bookId && bookId === activeId && n > 0) {
         const block = previewPages.querySelector<HTMLElement>(`.kb-page-block[data-page-no="${n}"]`);
         const body = block?.querySelector<HTMLElement>(".kb-page-body");
@@ -682,6 +713,11 @@ export function mountApp(root: HTMLElement): void {
       const slots = Array.isArray(ev.slots) ? ev.slots.map(String) : [];
       if (slots.length) slots.forEach((s) => invalidateSurface(s));
       else invalidateSurface();
+      if (libMode === "ir") {
+        const page = irLib.getActivePage();
+        if (page > 0) void irLib.refreshPage(page);
+        return;
+      }
       void (async () => {
         try {
           await repaintAllToc();

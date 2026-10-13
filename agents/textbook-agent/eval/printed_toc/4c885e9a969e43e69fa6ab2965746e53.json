@@ -1,0 +1,111 @@
+{
+  "book_id": "4c885e9a969e43e69fa6ab2965746e53",
+  "source": "human from printed TOC page images 2026-10-08",
+  "note": "对照 images/4c885e9a_p0004.jpg、p0005.jpg。第八章标题印成两行，合成一条，印张页87；下面三节仍是1级。",
+  "toc_pages": [
+    4,
+    5
+  ],
+  "entries": [
+    {
+      "label": "第五章·曲线运动",
+      "level": 0,
+      "print_page": 1
+    },
+    {
+      "label": "第一节 曲线运动",
+      "level": 1,
+      "print_page": 2
+    },
+    {
+      "label": "第二节 平抛运动",
+      "level": 1,
+      "print_page": 6
+    },
+    {
+      "label": "第三节 圆周运动",
+      "level": 1,
+      "print_page": 12
+    },
+    {
+      "label": "第四节 向心力 向心加速度",
+      "level": 1,
+      "print_page": 17
+    },
+    {
+      "label": "第五节 圆周运动的应用",
+      "level": 1,
+      "print_page": 23
+    },
+    {
+      "label": "第六章·万有引力定律",
+      "level": 0,
+      "print_page": 32
+    },
+    {
+      "label": "第一节 行星的运动",
+      "level": 1,
+      "print_page": 33
+    },
+    {
+      "label": "第二节 万有引力定律",
+      "level": 1,
+      "print_page": 37
+    },
+    {
+      "label": "第三节 万有引力定律的应用",
+      "level": 1,
+      "print_page": 41
+    },
+    {
+      "label": "第七章·机械能守恒定律",
+      "level": 0,
+      "print_page": 50
+    },
+    {
+      "label": "第一节 功",
+      "level": 1,
+      "print_page": 51
+    },
+    {
+      "label": "第二节 功率",
+      "level": 1,
+      "print_page": 58
+    },
+    {
+      "label": "第三节 动能 动能定理",
+      "level": 1,
+      "print_page": 64
+    },
+    {
+      "label": "第四节 重力势能",
+      "level": 1,
+      "print_page": 69
+    },
+    {
+      "label": "第五节 机械能守恒定律",
+      "level": 1,
+      "print_page": 76
+    },
+    {
+      "label": "第八章·牛顿力学的局限性与相对论初步",
+      "level": 0,
+      "print_page": 87
+    },
+    {
+      "label": "第一节 牛顿力学的局限性",
+      "level": 1,
+      "print_page": 88
+    },
+    {
+      "label": "第二节 相对论初步",
+      "level": 1,
+      "print_page": 92
+    },
+    {
+      "label": "第三节 宇宙的起源与演化",
+      "level": 1,
+      "print_page": 102
+    }
+  ]
+}

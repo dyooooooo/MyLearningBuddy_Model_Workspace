@@ -1,0 +1,161 @@
+{
+  "book_id": "0d100cbe267f45df91551d55b851c41c",
+  "source": "human from printed TOC page images 2026-10-08",
+  "note": "对照 images/0d100cbe_p0004.jpg、p0005.jpg。不收录「目录」。第2节有印张页15，第3节有57，探究活动1-6有24。",
+  "toc_pages": [
+    4,
+    5
+  ],
+  "entries": [
+    {
+      "label": "第1章 发酵工程",
+      "level": 0,
+      "print_page": 1
+    },
+    {
+      "label": "第1节 获得纯种微生物是发酵工程的基础",
+      "level": 1,
+      "print_page": 2
+    },
+    {
+      "label": "探究·实验1-1 酵母浸粉胨葡萄糖培养基的配制",
+      "level": 2,
+      "print_page": 6
+    },
+    {
+      "label": "探究·实验1-2 酵母的分离和纯化",
+      "level": 2,
+      "print_page": 8
+    },
+    {
+      "label": "探究·实验1-3 土壤中分解尿素细菌的分离与计数",
+      "level": 2,
+      "print_page": 12
+    },
+    {
+      "label": "第2节 发酵工程为人类提供多样化生物产品",
+      "level": 1,
+      "print_page": 15
+    },
+    {
+      "label": "探究·实验1-4 果酒和果醋的制作",
+      "level": 2,
+      "print_page": 17
+    },
+    {
+      "label": "探究·实验1-5 酸奶的制作",
+      "level": 2,
+      "print_page": 19
+    },
+    {
+      "label": "探究·活动1-6 虚拟仿真：发酵条件对微生物发酵的影响",
+      "level": 2,
+      "print_page": 24
+    },
+    {
+      "label": "第2章 细胞工程",
+      "level": 0,
+      "print_page": 33
+    },
+    {
+      "label": "第1节 利用植物细胞工程培育新植株",
+      "level": 1,
+      "print_page": 34
+    },
+    {
+      "label": "探究·实验2-1 月季的快速繁殖",
+      "level": 2,
+      "print_page": 39
+    },
+    {
+      "label": "第2节 利用动物细胞工程改良动物细胞",
+      "level": 1,
+      "print_page": 43
+    },
+    {
+      "label": "探究·活动2-2 收集单克隆抗体的应用实例",
+      "level": 2,
+      "print_page": 47
+    },
+    {
+      "label": "第3节 利用胚胎工程快速繁育优良动物品种",
+      "level": 1,
+      "print_page": 57
+    },
+    {
+      "label": "第3章 基因工程",
+      "level": 0,
+      "print_page": 65
+    },
+    {
+      "label": "第1节 基因工程赋予生物新的遗传特性",
+      "level": 1,
+      "print_page": 66
+    },
+    {
+      "label": "第2节 基因工程是一种重组DNA技术",
+      "level": 1,
+      "print_page": 73
+    },
+    {
+      "label": "探究·建模3-1 模拟限制性内切核酸酶的切割作用",
+      "level": 2,
+      "print_page": 75
+    },
+    {
+      "label": "探究·实验3-2 DNA的提取和鉴定",
+      "level": 2,
+      "print_page": 79
+    },
+    {
+      "label": "探究·实验3-3 PCR扩增DNA的原理和操作",
+      "level": 2,
+      "print_page": 81
+    },
+    {
+      "label": "探究·建模3-4 模拟DNA分子重组",
+      "level": 2,
+      "print_page": 83
+    },
+    {
+      "label": "探究·实验3-5 PCR扩增产物的凝胶电泳鉴定",
+      "level": 2,
+      "print_page": 86
+    },
+    {
+      "label": "第3节 蛋白质工程是基因工程的延伸",
+      "level": 1,
+      "print_page": 89
+    },
+    {
+      "label": "第4章 生物技术安全与伦理",
+      "level": 0,
+      "print_page": 103
+    },
+    {
+      "label": "第1节 转基因产品的安全性引发社会广泛关注",
+      "level": 1,
+      "print_page": 104
+    },
+    {
+      "label": "探究·活动4-1 辩论：转基因食品是否安全？",
+      "level": 2,
+      "print_page": 109
+    },
+    {
+      "label": "第2节 生殖性克隆人带来诸多伦理问题",
+      "level": 1,
+      "print_page": 111
+    },
+    {
+      "label": "探究·活动4-2 讨论：你是否支持设计试管婴儿？",
+      "level": 2,
+      "print_page": 113
+    },
+    {
+      "label": "第3节 全面禁止生物武器",
+      "level": 1,
+      "print_page": 115
+    }
+  ]
+}

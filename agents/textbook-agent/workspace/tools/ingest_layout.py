@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from ir_lib import (book_dir, compute_remap, default_box_prefixes, ingest_page,
-                    load_layout, load_model, load_v1, load_v2, safe_book_id)
+                    ir_spans, load_layout, load_model, load_v1, load_v2, safe_book_id)
 from ir_review import merge_review, review_from_pages, write_review
 from ir_review import _ensure_review_task
 
@@ -144,9 +144,8 @@ def ingest_layout(book_id: str, page_no: int = 0, root: str = "",
                 stats["latex_joined"] += 1
             span_latex = sum(
                 1
-                for row in blk.get("lines") or []
-                for span in row
-                if isinstance(span, dict) and span.get("latex")
+                for span in ir_spans(blk.get("lines"))
+                if span.get("latex")
             )
             if span_latex:
                 stats["span_latex"] += span_latex
@@ -156,19 +155,17 @@ def ingest_layout(book_id: str, page_no: int = 0, root: str = "",
                 stats["captioned"] += 1
             if str(blk.get("id") or "").startswith("kb-close-"):
                 stats["close_blocks"] += 1
+            if blk.get("slot") == "aside":
+                stats["aside_blocks"] += 1
+            if blk.get("slot") == "span":
+                stats["span_blocks"] += 1
         stats["footnotes"] += len(page["chrome"]["footnotes"])
         stats["headers"] += len(page["chrome"]["headers"])
-        lay = page.get("layout") or {}
-        tracks = lay.get("tracks") if isinstance(lay.get("tracks"), dict) else {}
-        if tracks.get("aside"):
+        if any(blk.get("slot") == "aside" for blk in page["blocks"]):
             stats["aside_pages"] += 1
-        tree = lay.get("tree") if isinstance(lay.get("tree"), dict) else {}
-        kids = tree.get("children") if tree.get("kind") == "rows" else ([tree] if tree else [])
-        stats["bands"] += len(kids) if isinstance(kids, list) else 0
-        if any(str(k.get("kind") or "") == "cols" for k in (kids or []) if isinstance(k, dict)):
-            stats["nested_pages"] += 1
-        if tracks.get("aside_side"):
-            stats[f"aside:{tracks.get('aside_side')}"] += 1
+        folio = str(page.get("folio") or "")
+        if folio:
+            stats[f"folio:{folio}"] += 1
 
     remap = compute_remap(old_ids, new_pages) if old_ids else {}
     review = review_from_pages(sid, new_pages)
@@ -218,7 +215,7 @@ def ingest_layout(book_id: str, page_no: int = 0, root: str = "",
         "blocks": stats["blocks"],
         "kinds": {k[5:]: v for k, v in stats.items() if k.startswith("kind:")},
         "types": {k[5:]: v for k, v in stats.items() if k.startswith("type:")},
-        "aside_side": {k[6:]: v for k, v in stats.items() if k.startswith("aside:")},
+        "folio": {k[6:]: v for k, v in stats.items() if k.startswith("folio:")},
         "footnotes": stats["footnotes"],
         "chrome_headers": stats["headers"],
         "row_figures": stats["row_figures"],
@@ -227,9 +224,9 @@ def ingest_layout(book_id: str, page_no: int = 0, root: str = "",
         "scored_blocks": stats["scored"],
         "captioned": stats["captioned"],
         "aside_pages": stats["aside_pages"],
-        "nested_pages": stats["nested_pages"],
+        "aside_blocks": stats["aside_blocks"],
+        "span_blocks": stats["span_blocks"],
         "close_blocks": stats["close_blocks"],
-        "bands": stats["bands"],
         "review_pages": len(review.get("pages") or []),
         "remapped": len(remap),
         "errors": errors[:10],

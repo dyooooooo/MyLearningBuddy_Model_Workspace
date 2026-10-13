@@ -22,7 +22,7 @@
 | 线 | 入口 | 正文从哪来 | 渲染插槽 | 生成工具 | 状态 |
 |---|---|---|---|---|---|
 | **老线** | `?src=old`（默认） | `pages/NNNN.md` + `mid/NNNN.md`，`page_sync` 对齐（§3.2、§4.2） | `page-body` | 导入流水线 `prose.py` 等 | **已冻结** |
-| **中间表示** | `GET /v1/ir/{书}/pages/{页}/markdown` | `ir/pages/NNNN.json` + `ir/notes` | `page-ir` | `ingest_layout`（layout 主源 + model/v1/v2）+ `ir_bands`（版式出 `layout.tree`） | **唯一新线** |
+| **中间表示** | `GET /v1/ir/{书}/pages/{页}/markdown` | `ir/pages/NNNN.json` + `ir/notes` | `page-ir` | `ingest_layout`（layout 主源 + model/v1/v2）+ `ir_bands`（给块写 `slot`，树不写盘；画页走墨稿） | **唯一新线** |
 
 对照只剩：旧稿 | 中间表示、中间表示 | 原图、旧稿 | 原图。
 两条线不许借对方的文件或定位词。老线的人工订正不会流进中间表示（注解另写 `ir/notes`）。

@@ -11,5 +11,10 @@ croniter>=2.0.0
 # cache happens to hold. 1.0.28 misclassifies an expired exchanged token as a
 # terminal AuthenticationError; Cursor fixed that in 1.0.29.
 cursor-sdk==1.0.30
+# Pinned, not floating: printed-toc reads book.pdf through PyMuPDF (fitz).
+# The same tools/ tree is also bind-mounted into buddy-api, whose Pillow is
+# unpinned (`Pillow>=10.0.0`), so this pin is the textbook-agent contract.
+pymupdf==1.28.2
+pillow==12.3.0
 pypdf>=5.0.0
 watchdog>=4.0.0

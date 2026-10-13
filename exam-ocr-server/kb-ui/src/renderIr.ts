@@ -57,6 +57,7 @@ export async function fillIrPage(host: HTMLElement, page: IrPage, bookId: string
   const { fillShadow } = await import("./surfaces");
   const { stampBlocks } = await import("./pageFocus");
   const { typesetTextbookMath } = await import("./util/math-render");
+  const { stampInkDebug } = await import("./inkDebug");
   let html = "";
   try {
     const painted = await kb.surfacePaint("page-ir", { page, book_id: bookId });
@@ -65,6 +66,7 @@ export async function fillIrPage(host: HTMLElement, page: IrPage, bookId: string
     html = "";
   }
   await fillShadow(host, "page-ir", html || "<p>（本页无文本）</p>");
+  stampInkDebug(host);
   const inner = host.shadowRoot?.querySelector(".kb-surface-inner");
   if (inner) {
     stampBlocks(inner);

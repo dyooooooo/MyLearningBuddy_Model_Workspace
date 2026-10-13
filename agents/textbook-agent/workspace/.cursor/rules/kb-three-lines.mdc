@@ -22,3 +22,4 @@ alwaysApply: true
 - 中间表示是 MinerU 派生物 + 注解层；改 `ir/pages` 会被重新摄取覆盖，人工订正只写 `ir/notes`。
 - `v2md_generate` / `official_slice` 已标 retired，不要再接到 library 读页。
 - 总图：`.cursor/skills/kb-three-lines/SKILL.md`。
+- 内容 / 显示分家：`.cursor/skills/content-vs-paint/SKILL.md`。Python 只生成中间文件；字号和折行只在 `surfaces/page-ir` 的 JS。

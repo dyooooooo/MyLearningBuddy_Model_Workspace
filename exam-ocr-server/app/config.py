@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     vllm_base_url: str = "http://vllm-qwen36-35b:8088/v1"
-    vllm_model: str = "qwen36-35b-nvfp4"
+    vllm_model: str = "qwen38-27b-nvfp4"
     vllm_max_concurrent: int = 2
     vllm_temperature: float = 0.0
     vllm_acquire_timeout_s: float = 120.0

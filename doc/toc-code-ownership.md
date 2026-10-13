@@ -28,7 +28,13 @@
 |---|---|
 | `tools/toc_lexicon.py` | **唯一的 Python 目录词法实现**：剥印刷页码、分类行、层级、栏目停用词、导出给 JS |
 | `tools/toc_mineru.py` | 从 `mineru/*content_list*.json` 收目录候选并判强弱（库模块，不进 manifest） |
-| `tools/resolve_printed_toc.py` | 看原图定位/抽骨架，与 MinerU 对照，写 `toc_printed.json` |
+| `tools/printed_toc_agent.py` | **v2 印刷目录编排**：找页 → 读事实 → 拼装 → 补页码 → 核对，只写 `toc.print` |
+| `tools/printed_toc_tools.py` | v2 五个步骤：四样信号找页、逐页文字层/看图、补页码、正文核对、标准答案比对 |
+| `tools/printed_toc_layout.py` | 纯函数：按行分栏、合并折行、定层级（不调模型、不写盘） |
+| `tools/ir_toc.py` | 中间表示线左栏 `ir/toc.json`：有 `toc.print` 就当骨架（老线做法：正文定页、挂 `from_body` 细目），否则收中间页标题块；`printed_toc_agent` 写完自动调 fix |
+| `tools/ir_print_toc.py` | 中间表示线编译：`toc.print` + 目录页标题块 → `ir/print_toc.json`（按目录页分组，跳转页 = 印刷页 + 偏移）；`printed_toc_agent` 写完自动调 |
+| `tools/printed_toc_decide.py` | `arch="v2"` 默认路径：每页模型定每行（JSON 结构锁定）→ 事实检查 → 有分歧放大重问 / 三票 → 每条记 `decision` |
+| `tools/resolve_printed_toc.py` | 看原图定位/抽骨架，与 MinerU 对照，写 `toc_printed.json`（v1 线，本轮不接 v2） |
 | `tools/toc_extract.py` | 小节抽取：有侧车时不再词法重读目录页；`scan_interval_entries` 只扫子层 |
 | `tools/toc_text.py` | 目录 HTML（`<nav class="kb-page-toc">`）还原成明文行，与 `tag.mjs::stripSkin` 对齐 |
 | `tools/build_toc.py` | 建 `toc.json`：有 `toc_printed.json` 就当骨架，只合并页号与 `from_body` |
@@ -41,7 +47,11 @@
 | `surfaces/page-body/lib/page-toc.mjs` | 页内目录导航渲染（JS 侧词法，读 `ctx.lexicon`） |
 | `surfaces/toc-tree/paint.mjs` | 左栏目录树渲染 |
 | `prompts/toc_extract.md` | 抽子层的系统提示词 |
-| `prompts/toc_locate.md` · `toc_read.md` · `toc_reconcile.md` | 印刷目录看图：定位页 / 抽骨架 / 第二遍核对 |
+| `prompts/printed_toc_locate.md` · `printed_toc_lines.md` · `printed_toc_review.md` · `printed_toc_fill.md` | v2 印刷目录：缩略图找页 / 整页读行 / 终审并拆分级 / 截图补页码。`printed_toc_read.md` 不接入 |
+| `prompts/printed_toc_confirm.md` | 找页复核：只有缩略图一票的页，整页大图六选一（目录 / 版权页 / 前言或说明 / 封面 / 正文 / 其他），答的不是目录就撤票 |
+| `prompts/printed_toc_decide.md` · `printed_toc_pair.md` | `arch="v2"`：每页逐行判断 / 两行放大问是否折行 |
+| `prompts/toc_locate.md` · `toc_read.md` · `toc_reconcile.md` | v1 印刷目录看图：定位页 / 抽骨架 / 第二遍核对 |
+| `.cursor/skills/printed-toc` | v2 印刷目录技能 |
 | `tasks/builtin.yaml` | `import-book-toc` / `write-toc-pages` / `fill-unit-toc` 触发 |
 | `.cursor/skills/build-toc`、`fill-unit-toc`、`write-toc-pages` | 技能文档 |
 
@@ -94,6 +104,9 @@ Python 与 JS 语言不同、无法合并成一个文件，靠
 | 文件 | 写 | 读 |
 |---|---|---|
 | `toc.json` | `build_toc`、`fill_unit_toc`、`library.write_toc` | 所有工具、API、surfaces |
+| `toc.print` | `printed_toc_agent` | `ir_print_toc`（编译成 `ir/print_toc.json`）；`ir_toc`（左栏骨架）；标准答案比对走 `toc_golden`。**不接**老线 `build_toc` |
+| `ir/print_toc.json` | `ir_print_toc` | page-ir 插槽 `paint.mjs` → `lib/print-toc.mjs`：目录页画成目录列表，样式照老线 `kb-page-toc` |
+| `ir/toc.json` | `ir_toc`（fix / review / polish）；`printed_toc_agent` 写完 `toc.print` 自动调 fix | `GET /v1/ir/{书}/toc` → 结构化库左栏。有 `toc.print` 时 `source = ir_toc_print`：印刷目录当骨架，正文标题块定页、挂 `from_body` 细目（老线做法）；否则 `ir_toc_headings` |
 | `toc_printed.json` | `resolve_printed_toc` | `build_toc._load_printed_toc`、`toc_extract`（骨架权威） |
 | `toc_agent.json` | `toc_extract.write_agent_sidecar` | `build_toc._load_agent_toc` |
 | `toc_extract.json` | `toc_extract.save_cursor` | `toc_extract.load_cursor`（区间哈希缓存） |
@@ -127,6 +140,17 @@ Python 与 JS 语言不同、无法合并成一个文件，靠
 
 ---
 
+### 6.3 `toc.print`（v2 印刷目录，本轮独立）
+
+`printed_toc_agent` 只写这本书的 `toc.print`：`schema_version`、`inputs` 指纹、`pages_meta`、`scores`、`entries`（含 `evidence` / `verified`）、`missing_in_toc`。
+
+- 找页：MinerU `index`、文字层行尾页码、版面服务 `content`、35B 缩略图，只加不减。
+- 读事实：优先 PDF 文字层，坐标自检不过才看图。
+- **标准答案**在 `agents/textbook-agent/eval/printed_toc/`（git 跟踪），容器以只读方式挂到 `/data/agent/eval`。
+- **版面服务** `layout-svc`（容器 `lb-layout`，`127.0.0.1:8504`）跑 PP-DocLayoutV3，只用 CPU。调用方传图，服务不读书库。
+
+`toc.print` 不接老线 `build_toc`（老线冻结）。中间表示这边由 `ir_toc` 照老线 `build_toc` 的做法另写一份：印刷目录当骨架 → 正文比原字定页（`body` / `near`）→ 印刷页 + 偏移（`offset`）→ 没印刷页的看前后行（`search` / `next` / `prev`）→ 每行到下一行之间的正文标题挂成 `from_body`，写 `ir/toc.json`。
+
 ## 7. 同步与重建
 
 | 改了什么 | 怎么生效 |
@@ -136,6 +160,7 @@ Python 与 JS 语言不同、无法合并成一个文件，靠
 | `agents/textbook-agent/app/**` | `docker compose build textbook-agent && up -d` |
 | `learning-buddy-api/app/**` | `docker compose build buddy-api buddy-worker && up -d` |
 | `learning-buddy-c2/docker-compose.yml` | `docker compose up -d` |
+| `layout-svc/**` | `docker compose build layout-svc && up -d layout-svc` |
 
 验证容器内与宿主机一致：
 

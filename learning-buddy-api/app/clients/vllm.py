@@ -27,6 +27,49 @@ _CLIENT: httpx.Client | None = None
 _CLIENT_LOCK = threading.Lock()
 
 
+_MEDIA_MARKER: str | None = None
+
+
+def _llama_origin() -> str:
+    base = settings.vllm_base_url.rstrip("/")
+    if base.endswith("/v1"):
+        return base[: -len("/v1")]
+    return base
+
+
+def _media_marker(client: httpx.Client) -> str:
+    """Image placeholder from the running llama-server. It changes when that process restarts."""
+    global _MEDIA_MARKER
+    if _MEDIA_MARKER:
+        return _MEDIA_MARKER
+    response = client.get(f"{_llama_origin()}/props", timeout=10.0)
+    response.raise_for_status()
+    marker = str(response.json().get("media_marker") or "")
+    if not marker:
+        raise RuntimeError("llama-server props has no media_marker")
+    _MEDIA_MARKER = marker
+    return marker
+
+
+def _vision_completion(text: str, images: list[str], max_tokens: int) -> str:
+    """One vision call on /completions. /v1/completions rejects a structured prompt."""
+    client = _vllm_client()
+    marker = _media_marker(client)
+    marks = "\n".join(marker for _ in images)
+    prompt = f"<|im_start|>user\n{marks}\n{text}<|im_end|>\n<|im_start|>assistant\n"
+    response = client.post(
+        f"{_llama_origin()}/completions",
+        json={
+            "prompt": {"prompt_string": prompt, "multimodal_data": images},
+            "temperature": settings.vllm_temperature,
+            "n_predict": max_tokens,
+        },
+        timeout=180.0,
+    )
+    response.raise_for_status()
+    return str(response.json().get("content") or "").strip()
+
+
 def _vllm_client() -> httpx.Client:
     global _CLIENT
     if _CLIENT is None:
@@ -175,35 +218,11 @@ def vision_page_to_markdown(
     system: str,
     max_tokens: int = 4096,
 ) -> str:
-    """OCR one page image to Markdown via vLLM multimodal chat."""
+    """OCR one page image to Markdown via the llama.cpp completions endpoint."""
     b64 = base64.standard_b64encode(image_bytes).decode("ascii")
-    data_url = f"data:image/jpeg;base64,{b64}"
+    text = f"{system}\n\n提取本页全部印刷体教材正文，输出 Markdown。"
     with vllm_slot():
-        client = _vllm_client()
-        r = client.post(
-            "/chat/completions",
-            json={
-                "model": settings.vllm_model,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": "提取本页全部印刷体教材正文，输出 Markdown。"},
-                            {"type": "image_url", "image_url": {"url": data_url}},
-                        ],
-                    },
-                ],
-                "temperature": settings.vllm_temperature,
-                "max_tokens": max_tokens,
-                "chat_template_kwargs": {"enable_thinking": False},
-            },
-            timeout=180.0,
-        )
-        r.raise_for_status()
-        data = r.json()
-        msg = data["choices"][0]["message"]
-        return (msg.get("content") or "").strip()
+        return _vision_completion(text, [b64], max_tokens)
 
 
 def vision_page_refine_json(
@@ -215,11 +234,10 @@ def vision_page_refine_json(
     max_tokens: int = 3072,
     user_note: str = "",
 ) -> dict[str, Any]:
-    """Refine one page layout via vLLM multimodal chat; returns parsed JSON dict."""
+    """Refine one page layout via the llama.cpp completions endpoint."""
     import json as _json
 
     b64 = base64.standard_b64encode(image_bytes).decode("ascii")
-    data_url = f"data:image/jpeg;base64,{b64}"
     note = (user_note or "").strip()
     note_block = (
         f"\n\n## 用户改进建议（优先按此修改）\n{note}\n"
@@ -227,37 +245,13 @@ def vision_page_refine_json(
         else ""
     )
     user_text = (
-        f"page_no={page_no}\n"
+        f"{system}\n\npage_no={page_no}\n"
         "Previous recognition blocks JSON (draft to correct against the page image):\n"
         + _json.dumps(blocks_payload, ensure_ascii=False)
         + note_block
     )
     with vllm_slot():
-        client = _vllm_client()
-        r = client.post(
-            "/chat/completions",
-            json={
-                "model": settings.vllm_model,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": user_text},
-                            {"type": "image_url", "image_url": {"url": data_url}},
-                        ],
-                    },
-                ],
-                "temperature": settings.vllm_temperature,
-                "max_tokens": max_tokens,
-                "chat_template_kwargs": {"enable_thinking": False},
-            },
-            timeout=180.0,
-        )
-        r.raise_for_status()
-        data = r.json()
-        msg = data["choices"][0]["message"]
-        raw = (msg.get("content") or "").strip()
+        raw = _vision_completion(user_text, [b64], max_tokens)
         return parse_json_block_robust(raw)
 
 
@@ -284,56 +278,18 @@ def vision_json_completion(
     so the import pipeline can dump them for per-stage diagnosis.
     """
     b64 = base64.standard_b64encode(image_bytes).decode("ascii")
-    data_url = f"data:image/jpeg;base64,{b64}"
-
-    def _build_payload(with_schema: bool) -> dict[str, Any]:
-        payload: dict[str, Any] = {
-            "model": settings.vllm_model,
-            "messages": [
-                {"role": "system", "content": system},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": user_text},
-                        {"type": "image_url", "image_url": {"url": data_url}},
-                    ],
-                },
-            ],
-            "temperature": settings.vllm_temperature,
-            "max_tokens": max_tokens,
-            "chat_template_kwargs": {"enable_thinking": False},
-        }
-        if with_schema and response_schema is not None:
-            payload["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": schema_name,
-                    "schema": response_schema,
-                    "strict": True,
-                },
-            }
-        return payload
-
+    text = f"{system}\n\n{user_text}"
+    if response_schema is not None:
+        logger.info(
+            "vision_json_completion: /completions has no json_schema; %s is not sent",
+            schema_name,
+        )
     with vllm_slot():
-        client = _vllm_client()
-        use_schema = response_schema is not None
-        schema_applied = use_schema
-        r = client.post("/chat/completions", json=_build_payload(use_schema), timeout=180.0)
-        if use_schema and r.status_code == 400:
-            logger.warning(
-                "vision_json_completion: json_schema rejected (400), retrying without schema"
-            )
-            schema_applied = False
-            r = client.post("/chat/completions", json=_build_payload(False), timeout=180.0)
-        r.raise_for_status()
-        data = r.json()
-        choice = data["choices"][0]
-        msg = choice["message"]
-        raw = (msg.get("content") or "").strip()
+        raw = _vision_completion(text, [b64], max_tokens)
         if debug is not None:
-            debug["used_schema"] = schema_applied
-            debug["finish_reason"] = choice.get("finish_reason")
-            debug["usage"] = data.get("usage")
+            debug["used_schema"] = False
+            debug["finish_reason"] = None
+            debug["usage"] = None
             debug["max_tokens"] = max_tokens
             debug["raw_text"] = raw
         return parse_json_block_robust(raw)
